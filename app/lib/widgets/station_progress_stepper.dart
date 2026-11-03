@@ -1,10 +1,10 @@
 import 'package:nopa_app/widgets/tap_expander.dart';
+import 'nopa_modal_shell.dart';
 import 'package:nopa_app/core/station_numbering.dart';
 import 'package:flutter/material.dart' hide Text;
 import 'package:nopa_app/widgets/fa_text.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:provider/provider.dart';
-import '../core/theme/app_colors.dart';
 import '../core/theme/app_theme.dart';
 import '../services/app_state_repository.dart';
 
@@ -51,13 +51,7 @@ class StationProgressStepper extends StatelessWidget {
         // Stepper Header Title
         Text(
           title ?? 'منزلگاه را انتخاب کنید',
-          style: const TextStyle(
-            color: Color(0xFFEDE8F5),
-            fontSize: 13.5,
-            fontWeight: FontWeight.w700,
-            fontFamily: AppTheme.fontFamily,
-            fontFamilyFallback: AppTheme.fontFamilyFallback,
-          ),
+          style: AppTypography.h3.copyWith(color: Color(0xFFEDE8F5)),
           textAlign: TextAlign.center,
         ),
         const SizedBox(height: 8),
@@ -245,50 +239,23 @@ class StationProgressStepper extends StatelessWidget {
 
   /// End-of-track Champion Victory Badge with SVG `champun01.svg`
   void _showFinalDialog(BuildContext context) {
-    showDialog<void>(
-      context: context,
-      builder: (ctx) => Directionality(
-        textDirection: TextDirection.rtl,
-        child: Dialog(
-          backgroundColor: Colors.transparent,
-          insetPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
-          child: Container(
-            constraints: const BoxConstraints(maxWidth: 380),
-            padding: const EdgeInsets.fromLTRB(22, 24, 22, 14),
-            decoration: AppColors.loginDialogDecoration(radius: 24),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                const Text(
+    showNopaModal<void>(
+      context,
+      builder: (ctx) => NopaModalShell(
+        maxWidth: 380,
+        headerIcon: Icons.emoji_events_rounded,
+        padding: const EdgeInsets.fromLTRB(22, 24, 22, 22),
+        actions: [
+          NopaModalAction(
+            label: 'بستن',
+            onPressed: () => Navigator.pop(ctx),
+          ),
+        ],
+        child: const Text(
                   'سرزمین نپا، مقصد نهایی شماست. جایی که گنجبنه‌ی علاء‌الملک زنان و مردان باهوش و سرسخت را به مبارزه با مسیری دشوار فراخوانده است. فراخوانی که در نهایت به میهمانی بزرگی ختم خواهد شد.',
                   textAlign: TextAlign.center,
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 13,
-                    height: 1.9,
-                    fontWeight: FontWeight.w300,
-                    fontFamily: AppTheme.fontFamily,
-                    fontFamilyFallback: AppTheme.fontFamilyFallback,
-                  ),
+                  style: AppTypography.bodyLarge,
                 ),
-                const SizedBox(height: 10),
-                TextButton(
-                  onPressed: () => Navigator.pop(ctx),
-                  child: const Text(
-                    'بستن',
-                    style: TextStyle(
-                      color: Color(0xFFE5A855),
-                      fontSize: 14,
-                      fontWeight: FontWeight.bold,
-                      fontFamily: AppTheme.fontFamily,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
       ),
     );
   }

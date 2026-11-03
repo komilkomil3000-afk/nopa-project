@@ -3032,6 +3032,84 @@ When logging changes, append a new entry to the bottom of the "Change Entries" s
   - Not run: on-device check, server deploy, the repair script against the database
 - **Status:** Completed
 
+<<<<<<< HEAD
+### [2026-11-02 20:39] - Claude Code (Agent 2: Flutter App & LMS Specialist)
+- **Triggered By:** GitHub: komilkomil3000-afk | System: komeil
+- **Target Component(s):** app, admin_panel
+- **Files Modified / Created / Deleted:**
+  - `app/lib/screens/chat/chat_home_screen.dart` (Modified)
+  - `app/lib/screens/shell/app_shell.dart` (Modified)
+  - `app/lib/screens/chat/channel_manager_shell.dart` (Modified)
+  - `app/lib/widgets/app_top_bar.dart` (Modified)
+  - `app/lib/screens/student/profile/student_profile_screen.dart` (Modified)
+  - `app/lib/screens/mentor/profile/mentor_profile_screen.dart` (Modified)
+  - `app/lib/models/chat_models.dart` (Modified)
+  - `app/lib/services/chat_repository.dart` (Modified)
+  - `admin_panel/src/modules/chat/controller.ts` (Modified)
+- **Description of Changes:**
+  - Redesigned the chat home per the supplied mockup: golden radial header reaching under the status bar (dark NOPA logo, connection state "درحال اتصال..." / "گفتگوها", drawer button), light filter bar (همه / چالش ها / شخصی / دورهمی / آموزگاه) with a marker over the selected tab, and flat conversation rows (ringed avatar, name, preview, time, gold unread badge or green read ticks, fading separator).
+  - Filters map space types: challenges+arena / direct+support / caravan+public+mentors+groups / announcements+media.
+  - The shell's AppTopBar is hidden on the chat tab (and in ChannelManagerShell when chat is on) so the chat header replaces it.
+  - When `chatEnabled` is on, the notification bell is removed from AppTopBar app-wide and the "پیام ها" (notifications) item is hidden from the student and mentor profile menus; nothing changes when chat is off.
+  - `ChatSpace.previewSenderId` + `ChatRepository.userId` to tell one's own last message (for ticks); the spaces API now returns `lastMessage.senderId` (needs backend redeploy; until then ticks simply don't show).
+- **Verification / Checkpoints Executed:**
+  - `flutter analyze` (from `app/`): no issues. `npx tsc --noEmit` in `admin_panel/`: no errors.
+- **Status:** Completed
+
+### [2026-11-02 20:56] - Flutter Dev (Claude)
+- **Triggered By:** GitHub: komilkomil3000-afk | System: komeil
+- **Target Component(s):** app
+- **Files Modified / Created / Deleted:**
+  - `GENT_CHANGELOG.md` (Modified)
+  - `admin_panel/src/modules/chat/controller.ts` (Modified)
+  - `app/lib/models/chat_models.dart` (Modified)
+  - `app/lib/screens/chat/channel_manager_shell.dart` (Modified)
+  - `app/lib/screens/chat/chat_conversation_screen.dart` (Modified)
+  - `app/lib/screens/chat/chat_home_screen.dart` (Modified)
+  - `app/lib/screens/mentor/profile/mentor_profile_screen.dart` (Modified)
+  - `app/lib/screens/shell/app_shell.dart` (Modified)
+  - `app/lib/screens/student/profile/student_profile_screen.dart` (Modified)
+  - `app/lib/services/chat_repository.dart` (Modified)
+  - `app/lib/widgets/app_top_bar.dart` (Modified)
+  - `app/pubspec.lock` (Modified)
+  - `app/pubspec.yaml` (Modified)
+- **Description of Changes:**
+  - Removed flutter_image_compress (KGP warning, no fixed release)
+  - replaced with pure-Dart image package in chat_conversation_screen.dart (_shrink resizes to 1600px, JPEG q80, in isolate)
+  - pubspec.yaml/pubspec.lock updated
+- **Verification / Checkpoints Executed:**
+  - flutter pub get; flutter analyze chat_conversation_screen.dart (no issues)
+- **Status:** Completed
+
+### [2026-11-02 22:10] - Claude Code (Agent 2: Flutter App & LMS Specialist + Agent 3: Integration)
+- **Triggered By:** GitHub: komilkomil3000-afk | System: komeil
+- **Target Component(s):** app, admin_panel
+- **Files Modified / Created / Deleted:**
+  - `admin_panel/src/modules/chat/profiles.ts` (Created)
+  - `admin_panel/src/modules/chat/controller.ts` (Modified)
+  - `admin_panel/src/modules/chat/realtime.ts` (Modified)
+  - `admin_panel/src/modules/chat/routes.ts` (Modified)
+  - `app/lib/screens/chat/chat_conversation_screen.dart` (Modified)
+  - `app/lib/screens/chat/chat_message_bubble.dart` (Modified)
+  - `app/lib/screens/chat/chat_message_menu.dart` (Created)
+  - `app/lib/screens/chat/chat_profile_screen.dart` (Created)
+  - `app/lib/screens/chat/chat_widgets.dart` (Created)
+  - `app/lib/screens/chat/chat_theme.dart` (Modified)
+  - `app/lib/screens/chat/chat_home_screen.dart` (Modified)
+  - `app/lib/models/chat_models.dart` (Modified)
+  - `app/lib/services/chat_repository.dart` (Modified)
+  - `app/test/chat_ui_test.dart` (Modified)
+- **Description of Changes:**
+  - Backend: presence (`presence` socket events on first connect / last disconnect, `online` on people and direct peers, `onlineUserIds`); new `GET /chat/spaces/:id/profile` (counts, caravan rank, members), `GET /chat/spaces/:id/members/:userId` (balances, rank in caravan, participation stats for self/mentor/moderators), `GET /chat/spaces/:id/media?kind=image|audio|link|session&userId=` (sessions = threads/challenge topics, never in private chats). `peopleOf` moved to profiles.ts.
+  - Conversation screen redesigned per mockup: golden header (face, name, online/offline or member/online counts, typing), safe 16px gutter, wallpaper slot (`assets/images/chat_pattern.png`, optional), bubbles per chat type (private / group with names / channel full-width cards with "ارسال نظر"), gold bubbles for others and lavender for own with tail and avatar at the end of a run.
+  - Message menu opens on tap (text or beside it) as a light reactions bar + options card; long-press removed.
+  - Composer: light bar, voice + attach morph into send while typing, emoji panel (built-in, no new dependency), stays above the keyboard (own Scaffold with resizeToAvoidBottomInset).
+  - Profile screens per mockup: group/channel (members with online state, add-member for custom groups) and person (زریک/کلاف/قالیچه/درفش, rank, private message, participation analysis + link to the mentor report card), tabs photos/voices/links/sessions.
+  - Space classification fixed: `media` is a mentor's custom group; channels = announcements/public/arena (home filter tabs updated).
+- **Verification / Checkpoints Executed:**
+  - `flutter analyze` (from `app/`): no issues. `flutter test`: 17/17 passed. `npx tsc --noEmit` in `admin_panel/`: no errors.
+  - Not run on a device; backend must be redeployed for presence, profiles and media.
+=======
 ### [2026-11-02 18:41] - Claude Code (Agent 1: CRM & Analytics Specialist)
 - **Triggered By:** GitHub: komilkomil3000-afk | System: ggos (git author: rokni99)
 - **Target Component(s):** admin_panel
@@ -3321,4 +3399,902 @@ When logging changes, append a new entry to the bottom of the "Change Entries" s
   - `node --check` on changed JS: OK
   - Puppeteer + headless Chrome with a mocked API and real mouse drags: 20/21 new checks passed (session moved to another category -> PUT categoryId, category reorder -> PUT orderIndex, gallery and wizard drag, Aparat frame and <video> preview, zoom + arrow navigation, backdrop rules for the editor, a form modal and the lightbox); the one failure is the Aparat player logging an error for the fake video id used in the test. The earlier 23 editor checks still pass.
   - Not run against the live backend
+>>>>>>> 0ecbcfcf48b078871112549edd7b43651ae89e80
+- **Status:** Completed
+
+### [2026-11-02 23:40] - Claude Code (Agent 2: Flutter App & LMS Specialist + Agent 3: Integration)
+- **Triggered By:** GitHub: komilkomil3000-afk | System: komeil
+- **Target Component(s):** app, admin_panel
+- **Files Modified / Created / Deleted:**
+  - `app/assets/images/chat_bg.jpg` (Created — supplied wallpaper, 1536x2752 2.7MB → 720x1290 118KB)
+  - `app/lib/screens/chat/chat_format.dart` (Created)
+  - `app/lib/screens/chat/chat_conversation_screen.dart`, `chat_message_bubble.dart`, `chat_message_menu.dart`, `chat_profile_screen.dart`, `chat_widgets.dart`, `chat_theme.dart`, `chat_cards.dart`, `chat_home_screen.dart`, `chat_groups_screen.dart`, `chat_topic_info_screen.dart`, `channel_manager_profile_screen.dart` (Modified)
+  - `app/lib/models/chat_models.dart`, `app/lib/services/chat_repository.dart`, `app/test/chat_ui_test.dart` (Modified)
+  - `admin_panel/src/modules/chat/controller.ts`, `service.ts`, `topics.ts` (Modified)
+- **Description of Changes:**
+  - Message menu is an overlay (not a route): the keyboard and composer stay up while reacting.
+  - Chat wallpaper from the supplied image (compressed, 75% opacity over the app background).
+  - Composer is a floating pill clear of edges/corners; send arrow points right; selection toolbar adds bold / italic / mention next to copy/cut/paste; `**bold**`, `__italic__`, `@mentions` rendered in bubbles, stripped in previews and push notifications.
+  - Bubbles: own = station-window frame (lavender gradient stroke), others = selected زریک option (gold stroke, copper fill); tail matched.
+  - Read-only bar uses the general feedback colour (AppToast info) as a floating pill.
+  - Threads: only moderators (mentor/admin/channel manager, never private chats) open a conversation under a message (`mark: 'thread'`); server refuses replies under unopened messages; challenges always have one. `threadOpen` + `threadPeople` (up to 4 faces) sent with messages; box «ورود به گفتگو» with faces under each open message.
+  - Challenges render as chat messages with small detail boxes (creator, station, deadline, reward, final answer) and actions in the tap menu; mentor identity = blue + verified badge on names, creator, reactions by staff and the best-answer mark (`creatorRole` added to challenge meta).
+  - Profiles: fallback from local data when the new endpoints are not deployed; same golden header/back as the chat with the panel under it. Chat sub-pages (groups, challenge info, dashboard, channel-manager account) use `ChatPageScaffold` with the same back button.
+  - Home filter bar: selection triangle removed.
+- **Verification / Checkpoints Executed:**
+  - `flutter analyze`: no issues. `flutter test`: 19/19 passed. `npx tsc --noEmit` in `admin_panel/`: no errors. Not run on a device.
+- **Status:** Completed
+
+### [2026-11-03 10:36] - Flutter UI Architect (Claude)
+- **Triggered By:** GitHub: komilkomil3000-afk | System: komeil
+- **Target Component(s):** app
+- **Files Modified / Created / Deleted:**
+  - `pp/lib/widgets/logout_dialog.dart` (Modified)
+  - `app/lib/widgets/nopa_modal_shell.dart` (Created)
+- **Description of Changes:**
+  - Created app/lib/widgets/nopa_modal_shell.dart (NopaModalShell, NopaModalAction, showNopaModal, showNopaSheet) wrapping NopaDialogContainer with lavender station stroke and gold header accents
+  - Migrated LogoutDialog frame/buttons to NopaModalShell with logic and show() signature unchanged (app/lib/widgets/logout_dialog.dart)
+  - Presentation layer only, no repository/API/model changes
+- **Verification / Checkpoints Executed:**
+  - flutter analyze run from app/ : baseline 0 issues, after each step 0 issues
+- **Status:** In Progress
+
+### [2026-11-03 10:47] - Flutter UI Architect (Claude)
+- **Triggered By:** GitHub: komilkomil3000-afk | System: komeil
+- **Target Component(s):** app
+- **Files Modified / Created / Deleted:**
+  - `GENT_CHANGELOG.md` (Modified)
+  - `app/lib/main.dart` (Modified)
+  - `app/lib/screens/mentor/profile/mentor_profile_screen.dart` (Modified)
+  - `app/lib/screens/student/profile/student_profile_screen.dart` (Modified)
+  - `app/lib/widgets/complete_profile_dialog.dart` (Deleted)
+  - `app/lib/widgets/contact_us_dialog.dart` (Modified)
+  - `app/lib/widgets/logout_dialog.dart` (Modified)
+  - `app/lib/widgets/pending_challenges_dialog.dart` (Deleted)
+  - `app/lib/widgets/reward_popup.dart` (Deleted)
+  - `app/lib/widgets/welcome_dialog.dart` (Modified)
+  - `app/lib/widgets/nopa_modal_shell.dart` (Created)
+  - `app/lib/widgets/story_dialog.dart` (Created)
+- **Description of Changes:**
+  - Migrated WelcomeDialog and ContactUsDialog to NopaModalShell (welcome_dialog.dart, contact_us_dialog.dart), public APIs unchanged
+  - Extracted shared StoryDialog (widgets/story_dialog.dart) replacing identical private _StoryDialog copies in student_profile_screen.dart and mentor_profile_screen.dart
+  - Deleted unreferenced widgets complete_profile_dialog.dart, pending_challenges_dialog.dart, reward_popup.dart (0 importers verified by grep)
+  - main.dart: /class1 and /station_detail now share one _class1Screen builder, all route strings and onGenerateRoute kept
+  - Deferred SupportMessageDialog, market exchange dialog, avatar picker (already on NopaDialogContainer, low gain vs async-logic risk)
+- **Verification / Checkpoints Executed:**
+  - flutter analyze run from app/ : 0 issues after each step
+- **Status:** In Progress
+
+### [2026-11-03 10:50] - Flutter UI Architect (Claude)
+- **Triggered By:** GitHub: komilkomil3000-afk | System: komeil
+- **Target Component(s):** app
+- **Files Modified / Created / Deleted:**
+  - `GENT_CHANGELOG.md` (Modified)
+  - `app/lib/main.dart` (Modified)
+  - `app/lib/screens/mentor/challenges/mentor_challenge_grading_screen.dart` (Modified)
+  - `app/lib/screens/mentor/profile/mentor_profile_screen.dart` (Modified)
+  - `app/lib/screens/student/profile/student_profile_screen.dart` (Modified)
+  - `app/lib/widgets/complete_profile_dialog.dart` (Deleted)
+  - `app/lib/widgets/contact_us_dialog.dart` (Modified)
+  - `app/lib/widgets/logout_dialog.dart` (Modified)
+  - `app/lib/widgets/pending_challenges_dialog.dart` (Deleted)
+  - `app/lib/widgets/reward_popup.dart` (Deleted)
+  - `app/lib/widgets/welcome_dialog.dart` (Modified)
+  - `app/lib/widgets/nopa_modal_shell.dart` (Created)
+  - `app/lib/widgets/story_dialog.dart` (Created)
+- **Description of Changes:**
+  - Wave C: migrated the 4 off-token dialogs in mentor_challenge_grading_screen.dart (answer history, revision request, reward amount input, final approval confirm) from AlertDialog/hardcoded 0xFF2C274A containers to showNopaModal + NopaModalShell
+  - send/validation/Navigator.pop(ctx, value) logic moved verbatim into NopaModalAction callbacks, return types (void/int?/bool?) unchanged
+- **Verification / Checkpoints Executed:**
+  - flutter analyze run from app/ : 0 issues
+- **Status:** In Progress
+
+### [2026-11-03 11:01] - Flutter UI Architect (Claude)
+- **Triggered By:** GitHub: komilkomil3000-afk | System: komeil
+- **Target Component(s):** app
+- **Files Modified / Created / Deleted:**
+  - `GENT_CHANGELOG.md` (Modified)
+  - `app/lib/main.dart` (Modified)
+  - `app/lib/screens/chat/chat_profile_screen.dart` (Modified)
+  - `app/lib/screens/market/market_screen.dart` (Modified)
+  - `app/lib/screens/mentor/academy/mentor_station_class1_screen.dart` (Modified)
+  - `app/lib/screens/mentor/challenges/mentor_challenge_grading_screen.dart` (Modified)
+  - `app/lib/screens/mentor/profile/mentor_profile_screen.dart` (Modified)
+  - `app/lib/screens/student/profile/student_profile_screen.dart` (Modified)
+  - `app/lib/widgets/complete_profile_dialog.dart` (Deleted)
+  - `app/lib/widgets/contact_us_dialog.dart` (Modified)
+  - `app/lib/widgets/logout_dialog.dart` (Modified)
+  - `app/lib/widgets/pending_challenges_dialog.dart` (Deleted)
+  - `app/lib/widgets/reward_popup.dart` (Deleted)
+  - `app/lib/widgets/welcome_dialog.dart` (Modified)
+  - `app/lib/widgets/nopa_modal_shell.dart` (Created)
+  - `app/lib/widgets/nopa_pill_tabs.dart` (Created)
+  - `app/lib/widgets/story_dialog.dart` (Created)
+- **Description of Changes:**
+  - Added widgets/nopa_pill_tabs.dart (NopaPillTabs/NopaPillTab): single segmented tab style (strokeGradient frame, darkSurface, accentGradient selected pill)
+  - Replaced 4 divergent tab bars with it: members training report tabs (mentor_station_class1_screen.dart), market members-report/exchanges tabs and top-participants/top-caravans tabs (market_screen.dart), chat profile photos/voices/links/sessions tabs (chat_profile_screen.dart)
+  - removed _buildTabButton and _buildMentorTabButton
+  - Report tabs: when a station has no class categories the sessions tab (جلسات) is now shown next to آزمون ها with an empty-state message, instead of the bar collapsing to only آزمون ها
+- **Verification / Checkpoints Executed:**
+  - flutter analyze run from app/ : 0 issues
+- **Status:** In Progress
+
+### [2026-11-03 11:08] - Flutter UI Architect (Claude)
+- **Triggered By:** GitHub: komilkomil3000-afk | System: komeil
+- **Target Component(s):** app
+- **Files Modified / Created / Deleted:**
+  - `GENT_CHANGELOG.md` (Modified)
+  - `app/lib/main.dart` (Modified)
+  - `app/lib/screens/chat/chat_profile_screen.dart` (Modified)
+  - `app/lib/screens/market/market_screen.dart` (Modified)
+  - `app/lib/screens/mentor/academy/mentor_station_class1_screen.dart` (Modified)
+  - `app/lib/screens/mentor/challenges/mentor_challenge_grading_screen.dart` (Modified)
+  - `app/lib/screens/mentor/challenges/mentor_challenges_screen.dart` (Modified)
+  - `app/lib/screens/mentor/profile/mentor_caravans_roster_screen.dart` (Modified)
+  - `app/lib/screens/mentor/profile/mentor_profile_screen.dart` (Modified)
+  - `app/lib/screens/student/profile/student_certificate_detail_screen.dart` (Modified)
+  - `app/lib/screens/student/profile/student_profile_screen.dart` (Modified)
+  - `app/lib/widgets/complete_profile_dialog.dart` (Deleted)
+  - `app/lib/widgets/contact_us_dialog.dart` (Modified)
+  - `app/lib/widgets/custom_drawer.dart` (Modified)
+  - `app/lib/widgets/jarchi_item.dart` (Modified)
+  - `app/lib/widgets/logout_dialog.dart` (Modified)
+  - `app/lib/widgets/pending_challenges_dialog.dart` (Deleted)
+  - `app/lib/widgets/reward_popup.dart` (Deleted)
+  - `app/lib/widgets/welcome_dialog.dart` (Modified)
+  - `app/lib/widgets/nopa_modal_shell.dart` (Created)
+  - `app/lib/widgets/nopa_pill_tabs.dart` (Created)
+  - `app/lib/widgets/story_dialog.dart` (Created)
+- **Description of Changes:**
+  - Wave C complete: migrated to showNopaModal/NopaModalShell the recipients picker and Jalali date picker (mentor_challenges_screen.dart), add/delete/contact member dialogs (mentor_caravans_roster_screen.dart), reject-explanation dialog (market_screen.dart), mentor follow-up dialog (mentor_station_class1_screen.dart), physical certificate order modal (student_certificate_detail_screen.dart), drawer guide (custom_drawer.dart), news detail (jarchi_item.dart)
+  - All async/send/validation/Navigator.pop(value) logic moved verbatim into NopaModalAction callbacks
+  - NopaModalAction now renders a dimmed disabled state when onPressed is null (nopa_modal_shell.dart)
+  - Visual note: header SVG/close-X replaced by standard header icon and a close action, contact-member buttons lose small icons
+- **Verification / Checkpoints Executed:**
+  - flutter analyze run from app/ : 0 issues after each step; drawer guide text diffed byte-identical against git HEAD
+- **Status:** In Progress
+
+### [2026-11-03 12:06] - Flutter UI Architect (Claude)
+- **Triggered By:** GitHub: komilkomil3000-afk | System: komeil
+- **Target Component(s):** app
+- **Files Modified / Created / Deleted:**
+  - `GENT_CHANGELOG.md` (Modified)
+  - `app/lib/core/theme/app_colors.dart` (Modified)
+  - `app/lib/main.dart` (Modified)
+  - `app/lib/screens/auth/login_screen.dart` (Modified)
+  - `app/lib/screens/chat/chat_profile_screen.dart` (Modified)
+  - `app/lib/screens/market/market_screen.dart` (Modified)
+  - `app/lib/screens/mentor/academy/mentor_station_class1_screen.dart` (Modified)
+  - `app/lib/screens/mentor/challenges/mentor_challenge_grading_screen.dart` (Modified)
+  - `app/lib/screens/mentor/challenges/mentor_challenges_screen.dart` (Modified)
+  - `app/lib/screens/mentor/profile/mentor_caravans_roster_screen.dart` (Modified)
+  - `app/lib/screens/mentor/profile/mentor_profile_screen.dart` (Modified)
+  - `app/lib/screens/student/challenges/student_challenges_screen.dart` (Modified)
+  - `app/lib/screens/student/messages/student_notifications_screen.dart` (Modified)
+  - `app/lib/screens/student/profile/student_certificate_detail_screen.dart` (Modified)
+  - `app/lib/screens/student/profile/student_profile_screen.dart` (Modified)
+  - `app/lib/widgets/caravan_banners_dialog.dart` (Modified)
+  - `app/lib/widgets/complete_profile_dialog.dart` (Deleted)
+  - `app/lib/widgets/contact_us_dialog.dart` (Modified)
+  - `app/lib/widgets/custom_drawer.dart` (Modified)
+  - `app/lib/widgets/jarchi_item.dart` (Modified)
+  - `app/lib/widgets/logout_dialog.dart` (Modified)
+  - `app/lib/widgets/pending_challenges_dialog.dart` (Deleted)
+  - `app/lib/widgets/reward_popup.dart` (Deleted)
+  - `app/lib/widgets/station_progress_stepper.dart` (Modified)
+  - `app/lib/widgets/welcome_dialog.dart` (Modified)
+  - `app/lib/widgets/nopa_modal_shell.dart` (Created)
+  - `app/lib/widgets/nopa_pill_tabs.dart` (Created)
+  - `app/lib/widgets/story_dialog.dart` (Created)
+- **Description of Changes:**
+  - Wave B: migrated end-of-track story dialog (station_progress_stepper.dart), caravan banners dialog (caravan_banners_dialog.dart) and support chat dialog (student_notifications_screen.dart) to NopaModalShell
+  - NopaModalShell gained maxHeight + non-scrolling mode (child wrapped in Flexible) for dialogs holding their own list
+  - Frame-only swap Container(loginDialogDecoration) -> NopaDialogContainer at 6 sites (login_screen.dart x2, student_challenges_screen.dart x2, mentor_challenges_screen.dart x2), all form fields/validators/handlers and the login gold CTA button untouched
+  - Removed now-unused AppColors.loginDialogDecoration (core/theme/app_colors.dart, 0 references in lib/ and test/)
+- **Verification / Checkpoints Executed:**
+  - flutter analyze run from app/ : 0 issues
+- **Status:** In Progress
+
+### [2026-11-03 12:10] - Flutter UI Architect (Claude)
+- **Triggered By:** GitHub: komilkomil3000-afk | System: komeil
+- **Target Component(s):** app
+- **Files Modified / Created / Deleted:**
+  - `GENT_CHANGELOG.md` (Modified)
+  - `app/lib/core/theme/app_colors.dart` (Modified)
+  - `app/lib/main.dart` (Modified)
+  - `app/lib/screens/auth/login_screen.dart` (Modified)
+  - `app/lib/screens/chat/chat_profile_screen.dart` (Modified)
+  - `app/lib/screens/market/market_screen.dart` (Modified)
+  - `app/lib/screens/mentor/academy/mentor_station_class1_screen.dart` (Modified)
+  - `app/lib/screens/mentor/challenges/mentor_challenge_grading_screen.dart` (Modified)
+  - `app/lib/screens/mentor/challenges/mentor_challenges_screen.dart` (Modified)
+  - `app/lib/screens/mentor/profile/mentor_caravans_roster_screen.dart` (Modified)
+  - `app/lib/screens/mentor/profile/mentor_edit_profile_screen.dart` (Modified)
+  - `app/lib/screens/mentor/profile/mentor_profile_screen.dart` (Modified)
+  - `app/lib/screens/student/academy/student_class2_screen.dart` (Modified)
+  - `app/lib/screens/student/challenges/student_challenges_screen.dart` (Modified)
+  - `app/lib/screens/student/messages/student_notifications_screen.dart` (Modified)
+  - `app/lib/screens/student/profile/student_certificate_detail_screen.dart` (Modified)
+  - `app/lib/screens/student/profile/student_edit_profile_screen.dart` (Modified)
+  - `app/lib/screens/student/profile/student_profile_screen.dart` (Modified)
+  - `app/lib/widgets/caravan_banners_dialog.dart` (Modified)
+  - `app/lib/widgets/complete_profile_dialog.dart` (Deleted)
+  - `app/lib/widgets/contact_us_dialog.dart` (Modified)
+  - `app/lib/widgets/custom_drawer.dart` (Modified)
+  - `app/lib/widgets/jarchi_item.dart` (Modified)
+  - `app/lib/widgets/logout_dialog.dart` (Modified)
+  - `app/lib/widgets/pending_challenges_dialog.dart` (Deleted)
+  - `app/lib/widgets/reward_popup.dart` (Deleted)
+  - `app/lib/widgets/station_progress_stepper.dart` (Modified)
+  - `app/lib/widgets/welcome_dialog.dart` (Modified)
+  - `app/lib/widgets/nopa_modal_shell.dart` (Created)
+  - `app/lib/widgets/nopa_pill_tabs.dart` (Created)
+  - `app/lib/widgets/story_dialog.dart` (Created)
+- **Description of Changes:**
+  - Wave D: migrated both _openFileUploadDialog copies to NopaModalShell (student_edit_profile_screen.dart real upload with pick/uploading state mapped to action loading/disabled
+  - mentor_edit_profile_screen.dart placeholder upload)
+  - student_class2_screen.dart: _showPartMiniQuiz frame-only swap (hardcoded 0xFF241F3B Dialog + gold border -> NopaDialogContainer, same landscape width/padding/insets
+  - quiz body, submission logic and .then() follow-up untouched, diff verified), _showDownloadPamphletDialog migrated to NopaModalShell
+- **Verification / Checkpoints Executed:**
+  - flutter analyze run from app/ : 0 issues; git diff of _showPartMiniQuiz confined to frame lines
+- **Status:** In Progress
+
+### [2026-11-03 12:24] - Flutter UI Architect (Claude)
+- **Triggered By:** GitHub: komilkomil3000-afk | System: komeil
+- **Target Component(s):** app
+- **Files Modified / Created / Deleted:**
+  - `GENT_CHANGELOG.md` (Modified)
+  - `app/lib/core/theme/app_colors.dart` (Modified)
+  - `app/lib/main.dart` (Modified)
+  - `app/lib/screens/auth/login_screen.dart` (Modified)
+  - `app/lib/screens/chat/chat_profile_screen.dart` (Modified)
+  - `app/lib/screens/market/market_screen.dart` (Modified)
+  - `app/lib/screens/mentor/academy/mentor_station_class1_screen.dart` (Modified)
+  - `app/lib/screens/mentor/challenges/mentor_challenge_grading_screen.dart` (Modified)
+  - `app/lib/screens/mentor/challenges/mentor_challenges_screen.dart` (Modified)
+  - `app/lib/screens/mentor/home/mentor_home_screen.dart` (Modified)
+  - `app/lib/screens/mentor/profile/mentor_caravans_roster_screen.dart` (Modified)
+  - `app/lib/screens/mentor/profile/mentor_edit_profile_screen.dart` (Modified)
+  - `app/lib/screens/mentor/profile/mentor_profile_screen.dart` (Modified)
+  - `app/lib/screens/student/academy/student_class2_screen.dart` (Modified)
+  - `app/lib/screens/student/challenges/student_challenges_screen.dart` (Modified)
+  - `app/lib/screens/student/messages/student_notifications_screen.dart` (Modified)
+  - `app/lib/screens/student/profile/student_certificate_detail_screen.dart` (Modified)
+  - `app/lib/screens/student/profile/student_edit_profile_screen.dart` (Modified)
+  - `app/lib/screens/student/profile/student_profile_screen.dart` (Modified)
+  - `app/lib/widgets/caravan_banners_dialog.dart` (Modified)
+  - `app/lib/widgets/complete_profile_dialog.dart` (Deleted)
+  - `app/lib/widgets/contact_us_dialog.dart` (Modified)
+  - `app/lib/widgets/custom_drawer.dart` (Modified)
+  - `app/lib/widgets/jarchi_item.dart` (Modified)
+  - `app/lib/widgets/logout_dialog.dart` (Modified)
+  - `app/lib/widgets/pending_challenges_dialog.dart` (Deleted)
+  - `app/lib/widgets/reward_popup.dart` (Deleted)
+  - `app/lib/widgets/station_progress_stepper.dart` (Modified)
+  - `app/lib/widgets/welcome_dialog.dart` (Modified)
+  - `app/lib/widgets/nopa_modal_shell.dart` (Created)
+  - `app/lib/widgets/nopa_pill_tabs.dart` (Created)
+  - `app/lib/widgets/story_dialog.dart` (Created)
+- **Description of Changes:**
+  - Wave F: switched the 5 remaining non-chat bottom sheets from showModalBottomSheet + hardcoded background/shape to showNopaSheet (login_screen.dart country picker and profile switcher, mentor_home_screen.dart and mentor_caravans_roster_screen.dart caravan pickers, student_edit_profile_screen.dart birth-date picker)
+  - sheet bodies, callbacks and Navigator.pop(value) results untouched
+  - showNopaSheet default isScrollControlled set to false to match Flutter default sheet sizing (nopa_modal_shell.dart)
+- **Verification / Checkpoints Executed:**
+  - flutter analyze run from app/ : 0 issues; grep shows showModalBottomSheet only remains in screens/chat and the shell helper
+- **Status:** In Progress
+
+### [2026-11-03 12:29] - Flutter UI Architect (Claude)
+- **Triggered By:** GitHub: komilkomil3000-afk | System: komeil
+- **Target Component(s):** app
+- **Files Modified / Created / Deleted:**
+  - `GENT_CHANGELOG.md` (Modified)
+  - `app/lib/core/theme/app_colors.dart` (Modified)
+  - `app/lib/core/theme/app_typography.dart` (Modified)
+  - `app/lib/main.dart` (Modified)
+  - `app/lib/screens/auth/login_screen.dart` (Modified)
+  - `app/lib/screens/chat/chat_conversation_screen.dart` (Modified)
+  - `app/lib/screens/chat/chat_profile_screen.dart` (Modified)
+  - `app/lib/screens/market/market_screen.dart` (Modified)
+  - `app/lib/screens/mentor/academy/mentor_station_class1_screen.dart` (Modified)
+  - `app/lib/screens/mentor/challenges/mentor_challenge_grading_screen.dart` (Modified)
+  - `app/lib/screens/mentor/challenges/mentor_challenges_screen.dart` (Modified)
+  - `app/lib/screens/mentor/home/mentor_home_screen.dart` (Modified)
+  - `app/lib/screens/mentor/profile/mentor_caravans_roster_screen.dart` (Modified)
+  - `app/lib/screens/mentor/profile/mentor_edit_profile_screen.dart` (Modified)
+  - `app/lib/screens/mentor/profile/mentor_profile_screen.dart` (Modified)
+  - `app/lib/screens/shell/app_shell.dart` (Modified)
+  - `app/lib/screens/student/academy/student_academy_roadmap_screen.dart` (Modified)
+  - `app/lib/screens/student/academy/student_class1_screen.dart` (Modified)
+  - `app/lib/screens/student/academy/student_class2_screen.dart` (Modified)
+  - `app/lib/screens/student/challenges/student_challenges_screen.dart` (Modified)
+  - `app/lib/screens/student/home/student_home_screen.dart` (Modified)
+  - `app/lib/screens/student/messages/student_notifications_screen.dart` (Modified)
+  - `app/lib/screens/student/profile/student_certificate_detail_screen.dart` (Modified)
+  - `app/lib/screens/student/profile/student_certificates_screen.dart` (Modified)
+  - `app/lib/screens/student/profile/student_edit_profile_screen.dart` (Modified)
+  - `app/lib/screens/student/profile/student_profile_screen.dart` (Modified)
+  - `app/lib/widgets/app_scaffold.dart` (Modified)
+  - `app/lib/widgets/app_top_bar.dart` (Modified)
+  - `app/lib/widgets/bottom_nav_bar.dart` (Modified)
+  - `app/lib/widgets/caravan_banners_dialog.dart` (Modified)
+  - `app/lib/widgets/complete_profile_dialog.dart` (Deleted)
+  - `app/lib/widgets/contact_us_dialog.dart` (Modified)
+  - `app/lib/widgets/custom_drawer.dart` (Modified)
+  - `app/lib/widgets/education_calendar.dart` (Modified)
+  - `app/lib/widgets/home_challenges_section.dart` (Modified)
+  - `app/lib/widgets/jarchi_item.dart` (Modified)
+  - `app/lib/widgets/logout_dialog.dart` (Modified)
+  - `app/lib/widgets/pending_challenges_dialog.dart` (Deleted)
+  - `app/lib/widgets/reward_popup.dart` (Deleted)
+  - `app/lib/widgets/station_progress_stepper.dart` (Modified)
+  - `app/lib/widgets/welcome_dialog.dart` (Modified)
+  - `app/lib/core/constants/app_routes.dart` (Created)
+  - `app/lib/widgets/nopa_modal_shell.dart` (Created)
+  - `app/lib/widgets/nopa_pill_tabs.dart` (Created)
+  - `app/lib/widgets/story_dialog.dart` (Created)
+- **Description of Changes:**
+  - Phase 3: added core/constants/app_routes.dart (AppRoutes, identical string values) and replaced 33 route-string literals across 15 files
+  - route table in main.dart still registers all 10 names
+  - Removed 13 typedef aliases with zero references in lib/ and test/ (AppTextStyles, AuthScreen, CalendarEventType, ChallengesScreen x2, ClassPlayerScreen, MainScreen, MentorDashboardScreen, MentorStationScreen, NotificationsScreen, ProfileScreen x2, StationDetailScreen) plus an orphaned story-dialog banner comment in both profile screens
+  - kept every alias still in use
+  - Added AppTabs.home/academy/challenges/market (widgets/bottom_nav_bar.dart) and replaced 30 numeric tab-index literals (navigateToMainTab, setIndex, onTabSelected, currentBottomNavIndex, drawer selection) across 14 files, app_shell.dart internals untouched
+  - drawer 'rankings' entry intentionally targets the market tab (commented)
+- **Verification / Checkpoints Executed:**
+  - flutter analyze run from app/ : 0 issues after each step; grep confirms no route-string or numeric tab-index literals left in call sites
+- **Status:** In Progress
+
+### [2026-11-03 12:34] - Flutter UI Architect (Claude)
+- **Triggered By:** GitHub: komilkomil3000-afk | System: komeil
+- **Target Component(s):** app
+- **Files Modified / Created / Deleted:**
+  - `pp/lib/screens/chat/chat_cards.dart` (Modified)
+  - `app/lib/screens/chat/chat_conversation_screen.dart` (Modified)
+  - `app/lib/screens/chat/chat_groups_screen.dart` (Modified)
+  - `app/lib/screens/chat/chat_home_screen.dart` (Modified)
+  - `app/lib/screens/chat/chat_profile_screen.dart` (Modified)
+  - `app/lib/screens/chat/chat_theme.dart` (Modified)
+  - `app/lib/screens/chat/chat_topic_info_screen.dart` (Modified)
+- **Description of Changes:**
+  - Phase 2C chat harmony (chat module only, NopaModalShell intentionally not used): replaced the 7 non-rounded chat icons with _rounded equivalents (chat_cards.dart, chat_conversation_screen.dart, chat_topic_info_screen.dart)
+  - added ChatTheme.dialogShape and ChatTheme.sheetShape (chat_theme.dart) and applied them to all 7 chat AlertDialogs and 7 bottom sheets (previously M3 default radius 28 / mixed 24-28, no stroke)
+  - chat search dialog now uses chatField() input and ChatButton instead of a raw accent TextButton
+  - chat bubble colours, message menu and popup left unchanged pending decision on incoming-bubble tone
+- **Verification / Checkpoints Executed:**
+  - flutter analyze run from app/ : 0 issues; grep shows no non-rounded Icons.* left in screens/chat and every chat sheet/AlertDialog uses the shared shape
+- **Status:** Completed
+
+### [2026-11-03 12:38] - Flutter UI Architect (Claude)
+- **Triggered By:** GitHub: komilkomil3000-afk | System: komeil
+- **Target Component(s):** app
+- **Files Modified / Created / Deleted:**
+  - `app/test/nopa_shared_widgets_test.dart` (Created)
+- **Description of Changes:**
+  - Added app/test/nopa_shared_widgets_test.dart: 6 widget tests covering NopaModalShell (title/child/actions, disabled action, loading action, showNopaModal returning the popped value) and NopaPillTabs (tap callback, expand width)
+  - Final verification run of the whole modal/route/tab cleanup
+- **Verification / Checkpoints Executed:**
+  - flutter analyze run from app/ : 0 issues; flutter test: all 25 tests passed (19 existing + 6 new)
+- **Status:** Completed
+
+### [2026-11-03 12:54] - Flutter UI Architect (Claude)
+- **Triggered By:** GitHub: komilkomil3000-afk | System: komeil
+- **Target Component(s):** app
+- **Files Modified / Created / Deleted:**
+  - `GENT_CHANGELOG.md` (Modified)
+  - `app/lib/screens/auth/login_screen.dart` (Modified)
+  - `app/lib/screens/market/market_screen.dart` (Modified)
+  - `app/lib/screens/mentor/academy/mentor_station_class1_screen.dart` (Modified)
+  - `app/lib/screens/mentor/challenges/mentor_challenge_grading_screen.dart` (Modified)
+  - `app/lib/screens/mentor/challenges/mentor_challenges_screen.dart` (Modified)
+  - `app/lib/screens/mentor/home/mentor_home_screen.dart` (Modified)
+  - `app/lib/screens/mentor/profile/mentor_caravans_roster_screen.dart` (Modified)
+  - `app/lib/screens/mentor/profile/mentor_edit_profile_screen.dart` (Modified)
+  - `app/lib/screens/mentor/profile/mentor_profile_screen.dart` (Modified)
+  - `app/lib/screens/student/academy/student_class1_screen.dart` (Modified)
+  - `app/lib/screens/student/academy/student_class2_screen.dart` (Modified)
+  - `app/lib/screens/student/challenges/student_challenges_screen.dart` (Modified)
+  - `app/lib/screens/student/messages/student_notifications_screen.dart` (Modified)
+  - `app/lib/screens/student/profile/student_certificate_detail_screen.dart` (Modified)
+  - `app/lib/screens/student/profile/student_certificates_screen.dart` (Modified)
+  - `app/lib/screens/student/profile/student_edit_profile_screen.dart` (Modified)
+  - `app/lib/screens/student/profile/student_profile_screen.dart` (Modified)
+  - `app/lib/widgets/app_top_bar.dart` (Modified)
+  - `app/lib/widgets/contact_us_dialog.dart` (Modified)
+  - `app/lib/widgets/custom_drawer.dart` (Modified)
+  - `app/lib/widgets/nopa_inline_video_player.dart` (Modified)
+  - `app/test/nopa_shared_widgets_test.dart` (Created)
+- **Description of Changes:**
+  - Token consistency: replaced 154 single-line raw colour literals that exactly equal existing tokens with AppColors.buttonCamel (0xFFC09268), AppColors.buttonCancelPurple (0xFF9E9CD6) and AppColors.accentGoldEnd (0xFFE1BC96) across 21 files in screens/ and widgets/
+  - values identical so no visual or runtime change
+  - core/theme/app_colors.dart and the few multi-line literals left untouched
+- **Verification / Checkpoints Executed:**
+  - flutter analyze run from app/ : 0 issues; flutter test: all 25 passed
+- **Status:** Completed
+
+### [2026-11-03 13:04] - Flutter UI Typography Architect (Claude)
+- **Triggered By:** GitHub: komilkomil3000-afk | System: komeil
+- **Target Component(s):** app
+- **Files Modified / Created / Deleted:**
+  - `pp/lib/core/theme/app_typography.dart` (Modified)
+  - `app/lib/screens/student/home/student_home_screen.dart` (Modified)
+- **Description of Changes:**
+  - Added unified typography tokens (h1/h2/h3/bodyLarge/bodyMedium/caption + Gold/Muted/Dark variants) to app_typography.dart, kept legacy tokens
+  - migrated student_home_screen.dart raw TextStyles to AppTypography tokens (no logic changes)
+- **Verification / Checkpoints Executed:**
+  - flutter analyze on app_typography.dart, student_home_screen.dart: no issues
+- **Status:** In Progress
+
+### [2026-11-03 13:12] - Flutter UI Typography Architect (Claude)
+- **Triggered By:** GitHub: komilkomil3000-afk | System: komeil
+- **Target Component(s):** app
+- **Files Modified / Created / Deleted:**
+  - `GENT_CHANGELOG.md` (Modified)
+  - `app/lib/core/theme/app_typography.dart` (Modified)
+  - `app/lib/screens/auth/login_screen.dart` (Modified)
+  - `app/lib/screens/chat/chat_conversation_screen.dart` (Modified)
+  - `app/lib/screens/chat/chat_home_screen.dart` (Modified)
+  - `app/lib/screens/chat/chat_message_bubble.dart` (Modified)
+  - `app/lib/screens/chat/chat_message_menu.dart` (Modified)
+  - `app/lib/screens/chat/chat_profile_screen.dart` (Modified)
+  - `app/lib/screens/chat/chat_widgets.dart` (Modified)
+  - `app/lib/screens/market/market_screen.dart` (Modified)
+  - `app/lib/screens/mentor/academy/mentor_station_class1_screen.dart` (Modified)
+  - `app/lib/screens/mentor/challenges/mentor_challenge_grading_screen.dart` (Modified)
+  - `app/lib/screens/mentor/challenges/mentor_challenges_screen.dart` (Modified)
+  - `app/lib/screens/mentor/home/mentor_home_screen.dart` (Modified)
+  - `app/lib/screens/mentor/profile/mentor_caravans_roster_screen.dart` (Modified)
+  - `app/lib/screens/mentor/profile/mentor_edit_profile_screen.dart` (Modified)
+  - `app/lib/screens/mentor/profile/mentor_profile_screen.dart` (Modified)
+  - `app/lib/screens/student/academy/student_academy_roadmap_screen.dart` (Modified)
+  - `app/lib/screens/student/academy/student_class1_screen.dart` (Modified)
+  - `app/lib/screens/student/academy/student_class2_screen.dart` (Modified)
+  - `app/lib/screens/student/challenges/student_challenges_screen.dart` (Modified)
+  - `app/lib/screens/student/home/student_home_screen.dart` (Modified)
+  - `app/lib/screens/student/messages/student_notifications_screen.dart` (Modified)
+  - `app/lib/screens/student/profile/student_certificate_detail_screen.dart` (Modified)
+  - `app/lib/screens/student/profile/student_certificates_screen.dart` (Modified)
+  - `app/lib/screens/student/profile/student_edit_profile_screen.dart` (Modified)
+  - `app/lib/screens/student/profile/student_profile_screen.dart` (Modified)
+  - `app/lib/widgets/app_toast.dart` (Modified)
+  - `app/lib/widgets/app_top_bar.dart` (Modified)
+  - `app/lib/widgets/avatar_picker_sheet.dart` (Modified)
+  - `app/lib/widgets/bottom_nav_bar.dart` (Modified)
+  - `app/lib/widgets/challenge_submission_dialog.dart` (Modified)
+  - `app/lib/widgets/contact_us_dialog.dart` (Modified)
+  - `app/lib/widgets/custom_drawer.dart` (Modified)
+  - `app/lib/widgets/education_calendar.dart` (Modified)
+  - `app/lib/widgets/home_challenges_section.dart` (Modified)
+  - `app/lib/widgets/jarchi_item.dart` (Modified)
+  - `app/lib/widgets/nopa_inline_video_player.dart` (Modified)
+  - `app/lib/widgets/nopa_modal_shell.dart` (Modified)
+  - `app/lib/widgets/nopa_pill_tabs.dart` (Modified)
+  - `app/lib/widgets/station_card.dart` (Modified)
+  - `app/lib/widgets/station_progress_stepper.dart` (Modified)
+  - `app/lib/widgets/support_message_dialog.dart` (Modified)
+- **Description of Changes:**
+  - Migrated ~560 raw TextStyle literals across screens and widgets to AppTypography tokens (h1/h2/h3/bodyLarge/bodyMedium/caption) via a size/weight codemod
+  - extras kept via copyWith
+  - literals with no explicit colour or non-literal size left untouched
+  - mentor home section headers set to h1
+  - no business-logic changes
+  - verified background gradient is applied by AppScaffold/app_shell on non-chat screens
+- **Verification / Checkpoints Executed:**
+  - flutter analyze (from app/): No issues found
+- **Status:** Completed
+
+### [2026-11-03 13:26] - Flutter UI Typography Architect (Claude)
+- **Triggered By:** GitHub: komilkomil3000-afk | System: komeil
+- **Target Component(s):** app
+- **Files Modified / Created / Deleted:**
+  - `GENT_CHANGELOG.md` (Modified)
+  - `app/lib/core/theme/app_typography.dart` (Modified)
+  - `app/lib/screens/auth/login_screen.dart` (Modified)
+  - `app/lib/screens/chat/chat_conversation_screen.dart` (Modified)
+  - `app/lib/screens/chat/chat_home_screen.dart` (Modified)
+  - `app/lib/screens/chat/chat_message_bubble.dart` (Modified)
+  - `app/lib/screens/chat/chat_message_menu.dart` (Modified)
+  - `app/lib/screens/chat/chat_profile_screen.dart` (Modified)
+  - `app/lib/screens/chat/chat_widgets.dart` (Modified)
+  - `app/lib/screens/market/market_screen.dart` (Modified)
+  - `app/lib/screens/mentor/academy/mentor_station_class1_screen.dart` (Modified)
+  - `app/lib/screens/mentor/challenges/mentor_challenge_grading_screen.dart` (Modified)
+  - `app/lib/screens/mentor/challenges/mentor_challenges_screen.dart` (Modified)
+  - `app/lib/screens/mentor/home/mentor_home_screen.dart` (Modified)
+  - `app/lib/screens/mentor/profile/mentor_caravans_roster_screen.dart` (Modified)
+  - `app/lib/screens/mentor/profile/mentor_edit_profile_screen.dart` (Modified)
+  - `app/lib/screens/mentor/profile/mentor_profile_screen.dart` (Modified)
+  - `app/lib/screens/student/academy/student_academy_roadmap_screen.dart` (Modified)
+  - `app/lib/screens/student/academy/student_class1_screen.dart` (Modified)
+  - `app/lib/screens/student/academy/student_class2_screen.dart` (Modified)
+  - `app/lib/screens/student/challenges/student_challenges_screen.dart` (Modified)
+  - `app/lib/screens/student/home/student_home_screen.dart` (Modified)
+  - `app/lib/screens/student/messages/student_notifications_screen.dart` (Modified)
+  - `app/lib/screens/student/profile/student_certificate_detail_screen.dart` (Modified)
+  - `app/lib/screens/student/profile/student_certificates_screen.dart` (Modified)
+  - `app/lib/screens/student/profile/student_edit_profile_screen.dart` (Modified)
+  - `app/lib/screens/student/profile/student_profile_screen.dart` (Modified)
+  - `app/lib/widgets/app_toast.dart` (Modified)
+  - `app/lib/widgets/app_top_bar.dart` (Modified)
+  - `app/lib/widgets/avatar_picker_sheet.dart` (Modified)
+  - `app/lib/widgets/bottom_nav_bar.dart` (Modified)
+  - `app/lib/widgets/challenge_submission_dialog.dart` (Modified)
+  - `app/lib/widgets/contact_us_dialog.dart` (Modified)
+  - `app/lib/widgets/custom_drawer.dart` (Modified)
+  - `app/lib/widgets/education_calendar.dart` (Modified)
+  - `app/lib/widgets/home_challenges_section.dart` (Modified)
+  - `app/lib/widgets/jarchi_item.dart` (Modified)
+  - `app/lib/widgets/nopa_inline_video_player.dart` (Modified)
+  - `app/lib/widgets/nopa_modal_shell.dart` (Modified)
+  - `app/lib/widgets/nopa_pill_tabs.dart` (Modified)
+  - `app/lib/widgets/station_card.dart` (Modified)
+  - `app/lib/widgets/station_progress_stepper.dart` (Modified)
+  - `app/lib/widgets/support_message_dialog.dart` (Modified)
+- **Description of Changes:**
+  - Mentor home headers 'سرمایه های کاروان'/'دسترسی سریع' -> h3 (match روزمان)
+  - calendar weekday label wrapped in single-line FittedBox
+  - drawer items -> bodyLarge. Items 4 (top badge) and 5 (dashboard labels) pending clarification
+- **Verification / Checkpoints Executed:**
+  - flutter analyze (app/): No issues found
+- **Status:** In Progress
+
+### [2026-11-03 13:33] - Flutter UI Typography Architect (Claude)
+- **Triggered By:** GitHub: komilkomil3000-afk | System: komeil
+- **Target Component(s):** app
+- **Files Modified / Created / Deleted:**
+  - `GENT_CHANGELOG.md` (Modified)
+  - `app/lib/core/theme/app_typography.dart` (Modified)
+  - `app/lib/screens/auth/login_screen.dart` (Modified)
+  - `app/lib/screens/chat/chat_conversation_screen.dart` (Modified)
+  - `app/lib/screens/chat/chat_home_screen.dart` (Modified)
+  - `app/lib/screens/chat/chat_message_bubble.dart` (Modified)
+  - `app/lib/screens/chat/chat_message_menu.dart` (Modified)
+  - `app/lib/screens/chat/chat_profile_screen.dart` (Modified)
+  - `app/lib/screens/chat/chat_widgets.dart` (Modified)
+  - `app/lib/screens/market/market_screen.dart` (Modified)
+  - `app/lib/screens/mentor/academy/mentor_station_class1_screen.dart` (Modified)
+  - `app/lib/screens/mentor/challenges/mentor_challenge_grading_screen.dart` (Modified)
+  - `app/lib/screens/mentor/challenges/mentor_challenges_screen.dart` (Modified)
+  - `app/lib/screens/mentor/home/mentor_home_screen.dart` (Modified)
+  - `app/lib/screens/mentor/profile/mentor_caravans_roster_screen.dart` (Modified)
+  - `app/lib/screens/mentor/profile/mentor_edit_profile_screen.dart` (Modified)
+  - `app/lib/screens/mentor/profile/mentor_profile_screen.dart` (Modified)
+  - `app/lib/screens/student/academy/student_academy_roadmap_screen.dart` (Modified)
+  - `app/lib/screens/student/academy/student_class1_screen.dart` (Modified)
+  - `app/lib/screens/student/academy/student_class2_screen.dart` (Modified)
+  - `app/lib/screens/student/challenges/student_challenges_screen.dart` (Modified)
+  - `app/lib/screens/student/home/student_home_screen.dart` (Modified)
+  - `app/lib/screens/student/messages/student_notifications_screen.dart` (Modified)
+  - `app/lib/screens/student/profile/student_certificate_detail_screen.dart` (Modified)
+  - `app/lib/screens/student/profile/student_certificates_screen.dart` (Modified)
+  - `app/lib/screens/student/profile/student_edit_profile_screen.dart` (Modified)
+  - `app/lib/screens/student/profile/student_profile_screen.dart` (Modified)
+  - `app/lib/widgets/app_toast.dart` (Modified)
+  - `app/lib/widgets/app_top_bar.dart` (Modified)
+  - `app/lib/widgets/avatar_picker_sheet.dart` (Modified)
+  - `app/lib/widgets/bottom_nav_bar.dart` (Modified)
+  - `app/lib/widgets/challenge_submission_dialog.dart` (Modified)
+  - `app/lib/widgets/contact_us_dialog.dart` (Modified)
+  - `app/lib/widgets/custom_drawer.dart` (Modified)
+  - `app/lib/widgets/education_calendar.dart` (Modified)
+  - `app/lib/widgets/home_challenges_section.dart` (Modified)
+  - `app/lib/widgets/jarchi_item.dart` (Modified)
+  - `app/lib/widgets/nopa_inline_video_player.dart` (Modified)
+  - `app/lib/widgets/nopa_modal_shell.dart` (Modified)
+  - `app/lib/widgets/nopa_pill_tabs.dart` (Modified)
+  - `app/lib/widgets/station_card.dart` (Modified)
+  - `app/lib/widgets/station_progress_stepper.dart` (Modified)
+  - `app/lib/widgets/support_message_dialog.dart` (Modified)
+- **Description of Changes:**
+  - Home info tags and station stat titles -> bodyMedium in single-line FittedBox(scaleDown)
+  - mentor quick-access tile titles -> bodyMedium
+  - chat message action menu labels -> bodyMedium to match chat filter tabs
+- **Verification / Checkpoints Executed:**
+  - flutter analyze (app/): No issues found
+- **Status:** Completed
+
+### [2026-11-03 13:36] - Flutter UI Typography Architect (Claude)
+- **Triggered By:** GitHub: komilkomil3000-afk | System: komeil
+- **Target Component(s):** app
+- **Files Modified / Created / Deleted:**
+  - `GENT_CHANGELOG.md` (Modified)
+  - `app/lib/core/theme/app_typography.dart` (Modified)
+  - `app/lib/screens/auth/login_screen.dart` (Modified)
+  - `app/lib/screens/chat/chat_conversation_screen.dart` (Modified)
+  - `app/lib/screens/chat/chat_home_screen.dart` (Modified)
+  - `app/lib/screens/chat/chat_message_bubble.dart` (Modified)
+  - `app/lib/screens/chat/chat_message_menu.dart` (Modified)
+  - `app/lib/screens/chat/chat_profile_screen.dart` (Modified)
+  - `app/lib/screens/chat/chat_widgets.dart` (Modified)
+  - `app/lib/screens/market/market_screen.dart` (Modified)
+  - `app/lib/screens/mentor/academy/mentor_station_class1_screen.dart` (Modified)
+  - `app/lib/screens/mentor/challenges/mentor_challenge_grading_screen.dart` (Modified)
+  - `app/lib/screens/mentor/challenges/mentor_challenges_screen.dart` (Modified)
+  - `app/lib/screens/mentor/home/mentor_home_screen.dart` (Modified)
+  - `app/lib/screens/mentor/profile/mentor_caravans_roster_screen.dart` (Modified)
+  - `app/lib/screens/mentor/profile/mentor_edit_profile_screen.dart` (Modified)
+  - `app/lib/screens/mentor/profile/mentor_profile_screen.dart` (Modified)
+  - `app/lib/screens/student/academy/student_academy_roadmap_screen.dart` (Modified)
+  - `app/lib/screens/student/academy/student_class1_screen.dart` (Modified)
+  - `app/lib/screens/student/academy/student_class2_screen.dart` (Modified)
+  - `app/lib/screens/student/challenges/student_challenges_screen.dart` (Modified)
+  - `app/lib/screens/student/home/student_home_screen.dart` (Modified)
+  - `app/lib/screens/student/messages/student_notifications_screen.dart` (Modified)
+  - `app/lib/screens/student/profile/student_certificate_detail_screen.dart` (Modified)
+  - `app/lib/screens/student/profile/student_certificates_screen.dart` (Modified)
+  - `app/lib/screens/student/profile/student_edit_profile_screen.dart` (Modified)
+  - `app/lib/screens/student/profile/student_profile_screen.dart` (Modified)
+  - `app/lib/widgets/app_toast.dart` (Modified)
+  - `app/lib/widgets/app_top_bar.dart` (Modified)
+  - `app/lib/widgets/avatar_picker_sheet.dart` (Modified)
+  - `app/lib/widgets/bottom_nav_bar.dart` (Modified)
+  - `app/lib/widgets/challenge_submission_dialog.dart` (Modified)
+  - `app/lib/widgets/contact_us_dialog.dart` (Modified)
+  - `app/lib/widgets/custom_drawer.dart` (Modified)
+  - `app/lib/widgets/education_calendar.dart` (Modified)
+  - `app/lib/widgets/home_challenges_section.dart` (Modified)
+  - `app/lib/widgets/jarchi_item.dart` (Modified)
+  - `app/lib/widgets/nopa_inline_video_player.dart` (Modified)
+  - `app/lib/widgets/nopa_modal_shell.dart` (Modified)
+  - `app/lib/widgets/nopa_pill_tabs.dart` (Modified)
+  - `app/lib/widgets/station_card.dart` (Modified)
+  - `app/lib/widgets/station_progress_stepper.dart` (Modified)
+  - `app/lib/widgets/support_message_dialog.dart` (Modified)
+- **Description of Changes:**
+  - Added AppTypography.logo (ChochoAura only) and restored it on NOPA wordmark in app_top_bar and chat_home_screen (earlier codemod had dropped the Chocho font)
+  - restored certificate NOPA size 26
+  - unified challenge card titles and class session titles to AppTypography.h3 (student/mentor challenges, home challenges section, student class2, mentor station class)
+- **Verification / Checkpoints Executed:**
+  - flutter analyze (app/): No issues found
+- **Status:** Completed
+
+### [2026-11-03 13:38] - Flutter UI Typography Architect (Claude)
+- **Triggered By:** GitHub: komilkomil3000-afk | System: komeil
+- **Target Component(s):** app
+- **Files Modified / Created / Deleted:**
+  - `GENT_CHANGELOG.md` (Modified)
+  - `app/lib/core/theme/app_typography.dart` (Modified)
+  - `app/lib/screens/auth/login_screen.dart` (Modified)
+  - `app/lib/screens/chat/chat_conversation_screen.dart` (Modified)
+  - `app/lib/screens/chat/chat_home_screen.dart` (Modified)
+  - `app/lib/screens/chat/chat_message_bubble.dart` (Modified)
+  - `app/lib/screens/chat/chat_message_menu.dart` (Modified)
+  - `app/lib/screens/chat/chat_profile_screen.dart` (Modified)
+  - `app/lib/screens/chat/chat_widgets.dart` (Modified)
+  - `app/lib/screens/market/market_screen.dart` (Modified)
+  - `app/lib/screens/mentor/academy/mentor_station_class1_screen.dart` (Modified)
+  - `app/lib/screens/mentor/challenges/mentor_challenge_grading_screen.dart` (Modified)
+  - `app/lib/screens/mentor/challenges/mentor_challenges_screen.dart` (Modified)
+  - `app/lib/screens/mentor/home/mentor_home_screen.dart` (Modified)
+  - `app/lib/screens/mentor/profile/mentor_caravans_roster_screen.dart` (Modified)
+  - `app/lib/screens/mentor/profile/mentor_edit_profile_screen.dart` (Modified)
+  - `app/lib/screens/mentor/profile/mentor_profile_screen.dart` (Modified)
+  - `app/lib/screens/student/academy/student_academy_roadmap_screen.dart` (Modified)
+  - `app/lib/screens/student/academy/student_class1_screen.dart` (Modified)
+  - `app/lib/screens/student/academy/student_class2_screen.dart` (Modified)
+  - `app/lib/screens/student/challenges/student_challenges_screen.dart` (Modified)
+  - `app/lib/screens/student/home/student_home_screen.dart` (Modified)
+  - `app/lib/screens/student/messages/student_notifications_screen.dart` (Modified)
+  - `app/lib/screens/student/profile/student_certificate_detail_screen.dart` (Modified)
+  - `app/lib/screens/student/profile/student_certificates_screen.dart` (Modified)
+  - `app/lib/screens/student/profile/student_edit_profile_screen.dart` (Modified)
+  - `app/lib/screens/student/profile/student_profile_screen.dart` (Modified)
+  - `app/lib/widgets/app_toast.dart` (Modified)
+  - `app/lib/widgets/app_top_bar.dart` (Modified)
+  - `app/lib/widgets/avatar_picker_sheet.dart` (Modified)
+  - `app/lib/widgets/bottom_nav_bar.dart` (Modified)
+  - `app/lib/widgets/challenge_submission_dialog.dart` (Modified)
+  - `app/lib/widgets/contact_us_dialog.dart` (Modified)
+  - `app/lib/widgets/custom_drawer.dart` (Modified)
+  - `app/lib/widgets/education_calendar.dart` (Modified)
+  - `app/lib/widgets/home_challenges_section.dart` (Modified)
+  - `app/lib/widgets/jarchi_item.dart` (Modified)
+  - `app/lib/widgets/nopa_inline_video_player.dart` (Modified)
+  - `app/lib/widgets/nopa_modal_shell.dart` (Modified)
+  - `app/lib/widgets/nopa_pill_tabs.dart` (Modified)
+  - `app/lib/widgets/station_card.dart` (Modified)
+  - `app/lib/widgets/station_progress_stepper.dart` (Modified)
+  - `app/lib/widgets/support_message_dialog.dart` (Modified)
+- **Description of Changes:**
+  - Removed caravan-name text under header icons in app_top_bar.dart (bell/menu buttons unchanged
+  - mentor home caravan selector card untouched)
+- **Verification / Checkpoints Executed:**
+  - flutter analyze (app/): No issues found
+- **Status:** Completed
+
+### [2026-11-03 13:54] - Flutter UI Architect (Claude)
+- **Triggered By:** GitHub: komilkomil3000-afk | System: komeil
+- **Target Component(s):** app
+- **Files Modified / Created / Deleted:**
+  - `pp/lib/screens/chat/chat_home_screen.dart` (Modified)
+  - `app/lib/screens/chat/chat_message_bubble.dart` (Modified)
+  - `app/lib/screens/chat/chat_theme.dart` (Modified)
+  - `app/lib/screens/mentor/challenges/mentor_challenges_screen.dart` (Modified)
+  - `app/lib/screens/student/challenges/student_challenges_screen.dart` (Modified)
+- **Description of Changes:**
+  - GROUP 1 chat polish: (1) incoming/gold bubble re-tuned to a camel palette slightly brighter than the header (ChatTheme.goldFill/goldFillDeep, bronze stroke, tail colours) with a 3-tone text hierarchy goldInk (body) / goldTitle (sender, titles, links, icons, info chips, audio) / goldMeta (time, ticks, captions), applied across chat_theme.dart and chat_message_bubble.dart
+  - (2) chat_home_screen.dart: filter tabs (همه، چالش ها، شخصی، دورهمی، آموزگاه) now a PageView with one page per filter, swipe and header-tab tap stay in sync (PageController, tap-animation guard), RTL page order
+  - (3) removed the 'ایجاد پیام' button and its now-dead _showCreateMessageDialog from student_challenges_screen.dart and mentor_challenges_screen.dart (the button lived in the Challenges tab screens, not inside chat), plus two imports only it used
+  - no API/repository changes
+- **Verification / Checkpoints Executed:**
+  - flutter analyze run from app/ : 0 issues; flutter test: 25 passed; dart format NOT run (per instruction)
+- **Status:** Completed
+
+### [2026-11-03 14:05] - Flutter UI Architect (Claude)
+- **Triggered By:** GitHub: komilkomil3000-afk | System: komeil
+- **Target Component(s):** app, admin_panel
+- **Files Modified / Created / Deleted:**
+  - `GENT_CHANGELOG.md` (Modified)
+  - `admin_panel/src/modules/chat/profiles.ts` (Modified)
+  - `app/lib/screens/chat/chat_conversation_screen.dart` (Modified)
+  - `app/lib/screens/chat/chat_home_screen.dart` (Modified)
+  - `app/lib/screens/chat/chat_message_bubble.dart` (Modified)
+  - `app/lib/screens/chat/chat_profile_screen.dart` (Modified)
+  - `app/lib/screens/chat/chat_theme.dart` (Modified)
+  - `app/lib/screens/chat/chat_topic_info_screen.dart` (Modified)
+  - `app/lib/screens/market/market_screen.dart` (Modified)
+  - `app/lib/screens/mentor/academy/mentor_station_class1_screen.dart` (Modified)
+  - `app/lib/screens/mentor/challenges/mentor_challenge_grading_screen.dart` (Modified)
+  - `app/lib/screens/mentor/challenges/mentor_challenges_screen.dart` (Modified)
+  - `app/lib/screens/student/challenges/student_challenges_screen.dart` (Modified)
+  - `app/lib/screens/student/profile/student_profile_screen.dart` (Modified)
+  - `app/lib/services/chat_repository.dart` (Modified)
+  - `app/lib/widgets/safe_avatar.dart` (Modified)
+  - `app/lib/widgets/zoomable_avatar.dart` (Created)
+- **Description of Changes:**
+  - GROUP 2 profile/media/avatars: (4) own-message avatar tap now opens the member profile (chat_conversation_screen.dart), evaluation participant rows open profiles (chat_topic_info_screen.dart), new widgets/zoomable_avatar.dart (ZoomableAvatar + AvatarViewer: full-screen InteractiveViewer pinch/pan, double-tap zoom, handles bundled asset: and uploaded pictures) used on the chat member profile and the own profile enlarged avatar (student_profile_screen.dart)
+  - (5) chat_profile_screen.dart: assets row zarik/kalaf/ghalicheh/derafsh shown for any profile the server sends them for, mentor with all zeros hidden, own-profile fallback to local balances
+  - (6) shared-media tabs: per-tab window of 9 items revealed on scroll (listener on page ScrollPosition, fill-if-short check), next page fetched via new chat_repository.media(before, limit) only when held items are exhausted, de-dup by id so an old server just ends the list
+  - backend admin_panel/src/modules/chat/profiles.ts spaceMedia gained optional 'before' and 'limit' query params (additive, backward compatible
+  - needs deploy for >60 items)
+  - (7) avatar sync: SafeAvatar now prefers the user's chosen picture over the mentor gender default and exposes SafeAvatar.sourceFor
+  - real avatars on leaderboard podium (members tab), market members report and exchange cards, challenge submissions report, and members training report (which could not show bundled asset: avatars) via the already-returned avatarUrl fields
+- **Verification / Checkpoints Executed:**
+  - flutter analyze run from app/ : 0 issues; flutter test: 25 passed; npx tsc --noEmit in admin_panel: exit 0; dart format NOT run
+- **Status:** Completed
+
+### [2026-11-03 14:11] - Flutter UI Typography Architect (Claude)
+- **Triggered By:** GitHub: komilkomil3000-afk | System: komeil
+- **Target Component(s):** app
+- **Files Modified / Created / Deleted:**
+  - `GENT_CHANGELOG.md` (Modified)
+  - `admin_panel/src/modules/chat/profiles.ts` (Modified)
+  - `app/lib/screens/chat/chat_conversation_screen.dart` (Modified)
+  - `app/lib/screens/chat/chat_home_screen.dart` (Modified)
+  - `app/lib/screens/chat/chat_message_bubble.dart` (Modified)
+  - `app/lib/screens/chat/chat_profile_screen.dart` (Modified)
+  - `app/lib/screens/chat/chat_theme.dart` (Modified)
+  - `app/lib/screens/chat/chat_topic_info_screen.dart` (Modified)
+  - `app/lib/screens/market/market_screen.dart` (Modified)
+  - `app/lib/screens/mentor/academy/mentor_station_class1_screen.dart` (Modified)
+  - `app/lib/screens/mentor/challenges/mentor_challenge_grading_screen.dart` (Modified)
+  - `app/lib/screens/mentor/challenges/mentor_challenges_screen.dart` (Modified)
+  - `app/lib/screens/mentor/home/mentor_home_screen.dart` (Modified)
+  - `app/lib/screens/student/challenges/student_challenges_screen.dart` (Modified)
+  - `app/lib/screens/student/home/student_home_screen.dart` (Modified)
+  - `app/lib/screens/student/profile/student_profile_screen.dart` (Modified)
+  - `app/lib/services/chat_repository.dart` (Modified)
+  - `app/lib/widgets/safe_avatar.dart` (Modified)
+  - `app/lib/screens/chat/chat_voice_composer.dart` (Created)
+  - `app/lib/screens/chat/chat_waveform.dart` (Created)
+  - `app/lib/widgets/zoomable_avatar.dart` (Created)
+  - `app/test/chat_waveform_test.dart` (Created)
+- **Description of Changes:**
+  - Aligned mentor panel typography with student panel: student home section headers set to h3 (same as mentor), remaining raw TextStyles in mentor home/station/grading screens converted to AppTypography tokens
+- **Verification / Checkpoints Executed:**
+  - flutter analyze (app/): No issues found
+- **Status:** Completed
+
+### [2026-11-03 14:12] - Flutter UI Architect (Claude)
+- **Triggered By:** GitHub: komilkomil3000-afk | System: komeil
+- **Target Component(s):** app
+- **Files Modified / Created / Deleted:**
+  - `GENT_CHANGELOG.md` (Modified)
+  - `admin_panel/src/modules/chat/profiles.ts` (Modified)
+  - `app/lib/screens/chat/chat_conversation_screen.dart` (Modified)
+  - `app/lib/screens/chat/chat_home_screen.dart` (Modified)
+  - `app/lib/screens/chat/chat_message_bubble.dart` (Modified)
+  - `app/lib/screens/chat/chat_profile_screen.dart` (Modified)
+  - `app/lib/screens/chat/chat_theme.dart` (Modified)
+  - `app/lib/screens/chat/chat_topic_info_screen.dart` (Modified)
+  - `app/lib/screens/market/market_screen.dart` (Modified)
+  - `app/lib/screens/mentor/academy/mentor_station_class1_screen.dart` (Modified)
+  - `app/lib/screens/mentor/challenges/mentor_challenge_grading_screen.dart` (Modified)
+  - `app/lib/screens/mentor/challenges/mentor_challenges_screen.dart` (Modified)
+  - `app/lib/screens/mentor/home/mentor_home_screen.dart` (Modified)
+  - `app/lib/screens/student/challenges/student_challenges_screen.dart` (Modified)
+  - `app/lib/screens/student/home/student_home_screen.dart` (Modified)
+  - `app/lib/screens/student/profile/student_profile_screen.dart` (Modified)
+  - `app/lib/services/chat_repository.dart` (Modified)
+  - `app/lib/widgets/safe_avatar.dart` (Modified)
+  - `app/lib/screens/chat/chat_voice_composer.dart` (Created)
+  - `app/lib/screens/chat/chat_waveform.dart` (Created)
+  - `app/lib/widgets/zoomable_avatar.dart` (Created)
+  - `app/test/chat_waveform_test.dart` (Created)
+- **Description of Changes:**
+  - GROUP 3 voice engine: new screens/chat/chat_voice_composer.dart (ChatVoiceComposer): recording hard-capped at 60s with auto-stop, live amplitude waveform and timer, NO auto-send
+  - pause/stop (or the limit) stages the clip
+  - staging step has playback preview with waveform scrubbing, delete, optional caption, explicit send button and a confirmation dialog 'آیا از ارسال پیام مطمئن هستید؟' before dispatch
+  - clips under 0.8s are dropped as accidental
+  - new screens/chat/chat_waveform.dart (ChatWaveform): amplitude bars with tap/drag seeking (timeline always LTR), downsample, bars packed into the upload file name as base36 (voice-<ts>~<bars>.m4a, no backend change since the name is stored raw up to 200 chars) with decodePeaks on the receiving side and a stable seeded pseudoPeaks stand-in for older voices
+  - ChatAudioPlayer (chat_message_bubble.dart) now draws the waveform instead of LinearProgressIndicator, supports scrub/seek before and during playback, position / duration label, local filePath/colour/width options used by the composer preview
+  - chat_conversation_screen.dart: old one-tap record-and-send (_recorder/_recording/_toggleRecording) replaced by _voiceMode + _sendVoice (uploads, sends caption as message body)
+  - chat_profile_screen.dart voice sheet passes bars to the player
+  - added test/chat_waveform_test.dart (7 tests)
+- **Verification / Checkpoints Executed:**
+  - flutter analyze run from app/ : 0 issues; flutter test: 32 passed (two consecutive full runs; one earlier run had a transient widget_test.dart load failure that did not reproduce); microphone recording itself not testable headless and not run on a device; dart format NOT run
+- **Status:** Completed
+
+### [2026-11-03 14:39] - Flutter UI Typography Architect (Claude)
+- **Triggered By:** GitHub: komilkomil3000-afk | System: komeil
+- **Target Component(s):** app
+- **Files Modified / Created / Deleted:**
+  - `pp/lib/screens/market/market_screen.dart` (Modified)
+  - `app/lib/screens/mentor/academy/mentor_station_class1_screen.dart` (Modified)
+- **Description of Changes:**
+  - Market member-report names -> h3 (same token as challenge card and session titles)
+  - mentor quiz report title -> h3 to mirror student class quiz headers. Audit: mentor challenge/session/part/class tokens already identical to student counterparts
+- **Verification / Checkpoints Executed:**
+  - flutter analyze (app/): No issues found
+- **Status:** Completed
+
+### [2026-11-03 14:43] - Flutter UI Typography Architect (Claude)
+- **Triggered By:** GitHub: komilkomil3000-afk | System: komeil
+- **Target Component(s):** app
+- **Files Modified / Created / Deleted:**
+  - `GENT_CHANGELOG.md` (Modified)
+  - `app/lib/screens/market/market_screen.dart` (Modified)
+  - `app/lib/screens/mentor/academy/mentor_station_class1_screen.dart` (Modified)
+  - `app/lib/screens/mentor/challenges/mentor_challenges_screen.dart` (Modified)
+- **Description of Changes:**
+  - Scaled mentor typography down: challenge card titles -> bodyMedium w600
+  - class/report headers h2/h1 -> h3 (height 1.25)
+  - session titles h3 height 1.25 single-line
+  - quiz/part labels -> caption muted single-line ellipsis
+- **Verification / Checkpoints Executed:**
+  - flutter analyze (app/): No issues found
+- **Status:** Completed
+
+### [2026-11-03 14:54] - Flutter UI Typography Architect (Claude)
+- **Triggered By:** GitHub: komilkomil3000-afk | System: komeil
+- **Target Component(s):** app
+- **Files Modified / Created / Deleted:**
+  - `GENT_CHANGELOG.md` (Modified)
+  - `app/lib/core/theme/app_typography.dart` (Modified)
+  - `app/lib/screens/market/market_screen.dart` (Modified)
+  - `app/lib/screens/mentor/academy/mentor_station_class1_screen.dart` (Modified)
+  - `app/lib/screens/mentor/home/mentor_home_screen.dart` (Modified)
+  - `app/lib/screens/student/academy/student_class1_screen.dart` (Modified)
+  - `app/lib/screens/student/home/student_home_screen.dart` (Modified)
+- **Description of Changes:**
+  - Token sizes reduced: h1 20->18, h2 16->15, h3 14->13. Class title (student), asset pill label/value (student home, mentor home, market) moved to h3
+  - mentor challenge titles back to h3 so challenge/session/member-name/class-title/asset labels share one token
+- **Verification / Checkpoints Executed:**
+  - flutter analyze (app/): No issues found
+- **Status:** Completed
+
+### [2026-11-03 15:02] - Flutter UI Typography Architect (Claude)
+- **Triggered By:** GitHub: komilkomil3000-afk | System: komeil
+- **Target Component(s):** app
+- **Files Modified / Created / Deleted:**
+  - `GENT_CHANGELOG.md` (Modified)
+  - `app/lib/core/theme/app_typography.dart` (Modified)
+  - `app/lib/screens/auth/login_screen.dart` (Modified)
+  - `app/lib/screens/market/market_screen.dart` (Modified)
+  - `app/lib/screens/mentor/academy/mentor_station_class1_screen.dart` (Modified)
+  - `app/lib/screens/mentor/challenges/mentor_challenges_screen.dart` (Modified)
+  - `app/lib/screens/mentor/home/mentor_home_screen.dart` (Modified)
+  - `app/lib/screens/mentor/profile/mentor_caravans_roster_screen.dart` (Modified)
+  - `app/lib/screens/student/academy/student_class1_screen.dart` (Modified)
+  - `app/lib/screens/student/academy/student_class2_screen.dart` (Modified)
+  - `app/lib/screens/student/challenges/student_challenges_screen.dart` (Modified)
+  - `app/lib/screens/student/home/student_home_screen.dart` (Modified)
+  - `app/lib/screens/student/profile/student_edit_profile_screen.dart` (Modified)
+  - `app/lib/widgets/challenge_submission_dialog.dart` (Modified)
+  - `app/lib/widgets/jarchi_item.dart` (Modified)
+  - `app/lib/widgets/nopa_modal_shell.dart` (Modified)
+  - `app/lib/widgets/support_message_dialog.dart` (Modified)
+- **Description of Changes:**
+  - h3 reduced to 12.5sp w400 (same look as station names on home)
+  - added h3Strong (13sp w600, previous h3) kept on the نگارستان header, numbered badges and dialog/bottom-sheet sites (35 usages)
+- **Verification / Checkpoints Executed:**
+  - flutter analyze (app/): No issues found
 - **Status:** Completed

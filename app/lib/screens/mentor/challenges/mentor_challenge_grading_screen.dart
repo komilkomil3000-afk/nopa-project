@@ -1,4 +1,6 @@
 import 'package:nopa_app/widgets/tap_expander.dart';
+import '../../../widgets/safe_avatar.dart';
+import 'package:nopa_app/widgets/bottom_nav_bar.dart';
 import 'package:nopa_app/core/asset_names.dart';
 import 'package:flutter/material.dart' hide Text;
 import 'package:nopa_app/widgets/fa_text.dart';
@@ -11,6 +13,7 @@ import 'package:nopa_app/core/theme/app_colors.dart';
 import 'package:nopa_app/models/user_model.dart';
 import 'package:nopa_app/services/app_state_repository.dart';
 import 'package:nopa_app/widgets/app_scaffold.dart';
+import '../../../widgets/nopa_modal_shell.dart';
 
 class MentorChallengeGradingScreen extends StatefulWidget {
   final Map<String, dynamic> challenge;
@@ -75,6 +78,7 @@ class _MentorChallengeDetailsScreenState extends State<MentorChallengeGradingScr
           return <String, dynamic>{
             'id': sub['id']?.toString() ?? '',
             'name': sub['student']?['name']?.toString() ?? 'عضو کاروان',
+            'avatarUrl': sub['student']?['avatarUrl']?.toString() ?? '',
             'typeLabel': typeLabel,
             'createdDate': createdDate,
             'answerDate': _jalali(sub['submittedAt']),
@@ -115,22 +119,25 @@ class _MentorChallengeDetailsScreenState extends State<MentorChallengeGradingScr
           _ => (label: 'ارسال پاسخ', color: const Color(0xFF38BDF8)),
         };
 
-    await showDialog<void>(
-      context: context,
-      builder: (ctx) => Directionality(
-        textDirection: TextDirection.rtl,
-        child: AlertDialog(
-          backgroundColor: const Color(0xFF2C274A),
-          title: Text(
-            'تاریخچه ${participant['name'] ?? ''}',
-            style: const TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 14, color: Colors.white),
-          ),
-          content: SizedBox(
+    await showNopaModal<void>(
+      context,
+      builder: (ctx) => NopaModalShell(
+          maxWidth: 420,
+          headerIcon: Icons.history_rounded,
+          title: 'تاریخچه ${participant['name'] ?? ''}',
+          actions: [
+            NopaModalAction(
+              label: 'بستن',
+              variant: NopaModalActionVariant.secondary,
+              onPressed: () => Navigator.pop(ctx),
+            ),
+          ],
+          child: SizedBox(
             width: double.maxFinite,
             child: events.isEmpty
-                ? const Text(
+                ? Text(
                     'سابقه‌ای ثبت نشده است.',
-                    style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 12, color: Color(0xFFC7C5DD)),
+                    style: AppTypography.bodyMedium.copyWith(color: Color(0xFFC7C5DD)),
                   )
                 : ListView.separated(
                     shrinkWrap: true,
@@ -147,7 +154,7 @@ class _MentorChallengeDetailsScreenState extends State<MentorChallengeGradingScr
                             padding: const EdgeInsets.only(top: 3),
                             child: Text(
                               '$label $value',
-                              style: const TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 11.5, color: Color(0xFFD3D0E3), height: 1.5),
+                              style: AppTypography.caption.copyWith(color: Color(0xFFD3D0E3)),
                             ),
                           );
                       return Column(
@@ -162,10 +169,10 @@ class _MentorChallengeDetailsScreenState extends State<MentorChallengeGradingScr
                                   borderRadius: BorderRadius.circular(6),
                                   border: Border.all(color: st.color.withValues(alpha: 0.5), width: 0.9),
                                 ),
-                                child: Text(st.label, style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 10.5, fontWeight: FontWeight.bold, color: st.color)),
+                                child: Text(st.label, style: AppTypography.caption.copyWith(color: st.color)),
                               ),
                               const Spacer(),
-                              Text(when(e['createdAt']), style: const TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 10, color: Color(0xFF9D99B8))),
+                              Text(when(e['createdAt']), style: AppTypography.caption.copyWith(color: Color(0xFF9D99B8))),
                             ],
                           ),
                           if (e['actorName'] != null && e['action'] != 'submitted') line('توسط:', e['actorName'].toString()),
@@ -178,14 +185,7 @@ class _MentorChallengeDetailsScreenState extends State<MentorChallengeGradingScr
                     },
                   ),
           ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(ctx),
-              child: const Text('بستن', style: TextStyle(fontFamily: AppTheme.fontFamily, color: Color(0xFF9E9CD6))),
-            ),
-          ],
         ),
-      ),
     );
   }
 
@@ -195,149 +195,19 @@ class _MentorChallengeDetailsScreenState extends State<MentorChallengeGradingScr
     final explanationCtrl = TextEditingController();
     final dateStr = _jalali(DateTime.now());
 
-    showDialog(
-      context: context,
-      barrierDismissible: true,
+    showNopaModal<void>(
+      context,
+      insetPadding: const EdgeInsets.symmetric(horizontal: 18, vertical: 24),
       builder: (BuildContext ctx) {
-        return Dialog(
-          backgroundColor: Colors.transparent,
-          insetPadding: const EdgeInsets.symmetric(horizontal: 18, vertical: 24),
-          child: Directionality(
-            textDirection: TextDirection.rtl,
-            child: Container(
-              padding: const EdgeInsets.all(18),
-              decoration: BoxDecoration(
-                color: const Color(0xFF2C274A),
-                borderRadius: BorderRadius.circular(20),
-                border: Border.all(
-                  color: const Color(0xFF4C4578),
-                  width: 1.2,
-                ),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.5),
-                    blurRadius: 20,
-                    offset: const Offset(0, 8),
-                  ),
-                ],
-              ),
-              child: SingleChildScrollView(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    // Top Header: Shield Icon Badge + Title
-                    Stack(
-                      alignment: Alignment.center,
-                      children: [
-                        Align(
-                          alignment: Alignment.centerRight,
-                          child: Container(
-                            width: 36,
-                            height: 36,
-                            decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              color: const Color(0xFF3F3765),
-                              border: Border.all(
-                                color: const Color(0xFFC09268).withValues(alpha: 0.7),
-                                width: 1.2,
-                              ),
-                            ),
-                            child: const Icon(
-                              Icons.person_outline_rounded,
-                              color: Color(0xFFDFB690),
-                              size: 20,
-                            ),
-                          ),
-                        ),
-                        const Text(
-                          'پیام به دانش آموز',
-                          style: TextStyle(
-                            fontFamily: AppTheme.fontFamily,
-                            fontSize: 15.5,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.white,
-                          ),
-                        ),
-                      ],
-                    ),
-
-                    const SizedBox(height: 16),
-
-                    // Field 1: نام و نام خانوادگی
-                    _buildDialogRow('نام و نام خانوادگی', name),
-                    const SizedBox(height: 10),
-
-                    // Field 2: تاریخ
-                    _buildDialogRow('تاریخ', dateStr),
-                    const SizedBox(height: 10),
-
-                    // Field 3: موضوع:
-                    _buildDialogRow('موضوع:', subjectCtrl.text),
-                    const SizedBox(height: 10),
-
-                    // Field 4: شرح دهید: (Multiline)
-                    Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const SizedBox(
-                          width: 80,
-                          child: Padding(
-                            padding: EdgeInsets.only(top: 8),
-                            child: Text(
-                              'شرح دهید:',
-                              style: TextStyle(
-                                fontFamily: AppTheme.fontFamily,
-                                fontSize: 11.5,
-                                color: Color(0xFFC7C5DD),
-                              ),
-                            ),
-                          ),
-                        ),
-                        Expanded(
-                          child: Container(
-                            height: 95,
-                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                            decoration: BoxDecoration(
-                              color: const Color(0xFF1E1A38),
-                              borderRadius: BorderRadius.circular(10),
-                              border: Border.all(
-                                color: const Color(0xFF4C4578),
-                                width: 1.0,
-                              ),
-                            ),
-                            child: TextField(
-                              controller: explanationCtrl,
-                              maxLines: 4,
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontSize: 11.5,
-                                fontFamily: AppTheme.fontFamily,
-                              ),
-                              decoration: const InputDecoration(
-                                isDense: true,
-                                hintText: 'توضیحات تان درمورد تصمیم تان را برای عضو بنویسید',
-                                hintStyle: TextStyle(
-                                  color: Color(0xFF8882A8),
-                                  fontSize: 11,
-                                  fontFamily: AppTheme.fontFamily,
-                                ),
-                                border: InputBorder.none,
-                              ),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-
-                    const SizedBox(height: 18),
-
-                    // Bottom Action Buttons: ارسال & لغو
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        TextButton(
-                          onPressed: () async {
+        return NopaModalShell(
+          maxWidth: 420,
+          headerIcon: Icons.person_outline_rounded,
+          title: 'پیام به دانش آموز',
+          padding: const EdgeInsets.all(18),
+          actions: [
+            NopaModalAction(
+              label: 'ارسال',
+              onPressed: () async {
                             final feedback = explanationCtrl.text.trim();
                             if (feedback.isEmpty) {
                               AppToast.error(ctx, 'لطفاً توضیح اصلاح را بنویسید.');
@@ -360,34 +230,72 @@ class _MentorChallengeDetailsScreenState extends State<MentorChallengeGradingScr
                               AppToast.error(context, res['error']?.toString() ?? 'ثبت انجام نشد');
                             }
                           },
-                          child: const Text(
-                            'ارسال',
-                            style: TextStyle(
-                              fontFamily: AppTheme.fontFamily,
-                              fontSize: 14,
-                              fontWeight: FontWeight.bold,
-                              color: Color(0xFFE5A855),
+            ),
+            NopaModalAction(
+              label: 'لغو',
+              variant: NopaModalActionVariant.secondary,
+              onPressed: () => Navigator.pop(ctx),
+            ),
+          ],
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+                    // Field 1: نام و نام خانوادگی
+                    _buildDialogRow('نام و نام خانوادگی', name),
+                    const SizedBox(height: 10),
+
+                    // Field 2: تاریخ
+                    _buildDialogRow('تاریخ', dateStr),
+                    const SizedBox(height: 10),
+
+                    // Field 3: موضوع:
+                    _buildDialogRow('موضوع:', subjectCtrl.text),
+                    const SizedBox(height: 10),
+
+                    // Field 4: شرح دهید: (Multiline)
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        SizedBox(
+                          width: 80,
+                          child: Padding(
+                            padding: EdgeInsets.only(top: 8),
+                            child: Text(
+                              'شرح دهید:',
+                              style: AppTypography.caption.copyWith(color: Color(0xFFC7C5DD)),
                             ),
                           ),
                         ),
-                        TextButton(
-                          onPressed: () => Navigator.pop(ctx),
-                          child: const Text(
-                            'لغو',
-                            style: TextStyle(
-                              fontFamily: AppTheme.fontFamily,
-                              fontSize: 14,
-                              fontWeight: FontWeight.bold,
-                              color: Color(0xFF9E9CD6),
+                        Expanded(
+                          child: Container(
+                            height: 95,
+                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFF1E1A38),
+                              borderRadius: BorderRadius.circular(10),
+                              border: Border.all(
+                                color: const Color(0xFF4C4578),
+                                width: 1.0,
+                              ),
+                            ),
+                            child: TextField(
+                              controller: explanationCtrl,
+                              maxLines: 4,
+                              style: AppTypography.caption,
+                              decoration: InputDecoration(
+                                isDense: true,
+                                hintText: 'توضیحات تان درمورد تصمیم تان را برای عضو بنویسید',
+                                hintStyle: AppTypography.caption.copyWith(color: Color(0xFF8882A8)),
+                                border: InputBorder.none,
+                              ),
                             ),
                           ),
                         ),
                       ],
                     ),
-                  ],
-                ),
-              ),
-            ),
+
+            ],
           ),
         );
       },
@@ -410,7 +318,7 @@ class _MentorChallengeDetailsScreenState extends State<MentorChallengeGradingScr
       final correct = (q['correct'] as num?)?.toInt() ?? -1;
       out.add(Text(
         'سوال ${(i + 1).toPersianDigits()}: ${q['q'] ?? q['question'] ?? ''}',
-        style: const TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 12, fontWeight: FontWeight.bold, color: Colors.white, height: 1.5),
+        style: AppTypography.bodyLarge,
       ));
       out.add(const SizedBox(height: 4));
       for (var o = 0; o < options.length; o++) {
@@ -428,11 +336,7 @@ class _MentorChallengeDetailsScreenState extends State<MentorChallengeGradingScr
               Expanded(
                 child: Text(
                   options[o].toString(),
-                  style: TextStyle(
-                    fontFamily: AppTheme.fontFamily,
-                    fontSize: 11.5,
-                    color: isCorrect ? const Color(0xFF86EFAC) : const Color(0xFFD3D0E3),
-                  ),
+                  style: AppTypography.caption.copyWith(color: isCorrect ? const Color(0xFF86EFAC) : const Color(0xFFD3D0E3)),
                 ),
               ),
             ],
@@ -452,44 +356,16 @@ class _MentorChallengeDetailsScreenState extends State<MentorChallengeGradingScr
     final rewardCtrl = TextEditingController(text: max.toString());
     final String asset = _assetLabel;
 
-    final int? reward = await showDialog<int>(
-      context: context,
-      builder: (ctx) => Directionality(
-        textDirection: TextDirection.rtl,
-        child: AlertDialog(
-          backgroundColor: const Color(0xFF2C274A),
-          title: Text(
-            'تایید پاسخ $name',
-            style: const TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 14, color: Colors.white),
-          ),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                min == max
-                    ? 'مقدار $asset این چالش ${max.toPersianDigits()} است:'
-                    : 'مقدار $asset را بین ${min.toPersianDigits()} و ${max.toPersianDigits()} تعیین کنید:',
-                style: const TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 11.5, color: Color(0xFFC7C5DD)),
-              ),
-              const SizedBox(height: 10),
-              TextField(
-                controller: rewardCtrl,
-                keyboardType: TextInputType.number,
-                style: const TextStyle(color: Colors.white, fontFamily: AppTheme.fontFamily),
-                decoration: InputDecoration(
-                  isDense: true,
-                  suffixText: asset,
-                  suffixStyle: const TextStyle(color: Color(0xFFDFB690), fontFamily: AppTheme.fontFamily),
-                  enabledBorder: const OutlineInputBorder(borderSide: BorderSide(color: Color(0xFF4C4578))),
-                  focusedBorder: const OutlineInputBorder(borderSide: BorderSide(color: Color(0xFFC09268))),
-                ),
-              ),
-            ],
-          ),
-          actions: [
-            TextButton(
-              onPressed: () {
+    final int? reward = await showNopaModal<int>(
+      context,
+      builder: (ctx) => NopaModalShell(
+        maxWidth: 420,
+        headerIcon: Icons.check_circle_outline_rounded,
+        title: 'تایید پاسخ $name',
+        actions: [
+          NopaModalAction(
+            label: 'ادامه',
+            onPressed: () {
                 final v = int.tryParse(rewardCtrl.text.trim().toEnglishDigits());
                 if (v == null || v < 0) {
                   AppToast.error(ctx, 'مقدار نامعتبر است.');
@@ -501,44 +377,64 @@ class _MentorChallengeDetailsScreenState extends State<MentorChallengeGradingScr
                 }
                 Navigator.pop(ctx, v);
               },
-              child: const Text('ادامه', style: TextStyle(fontFamily: AppTheme.fontFamily, color: Color(0xFFE5A855))),
-            ),
-            TextButton(
-              onPressed: () => Navigator.pop(ctx),
-              child: const Text('لغو', style: TextStyle(fontFamily: AppTheme.fontFamily, color: Color(0xFF9E9CD6))),
-            ),
-          ],
-        ),
+          ),
+          NopaModalAction(
+            label: 'لغو',
+            variant: NopaModalActionVariant.secondary,
+            onPressed: () => Navigator.pop(ctx),
+          ),
+        ],
+        child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                min == max
+                    ? 'مقدار $asset این چالش ${max.toPersianDigits()} است:'
+                    : 'مقدار $asset را بین ${min.toPersianDigits()} و ${max.toPersianDigits()} تعیین کنید:',
+                style: AppTypography.caption.copyWith(color: Color(0xFFC7C5DD)),
+              ),
+              const SizedBox(height: 10),
+              TextField(
+                controller: rewardCtrl,
+                keyboardType: TextInputType.number,
+                style: AppTypography.bodyLarge,
+                decoration: InputDecoration(
+                  isDense: true,
+                  suffixText: asset,
+                  suffixStyle: AppTypography.bodyLarge.copyWith(color: const Color(0xFFDFB690)),
+                  enabledBorder: const OutlineInputBorder(borderSide: BorderSide(color: Color(0xFF4C4578))),
+                  focusedBorder: const OutlineInputBorder(borderSide: BorderSide(color: AppColors.buttonCamel)),
+                ),
+              ),
+            ],
+          ),
       ),
     );
     if (reward == null || !mounted) return;
 
     // Final confirmation: nothing is credited until the mentor explicitly agrees
-    final bool? confirmed = await showDialog<bool>(
-      context: context,
-      builder: (ctx) => Directionality(
-        textDirection: TextDirection.rtl,
-        child: AlertDialog(
-          backgroundColor: const Color(0xFF2C274A),
-          title: const Text(
-            'تایید نهایی',
-            style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 14, color: Colors.white),
+    final bool? confirmed = await showNopaModal<bool>(
+      context,
+      builder: (ctx) => NopaModalShell(
+        maxWidth: 420,
+        headerIcon: Icons.verified_rounded,
+        title: 'تایید نهایی',
+        actions: [
+          NopaModalAction(
+            label: 'تایید و ثبت',
+            onPressed: () => Navigator.pop(ctx, true),
           ),
-          content: Text(
+          NopaModalAction(
+            label: 'بازگشت',
+            variant: NopaModalActionVariant.secondary,
+            onPressed: () => Navigator.pop(ctx, false),
+          ),
+        ],
+        child: Text(
             'با تایید شما ${reward.toPersianDigits()} $asset به حساب $name اضافه می‌شود و این کار قابل بازگشت نیست. ادامه می‌دهید؟',
-            style: const TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 12, height: 1.6, color: Color(0xFFC7C5DD)),
+            style: AppTypography.bodyMedium.copyWith(color: Color(0xFFC7C5DD)),
           ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(ctx, true),
-              child: const Text('تایید و ثبت', style: TextStyle(fontFamily: AppTheme.fontFamily, color: Color(0xFFE5A855))),
-            ),
-            TextButton(
-              onPressed: () => Navigator.pop(ctx, false),
-              child: const Text('بازگشت', style: TextStyle(fontFamily: AppTheme.fontFamily, color: Color(0xFF9E9CD6))),
-            ),
-          ],
-        ),
       ),
     );
     if (confirmed != true || !mounted) return;
@@ -567,11 +463,7 @@ class _MentorChallengeDetailsScreenState extends State<MentorChallengeGradingScr
           width: 80,
           child: Text(
             label,
-            style: const TextStyle(
-              fontFamily: AppTheme.fontFamily,
-              fontSize: 11.5,
-              color: Color(0xFFC7C5DD),
-            ),
+            style: AppTypography.caption.copyWith(color: Color(0xFFC7C5DD)),
           ),
         ),
         Expanded(
@@ -585,12 +477,7 @@ class _MentorChallengeDetailsScreenState extends State<MentorChallengeGradingScr
             ),
             child: Text(
               value,
-              style: const TextStyle(
-                fontFamily: AppTheme.fontFamily,
-                fontSize: 12,
-                fontWeight: FontWeight.w600,
-                color: Colors.white,
-              ),
+              style: AppTypography.bodyLarge,
             ),
           ),
         ),
@@ -615,7 +502,7 @@ class _MentorChallengeDetailsScreenState extends State<MentorChallengeGradingScr
       showNotificationIcon: true,
       showDrawerButton: true,
       showBottomNavBar: true,
-      currentBottomNavIndex: 2,
+      currentBottomNavIndex: AppTabs.challenges,
       body: Directionality(
         textDirection: TextDirection.rtl,
         child: SingleChildScrollView(
@@ -632,12 +519,7 @@ class _MentorChallengeDetailsScreenState extends State<MentorChallengeGradingScr
                     // Caravan Subtitle
                     Text(
                       caravanName,
-                      style: TextStyle(
-                        fontFamily: AppTheme.fontFamily,
-                        fontSize: 11.5,
-                        fontWeight: FontWeight.w500,
-                        color: const Color(0xFF9E9AC0).withValues(alpha: 0.85),
-                      ),
+                      style: AppTypography.caption.copyWith(color: const Color(0xFF9E9AC0).withValues(alpha: 0.85)),
                     ),
                     const SizedBox(height: 4),
 
@@ -649,33 +531,19 @@ class _MentorChallengeDetailsScreenState extends State<MentorChallengeGradingScr
                         Flexible(
                           child: Text(
                             'چالش $challengeTitle',
-                            style: const TextStyle(
-                              fontFamily: AppTheme.fontFamily,
-                              fontSize: 16.5,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.white,
-                            ),
+                            style: AppTypography.h2,
                           ),
                         ),
                         Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            const Text(
+                            Text(
                               'جایزه: ',
-                              style: TextStyle(
-                                fontFamily: AppTheme.fontFamily,
-                                fontSize: 11.5,
-                                color: Color(0xFFB5B0DF),
-                              ),
+                              style: AppTypography.caption.copyWith(color: Color(0xFFB5B0DF)),
                             ),
                             Text(
                               widget.challenge['category'] == 'inter_group' ? AssetNames.of('derafsh') : '$challengeReward $_assetLabel',
-                              style: const TextStyle(
-                                fontFamily: AppTheme.fontFamily,
-                                fontSize: 13,
-                                fontWeight: FontWeight.bold,
-                                color: Color(0xFFDFB690),
-                              ),
+                              style: AppTypography.h3.copyWith(color: Color(0xFFDFB690)),
                             ),
                           ],
                         ),
@@ -690,11 +558,7 @@ class _MentorChallengeDetailsScreenState extends State<MentorChallengeGradingScr
                       children: [
                         RichText(
                           text: TextSpan(
-                            style: const TextStyle(
-                              fontFamily: AppTheme.fontFamily,
-                              fontSize: 11,
-                              color: Color(0xFF9E9AC0),
-                            ),
+                            style: AppTypography.caption.copyWith(color: Color(0xFF9E9AC0)),
                             children: [
                               const TextSpan(text: 'نوع چالش: '),
                               TextSpan(
@@ -709,11 +573,7 @@ class _MentorChallengeDetailsScreenState extends State<MentorChallengeGradingScr
                         ),
                         RichText(
                           text: TextSpan(
-                            style: const TextStyle(
-                              fontFamily: AppTheme.fontFamily,
-                              fontSize: 11,
-                              color: Color(0xFF9E9AC0),
-                            ),
+                            style: AppTypography.caption.copyWith(color: Color(0xFF9E9AC0)),
                             children: [
                               const TextSpan(text: 'تعداد ارسال‌ها: '),
                               TextSpan(
@@ -734,12 +594,7 @@ class _MentorChallengeDetailsScreenState extends State<MentorChallengeGradingScr
                     if (challengeDescription.isNotEmpty)
                       Text(
                         challengeDescription,
-                        style: TextStyle(
-                          fontFamily: AppTheme.fontFamily,
-                          fontSize: 11.5,
-                          color: Colors.white.withValues(alpha: 0.75),
-                          height: 1.4,
-                        ),
+                        style: AppTypography.caption.copyWith(color: Colors.white.withValues(alpha: 0.75)),
                       ),
                     ..._buildQuestionsView(),
                   ],
@@ -755,19 +610,14 @@ class _MentorChallengeDetailsScreenState extends State<MentorChallengeGradingScr
                     width: 3,
                     height: 14,
                     decoration: BoxDecoration(
-                      color: const Color(0xFFC09268),
+                      color: AppColors.buttonCamel,
                       borderRadius: BorderRadius.circular(2),
                     ),
                   ),
                   const SizedBox(width: 8),
-                  const Text(
+                  Text(
                     'گزارش ارسال‌های اعضا',
-                    style: TextStyle(
-                      fontFamily: AppTheme.fontFamily,
-                      fontSize: 12.5,
-                      fontWeight: FontWeight.bold,
-                      color: Color(0xFFDDD9EE),
-                    ),
+                    style: AppTypography.bodyLarge.copyWith(color: Color(0xFFDDD9EE)),
                   ),
                 ],
               ),
@@ -792,22 +642,18 @@ class _MentorChallengeDetailsScreenState extends State<MentorChallengeGradingScr
                         });
                         _loadParticipants();
                       },
-                      child: const Text('دریافت پاسخ‌ها ناموفق بود؛ تلاش دوباره',
-                          style: TextStyle(fontFamily: AppTheme.fontFamily, color: Color(0xFFDFB690))),
+                      child: Text('دریافت پاسخ‌ها ناموفق بود؛ تلاش دوباره',
+                          style: AppTypography.bodyMedium.copyWith(color: Color(0xFFDFB690))),
                     ),
                   ),
                 )
               else if (_participants.isEmpty)
-                const Padding(
+                Padding(
                   padding: EdgeInsets.symmetric(vertical: 32),
                   child: Center(
                     child: Text(
                       'هنوز عضوی پاسخی برای این چالش ارسال نکرده است.',
-                      style: TextStyle(
-                        fontFamily: AppTheme.fontFamily,
-                        color: Color(0xFF9E9AC0),
-                        fontSize: 12,
-                      ),
+                      style: AppTypography.bodyMedium.copyWith(color: Color(0xFF9E9AC0)),
                     ),
                   ),
                 )
@@ -924,35 +770,14 @@ class _MentorChallengeDetailsScreenState extends State<MentorChallengeGradingScr
                         child: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            Container(
-                              width: 30,
-                              height: 30,
-                              decoration: BoxDecoration(
-                                shape: BoxShape.circle,
-                                color: const Color(0xFF534C82),
-                                border: Border.all(
-                                  color: const Color(0xFF837CB7).withValues(alpha: 0.5),
-                                  width: 1,
-                                ),
-                              ),
-                              child: const Icon(
-                                Icons.person_rounded,
-                                color: Color(0xFFEDE9F6),
-                                size: 17,
-                              ),
-                            ),
+                            SafeAvatar(imageUrl: item['avatarUrl']?.toString(), name: name.toString(), radius: 15),
                             const SizedBox(width: 8),
                             Flexible(
                               child: Text(
                                 name,
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
-                                style: const TextStyle(
-                                  fontFamily: AppTheme.fontFamily,
-                                  fontSize: 12.5,
-                                  fontWeight: FontWeight.w600,
-                                  color: Colors.white,
-                                ),
+                                style: AppTypography.bodyLarge,
                               ),
                             ),
                           ],
@@ -973,14 +798,9 @@ class _MentorChallengeDetailsScreenState extends State<MentorChallengeGradingScr
                                 borderRadius: BorderRadius.circular(7),
                                 border: Border.all(color: const Color(0xFF10B981).withValues(alpha: 0.6)),
                               ),
-                              child: const Text(
+                              child: Text(
                                 'تایید شده',
-                                style: TextStyle(
-                                  fontFamily: AppTheme.fontFamily,
-                                  fontSize: 10,
-                                  fontWeight: FontWeight.bold,
-                                  color: Color(0xFF34D399),
-                                ),
+                                style: AppTypography.caption.copyWith(color: Color(0xFF34D399)),
                               ),
                             ),
                           ] else if (status == 'needs_revision') ...[
@@ -993,14 +813,9 @@ class _MentorChallengeDetailsScreenState extends State<MentorChallengeGradingScr
                                   borderRadius: BorderRadius.circular(7),
                                   border: Border.all(color: const Color(0xFFEAB308).withValues(alpha: 0.6)),
                                 ),
-                                child: const Text(
+                                child: Text(
                                   'نیاز به اصلاح',
-                                  style: TextStyle(
-                                    fontFamily: AppTheme.fontFamily,
-                                    fontSize: 10,
-                                    fontWeight: FontWeight.bold,
-                                    color: Color(0xFFFACC15),
-                                  ),
+                                  style: AppTypography.caption.copyWith(color: Color(0xFFFACC15)),
                                 ),
                               ),
                             )),
@@ -1020,14 +835,9 @@ class _MentorChallengeDetailsScreenState extends State<MentorChallengeGradingScr
                                     gradient: AppColors.darkSurfaceGradient,
                                     borderRadius: BorderRadius.circular(7),
                                   ),
-                                  child: const Text(
+                                  child: Text(
                                     'نیاز به اصلاح',
-                                    style: TextStyle(
-                                      color: Color(0xFFB5B0DF),
-                                      fontSize: 10,
-                                      fontWeight: FontWeight.w600,
-                                      fontFamily: AppTheme.fontFamily,
-                                    ),
+                                    style: AppTypography.caption.copyWith(color: Color(0xFFB5B0DF)),
                                   ),
                                 ),
                               ),
@@ -1049,14 +859,9 @@ class _MentorChallengeDetailsScreenState extends State<MentorChallengeGradingScr
                                     gradient: AppColors.darkSurfaceGradient,
                                     borderRadius: BorderRadius.circular(7),
                                   ),
-                                  child: const Text(
+                                  child: Text(
                                     'تایید و جایزه',
-                                    style: TextStyle(
-                                      color: Color(0xFFDFB690),
-                                      fontSize: 10,
-                                      fontWeight: FontWeight.bold,
-                                      fontFamily: AppTheme.fontFamily,
-                                    ),
+                                    style: AppTypography.caption.copyWith(color: Color(0xFFDFB690)),
                                   ),
                                 ),
                               ),
@@ -1120,12 +925,7 @@ class _MentorChallengeDetailsScreenState extends State<MentorChallengeGradingScr
                       // Row 2: متن سوال
                       RichText(
                         text: TextSpan(
-                          style: const TextStyle(
-                            fontFamily: AppTheme.fontFamily,
-                            fontSize: 11,
-                            color: Color(0xFFC7C5DD),
-                            height: 1.5,
-                          ),
+                          style: AppTypography.caption.copyWith(color: Color(0xFFC7C5DD)),
                           children: [
                             const TextSpan(
                               text: 'متن سوال: ',
@@ -1144,12 +944,7 @@ class _MentorChallengeDetailsScreenState extends State<MentorChallengeGradingScr
                       // Row 3: پاسخ کاربر
                       RichText(
                         text: TextSpan(
-                          style: const TextStyle(
-                            fontFamily: AppTheme.fontFamily,
-                            fontSize: 11,
-                            color: Colors.white,
-                            height: 1.5,
-                          ),
+                          style: AppTypography.caption,
                           children: [
                             const TextSpan(
                               text: 'پاسخ کاربر: ',
@@ -1168,14 +963,14 @@ class _MentorChallengeDetailsScreenState extends State<MentorChallengeGradingScr
                         alignment: Alignment.centerLeft,
                         child: TapExpander(child: GestureDetector(
                           onTap: () => _showHistory(item),
-                          child: const Row(
+                          child: Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
                               Icon(Icons.history_rounded, size: 15, color: Color(0xFF9E92E8)),
                               SizedBox(width: 4),
                               Text(
                                 'تاریخچه رد، اصلاح و تایید',
-                                style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 11, fontWeight: FontWeight.bold, color: Color(0xFF9E92E8)),
+                                style: AppTypography.caption.copyWith(color: Color(0xFF9E92E8)),
                               ),
                             ],
                           ),
@@ -1197,22 +992,12 @@ class _MentorChallengeDetailsScreenState extends State<MentorChallengeGradingScr
       children: [
         Text(
           label,
-          style: const TextStyle(
-            fontFamily: AppTheme.fontFamily,
-            fontSize: 10,
-            fontWeight: FontWeight.w500,
-            color: Color(0xFF9E9AC0),
-          ),
+          style: AppTypography.caption.copyWith(color: Color(0xFF9E9AC0)),
         ),
         const SizedBox(width: 4),
         Text(
           value,
-          style: const TextStyle(
-            fontFamily: AppTheme.fontFamily,
-            fontSize: 10,
-            fontWeight: FontWeight.bold,
-            color: Colors.white,
-          ),
+          style: AppTypography.caption,
         ),
       ],
     );

@@ -1,4 +1,6 @@
 import 'package:nopa_app/widgets/tap_expander.dart';
+import 'package:nopa_app/widgets/bottom_nav_bar.dart';
+import '../../../widgets/nopa_modal_shell.dart';
 import 'package:flutter/material.dart' hide Text;
 import 'package:nopa_app/widgets/fa_text.dart';
 import 'package:nopa_app/widgets/app_toast.dart';
@@ -46,88 +48,21 @@ class _CertificateViewScreenState extends State<StudentCertificateDetailScreen> 
     final phoneCtrl = TextEditingController();
     bool isProcessing = false;
 
-    showDialog(
-      context: context,
-      barrierDismissible: true,
+    showNopaModal<void>(
+      context,
+      insetPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
       builder: (ctx) => StatefulBuilder(
         builder: (context, setModalState) {
-          return Directionality(
-            textDirection: TextDirection.rtl,
-            child: Dialog(
-              backgroundColor: Colors.transparent,
-              insetPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
-              child: Container(
-                constraints: const BoxConstraints(maxWidth: 440),
-                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 22),
-                decoration: BoxDecoration(
-                  color: const Color(0xFF2C2849),
-                  borderRadius: BorderRadius.circular(24),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.5),
-                      blurRadius: 24,
-                      spreadRadius: 2,
-                      offset: const Offset(0, 8),
-                    ),
-                  ],
-                ),
-                child: SingleChildScrollView(
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      // Header
-                      const Stack(
-                        alignment: Alignment.center,
-                        children: [
-                          Align(
-                            alignment: Alignment.centerRight,
-                            child: Icon(
-                              Icons.card_membership_rounded,
-                              color: Color(0xFF9E9CD6),
-                              size: 32,
-                            ),
-                          ),
-                          Text(
-                            'درخواست نسخه فیزیکی گواهی',
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontSize: 16.5,
-                              fontWeight: FontWeight.bold,
-                              fontFamily: AppTheme.fontFamily,
-                            ),
-                            textAlign: TextAlign.center,
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 20),
-
-                      _buildModalRow('دوره:', widget.certificate['title'] ?? 'دوره آموزشی نپا'),
-                      const SizedBox(height: 10),
-
-                      _buildModalInputField('تحویل‌گیرنده:', nameCtrl, 'نام و نام خانوادگی'),
-                      const SizedBox(height: 10),
-
-                      _buildModalInputField('تلفن همراه:', phoneCtrl, '09380346668', keyboardType: TextInputType.phone),
-                      const SizedBox(height: 10),
-
-                      _buildModalInputField('آدرس:', addressCtrl, 'استان، شهر، خیابان، پلاک...', maxLines: 2),
-                      const SizedBox(height: 10),
-
-                      _buildModalInputField('کد پستی:', postalCodeCtrl, 'کد پستی ۱۰ رقمی', keyboardType: TextInputType.number),
-                      const SizedBox(height: 10),
-
-                      _buildModalRow('هزینه ارسال:', '۵۰,۰۰۰ تومان'),
-                      const SizedBox(height: 22),
-
-                      // Action Buttons
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          TextButton(
-                            onPressed: isProcessing
-                                ? null
-                                : () async {
+          return NopaModalShell(
+            maxWidth: 440,
+            headerIcon: Icons.card_membership_rounded,
+            title: 'درخواست نسخه فیزیکی گواهی',
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 22),
+            actions: [
+              NopaModalAction(
+                label: 'پرداخت و ثبت نهایی',
+                loading: isProcessing,
+                onPressed: () async {
                                     if (nameCtrl.text.isEmpty || addressCtrl.text.isEmpty) {
                                       AppToast.error(context, 'لطفاً همه فیلدهای آدرس را تکمیل فرمایید');
                                       return;
@@ -145,40 +80,34 @@ class _CertificateViewScreenState extends State<StudentCertificateDetailScreen> 
                                       setModalState(() => isProcessing = false);
                                     }
                                   },
-                            child: isProcessing
-                                ? const SizedBox(
-                                    width: 18,
-                                    height: 18,
-                                    child: CircularProgressIndicator(strokeWidth: 2, color: Color(0xFFE1BC96)),
-                                  )
-                                : const Text(
-                                    'پرداخت و ثبت نهایی',
-                                    style: TextStyle(
-                                      color: Color(0xFFE1BC96),
-                                      fontSize: 14.5,
-                                      fontWeight: FontWeight.bold,
-                                      fontFamily: AppTheme.fontFamily,
-                                    ),
-                                  ),
-                          ),
-                          TextButton(
-                            onPressed: () => Navigator.pop(ctx),
-                            child: const Text(
-                              'انصراف',
-                              style: TextStyle(
-                                color: Color(0xFF9E9CD6),
-                                fontSize: 14.5,
-                                fontWeight: FontWeight.bold,
-                                fontFamily: AppTheme.fontFamily,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
               ),
+              NopaModalAction(
+                label: 'انصراف',
+                variant: NopaModalActionVariant.secondary,
+                onPressed: () => Navigator.pop(ctx),
+              ),
+            ],
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                      _buildModalRow('دوره:', widget.certificate['title'] ?? 'دوره آموزشی نپا'),
+                      const SizedBox(height: 10),
+
+                      _buildModalInputField('تحویل‌گیرنده:', nameCtrl, 'نام و نام خانوادگی'),
+                      const SizedBox(height: 10),
+
+                      _buildModalInputField('تلفن همراه:', phoneCtrl, '09380346668', keyboardType: TextInputType.phone),
+                      const SizedBox(height: 10),
+
+                      _buildModalInputField('آدرس:', addressCtrl, 'استان، شهر، خیابان، پلاک...', maxLines: 2),
+                      const SizedBox(height: 10),
+
+                      _buildModalInputField('کد پستی:', postalCodeCtrl, 'کد پستی ۱۰ رقمی', keyboardType: TextInputType.number),
+                      const SizedBox(height: 10),
+
+                      _buildModalRow('هزینه ارسال:', '۵۰,۰۰۰ تومان'),
+              ],
             ),
           );
         },
@@ -198,7 +127,7 @@ class _CertificateViewScreenState extends State<StudentCertificateDetailScreen> 
           ),
           child: Text(
             label,
-            style: const TextStyle(color: Color(0xFFDDD9EE), fontSize: 12, fontWeight: FontWeight.w500, fontFamily: AppTheme.fontFamily),
+            style: AppTypography.bodyMedium.copyWith(color: Color(0xFFDDD9EE)),
           ),
         ),
         const SizedBox(width: 10),
@@ -206,7 +135,7 @@ class _CertificateViewScreenState extends State<StudentCertificateDetailScreen> 
           child: Text(
             value,
             textAlign: TextAlign.left,
-            style: const TextStyle(color: Color(0xFFE1BC96), fontSize: 13, fontWeight: FontWeight.w500, fontFamily: AppTheme.fontFamily),
+            style: AppTypography.bodyLarge.copyWith(color: AppColors.accentGoldEnd),
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
           ),
@@ -228,7 +157,7 @@ class _CertificateViewScreenState extends State<StudentCertificateDetailScreen> 
           ),
           child: Text(
             label,
-            style: const TextStyle(color: Color(0xFFDDD9EE), fontSize: 12, fontWeight: FontWeight.w500, fontFamily: AppTheme.fontFamily),
+            style: AppTypography.bodyMedium.copyWith(color: Color(0xFFDDD9EE)),
           ),
         ),
         const SizedBox(width: 10),
@@ -244,12 +173,12 @@ class _CertificateViewScreenState extends State<StudentCertificateDetailScreen> 
               controller: controller,
               keyboardType: keyboardType,
               maxLines: maxLines,
-              style: const TextStyle(color: Color(0xFFE1BC96), fontSize: 12.5, fontFamily: AppTheme.fontFamily),
+              style: AppTypography.bodyMedium.copyWith(color: AppColors.accentGoldEnd),
               decoration: InputDecoration(
                 isDense: true,
                 border: InputBorder.none,
                 hintText: hintText,
-                hintStyle: TextStyle(color: Colors.white.withValues(alpha: 0.25), fontSize: 11.5, fontFamily: AppTheme.fontFamily),
+                hintStyle: AppTypography.caption.copyWith(color: Colors.white.withValues(alpha: 0.25)),
                 contentPadding: const EdgeInsets.symmetric(vertical: 5),
               ),
             ),
@@ -271,7 +200,7 @@ class _CertificateViewScreenState extends State<StudentCertificateDetailScreen> 
       showNotificationIcon: true,
       showDrawerButton: true,
       showBottomNavBar: true,
-      currentBottomNavIndex: 4,
+      currentBottomNavIndex: AppTabs.profile,
       onBackTap: () => Navigator.of(context).pop(),
       body: SingleChildScrollView(
         physics: const BouncingScrollPhysics(),
@@ -290,19 +219,14 @@ class _CertificateViewScreenState extends State<StudentCertificateDetailScreen> 
                               width: 1.0,
                             ),
                           ),
-                          child: const Row(
+                          child: Row(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
                               Icon(Icons.verified_rounded, color: Color(0xFF10B981), size: 18),
                               SizedBox(width: 8),
                               Text(
                                 'گواهی معتبر دیجیتال شما با موفقیت صادر شد',
-                                style: TextStyle(
-                                  color: Color(0xFF10B981),
-                                  fontSize: 12.5,
-                                  fontWeight: FontWeight.bold,
-                                  fontFamily: AppTheme.fontFamily,
-                                ),
+                                style: AppTypography.bodyLarge.copyWith(color: Color(0xFF10B981)),
                               ),
                             ],
                           ),
@@ -338,7 +262,7 @@ class _CertificateViewScreenState extends State<StudentCertificateDetailScreen> 
                                 ],
                               ),
                               border: Border.all(
-                                color: const Color(0xFFC09268).withValues(alpha: 0.4),
+                                color: AppColors.buttonCamel.withValues(alpha: 0.4),
                                 width: 1.0,
                               ),
                             ),
@@ -348,34 +272,23 @@ class _CertificateViewScreenState extends State<StudentCertificateDetailScreen> 
                                 ShaderMask(
                                   shaderCallback: (bounds) => const LinearGradient(
                                     colors: [
-                                      Color(0xFFC09268),
+                                      AppColors.buttonCamel,
                                       Color(0xFFF4DCC5),
                                     ],
                                     begin: Alignment.bottomCenter,
                                     end: Alignment.topCenter,
                                   ).createShader(bounds),
-                                  child: const Text(
+                                  child: Text(
                                     'NOPA',
-                                    style: TextStyle(
-                                      color: Colors.white,
-                                      fontSize: 26,
-                                      fontWeight: FontWeight.w900,
-                                      letterSpacing: 2.5,
-                                      fontFamily: AppTheme.fontFamily,
-                                    ),
+                                    style: AppTypography.h1.copyWith(fontSize: 26, fontWeight: FontWeight.w900, letterSpacing: 2.5),
                                   ),
                                 ),
                                 const SizedBox(height: 6),
 
-                                const Text(
+                                Text(
                                   '«گواهی‌نامه رسمی آموزش و توانمندسازی کاروان»',
                                   textAlign: TextAlign.center,
-                                  style: TextStyle(
-                                    color: Color(0xFFE1BC96),
-                                    fontSize: 13,
-                                    fontWeight: FontWeight.bold,
-                                    fontFamily: AppTheme.fontFamily,
-                                  ),
+                                  style: AppTypography.h3.copyWith(color: AppColors.accentGoldEnd),
                                 ),
                                 const SizedBox(height: 18),
 
@@ -383,29 +296,20 @@ class _CertificateViewScreenState extends State<StudentCertificateDetailScreen> 
                                 Container(
                                   height: 1,
                                   width: 140,
-                                  color: const Color(0xFFC09268).withValues(alpha: 0.5),
+                                  color: AppColors.buttonCamel.withValues(alpha: 0.5),
                                 ),
                                 const SizedBox(height: 18),
 
-                                const Text(
+                                Text(
                                   'بدینوسیله گواهی می‌شود که مسافر گرامی:',
-                                  style: TextStyle(
-                                    color: Color(0xFFB5B0D8),
-                                    fontSize: 12,
-                                    fontFamily: AppTheme.fontFamily,
-                                  ),
+                                  style: AppTypography.bodyMedium.copyWith(color: Color(0xFFB5B0D8)),
                                 ),
                                 const SizedBox(height: 10),
 
                                 // User Name
                                 Text(
                                   widget.userName,
-                                  style: const TextStyle(
-                                    color: Color(0xFFE1BC96),
-                                    fontSize: 20,
-                                    fontWeight: FontWeight.bold,
-                                    fontFamily: AppTheme.fontFamily,
-                                  ),
+                                  style: AppTypography.h1.copyWith(color: AppColors.accentGoldEnd),
                                 ),
                                 const SizedBox(height: 14),
 
@@ -413,12 +317,7 @@ class _CertificateViewScreenState extends State<StudentCertificateDetailScreen> 
                                 Text(
                                   'دوره آموزشی «$title» را با موفقیت و کسب مهارت‌های کاربردی لازم در بستر کاروان یادگیری نپا گذرانده است.',
                                   textAlign: TextAlign.center,
-                                  style: const TextStyle(
-                                    color: Color(0xFFDDD9EE),
-                                    fontSize: 12.5,
-                                    height: 1.6,
-                                    fontFamily: AppTheme.fontFamily,
-                                  ),
+                                  style: AppTypography.bodyMedium.copyWith(color: Color(0xFFDDD9EE)),
                                 ),
                                 const SizedBox(height: 12),
 
@@ -435,11 +334,7 @@ class _CertificateViewScreenState extends State<StudentCertificateDetailScreen> 
                                   ),
                                   child: Text(
                                     'تعداد جلسات: $sessions • راهبر / استاد: $teacher',
-                                    style: const TextStyle(
-                                      color: Color(0xFFC7B299),
-                                      fontSize: 11,
-                                      fontFamily: AppTheme.fontFamily,
-                                    ),
+                                    style: AppTypography.caption.copyWith(color: Color(0xFFC7B299)),
                                   ),
                                 ),
                                 const SizedBox(height: 24),
@@ -449,19 +344,15 @@ class _CertificateViewScreenState extends State<StudentCertificateDetailScreen> 
                                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                   children: [
                                     // Signature
-                                    const Column(
+                                    Column(
                                       crossAxisAlignment: CrossAxisAlignment.start,
                                       children: [
                                         Text(
                                           'مهر و امضای دبیرخانه:',
-                                          style: TextStyle(
-                                            color: Color(0xFF9E9CD6),
-                                            fontSize: 9.5,
-                                            fontFamily: AppTheme.fontFamily,
-                                          ),
+                                          style: AppTypography.caption.copyWith(color: AppColors.buttonCancelPurple),
                                         ),
                                         SizedBox(height: 4),
-                                        Icon(Icons.draw_rounded, color: Color(0xFFC09268), size: 22),
+                                        Icon(Icons.draw_rounded, color: AppColors.buttonCamel, size: 22),
                                       ],
                                     ),
 
@@ -473,12 +364,12 @@ class _CertificateViewScreenState extends State<StudentCertificateDetailScreen> 
                                         shape: BoxShape.circle,
                                         color: const Color(0xFF2A2835),
                                         border: Border.all(
-                                          color: const Color(0xFFC09268),
+                                          color: AppColors.buttonCamel,
                                           width: 1.5,
                                         ),
                                         boxShadow: [
                                           BoxShadow(
-                                            color: const Color(0xFFC09268).withValues(alpha: 0.25),
+                                            color: AppColors.buttonCamel.withValues(alpha: 0.25),
                                             blurRadius: 10,
                                           ),
                                         ],
@@ -486,7 +377,7 @@ class _CertificateViewScreenState extends State<StudentCertificateDetailScreen> 
                                       alignment: Alignment.center,
                                       child: const Icon(
                                         Icons.verified_user_rounded,
-                                        color: Color(0xFFE1BC96),
+                                        color: AppColors.accentGoldEnd,
                                         size: 22,
                                       ),
                                     ),
@@ -495,23 +386,14 @@ class _CertificateViewScreenState extends State<StudentCertificateDetailScreen> 
                                     Column(
                                       crossAxisAlignment: CrossAxisAlignment.end,
                                       children: [
-                                        const Text(
+                                        Text(
                                           'تاریخ صدور:',
-                                          style: TextStyle(
-                                            color: Color(0xFF9E9CD6),
-                                            fontSize: 9.5,
-                                            fontFamily: AppTheme.fontFamily,
-                                          ),
+                                          style: AppTypography.caption.copyWith(color: AppColors.buttonCancelPurple),
                                         ),
                                         const SizedBox(height: 4),
                                         Text(
                                           date,
-                                          style: const TextStyle(
-                                            color: Color(0xFFDDD9EE),
-                                            fontSize: 11,
-                                            fontWeight: FontWeight.bold,
-                                            fontFamily: AppTheme.fontFamily,
-                                          ),
+                                          style: AppTypography.caption.copyWith(color: Color(0xFFDDD9EE)),
                                         ),
                                       ],
                                     ),
@@ -540,7 +422,7 @@ class _CertificateViewScreenState extends State<StudentCertificateDetailScreen> 
                                 gradient: AppColors.darkSurfaceGradient,
                                 borderRadius: BorderRadius.circular(9),
                                 border: Border.all(
-                                  color: const Color(0xFFC09268),
+                                  color: AppColors.buttonCamel,
                                   width: 1.1,
                                 ),
                               ),
@@ -550,22 +432,17 @@ class _CertificateViewScreenState extends State<StudentCertificateDetailScreen> 
                                       height: 20,
                                       child: CircularProgressIndicator(
                                         strokeWidth: 2,
-                                        color: Color(0xFFE1BC96),
+                                        color: AppColors.accentGoldEnd,
                                       ),
                                     )
-                                  : const Row(
+                                  : Row(
                                       mainAxisAlignment: MainAxisAlignment.center,
                                       children: [
-                                        Icon(Icons.download_rounded, color: Color(0xFFE1BC96), size: 18),
+                                        Icon(Icons.download_rounded, color: AppColors.accentGoldEnd, size: 18),
                                         SizedBox(width: 8),
                                         Text(
                                           'دانلود مستقیم گواهی (PDF / تصویر)',
-                                          style: TextStyle(
-                                            color: Color(0xFFE1BC96),
-                                            fontSize: 14,
-                                            fontWeight: FontWeight.bold,
-                                            fontFamily: AppTheme.fontFamily,
-                                          ),
+                                          style: AppTypography.h3.copyWith(color: AppColors.accentGoldEnd),
                                         ),
                                       ],
                                     ),
@@ -589,19 +466,14 @@ class _CertificateViewScreenState extends State<StudentCertificateDetailScreen> 
                                 width: 1.0,
                               ),
                             ),
-                            child: const Row(
+                            child: Row(
                               mainAxisAlignment: MainAxisAlignment.center,
                               children: [
                                 Icon(Icons.local_shipping_outlined, color: Color(0xFFDDD9EE), size: 18),
                                 SizedBox(width: 8),
                                 Text(
                                   'درخواست نسخه فیزیکی و چاپی گواهی',
-                                  style: TextStyle(
-                                    color: Color(0xFFDDD9EE),
-                                    fontSize: 13,
-                                    fontWeight: FontWeight.w600,
-                                    fontFamily: AppTheme.fontFamily,
-                                  ),
+                                  style: AppTypography.h3.copyWith(color: Color(0xFFDDD9EE)),
                                 ),
                               ],
                             ),

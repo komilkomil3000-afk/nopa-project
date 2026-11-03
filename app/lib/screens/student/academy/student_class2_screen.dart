@@ -1,4 +1,7 @@
 import 'package:nopa_app/widgets/tap_expander.dart';
+import 'package:nopa_app/widgets/bottom_nav_bar.dart';
+import '../../../widgets/nopa_dialog_container.dart';
+import '../../../widgets/nopa_modal_shell.dart';
 import 'package:nopa_app/core/station_numbering.dart';
 import 'package:nopa_app/core/schedule_utils.dart';
 import 'package:nopa_app/core/station_categories.dart';
@@ -28,8 +31,6 @@ class StudentClass2Screen extends StatefulWidget {
   State<StudentClass2Screen> createState() => _Class2ScreenState();
 }
 
-/// Backwards compatibility alias
-typedef ClassPlayerScreen = Class2Screen;
 
 class _Class2ScreenState extends State<StudentClass2Screen> {
   // Navigation & Category state
@@ -630,11 +631,11 @@ class _Class2ScreenState extends State<StudentClass2Screen> {
       showNotificationIcon: true,
       showDrawerButton: true,
       showBottomNavBar: true,
-      currentBottomNavIndex: 1,
+      currentBottomNavIndex: AppTabs.academy,
       onBackTap: () => Navigator.of(context).pop(),
       body: _isLoadingClasses
           ? const Center(
-              child: CircularProgressIndicator(color: Color(0xFFC09268)),
+              child: CircularProgressIndicator(color: AppColors.buttonCamel),
             )
           : Column(
               children: [
@@ -653,13 +654,7 @@ class _Class2ScreenState extends State<StudentClass2Screen> {
                         child: Text(
                           'منزلگاه ${_toFarsiDigit(_stationNumber)}',
                           textAlign: TextAlign.right,
-                          style: const TextStyle(
-                            color: Color(0xFFEDE8F5),
-                            fontSize: 14,
-                            fontWeight: FontWeight.bold,
-                            fontFamily: AppTheme.fontFamily,
-                            fontFamilyFallback: AppTheme.fontFamilyFallback,
-                          ),
+                          style: AppTypography.h3.copyWith(color: Color(0xFFEDE8F5)),
                         ),
                       ),
                     ),
@@ -672,13 +667,7 @@ class _Class2ScreenState extends State<StudentClass2Screen> {
                     textDirection: TextDirection.rtl,
                     child: Text(
                       _currentPlayingTitle,
-                      style: const TextStyle(
-                        color: Color(0xFFDDD9EE),
-                        fontSize: 11.5,
-                        fontWeight: FontWeight.normal,
-                        fontFamily: AppTheme.fontFamily,
-                        fontFamilyFallback: AppTheme.fontFamilyFallback,
-                      ),
+                      style: AppTypography.caption.copyWith(color: Color(0xFFDDD9EE)),
                     ),
                   ),
                   const SizedBox(height: 10),
@@ -829,17 +818,12 @@ class _Class2ScreenState extends State<StudentClass2Screen> {
   Widget _buildSessionsAccordion() {
     final sessions = _currentSessions;
     if (sessions.isEmpty) {
-      return const Padding(
+      return Padding(
         padding: EdgeInsets.symmetric(vertical: 24),
         child: Center(
           child: Text(
             'فیلمی برای این بخش ثبت نشده است.',
-            style: TextStyle(
-              color: Color(0xFF9D99B8),
-              fontSize: 12,
-              fontFamily: AppTheme.fontFamily,
-              fontFamilyFallback: AppTheme.fontFamilyFallback,
-            ),
+            style: AppTypography.bodyMedium.copyWith(color: Color(0xFF9D99B8)),
           ),
         ),
       );
@@ -949,13 +933,7 @@ class _Class2ScreenState extends State<StudentClass2Screen> {
                             textAlign: TextAlign.right,
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
-                            style: const TextStyle(
-                              color: Color(0xFFF3EFFE),
-                              fontSize: 12,
-                              fontWeight: FontWeight.normal,
-                              fontFamily: AppTheme.fontFamily,
-                              fontFamilyFallback: AppTheme.fontFamilyFallback,
-                            ),
+                            style: AppTypography.h3.copyWith(color: Color(0xFFF3EFFE)),
                           ),
                         ),
                       ],
@@ -1059,13 +1037,7 @@ class _Class2ScreenState extends State<StudentClass2Screen> {
                                       textAlign: TextAlign.right,
                                       maxLines: 1,
                                       overflow: TextOverflow.ellipsis,
-                                      style: TextStyle(
-                                        color: isPlaying ? const Color(0xFFE1BC96) : const Color(0xFFDDD9EE),
-                                        fontSize: 11,
-                                        fontWeight: FontWeight.normal,
-                                        fontFamily: AppTheme.fontFamily,
-                                        fontFamilyFallback: AppTheme.fontFamilyFallback,
-                                      ),
+                                      style: AppTypography.caption.copyWith(color: isPlaying ? AppColors.accentGoldEnd : const Color(0xFFDDD9EE)),
                                     ),
                                   )),
                                 ),
@@ -1074,12 +1046,7 @@ class _Class2ScreenState extends State<StudentClass2Screen> {
                                 // 3. Left: مدت زمان پارت (15:00)
                                 Text(
                                   _formatDuration(clip['duration']),
-                                  style: const TextStyle(
-                                    color: Color(0xFF9D99B8),
-                                    fontSize: 10.5,
-                                    fontFamily: AppTheme.fontFamily,
-                                    fontFamilyFallback: AppTheme.fontFamilyFallback,
-                                  ),
+                                  style: AppTypography.caption.copyWith(color: Color(0xFF9D99B8)),
                                 ),
                                 const SizedBox(width: 8),
 
@@ -1099,22 +1066,16 @@ class _Class2ScreenState extends State<StudentClass2Screen> {
                                       borderRadius: BorderRadius.circular(10),
                                       border: Border.all(
                                         color: isQuizUnlocked
-                                            ? const Color(0xFFC09268)
+                                            ? AppColors.buttonCamel
                                             : const Color(0xFF6C6C63).withValues(alpha: 0.35),
                                         width: 0.85,
                                       ),
                                     ),
                                     child: Text(
                                       'آزمون',
-                                      style: TextStyle(
-                                        color: isQuizUnlocked
-                                            ? const Color(0xFFE1BC96)
-                                            : const Color(0xFF8E889D).withValues(alpha: 0.5),
-                                        fontWeight: FontWeight.normal,
-                                        fontFamily: AppTheme.fontFamily,
-                                        fontFamilyFallback: AppTheme.fontFamilyFallback,
-                                        fontSize: 10,
-                                      ),
+                                      style: AppTypography.caption.copyWith(color: isQuizUnlocked
+                                            ? AppColors.accentGoldEnd
+                                            : const Color(0xFF8E889D).withValues(alpha: 0.5)),
                                     ),
                                   ),
                                 )),
@@ -1174,28 +1135,16 @@ class _Class2ScreenState extends State<StudentClass2Screen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
+                Text(
                   'اطلاعات جلسه',
-                  style: TextStyle(
-                    color: Color(0xFFE5B888),
-                    fontSize: 13.5,
-                    fontWeight: FontWeight.bold,
-                    fontFamily: AppTheme.fontFamily,
-                    fontFamilyFallback: AppTheme.fontFamilyFallback,
-                  ),
+                  style: AppTypography.h3.copyWith(color: Color(0xFFE5B888)),
                 ),
                 const SizedBox(height: 6),
                 Text(
                   sessionDesc.isNotEmpty
                       ? sessionDesc
                       : 'توضیحات و سرفصل‌های آموزشی این جلسه در کاروان نپا.',
-                  style: const TextStyle(
-                    color: Color(0xFFD3D0E3),
-                    fontSize: 11,
-                    height: 1.5,
-                    fontFamily: AppTheme.fontFamily,
-                    fontFamilyFallback: AppTheme.fontFamilyFallback,
-                  ),
+                  style: AppTypography.caption.copyWith(color: Color(0xFFD3D0E3)),
                 ),
               ],
             ),
@@ -1266,23 +1215,12 @@ class _Class2ScreenState extends State<StudentClass2Screen> {
                       children: [
                         Text(
                           session['instructor']?.toString() ?? 'استاد دوره',
-                          style: const TextStyle(
-                            color: Color(0xFFFBE4C8),
-                            fontWeight: FontWeight.bold,
-                            fontSize: 13,
-                            fontFamily: AppTheme.fontFamily,
-                            fontFamilyFallback: AppTheme.fontFamilyFallback,
-                          ),
+                          style: AppTypography.h3.copyWith(color: Color(0xFFFBE4C8)),
                         ),
                         const SizedBox(height: 3),
                         Text(
                           _currentCategory?.title ?? 'استاد راهنمای جلسات کاروان',
-                          style: const TextStyle(
-                            color: Color(0xFF9D99B8),
-                            fontSize: 10.5,
-                            fontFamily: AppTheme.fontFamily,
-                            fontFamilyFallback: AppTheme.fontFamilyFallback,
-                          ),
+                          style: AppTypography.caption.copyWith(color: Color(0xFF9D99B8)),
                         ),
                       ],
                     ),
@@ -1327,7 +1265,7 @@ class _Class2ScreenState extends State<StudentClass2Screen> {
 
   /// 6. Bottom Action Bar (منزلگاه قبل در راست و منزلگاه بعد در چپ)
   Widget _buildBottomActionBar() {
-    const gold = Color(0xFFC09268);
+    const gold = AppColors.buttonCamel;
     final canNext = _stationCount == 0 || _currentStationIndex < _stationCount - 1;
     final canPrev = _currentStationIndex > 0;
     final dim = gold.withValues(alpha: 0.35);
@@ -1366,13 +1304,7 @@ class _Class2ScreenState extends State<StudentClass2Screen> {
             ),
             child: Text(
               contactMentorLabel(Provider.of<AppRepository>(context, listen: false).currentUser),
-              style: const TextStyle(
-                color: Color(0xFFE1BC96),
-                fontWeight: FontWeight.normal,
-                fontFamily: AppTheme.fontFamily,
-                fontFamilyFallback: AppTheme.fontFamilyFallback,
-                fontSize: 10,
-              ),
+              style: AppTypography.caption.copyWith(color: AppColors.accentGoldEnd),
             ),
           ),
         )),
@@ -1465,17 +1397,14 @@ class _Class2ScreenState extends State<StudentClass2Screen> {
             // keep the box compact and let it scroll instead of stretching it past the screen height
             final bool landscape = MediaQuery.of(context).orientation == Orientation.landscape;
             return Dialog(
-              backgroundColor: const Color(0xFF241F3B),
+              backgroundColor: Colors.transparent,
+              elevation: 0,
               insetPadding: landscape
                   ? const EdgeInsets.symmetric(horizontal: 40, vertical: 12)
                   : const EdgeInsets.symmetric(horizontal: 40, vertical: 24),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(20),
-                side: const BorderSide(color: Color(0xFFC09268), width: 1.0),
-              ),
-              child: ConstrainedBox(
+              child: NopaDialogContainer(
                 constraints: BoxConstraints(maxWidth: landscape ? 460 : 560),
-                child: Padding(
+                radius: 24,
                 padding: EdgeInsets.all(landscape ? 14 : 20),
                 child: Directionality(
                   textDirection: TextDirection.rtl,
@@ -1489,22 +1418,11 @@ class _Class2ScreenState extends State<StudentClass2Screen> {
                         children: [
                           Text(
                             'آزمون ${_toFarsiDigit(partIndex + 1)}ام از پارت ${_toFarsiDigit(partIndex + 1)}ام',
-                            style: const TextStyle(
-                              color: Color(0xFFFBE4C8),
-                              fontSize: 14,
-                              fontWeight: FontWeight.bold,
-                              fontFamily: AppTheme.fontFamily,
-                              fontFamilyFallback: AppTheme.fontFamilyFallback,
-                            ),
+                            style: AppTypography.h3Strong.copyWith(color: Color(0xFFFBE4C8)),
                           ),
                           Text(
                             'سوال ${_toFarsiDigit(currentQuestionIndex + 1)} از ${_toFarsiDigit(quizQuestions.length)}',
-                            style: const TextStyle(
-                              color: Color(0xFF9D99B8),
-                              fontSize: 11,
-                              fontFamily: AppTheme.fontFamily,
-                              fontFamilyFallback: AppTheme.fontFamilyFallback,
-                            ),
+                            style: AppTypography.caption.copyWith(color: Color(0xFF9D99B8)),
                           ),
                         ],
                       ),
@@ -1522,13 +1440,7 @@ class _Class2ScreenState extends State<StudentClass2Screen> {
                           children: [
                             Text(
                               question['question'] ?? question['q'] ?? 'سوال',
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontSize: 12,
-                                fontWeight: FontWeight.bold,
-                                fontFamily: AppTheme.fontFamily,
-                                fontFamilyFallback: AppTheme.fontFamilyFallback,
-                              ),
+                              style: AppTypography.bodyLarge,
                             ),
                             const SizedBox(height: 12),
                             ...List.generate((question['options'] as List).length, (idx) {
@@ -1537,7 +1449,7 @@ class _Class2ScreenState extends State<StudentClass2Screen> {
                               final bool isWrongSel = showAnswers && isSel && !isCorrectOpt;
                               final Color accent = isCorrectOpt
                                   ? AppToast.successColor
-                                  : (isWrongSel ? AppToast.errorColor : const Color(0xFFC09268));
+                                  : (isWrongSel ? AppToast.errorColor : AppColors.buttonCamel);
                               return TapExpander(child: GestureDetector(
                                 onTap: showAnswers
                                     ? null
@@ -1570,12 +1482,7 @@ class _Class2ScreenState extends State<StudentClass2Screen> {
                                       Expanded(
                                         child: Text(
                                           question['options'][idx]?.toString() ?? '',
-                                          style: TextStyle(
-                                            color: isSel ? const Color(0xFFFBE4C8) : const Color(0xFFDDD9EE),
-                                            fontSize: 11.5,
-                                            fontFamily: AppTheme.fontFamily,
-                                            fontFamilyFallback: AppTheme.fontFamilyFallback,
-                                          ),
+                                          style: AppTypography.caption.copyWith(color: isSel ? const Color(0xFFFBE4C8) : const Color(0xFFDDD9EE)),
                                         ),
                                       ),
                                     ],
@@ -1592,12 +1499,7 @@ class _Class2ScreenState extends State<StudentClass2Screen> {
                           padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 6),
                           child: Text(
                             feedbackMessage!,
-                            style: TextStyle(
-                              color: isErrorFeedback ? const Color(0xFFFF8A80) : const Color(0xFF6EE7B7),
-                              fontSize: 11,
-                              fontFamily: AppTheme.fontFamily,
-                              fontFamilyFallback: AppTheme.fontFamilyFallback,
-                            ),
+                            style: AppTypography.caption.copyWith(color: isErrorFeedback ? const Color(0xFFFF8A80) : const Color(0xFF6EE7B7)),
                             textAlign: TextAlign.center,
                           ),
                         ),
@@ -1620,9 +1522,9 @@ class _Class2ScreenState extends State<StudentClass2Screen> {
                                   padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
                                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                                 ),
-                                child: const Text(
+                                child: Text(
                                   'قبلی',
-                                  style: TextStyle(color: Color(0xFFDDD9EE), fontSize: 11.5, fontFamily: AppTheme.fontFamily),
+                                  style: AppTypography.caption.copyWith(color: Color(0xFFDDD9EE)),
                                 ),
                               ),
                             ),
@@ -1632,14 +1534,9 @@ class _Class2ScreenState extends State<StudentClass2Screen> {
                                 alignment: Alignment.centerLeft,
                                 child: TextButton(
                                   onPressed: () => Navigator.pop(context),
-                                  child: const Text(
+                                  child: Text(
                                     'بستن',
-                                    style: TextStyle(
-                                      color: AppColors.buttonCancelPurple,
-                                      fontSize: 14,
-                                      fontWeight: FontWeight.bold,
-                                      fontFamily: AppTheme.fontFamily,
-                                    ),
+                                    style: AppTypography.h3Strong.copyWith(color: AppColors.buttonCancelPurple),
                                   ),
                                 ),
                               ),
@@ -1733,7 +1630,7 @@ class _Class2ScreenState extends State<StudentClass2Screen> {
                                       });
                                     },
                               style: ElevatedButton.styleFrom(
-                                backgroundColor: const Color(0xFFC09268),
+                                backgroundColor: AppColors.buttonCamel,
                                 foregroundColor: const Color(0xFF1E1A33),
                                 padding: const EdgeInsets.symmetric(vertical: 10),
                                 shape: RoundedRectangleBorder(
@@ -1759,7 +1656,6 @@ class _Class2ScreenState extends State<StudentClass2Screen> {
                   ),
                   ),
                 ),
-              ),
               ),
             );
           },

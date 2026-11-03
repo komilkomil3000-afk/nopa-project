@@ -1,4 +1,7 @@
 import 'package:nopa_app/widgets/tap_expander.dart';
+import 'package:nopa_app/widgets/safe_avatar.dart';
+import '../../../widgets/nopa_modal_shell.dart';
+import 'package:nopa_app/widgets/nopa_pill_tabs.dart';
 import 'package:nopa_app/widgets/station_gallery_item.dart';
 import 'package:nopa_app/core/station_numbering.dart';
 import 'package:nopa_app/core/schedule_utils.dart';
@@ -354,12 +357,7 @@ class _MentorStationScreenState extends State<MentorStationClass1Screen> {
                   child: Text(
                     'اطلاعات آموزشی هر فرد در این منزلگاه برای شما نمایش داده میشود',
                     textAlign: TextAlign.center,
-                    style: TextStyle(
-                      fontFamily: AppTheme.fontFamily,
-                      fontFamilyFallback: AppTheme.fontFamilyFallback,
-                      fontSize: 12.5,
-                      color: Colors.white.withValues(alpha: 0.7),
-                    ),
+                    style: AppTypography.bodyMedium.copyWith(color: Colors.white.withValues(alpha: 0.7)),
                   ),
                 ),
 
@@ -481,13 +479,7 @@ class _MentorStationScreenState extends State<MentorStationClass1Screen> {
                   Text(
                     ordinalTitle,
                     textAlign: TextAlign.right,
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 17.5,
-                      fontWeight: FontWeight.w800,
-                      fontFamily: AppTheme.fontFamily,
-                      fontFamilyFallback: AppTheme.fontFamilyFallback,
-                    ),
+                    style: AppTypography.h3.copyWith(height: 1.25),
                   ),
                   const SizedBox(height: 4),
 
@@ -496,13 +488,7 @@ class _MentorStationScreenState extends State<MentorStationClass1Screen> {
                     builder: (context, constraints) {
                       final textSpan = TextSpan(
                         text: fullDescription,
-                        style: const TextStyle(
-                          color: Color(0xFFD3D0E3),
-                          fontSize: 10.5,
-                          height: 1.38,
-                          fontFamily: AppTheme.fontFamily,
-                          fontFamilyFallback: AppTheme.fontFamilyFallback,
-                        ),
+                        style: AppTypography.caption.copyWith(color: Color(0xFFD3D0E3)),
                       );
                       final textPainter = TextPainter(
                         text: textSpan,
@@ -519,13 +505,7 @@ class _MentorStationScreenState extends State<MentorStationClass1Screen> {
                             Text(
                               fullDescription,
                               textAlign: TextAlign.right,
-                              style: const TextStyle(
-                                color: Color(0xFFD3D0E3),
-                                fontSize: 10.5,
-                                height: 1.38,
-                                fontFamily: AppTheme.fontFamily,
-                                fontFamilyFallback: AppTheme.fontFamilyFallback,
-                              ),
+                              style: AppTypography.caption.copyWith(color: Color(0xFFD3D0E3)),
                             ),
                             const SizedBox(height: 4),
                             TapExpander(
@@ -533,15 +513,10 @@ class _MentorStationScreenState extends State<MentorStationClass1Screen> {
                                 onTap: () => setState(
                                   () => _isDescriptionExpanded = false,
                                 ),
-                                child: const Text(
+                                child: Text(
                                   'بستن (کمتر)',
                                   textAlign: TextAlign.right,
-                                  style: TextStyle(
-                                    color: Color(0xFFFFD574),
-                                    fontSize: 10.5,
-                                    fontWeight: FontWeight.bold,
-                                    fontFamily: AppTheme.fontFamily,
-                                  ),
+                                  style: AppTypography.caption.copyWith(color: Color(0xFFFFD574)),
                                 ),
                               ),
                             ),
@@ -553,13 +528,7 @@ class _MentorStationScreenState extends State<MentorStationClass1Screen> {
                         return Text(
                           fullDescription,
                           textAlign: TextAlign.right,
-                          style: const TextStyle(
-                            color: Color(0xFFD3D0E3),
-                            fontSize: 10.5,
-                            height: 1.38,
-                            fontFamily: AppTheme.fontFamily,
-                            fontFamilyFallback: AppTheme.fontFamilyFallback,
-                          ),
+                          style: AppTypography.caption.copyWith(color: Color(0xFFD3D0E3)),
                         );
                       }
 
@@ -571,29 +540,17 @@ class _MentorStationScreenState extends State<MentorStationClass1Screen> {
                             textAlign: TextAlign.right,
                             maxLines: 6,
                             overflow: TextOverflow.ellipsis,
-                            style: const TextStyle(
-                              color: Color(0xFFD3D0E3),
-                              fontSize: 10.5,
-                              height: 1.38,
-                              fontFamily: AppTheme.fontFamily,
-                              fontFamilyFallback: AppTheme.fontFamilyFallback,
-                            ),
+                            style: AppTypography.caption.copyWith(color: Color(0xFFD3D0E3)),
                           ),
                           const SizedBox(height: 2),
                           TapExpander(
                             child: GestureDetector(
                               onTap: () =>
                                   setState(() => _isDescriptionExpanded = true),
-                              child: const Text(
+                              child: Text(
                                 'بیشتر...',
                                 textAlign: TextAlign.right,
-                                style: TextStyle(
-                                  color: Color(0xFFF4DCC5),
-                                  fontSize: 11,
-                                  fontWeight: FontWeight.bold,
-                                  fontFamily: AppTheme.fontFamily,
-                                  decoration: TextDecoration.underline,
-                                ),
+                                style: AppTypography.captionGold.copyWith(decoration: TextDecoration.underline),
                               ),
                             ),
                           ),
@@ -659,17 +616,15 @@ class _MentorStationScreenState extends State<MentorStationClass1Screen> {
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  title,
-                  textAlign: TextAlign.right,
-                  maxLines: isExpanded ? 2 : 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 12,
-                    fontWeight: FontWeight.bold,
-                    fontFamily: AppTheme.fontFamily,
-                    fontFamilyFallback: AppTheme.fontFamilyFallback,
+                FittedBox(
+                  fit: BoxFit.scaleDown,
+                  alignment: Alignment.centerRight,
+                  child: Text(
+                    title,
+                    textAlign: TextAlign.right,
+                    maxLines: 1,
+                    softWrap: false,
+                    style: AppTypography.bodyMedium,
                   ),
                 ),
                 const SizedBox(height: 3),
@@ -678,13 +633,7 @@ class _MentorStationScreenState extends State<MentorStationClass1Screen> {
                   textAlign: TextAlign.right,
                   maxLines: isExpanded ? 2 : 1,
                   overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    color: Color(0xFFB3B0C7),
-                    fontSize: 10.5,
-                    fontWeight: FontWeight.normal,
-                    fontFamily: AppTheme.fontFamily,
-                    fontFamilyFallback: AppTheme.fontFamilyFallback,
-                  ),
+                  style: AppTypography.caption.copyWith(color: Color(0xFFB3B0C7)),
                 ),
               ],
             ),
@@ -742,7 +691,7 @@ class _MentorStationScreenState extends State<MentorStationClass1Screen> {
               ),
               child: Row(
                 mainAxisSize: MainAxisSize.min,
-                children: const [
+                children: [
                   Icon(
                     Icons.menu_book_rounded,
                     color: Color(0xFFDFB690),
@@ -751,12 +700,7 @@ class _MentorStationScreenState extends State<MentorStationClass1Screen> {
                   SizedBox(width: 7),
                   Text(
                     'ورود به صفحه کلاس‌ها',
-                    style: TextStyle(
-                      color: Color(0xFFEDE9F6),
-                      fontSize: 11.5,
-                      fontWeight: FontWeight.w700,
-                      fontFamily: AppTheme.fontFamily,
-                    ),
+                    style: AppTypography.caption.copyWith(color: Color(0xFFEDE9F6)),
                   ),
                   SizedBox(width: 4),
                   Icon(
@@ -787,13 +731,7 @@ class _MentorStationScreenState extends State<MentorStationClass1Screen> {
           const Text(
             'نگارستان منزلگاه',
             textAlign: TextAlign.right,
-            style: TextStyle(
-              color: Colors.white,
-              fontSize: 14,
-              fontWeight: FontWeight.bold,
-              fontFamily: AppTheme.fontFamily,
-              fontFamilyFallback: AppTheme.fontFamilyFallback,
-            ),
+            style: AppTypography.h3Strong,
           ),
           const SizedBox(height: 10),
 
@@ -847,13 +785,7 @@ class _MentorStationScreenState extends State<MentorStationClass1Screen> {
                     textAlign: TextAlign.right,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
-                      color: Color(0xFF9D99B8),
-                      fontSize: 11,
-                      fontWeight: FontWeight.w400,
-                      fontFamily: AppTheme.fontFamily,
-                      fontFamilyFallback: AppTheme.fontFamilyFallback,
-                    ),
+                    style: AppTypography.caption.copyWith(color: Color(0xFF9D99B8)),
                   ),
                 ),
 
@@ -886,7 +818,7 @@ class _MentorStationScreenState extends State<MentorStationClass1Screen> {
                                 shape: BoxShape.circle,
                                 border: Border.all(
                                   color: _currentClipIndex < clips.length - 1
-                                      ? const Color(0xFFC09268)
+                                      ? AppColors.buttonCamel
                                       : const Color(
                                           0xFFC09268,
                                         ).withValues(alpha: 0.3),
@@ -932,7 +864,7 @@ class _MentorStationScreenState extends State<MentorStationClass1Screen> {
                                 shape: BoxShape.circle,
                                 border: Border.all(
                                   color: _currentClipIndex > 0
-                                      ? const Color(0xFFC09268)
+                                      ? AppColors.buttonCamel
                                       : const Color(
                                           0xFFC09268,
                                         ).withValues(alpha: 0.3),
@@ -964,17 +896,10 @@ class _MentorStationScreenState extends State<MentorStationClass1Screen> {
 
   /// Big Centered Title: "گزارش آموزشی اعضا"
   Widget _buildEducationalReportSectionHeader() {
-    return const Center(
+    return Center(
       child: Text(
         'گزارش آموزشی اعضا',
-        style: TextStyle(
-          fontFamily: AppTheme.fontFamily,
-          fontFamilyFallback: AppTheme.fontFamilyFallback,
-          fontSize: 22,
-          fontWeight: FontWeight.w900,
-          color: Colors.white,
-          letterSpacing: 0.5,
-        ),
+        style: AppTypography.h3.copyWith(height: 1.25),
       ),
     );
   }
@@ -1007,7 +932,7 @@ class _MentorStationScreenState extends State<MentorStationClass1Screen> {
                 color: const Color(0xFF2A2835),
                 borderRadius: BorderRadius.circular(8),
                 border: Border.all(
-                  color: const Color(0xFFC09268).withValues(alpha: 0.85),
+                  color: AppColors.buttonCamel.withValues(alpha: 0.85),
                   width: 1.0,
                 ),
               ),
@@ -1016,13 +941,7 @@ class _MentorStationScreenState extends State<MentorStationClass1Screen> {
                 children: [
                   Text(
                     _isReportExpanded ? 'بستن' : 'مشاهده کامل',
-                    style: const TextStyle(
-                      color: Color(0xFFF4DCC5),
-                      fontSize: 12,
-                      fontWeight: FontWeight.bold,
-                      fontFamily: AppTheme.fontFamily,
-                      fontFamilyFallback: AppTheme.fontFamilyFallback,
-                    ),
+                    style: AppTypography.bodyLargeGold,
                   ),
                   const SizedBox(width: 4),
                   Icon(
@@ -1041,81 +960,35 @@ class _MentorStationScreenState extends State<MentorStationClass1Screen> {
     );
   }
 
-  /// Pill Tabs styled like login screen mode switcher (strokeGradient, darkSurfaceGradient, accentGradient)
+  /// Report tabs: one per class category of the station, "جلسات" when the station has no
+  /// category yet, and "آزمون ها". Same segmented style as every other tab bar in the app.
   Widget _buildPillTabs(Map<String, dynamic> station) {
     final categories = _reportCategories(station);
+    const int quizzesTab = -1;
+    const int sessionsTab = -2;
+    final int selected = _reportQuizzesSelected
+        ? quizzesTab
+        : (categories.isEmpty ? sessionsTab : _reportCategoryIndex.clamp(0, categories.length - 1));
     return FittedBox(
       fit: BoxFit.scaleDown,
-      child: Container(
-        decoration: BoxDecoration(
-          gradient: AppColors.strokeGradient,
-          borderRadius: BorderRadius.circular(10),
-        ),
-        padding: const EdgeInsets.all(AppColors.borderWidth),
-        child: Container(
-          decoration: BoxDecoration(
-            gradient: AppColors.darkSurfaceGradient,
-            borderRadius: BorderRadius.circular(9),
-          ),
-          padding: const EdgeInsets.all(3),
-          child: Directionality(
-            textDirection: TextDirection.rtl,
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                // One tab per class category of the station, under its admin-panel title
-                for (int i = 0; i < categories.length; i++) ...[
-                  _buildTabButton(
-                    'کلاس ${StationCategories.shortLabel(categories[i].title)}',
-                    !_reportQuizzesSelected && _reportCategoryIndex == i,
-                    () {
-                      setState(() {
-                        _reportCategoryIndex = i;
-                        _reportQuizzesSelected = false;
-                      });
-                    },
-                  ),
-                  const SizedBox(width: 4),
-                ],
-                _buildTabButton(
-                  'آزمون ها',
-                  _reportQuizzesSelected || categories.isEmpty,
-                  () {
-                    setState(() {
-                      _reportQuizzesSelected = true;
-                    });
-                  },
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildTabButton(String title, bool isSelected, VoidCallback onTap) {
-    return TapExpander(
-      child: GestureDetector(
-        onTap: onTap,
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 180),
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
-          decoration: BoxDecoration(
-            gradient: isSelected ? AppColors.accentGradient : null,
-            borderRadius: BorderRadius.circular(8),
-          ),
-          child: Text(
-            title,
-            style: TextStyle(
-              color: isSelected ? Colors.white : const Color(0xFF8E889D),
-              fontSize: 11.5,
-              fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
-              fontFamily: AppTheme.fontFamily,
-              fontFamilyFallback: AppTheme.fontFamilyFallback,
-            ),
-          ),
-        ),
+      child: NopaPillTabs<int>(
+        selected: selected,
+        tabs: [
+          for (int i = 0; i < categories.length; i++)
+            NopaPillTab<int>(i, 'کلاس ${StationCategories.shortLabel(categories[i].title)}'),
+          if (categories.isEmpty) const NopaPillTab<int>(sessionsTab, 'جلسات'),
+          const NopaPillTab<int>(quizzesTab, 'آزمون ها'),
+        ],
+        onChanged: (v) {
+          setState(() {
+            if (v == quizzesTab) {
+              _reportQuizzesSelected = true;
+            } else {
+              _reportQuizzesSelected = false;
+              if (v >= 0) _reportCategoryIndex = v;
+            }
+          });
+        },
       ),
     );
   }
@@ -1139,10 +1012,7 @@ class _MentorStationScreenState extends State<MentorStationClass1Screen> {
             _loadFailed
                 ? 'دریافت اطلاعات اعضا ممکن نشد. دوباره تلاش کنید.'
                 : 'عضوی در این کاروان یافت نشد',
-            style: TextStyle(
-              fontFamily: AppTheme.fontFamily,
-              color: Colors.white.withValues(alpha: 0.6),
-            ),
+            style: AppTypography.bodyMedium.copyWith(color: Colors.white.withValues(alpha: 0.6)),
           ),
         ),
       );
@@ -1248,53 +1118,11 @@ class _MentorStationScreenState extends State<MentorStationClass1Screen> {
                         Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            Container(
-                              width: 30,
-                              height: 30,
-                              decoration: BoxDecoration(
-                                shape: BoxShape.circle,
-                                color: const Color(0xFF534C82),
-                                border: Border.all(
-                                  color: const Color(
-                                    0xFF837CB7,
-                                  ).withValues(alpha: 0.5),
-                                  width: 1,
-                                ),
-                              ),
-                              child: ClipOval(
-                                child: avatarUrl.isNotEmpty
-                                    ? CachedNetworkImage(
-                                        imageUrl: avatarUrl,
-                                        fit: BoxFit.cover,
-                                        placeholder: (ctx, url) => const Icon(
-                                          Icons.person,
-                                          color: Colors.white70,
-                                          size: 17,
-                                        ),
-                                        errorWidget: (ctx, url, error) =>
-                                            const Icon(
-                                              Icons.person,
-                                              color: Colors.white70,
-                                              size: 17,
-                                            ),
-                                      )
-                                    : const Icon(
-                                        Icons.person_rounded,
-                                        color: Color(0xFFEDE9F6),
-                                        size: 17,
-                                      ),
-                              ),
-                            ),
+                            SafeAvatar(imageUrl: avatarUrl, name: name, radius: 15),
                             const SizedBox(width: 8),
                             Text(
                               name,
-                              style: const TextStyle(
-                                fontFamily: AppTheme.fontFamily,
-                                fontFamilyFallback: AppTheme.fontFamilyFallback,
-                                fontSize: 12.5,
-                                fontWeight: FontWeight.w600,
-                                color: Colors.white,
-                              ),
+                              style: AppTypography.bodyLarge,
                             ),
                           ],
                         ),
@@ -1325,16 +1153,9 @@ class _MentorStationScreenState extends State<MentorStationClass1Screen> {
                                       gradient: AppColors.darkSurfaceGradient,
                                       borderRadius: BorderRadius.circular(7),
                                     ),
-                                    child: const Text(
+                                    child: Text(
                                       'پیگیری',
-                                      style: TextStyle(
-                                        color: Color(0xFFC7B299),
-                                        fontSize: 10,
-                                        fontWeight: FontWeight.w600,
-                                        fontFamily: AppTheme.fontFamily,
-                                        fontFamilyFallback:
-                                            AppTheme.fontFamilyFallback,
-                                      ),
+                                      style: AppTypography.caption.copyWith(color: Color(0xFFC7B299)),
                                     ),
                                   ),
                                 ),
@@ -1384,8 +1205,11 @@ class _MentorStationScreenState extends State<MentorStationClass1Screen> {
     Map<String, dynamic> station,
   ) {
     final categories = _reportCategories(station);
-    if (_reportQuizzesSelected || categories.isEmpty) {
+    if (_reportQuizzesSelected) {
       return _buildQuizzesProgress(member, station);
+    }
+    if (categories.isEmpty) {
+      return _buildReportEmptyText('برای این منزلگاه جلسه‌ای ثبت نشده است');
     }
 
     final sessionList =
@@ -1429,27 +1253,18 @@ class _MentorStationScreenState extends State<MentorStationClass1Screen> {
                 child: Text(
                   session['title']?.toString() ??
                       'جلسه ${(idx + 1).toPersian()}',
-                  style: const TextStyle(
-                    fontFamily: AppTheme.fontFamily,
-                    fontFamilyFallback: AppTheme.fontFamilyFallback,
-                    fontSize: 12,
-                    fontWeight: FontWeight.bold,
-                    color: Color(0xFFEDE9F6),
-                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: AppTypography.h3.copyWith(height: 1.25, color: Color(0xFFEDE9F6)),
                 ),
               ),
               Text(
                 'دیده شده: ${watched.toPersian()} از ${clips.length.toPersian()}',
-                style: TextStyle(
-                  fontFamily: AppTheme.fontFamily,
-                  fontFamilyFallback: AppTheme.fontFamilyFallback,
-                  fontSize: 10.5,
-                  color: clips.isNotEmpty && watched >= clips.length
+                style: AppTypography.caption.copyWith(color: clips.isNotEmpty && watched >= clips.length
                       ? const Color(0xFF4ADE80)
                       : (watched > 0
                             ? const Color(0xFFDFB690)
-                            : Colors.white.withValues(alpha: 0.45)),
-                ),
+                            : Colors.white.withValues(alpha: 0.45))),
               ),
             ],
           ),
@@ -1481,25 +1296,15 @@ class _MentorStationScreenState extends State<MentorStationClass1Screen> {
               clip['title']?.toString() ?? 'پارت ${(index + 1).toPersian()}',
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
-              style: const TextStyle(
-                fontFamily: AppTheme.fontFamily,
-                fontFamilyFallback: AppTheme.fontFamilyFallback,
-                fontSize: 11.5,
-                color: Color(0xFFEDE9F6),
-              ),
+              style: AppTypography.caption.copyWith(color: Color(0xFFDDD9EE)),
             ),
           ),
           const SizedBox(width: 8),
           Text(
             watched ? (when ?? 'دیده شده') : 'دیده نشده',
-            style: TextStyle(
-              fontFamily: AppTheme.fontFamily,
-              fontFamilyFallback: AppTheme.fontFamilyFallback,
-              fontSize: 10.5,
-              color: watched
+            style: AppTypography.caption.copyWith(color: watched
                   ? const Color(0xFF4ADE80)
-                  : Colors.white.withValues(alpha: 0.45),
-            ),
+                  : Colors.white.withValues(alpha: 0.45)),
           ),
         ],
       ),
@@ -1599,12 +1404,9 @@ class _MentorStationScreenState extends State<MentorStationClass1Screen> {
                 Text(
                   quiz['title']?.toString() ??
                       'آزمون شماره ${(idx + 1).toPersian()}',
-                  style: const TextStyle(
-                    fontFamily: AppTheme.fontFamily,
-                    fontFamilyFallback: AppTheme.fontFamilyFallback,
-                    fontSize: 11.5,
-                    color: Color(0xFFEDE9F6),
-                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: AppTypography.caption.copyWith(color: Color(0xFFDDD9EE)),
                 ),
                 if (subtitle.isNotEmpty)
                   Padding(
@@ -1613,12 +1415,7 @@ class _MentorStationScreenState extends State<MentorStationClass1Screen> {
                       subtitle,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
-                        fontFamily: AppTheme.fontFamily,
-                        fontFamilyFallback: AppTheme.fontFamilyFallback,
-                        fontSize: 10,
-                        color: Colors.white.withValues(alpha: 0.45),
-                      ),
+                      style: AppTypography.caption.copyWith(color: Colors.white.withValues(alpha: 0.45)),
                     ),
                   ),
                 if (when != null)
@@ -1628,12 +1425,7 @@ class _MentorStationScreenState extends State<MentorStationClass1Screen> {
                       attempts > 1
                           ? '$when • ${attempts.toPersian()} بار شرکت'
                           : when,
-                      style: TextStyle(
-                        fontFamily: AppTheme.fontFamily,
-                        fontFamilyFallback: AppTheme.fontFamilyFallback,
-                        fontSize: 10,
-                        color: Colors.white.withValues(alpha: 0.55),
-                      ),
+                      style: AppTypography.caption.copyWith(color: Colors.white.withValues(alpha: 0.55)),
                     ),
                   ),
                 if (questionResults.length > 1)
@@ -1664,11 +1456,7 @@ class _MentorStationScreenState extends State<MentorStationClass1Screen> {
                             ),
                             child: Text(
                               (q + 1).toPersian(),
-                              style: const TextStyle(
-                                fontFamily: AppTheme.fontFamily,
-                                fontSize: 9,
-                                color: Colors.white,
-                              ),
+                              style: AppTypography.caption,
                             ),
                           ),
                       ],
@@ -1683,23 +1471,12 @@ class _MentorStationScreenState extends State<MentorStationClass1Screen> {
             children: [
               Text(
                 label,
-                style: TextStyle(
-                  fontFamily: AppTheme.fontFamily,
-                  fontFamilyFallback: AppTheme.fontFamilyFallback,
-                  fontSize: 11,
-                  fontWeight: FontWeight.bold,
-                  color: color,
-                ),
+                style: AppTypography.caption.copyWith(color: color),
               ),
               if (hasScore)
                 Text(
                   '${((result)['score'] as num? ?? 0).toInt().toPersian()} از ${((result)['total'] as num? ?? 1).toInt().toPersian()}',
-                  style: TextStyle(
-                    fontFamily: AppTheme.fontFamily,
-                    fontFamilyFallback: AppTheme.fontFamilyFallback,
-                    fontSize: 10,
-                    color: Colors.white.withValues(alpha: 0.6),
-                  ),
+                  style: AppTypography.caption.copyWith(color: Colors.white.withValues(alpha: 0.6)),
                 ),
             ],
           ),
@@ -1779,12 +1556,7 @@ class _MentorStationScreenState extends State<MentorStationClass1Screen> {
     child: Text(
       text,
       textAlign: TextAlign.center,
-      style: TextStyle(
-        fontFamily: AppTheme.fontFamily,
-        fontFamilyFallback: AppTheme.fontFamilyFallback,
-        fontSize: 11.5,
-        color: Colors.white.withValues(alpha: 0.5),
-      ),
+      style: AppTypography.caption.copyWith(color: Colors.white.withValues(alpha: 0.5)),
     ),
   );
 
@@ -1798,12 +1570,7 @@ class _MentorStationScreenState extends State<MentorStationClass1Screen> {
       ),
       child: Text(
         label,
-        style: const TextStyle(
-          color: Color(0xFFDDD9EE),
-          fontSize: 12,
-          fontWeight: FontWeight.w500,
-          fontFamily: AppTheme.fontFamily,
-        ),
+        style: AppTypography.bodyMedium.copyWith(color: Color(0xFFDDD9EE)),
       ),
     );
   }
@@ -1825,174 +1592,19 @@ class _MentorStationScreenState extends State<MentorStationClass1Screen> {
     final phone = member['phoneNumber']?.toString() ?? '';
     final controller = DraftTextController(draftKey: 'mentor_followup.${member['id']}');
 
-    showDialog(
-      context: context,
-      barrierDismissible: true,
+    showNopaModal<void>(
+      context,
+      insetPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
       builder: (dialogCtx) {
-        return Directionality(
-          textDirection: TextDirection.rtl,
-          child: Dialog(
-            backgroundColor: Colors.transparent,
-            insetPadding: const EdgeInsets.symmetric(
-              horizontal: 20,
-              vertical: 20,
-            ),
-            child: Container(
-              constraints: const BoxConstraints(maxWidth: 420),
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 22),
-              decoration: BoxDecoration(
-                color: const Color(0xFF2C2849),
-                borderRadius: BorderRadius.circular(24),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.5),
-                    blurRadius: 24,
-                    spreadRadius: 2,
-                    offset: const Offset(0, 8),
-                  ),
-                ],
-              ),
-              child: SingleChildScrollView(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    // Header: Message Icon on right (in RTL) and Centered Title
-                    Stack(
-                      alignment: Alignment.center,
-                      children: [
-                        const Align(
-                          alignment: Alignment.centerRight,
-                          child: Icon(
-                            Icons.chat_bubble_outline_rounded,
-                            color: Color(0xFF9E9CD6),
-                            size: 32,
-                          ),
-                        ),
-                        const Text(
-                          'پیام به دانش‌آموز',
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                            fontFamily: AppTheme.fontFamily,
-                          ),
-                          textAlign: TextAlign.center,
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 22),
-
-                    // 1. Student Name
-                    _buildDialogRow(
-                      label: 'نام دانش‌آموز:',
-                      content: Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 14,
-                          vertical: 8,
-                        ),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFF1E1D38),
-                          borderRadius: BorderRadius.circular(10),
-                          border: Border.all(
-                            color: const Color(0xFF7A709E),
-                            width: 1.1,
-                          ),
-                        ),
-                        child: Text(
-                          name,
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 13,
-                            fontWeight: FontWeight.bold,
-                            fontFamily: AppTheme.fontFamily,
-                          ),
-                        ),
-                      ),
-                    ),
-
-                    if (phone.isNotEmpty) ...[
-                      const SizedBox(height: 12),
-                      // 2. Phone
-                      _buildDialogRow(
-                        label: 'شماره تماس:',
-                        content: Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 14,
-                            vertical: 8,
-                          ),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFF1E1D38),
-                            borderRadius: BorderRadius.circular(10),
-                            border: Border.all(
-                              color: const Color(0xFF7A709E),
-                              width: 1.1,
-                            ),
-                          ),
-                          child: Text(
-                            phone,
-                            textDirection: TextDirection.ltr,
-                            textAlign: TextAlign.right,
-                            style: const TextStyle(
-                              color: Color(0xFFDDD9EE),
-                              fontSize: 12.5,
-                              fontFamily: AppTheme.fontFamily,
-                            ),
-                          ),
-                        ),
-                      ),
-                    ],
-
-                    const SizedBox(height: 12),
-
-                    // 3. Message Text input
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        _buildDialogPillBadge('متن پیام:'),
-                        const SizedBox(height: 8),
-                        Container(
-                          decoration: BoxDecoration(
-                            color: const Color(0xFF1E1D38),
-                            borderRadius: BorderRadius.circular(14),
-                            border: Border.all(
-                              color: const Color(0xFF7A709E),
-                              width: 1.1,
-                            ),
-                          ),
-                          child: TextField(
-                            controller: controller,
-                            maxLines: 4,
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 12.5,
-                              fontFamily: AppTheme.fontFamily,
-                            ),
-                            decoration: const InputDecoration(
-                              hintText:
-                                  'متن پیام یا پیگیری آموزشی برای این عضو را بنویسید...',
-                              hintStyle: TextStyle(
-                                color: Color(0xFF7E789F),
-                                fontSize: 12,
-                                fontFamily: AppTheme.fontFamily,
-                              ),
-                              contentPadding: EdgeInsets.all(12),
-                              border: InputBorder.none,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-
-                    const SizedBox(height: 24),
-
-                    // Bottom Buttons: ارسال پیام & لغو (matching ContactUsDialog)
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        // ارسال پیام (Right in RTL)
-                        TextButton(
-                          onPressed: () async {
+        return NopaModalShell(
+          maxWidth: 420,
+          headerIcon: Icons.chat_bubble_outline_rounded,
+          title: 'پیام به دانش‌آموز',
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 22),
+          actions: [
+            NopaModalAction(
+              label: 'ارسال پیام',
+              onPressed: () async {
                             final text = controller.text.trim();
                             if (text.isEmpty) {
                               AppToast.error(
@@ -2019,53 +1631,105 @@ class _MentorStationScreenState extends State<MentorStationClass1Screen> {
                               'پیام برای $name با موفقیت ارسال شد.',
                             );
                           },
-                          style: TextButton.styleFrom(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 16,
-                              vertical: 8,
-                            ),
-                          ),
-                          child: const Text(
-                            'ارسال پیام',
-                            style: TextStyle(
-                              color: Color(0xFF9E9CD6),
-                              fontSize: 15,
-                              fontWeight: FontWeight.bold,
-                              fontFamily: AppTheme.fontFamily,
-                            ),
+            ),
+            NopaModalAction(
+              label: 'لغو',
+              variant: NopaModalActionVariant.secondary,
+              onPressed: () => Navigator.pop(dialogCtx),
+            ),
+          ],
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+                    // 1. Student Name
+                    _buildDialogRow(
+                      label: 'نام دانش‌آموز:',
+                      content: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 14,
+                          vertical: 8,
+                        ),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF1E1D38),
+                          borderRadius: BorderRadius.circular(10),
+                          border: Border.all(
+                            color: const Color(0xFF7A709E),
+                            width: 1.1,
                           ),
                         ),
+                        child: Text(
+                          name,
+                          style: AppTypography.h3Strong,
+                        ),
+                      ),
+                    ),
 
-                        // لغو (Left in RTL)
-                        TextButton(
-                          onPressed: () => Navigator.pop(dialogCtx),
-                          style: TextButton.styleFrom(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 16,
-                              vertical: 8,
+                    if (phone.isNotEmpty) ...[
+                      const SizedBox(height: 12),
+                      // 2. Phone
+                      _buildDialogRow(
+                        label: 'شماره تماس:',
+                        content: Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 14,
+                            vertical: 8,
+                          ),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFF1E1D38),
+                            borderRadius: BorderRadius.circular(10),
+                            border: Border.all(
+                              color: const Color(0xFF7A709E),
+                              width: 1.1,
                             ),
                           ),
-                          child: const Text(
-                            'لغو',
-                            style: TextStyle(
-                              color: Color(0xFF9E9CD6),
-                              fontSize: 15,
-                              fontWeight: FontWeight.bold,
-                              fontFamily: AppTheme.fontFamily,
+                          child: Text(
+                            phone,
+                            textDirection: TextDirection.ltr,
+                            textAlign: TextAlign.right,
+                            style: AppTypography.bodyMedium.copyWith(color: Color(0xFFDDD9EE)),
+                          ),
+                        ),
+                      ),
+                    ],
+
+                    const SizedBox(height: 12),
+
+                    // 3. Message Text input
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        _buildDialogPillBadge('متن پیام:'),
+                        const SizedBox(height: 8),
+                        Container(
+                          decoration: BoxDecoration(
+                            color: const Color(0xFF1E1D38),
+                            borderRadius: BorderRadius.circular(14),
+                            border: Border.all(
+                              color: const Color(0xFF7A709E),
+                              width: 1.1,
+                            ),
+                          ),
+                          child: TextField(
+                            controller: controller,
+                            maxLines: 4,
+                            style: AppTypography.bodyMedium,
+                            decoration: InputDecoration(
+                              hintText:
+                                  'متن پیام یا پیگیری آموزشی برای این عضو را بنویسید...',
+                              hintStyle: AppTypography.bodyMedium.copyWith(color: Color(0xFF7E789F)),
+                              contentPadding: EdgeInsets.all(12),
+                              border: InputBorder.none,
                             ),
                           ),
                         ),
                       ],
                     ),
-                  ],
-                ),
-              ),
-            ),
+
+            ],
           ),
         );
       },
     );
   }
 }
-
-typedef MentorStationScreen = MentorStationClass1Screen;

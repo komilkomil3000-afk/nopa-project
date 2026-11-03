@@ -1,4 +1,7 @@
 import 'package:nopa_app/widgets/tap_expander.dart';
+import 'package:nopa_app/core/theme/app_colors.dart';
+import 'package:nopa_app/widgets/bottom_nav_bar.dart';
+import '../../../widgets/nopa_modal_shell.dart';
 import 'package:nopa_app/core/station_numbering.dart';
 import 'package:nopa_app/core/asset_names.dart';
 import 'package:flutter/material.dart' hide Text;
@@ -225,88 +228,16 @@ class _MentorMembersScreenState extends State<MentorCaravansRosterScreen> {
     final phoneController = TextEditingController();
     final noteController = TextEditingController();
 
-    showDialog(
-      context: context,
-      builder: (ctx) => Directionality(
-        textDirection: TextDirection.rtl,
-        child: Dialog(
-          backgroundColor: const Color(0xFF28274A),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(20),
-            side: const BorderSide(color: Color(0xFF5A588B), width: 1.2),
-          ),
-          child: Padding(
-            padding: const EdgeInsets.all(20),
-            child: SingleChildScrollView(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  const Text(
-                    'درخواست اضافه کردن کاربر',
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                      fontFamily: AppTheme.fontFamily,
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  TextField(
-                    controller: nameController,
-                    style: const TextStyle(color: Colors.white, fontSize: 13, fontFamily: AppTheme.fontFamily),
-                    decoration: InputDecoration(
-                      labelText: 'نام و نام خانوادگی دانش‌آموز',
-                      labelStyle: const TextStyle(color: Color(0xFFB5B3C8), fontSize: 12),
-                      filled: true,
-                      fillColor: const Color(0xFF1E1D36),
-                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  TextField(
-                    controller: phoneController,
-                    keyboardType: TextInputType.phone,
-                    style: const TextStyle(color: Colors.white, fontSize: 13, fontFamily: AppTheme.fontFamily),
-                    decoration: InputDecoration(
-                      labelText: 'شماره همراه دانش‌آموز',
-                      labelStyle: const TextStyle(color: Color(0xFFB5B3C8), fontSize: 12),
-                      filled: true,
-                      fillColor: const Color(0xFF1E1D36),
-                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  TextField(
-                    controller: noteController,
-                    maxLines: 2,
-                    style: const TextStyle(color: Colors.white, fontSize: 13, fontFamily: AppTheme.fontFamily),
-                    decoration: InputDecoration(
-                      labelText: 'توضیحات یا علت درخواست (اختیاری)',
-                      labelStyle: const TextStyle(color: Color(0xFFB5B3C8), fontSize: 12),
-                      filled: true,
-                      fillColor: const Color(0xFF1E1D36),
-                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
-                    ),
-                  ),
-                  const SizedBox(height: 20),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: OutlinedButton(
-                          onPressed: () => Navigator.pop(ctx),
-                          style: OutlinedButton.styleFrom(
-                            side: const BorderSide(color: Color(0xFF6B68A8)),
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                          ),
-                          child: const Text('انصراف', style: TextStyle(color: Colors.white70, fontFamily: AppTheme.fontFamily)),
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: ElevatedButton(
-                          onPressed: () async {
+    showNopaModal<void>(
+      context,
+      builder: (ctx) => NopaModalShell(
+        maxWidth: 420,
+        headerIcon: Icons.person_add_alt_1_rounded,
+        title: 'درخواست اضافه کردن کاربر',
+        actions: [
+          NopaModalAction(
+            label: 'ارسال درخواست',
+            onPressed: () async {
                             if (nameController.text.trim().isEmpty || phoneController.text.trim().isEmpty) {
                               AppToast.error(context, 'لطفاً نام و شماره همراه را وارد کنید');
                               return;
@@ -322,74 +253,72 @@ class _MentorMembersScreenState extends State<MentorCaravansRosterScreen> {
                               AppToast.info(context, 'درخواست اضافه کردن کاربر با موفقیت برای مدیریت ارسال شد');
                             }
                           },
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: const Color(0xFFDE9959),
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                          ),
-                          child: const Text('ارسال درخواست', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontFamily: AppTheme.fontFamily)),
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
           ),
+          NopaModalAction(
+            label: 'انصراف',
+            variant: NopaModalActionVariant.secondary,
+            onPressed: () => Navigator.pop(ctx),
+          ),
+        ],
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+                  TextField(
+                    controller: nameController,
+                    style: AppTypography.bodyLarge,
+                    decoration: InputDecoration(
+                      labelText: 'نام و نام خانوادگی دانش‌آموز',
+                      labelStyle: AppTypography.bodyMediumMuted,
+                      filled: true,
+                      fillColor: const Color(0xFF1E1D36),
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  TextField(
+                    controller: phoneController,
+                    keyboardType: TextInputType.phone,
+                    style: AppTypography.bodyLarge,
+                    decoration: InputDecoration(
+                      labelText: 'شماره همراه دانش‌آموز',
+                      labelStyle: AppTypography.bodyMediumMuted,
+                      filled: true,
+                      fillColor: const Color(0xFF1E1D36),
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  TextField(
+                    controller: noteController,
+                    maxLines: 2,
+                    style: AppTypography.bodyLarge,
+                    decoration: InputDecoration(
+                      labelText: 'توضیحات یا علت درخواست (اختیاری)',
+                      labelStyle: AppTypography.bodyMediumMuted,
+                      filled: true,
+                      fillColor: const Color(0xFF1E1D36),
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+                    ),
+                  ),
+          ],
         ),
       ),
     );
   }
 
   void _showDeleteMemberDialog(CaravanMemberModel member, CaravanModel caravan) {
-    showDialog(
-      context: context,
-      builder: (ctx) => Directionality(
-        textDirection: TextDirection.rtl,
-        child: Dialog(
-          backgroundColor: const Color(0xFF28274A),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(20),
-            side: const BorderSide(color: Color(0xFF5A588B), width: 1.2),
-          ),
-          child: Padding(
-            padding: const EdgeInsets.all(20),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                const Text(
-                  'درخواست حذف کاربر',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                    fontFamily: AppTheme.fontFamily,
-                  ),
-                ),
-                const SizedBox(height: 14),
-                Text(
-                  'آیا از ارسال درخواست حذف «${member.name}» از ${caravan.name} اطمینان دارید؟',
-                  textAlign: TextAlign.center,
-                  style: const TextStyle(color: Color(0xFFD6D3E6), fontSize: 13, height: 1.5, fontFamily: AppTheme.fontFamily),
-                ),
-                const SizedBox(height: 20),
-                Row(
-                  children: [
-                    Expanded(
-                      child: OutlinedButton(
-                        onPressed: () => Navigator.pop(ctx),
-                        style: OutlinedButton.styleFrom(
-                          side: const BorderSide(color: Color(0xFF6B68A8)),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                        ),
-                        child: const Text('انصراف', style: TextStyle(color: Colors.white70, fontFamily: AppTheme.fontFamily)),
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: ElevatedButton(
-                        onPressed: () async {
+    showNopaModal<void>(
+      context,
+      builder: (ctx) => NopaModalShell(
+        maxWidth: 420,
+        headerIcon: Icons.person_remove_alt_1_rounded,
+        title: 'درخواست حذف کاربر',
+        actions: [
+          NopaModalAction(
+            label: 'تایید حذف',
+            variant: NopaModalActionVariant.danger,
+            onPressed: () async {
                           Navigator.pop(ctx);
                           try {
                             await HttpApiService().removeMemberFromCaravan(caravan.id, member.id);
@@ -401,52 +330,51 @@ class _MentorMembersScreenState extends State<MentorCaravansRosterScreen> {
                             AppToast.info(context, 'درخواست حذف «${member.name}» با موفقیت ثبت شد');
                           }
                         },
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFFE11D48),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                        ),
-                        child: const Text('تایید حذف', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontFamily: AppTheme.fontFamily)),
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
           ),
+          NopaModalAction(
+            label: 'انصراف',
+            variant: NopaModalActionVariant.secondary,
+            onPressed: () => Navigator.pop(ctx),
+          ),
+        ],
+        child: Text(
+          'آیا از ارسال درخواست حذف «${member.name}» از ${caravan.name} اطمینان دارید؟',
+          textAlign: TextAlign.center,
+          style: AppTypography.bodyLarge.copyWith(color: Color(0xFFD6D3E6)),
         ),
       ),
     );
   }
 
   void _showContactMemberDialog(CaravanMemberModel member) {
-    showDialog(
-      context: context,
-      builder: (ctx) => Directionality(
-        textDirection: TextDirection.rtl,
-        child: Dialog(
-          backgroundColor: const Color(0xFF28274A),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(20),
-            side: const BorderSide(color: Color(0xFF5A588B), width: 1.2),
+    showNopaModal<void>(
+      context,
+      builder: (ctx) => NopaModalShell(
+        maxWidth: 420,
+        headerIcon: Icons.call_rounded,
+        title: 'تماس با ${member.name}',
+        actions: [
+          NopaModalAction(
+            label: 'تماس تلفنی',
+            onPressed: () async {
+              Navigator.pop(ctx);
+              final uri = Uri.parse('tel:${member.phoneNumber}');
+              if (await canLaunchUrl(uri)) {
+                await launchUrl(uri);
+              }
+            },
           ),
-          child: Padding(
-            padding: const EdgeInsets.all(20),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Text(
-                  'تماس با ${member.name}',
-                  textAlign: TextAlign.center,
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                    fontFamily: AppTheme.fontFamily,
-                  ),
-                ),
-                const SizedBox(height: 14),
-                Container(
+          NopaModalAction(
+            label: 'کپی شماره',
+            variant: NopaModalActionVariant.secondary,
+            onPressed: () {
+              Clipboard.setData(ClipboardData(text: member.phoneNumber));
+              Navigator.pop(ctx);
+              AppToast.info(context, 'شماره تماس کپی شد');
+            },
+          ),
+        ],
+        child: Container(
                   padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
                   decoration: BoxDecoration(
                     color: const Color(0xFF1E1D36),
@@ -458,53 +386,11 @@ class _MentorMembersScreenState extends State<MentorCaravansRosterScreen> {
                       const Icon(Icons.phone_rounded, color: Color(0xFF8B88E8), size: 20),
                       Text(
                         member.phoneNumber,
-                        style: const TextStyle(color: Colors.white, fontSize: 15, fontWeight: FontWeight.bold, letterSpacing: 1),
+                        style: AppTypography.h3Strong.copyWith(letterSpacing: 1),
                       ),
                     ],
                   ),
                 ),
-                const SizedBox(height: 20),
-                Row(
-                  children: [
-                    Expanded(
-                      child: OutlinedButton.icon(
-                        onPressed: () {
-                          Clipboard.setData(ClipboardData(text: member.phoneNumber));
-                          Navigator.pop(ctx);
-                          AppToast.info(context, 'شماره تماس کپی شد');
-                        },
-                        icon: const Icon(Icons.copy_rounded, color: Colors.white70, size: 16),
-                        label: const Text('کپی شماره', style: TextStyle(color: Colors.white70, fontFamily: AppTheme.fontFamily, fontSize: 12)),
-                        style: OutlinedButton.styleFrom(
-                          side: const BorderSide(color: Color(0xFF6B68A8)),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: ElevatedButton.icon(
-                        onPressed: () async {
-                          Navigator.pop(ctx);
-                          final uri = Uri.parse('tel:${member.phoneNumber}');
-                          if (await canLaunchUrl(uri)) {
-                            await launchUrl(uri);
-                          }
-                        },
-                        icon: const Icon(Icons.call_rounded, color: Colors.white, size: 16),
-                        label: const Text('تماس تلفنی', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontFamily: AppTheme.fontFamily, fontSize: 12)),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFF10B981),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-        ),
       ),
     );
   }
@@ -532,7 +418,7 @@ class _MentorMembersScreenState extends State<MentorCaravansRosterScreen> {
         showNotificationIcon: true,
         showDrawerButton: true,
         showBottomNavBar: true,
-        currentBottomNavIndex: 4,
+        currentBottomNavIndex: AppTabs.profile,
         body: Center(child: CircularProgressIndicator(color: Color(0xFFCD8449))),
       );
     }
@@ -551,7 +437,7 @@ class _MentorMembersScreenState extends State<MentorCaravansRosterScreen> {
       showNotificationIcon: true,
       showDrawerButton: true,
       showBottomNavBar: true,
-      currentBottomNavIndex: 4,
+      currentBottomNavIndex: AppTabs.profile,
       body: RefreshIndicator(
         onRefresh: () async {
           await appState.fetchCaravans();
@@ -586,15 +472,9 @@ class _MentorMembersScreenState extends State<MentorCaravansRosterScreen> {
                       minimumSize: const Size(0, 32),
                       tapTargetSize: MaterialTapTargetSize.padded,
                     ),
-                    child: const Text(
+                    child: Text(
                       'درخواست اضافه کردن کاربر',
-                      style: TextStyle(
-                        color: Color(0xFFE2E0F2),
-                        fontSize: 11.5,
-                        fontWeight: FontWeight.w500,
-                        fontFamily: AppTheme.fontFamily,
-                        fontFamilyFallback: AppTheme.fontFamilyFallback,
-                      ),
+                      style: AppTypography.caption.copyWith(color: Color(0xFFE2E0F2)),
                     ),
                   ),
                 ),
@@ -606,13 +486,9 @@ class _MentorMembersScreenState extends State<MentorCaravansRosterScreen> {
                   Container(
                     padding: const EdgeInsets.all(32),
                     alignment: Alignment.center,
-                    child: const Text(
+                    child: Text(
                       'عضوی در این کاروان یافت نشد',
-                      style: TextStyle(
-                        color: Colors.white54,
-                        fontSize: 13,
-                        fontFamily: AppTheme.fontFamily,
-                      ),
+                      style: AppTypography.bodyLarge.copyWith(color: Colors.white54),
                     ),
                   )
                 else
@@ -694,22 +570,12 @@ class _MentorMembersScreenState extends State<MentorCaravansRosterScreen> {
                     children: [
                       const Text(
                         'انتخاب کاروان',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 14.5,
-                          fontWeight: FontWeight.bold,
-                          fontFamily: AppTheme.fontFamily,
-                        ),
+                        style: AppTypography.h3,
                       ),
                       const SizedBox(height: 3),
                       Text(
                         'کاروان فعال: $activeCaravanName',
-                        style: const TextStyle(
-                          color: Color(0xFFDFB690),
-                          fontSize: 11.5,
-                          fontWeight: FontWeight.w600,
-                          fontFamily: AppTheme.fontFamily,
-                        ),
+                        style: AppTypography.caption.copyWith(color: Color(0xFFDFB690)),
                       ),
                     ],
                   ),
@@ -719,19 +585,14 @@ class _MentorMembersScreenState extends State<MentorCaravansRosterScreen> {
                   decoration: BoxDecoration(
                     color: const Color(0xFF28274A),
                     borderRadius: BorderRadius.circular(10),
-                    border: Border.all(color: const Color(0xFFC09268), width: 1.0),
+                    border: Border.all(color: AppColors.buttonCamel, width: 1.0),
                   ),
-                  child: const Row(
+                  child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       Text(
                         'تغییر',
-                        style: TextStyle(
-                          color: Color(0xFFDEB58A),
-                          fontSize: 11.5,
-                          fontWeight: FontWeight.bold,
-                          fontFamily: AppTheme.fontFamily,
-                        ),
+                        style: AppTypography.caption.copyWith(color: Color(0xFFDEB58A)),
                       ),
                       SizedBox(width: 4),
                       Icon(
@@ -751,12 +612,8 @@ class _MentorMembersScreenState extends State<MentorCaravansRosterScreen> {
   }
 
   void _showCaravanSelectionBottomSheet(BuildContext context, AppRepository appState) {
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: const Color(0xFF1E1D34),
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-      ),
+    showNopaSheet(
+      context,
       builder: (ctx) {
         final caravans = appState.caravans;
         final selectedId = appState.selectedCaravanId;
@@ -782,22 +639,13 @@ class _MentorMembersScreenState extends State<MentorCaravansRosterScreen> {
                 const SizedBox(height: 18),
                 const Text(
                   'انتخاب کاروان تحت مدیریت',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                    fontFamily: AppTheme.fontFamily,
-                  ),
+                  style: AppTypography.h2,
                   textAlign: TextAlign.center,
                 ),
                 const SizedBox(height: 6),
-                const Text(
+                Text(
                   'لطفاً کاروانی که می‌خواهید اطلاعات و اعضای آن مدیریت شود را انتخاب کنید:',
-                  style: TextStyle(
-                    color: Color(0xFFDDD9EE),
-                    fontSize: 12,
-                    fontFamily: AppTheme.fontFamily,
-                  ),
+                  style: AppTypography.bodyMedium.copyWith(color: Color(0xFFDDD9EE)),
                   textAlign: TextAlign.center,
                 ),
                 const SizedBox(height: 18),
@@ -844,21 +692,12 @@ class _MentorMembersScreenState extends State<MentorCaravansRosterScreen> {
                                 children: [
                                   Text(
                                     c.name,
-                                    style: TextStyle(
-                                      color: isSelected ? Colors.white : const Color(0xFFDDD9EE),
-                                      fontSize: 13.5,
-                                      fontWeight: isSelected ? FontWeight.bold : FontWeight.w600,
-                                      fontFamily: AppTheme.fontFamily,
-                                    ),
+                                    style: AppTypography.h3Strong.copyWith(color: isSelected ? Colors.white : const Color(0xFFDDD9EE)),
                                   ),
                                   const SizedBox(height: 2),
                                   Text(
                                     '${c.memberCount} عضو • ${c.activeStation}',
-                                    style: const TextStyle(
-                                      color: Color(0xFF9D99B8),
-                                      fontSize: 11,
-                                      fontFamily: AppTheme.fontFamily,
-                                    ),
+                                    style: AppTypography.caption.copyWith(color: Color(0xFF9D99B8)),
                                   ),
                                 ],
                               ),
@@ -944,13 +783,7 @@ class _MentorMembersScreenState extends State<MentorCaravansRosterScreen> {
                     const SizedBox(width: 10),
                     Text(
                       member.name,
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 13.5,
-                        fontWeight: FontWeight.bold,
-                        fontFamily: AppTheme.fontFamily,
-                        fontFamilyFallback: AppTheme.fontFamilyFallback,
-                      ),
+                      style: AppTypography.h3,
                     ),
                   ],
                 ),
@@ -971,14 +804,9 @@ class _MentorMembersScreenState extends State<MentorCaravansRosterScreen> {
                         minimumSize: const Size(0, 26),
                         tapTargetSize: MaterialTapTargetSize.padded,
                       ),
-                      child: const Text(
+                      child: Text(
                         'درخواست حذف',
-                        style: TextStyle(
-                          color: Color(0xFFE2E0F2),
-                          fontSize: 10.5,
-                          fontFamily: AppTheme.fontFamily,
-                          fontFamilyFallback: AppTheme.fontFamilyFallback,
-                        ),
+                        style: AppTypography.caption.copyWith(color: Color(0xFFE2E0F2)),
                       ),
                     ),
                     const SizedBox(width: 6),
@@ -993,14 +821,9 @@ class _MentorMembersScreenState extends State<MentorCaravansRosterScreen> {
                         minimumSize: const Size(0, 26),
                         tapTargetSize: MaterialTapTargetSize.padded,
                       ),
-                      child: const Text(
+                      child: Text(
                         'تماس',
-                        style: TextStyle(
-                          color: Color(0xFFE2E0F2),
-                          fontSize: 10.5,
-                          fontFamily: AppTheme.fontFamily,
-                          fontFamilyFallback: AppTheme.fontFamilyFallback,
-                        ),
+                        style: AppTypography.caption.copyWith(color: Color(0xFFE2E0F2)),
                       ),
                     ),
                     const SizedBox(width: 4),
@@ -1008,7 +831,7 @@ class _MentorMembersScreenState extends State<MentorCaravansRosterScreen> {
                     // Chevron indicator
                     const Icon(
                       Icons.expand_less_rounded,
-                      color: Color(0xFF9E9CD6),
+                      color: AppColors.buttonCancelPurple,
                       size: 20,
                     ),
                   ],
@@ -1165,7 +988,7 @@ class _StudentReportCardAndEvaluationScreenState extends State<StudentReportCard
       showNotificationIcon: true,
       showDrawerButton: true,
       showBottomNavBar: true,
-      currentBottomNavIndex: 4,
+      currentBottomNavIndex: AppTabs.profile,
       body: SingleChildScrollView(
         physics: const BouncingScrollPhysics(),
         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
@@ -1212,30 +1035,17 @@ class _StudentReportCardAndEvaluationScreenState extends State<StudentReportCard
                         children: [
                           Text(
                             member.name,
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 15.5,
-                              fontWeight: FontWeight.bold,
-                              fontFamily: AppTheme.fontFamily,
-                            ),
+                            style: AppTypography.h2,
                           ),
                           const SizedBox(height: 3),
                           Text(
                             'عضو ${widget.caravanName}',
-                            style: const TextStyle(
-                              color: Color(0xFFB5B3C8),
-                              fontSize: 11.5,
-                              fontFamily: AppTheme.fontFamily,
-                            ),
+                            style: AppTypography.captionMuted,
                           ),
                           const SizedBox(height: 2),
                           Text(
                             'شماره تماس: ${member.phoneNumber}',
-                            style: const TextStyle(
-                              color: Color(0xFF9E9CD6),
-                              fontSize: 10.5,
-                              fontFamily: AppTheme.fontFamily,
-                            ),
+                            style: AppTypography.caption.copyWith(color: AppColors.buttonCancelPurple),
                           ),
                         ],
                       ),
@@ -1251,14 +1061,9 @@ class _StudentReportCardAndEvaluationScreenState extends State<StudentReportCard
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text(
+                    Text(
                       'وضعیت کلی مسافر در کاروان',
-                      style: TextStyle(
-                        color: Color(0xFFFFD580),
-                        fontSize: 14.5,
-                        fontWeight: FontWeight.bold,
-                        fontFamily: AppTheme.fontFamily,
-                      ),
+                      style: AppTypography.h3.copyWith(color: Color(0xFFFFD580)),
                     ),
                     const SizedBox(height: 14),
                     Row(
@@ -1287,14 +1092,9 @@ class _StudentReportCardAndEvaluationScreenState extends State<StudentReportCard
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text(
+                    Text(
                       'دارایی‌ها و پاداش‌ها',
-                      style: TextStyle(
-                        color: Color(0xFFFFD580),
-                        fontSize: 14.5,
-                        fontWeight: FontWeight.bold,
-                        fontFamily: AppTheme.fontFamily,
-                      ),
+                      style: AppTypography.h3.copyWith(color: Color(0xFFFFD580)),
                     ),
                     const SizedBox(height: 14),
                     Row(
@@ -1319,12 +1119,7 @@ class _StudentReportCardAndEvaluationScreenState extends State<StudentReportCard
                   children: [
                     const Text(
                       'پیشرفت در منزلگاه‌ها',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 14.5,
-                        fontWeight: FontWeight.bold,
-                        fontFamily: AppTheme.fontFamily,
-                      ),
+                      style: AppTypography.h3,
                     ),
                     const SizedBox(height: 14),
                     if (!_loaded)
@@ -1430,19 +1225,14 @@ class _StudentReportCardAndEvaluationScreenState extends State<StudentReportCard
                     Expanded(
                       child: Text(
                         'منزلگاه ${StationNumbering.numberAt(index + 1).toPersian()}: $stationTitle',
-                        style: TextStyle(
-                          color: isLocked ? Colors.white54 : Colors.white,
-                          fontSize: 13,
-                          fontWeight: FontWeight.bold,
-                          fontFamily: AppTheme.fontFamily,
-                        ),
+                        style: AppTypography.h3.copyWith(color: isLocked ? Colors.white54 : Colors.white),
                       ),
                     ),
 
                     // Chevron Arrow
                     Icon(
                       isExpanded ? Icons.keyboard_arrow_up_rounded : Icons.keyboard_arrow_down_rounded,
-                      color: const Color(0xFF9E9CD6),
+                      color: AppColors.buttonCancelPurple,
                       size: 20,
                     ),
                   ],
@@ -1515,12 +1305,7 @@ class _StudentReportCardAndEvaluationScreenState extends State<StudentReportCard
                               children: [
                                 Text(
                                   session['title']?.toString() ?? 'جلسه ${(sIdx + 1).toPersian()}',
-                                  style: TextStyle(
-                                    color: isSessionCompleted ? Colors.white : const Color(0xFFDDD9EE),
-                                    fontSize: 12,
-                                    fontWeight: isSessionCompleted ? FontWeight.bold : FontWeight.w500,
-                                    fontFamily: AppTheme.fontFamily,
-                                  ),
+                                  style: AppTypography.bodyMedium.copyWith(color: isSessionCompleted ? Colors.white : const Color(0xFFDDD9EE)),
                                 ),
                                 const SizedBox(height: 3),
                                 Text(
@@ -1529,11 +1314,7 @@ class _StudentReportCardAndEvaluationScreenState extends State<StudentReportCard
                                       : (isLocked
                                           ? 'قفل شده'
                                           : 'دیده شده: ${_ofText((session['watched'] as int?) ?? 0, (session['total'] as int?) ?? 0)}'),
-                                  style: TextStyle(
-                                    color: isSessionCompleted ? const Color(0xFF10B981) : const Color(0xFF8E8B9E),
-                                    fontSize: 10.5,
-                                    fontFamily: AppTheme.fontFamily,
-                                  ),
+                                  style: AppTypography.caption.copyWith(color: isSessionCompleted ? const Color(0xFF10B981) : const Color(0xFF8E8B9E)),
                                 ),
                               ],
                             ),
@@ -1601,10 +1382,10 @@ class _StudentReportCardAndEvaluationScreenState extends State<StudentReportCard
         children: [
           FittedBox(
             fit: BoxFit.scaleDown,
-            child: Text(value, style: const TextStyle(color: Colors.white, fontSize: 17, fontWeight: FontWeight.bold, fontFamily: AppTheme.fontFamily)),
+            child: Text(value, style: AppTypography.h2),
           ),
           const SizedBox(height: 4),
-          Text(label, style: const TextStyle(color: Color(0xFFB5B3C8), fontSize: 11, fontFamily: AppTheme.fontFamily)),
+          Text(label, style: AppTypography.captionMuted),
         ],
       ),
     );
@@ -1620,9 +1401,9 @@ class _StudentReportCardAndEvaluationScreenState extends State<StudentReportCard
       ),
       child: Column(
         children: [
-          Text(value, style: TextStyle(color: color, fontSize: 15, fontWeight: FontWeight.bold, fontFamily: AppTheme.fontFamily)),
+          Text(value, style: AppTypography.h3.copyWith(color: color)),
           const SizedBox(height: 2),
-          Text(label, style: const TextStyle(color: Colors.white70, fontSize: 11, fontFamily: AppTheme.fontFamily)),
+          Text(label, style: AppTypography.caption.copyWith(color: Colors.white70)),
         ],
       ),
     );

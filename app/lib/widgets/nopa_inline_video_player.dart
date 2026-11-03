@@ -1,4 +1,5 @@
 import 'package:nopa_app/widgets/tap_expander.dart';
+import 'package:nopa_app/core/theme/app_colors.dart';
 import 'dart:async';
 import 'package:flutter/material.dart' hide Text;
 import 'package:nopa_app/widgets/fa_text.dart';
@@ -46,7 +47,7 @@ class _NextPartCountdownOverlay extends StatelessWidget {
                   Text(
                     _fa(value.seconds),
                     style: TextStyle(
-                      color: const Color(0xFFE1BC96),
+                      color: AppColors.accentGoldEnd,
                       fontSize: compact ? 30 : 40,
                       fontWeight: FontWeight.w300,
                       fontFamily: AppTheme.fontFamily,
@@ -429,7 +430,7 @@ class _NopaInlineVideoPlayerState extends State<NopaInlineVideoPlayer> {
                     child: const Center(
                       child: CircularProgressIndicator(
                         strokeWidth: 2.5,
-                        color: Color(0xFFC09268),
+                        color: AppColors.buttonCamel,
                       ),
                     ),
                   ),
@@ -446,20 +447,15 @@ class _NopaInlineVideoPlayerState extends State<NopaInlineVideoPlayer> {
                         const SizedBox(height: 8),
                         const Text(
                           'خطا در بارگذاری ویدیو',
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 13,
-                            fontWeight: FontWeight.bold,
-                            fontFamily: AppTheme.fontFamily,
-                          ),
+                          style: AppTypography.h3,
                         ),
                         const SizedBox(height: 10),
                         ElevatedButton.icon(
                           onPressed: () => _startVideo(),
                           icon: const Icon(Icons.refresh_rounded, size: 16, color: Colors.white),
-                          label: const Text('تلاش مجدد', style: TextStyle(color: Colors.white, fontSize: 11, fontFamily: AppTheme.fontFamily)),
+                          label: const Text('تلاش مجدد', style: AppTypography.caption),
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: const Color(0xFFC09268),
+                            backgroundColor: AppColors.buttonCamel,
                             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
                           ),
                         ),
@@ -482,7 +478,7 @@ class _NopaInlineVideoPlayerState extends State<NopaInlineVideoPlayer> {
                             shape: BoxShape.circle,
                             color: const Color(0xFF1E1D34).withValues(alpha: 0.65),
                             border: Border.all(
-                              color: const Color(0xFFC09268),
+                              color: AppColors.buttonCamel,
                               width: 1.2,
                             ),
                           ),
@@ -578,12 +574,7 @@ class _NopaInlineVideoPlayerState extends State<NopaInlineVideoPlayer> {
                     widget.title ?? _aparatInfo?.title ?? '',
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 9.5,
-                      fontWeight: FontWeight.w300,
-                      fontFamily: AppTheme.fontFamily,
-                    ),
+                    style: AppTypography.caption,
                   ),
                 ),
 
@@ -615,7 +606,7 @@ class _NopaInlineVideoPlayerState extends State<NopaInlineVideoPlayer> {
                         ),
                         child: Text(
                           '${_playbackSpeed}x',
-                          style: const TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold),
+                          style: AppTypography.caption,
                         ),
                       ),
                     ),
@@ -633,11 +624,11 @@ class _NopaInlineVideoPlayerState extends State<NopaInlineVideoPlayer> {
                           decoration: BoxDecoration(
                             color: Colors.black54,
                             borderRadius: BorderRadius.circular(6),
-                            border: Border.all(color: const Color(0xFFC09268), width: 0.8),
+                            border: Border.all(color: AppColors.buttonCamel, width: 0.8),
                           ),
                           child: Text(
                             _selectedQuality ?? 'کیفیت',
-                            style: const TextStyle(color: Color(0xFFF4DCC5), fontSize: 10, fontWeight: FontWeight.bold),
+                            style: AppTypography.captionGold,
                           ),
                         ),
                         onSelected: (quality) {
@@ -651,7 +642,7 @@ class _NopaInlineVideoPlayerState extends State<NopaInlineVideoPlayer> {
                             child: Text(
                               e.key,
                               style: TextStyle(
-                                color: e.key == _selectedQuality ? const Color(0xFFC09268) : Colors.black87,
+                                color: e.key == _selectedQuality ? AppColors.buttonCamel : Colors.black87,
                                 fontWeight: e.key == _selectedQuality ? FontWeight.bold : FontWeight.normal,
                               ),
                             ),
@@ -700,7 +691,7 @@ class _NopaInlineVideoPlayerState extends State<NopaInlineVideoPlayer> {
                       shape: BoxShape.circle,
                       color: const Color(0xFF1E1D34).withValues(alpha: 0.75),
                       border: Border.all(
-                        color: const Color(0xFFC09268),
+                        color: AppColors.buttonCamel,
                         width: 1.2,
                       ),
                     ),
@@ -738,7 +729,7 @@ class _NopaInlineVideoPlayerState extends State<NopaInlineVideoPlayer> {
                   Text(
                     '${_formatDuration(pos)} / ${_formatDuration(dur)}',
                     textDirection: TextDirection.ltr,
-                    style: const TextStyle(color: Colors.white70, fontSize: 10, fontFamily: AppTheme.fontFamily),
+                    style: AppTypography.caption.copyWith(color: Colors.white70),
                   ),
                   const SizedBox(width: 8),
 
@@ -749,7 +740,7 @@ class _NopaInlineVideoPlayerState extends State<NopaInlineVideoPlayer> {
                         thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 5),
                         overlayShape: const RoundSliderOverlayShape(overlayRadius: 10),
                         trackHeight: 2.5,
-                        activeTrackColor: const Color(0xFFC09268),
+                        activeTrackColor: AppColors.buttonCamel,
                         inactiveTrackColor: Colors.white24,
                         thumbColor: const Color(0xFFF4DCC5),
                       ),
@@ -930,12 +921,7 @@ class _FullscreenVideoPageState extends State<_FullscreenVideoPage> {
                                 textAlign: TextAlign.center,
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
-                                style: const TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.bold,
-                                  fontFamily: AppTheme.fontFamily,
-                                ),
+                                style: AppTypography.h3,
                               ),
                             ),
                             Row(
@@ -949,7 +935,7 @@ class _FullscreenVideoPageState extends State<_FullscreenVideoPage> {
                                       color: Colors.white24,
                                       borderRadius: BorderRadius.circular(6),
                                     ),
-                                    child: Text('${_speed}x', style: const TextStyle(color: Colors.white, fontSize: 12)),
+                                    child: Text('${_speed}x', style: AppTypography.bodyMedium),
                                   ),
                                   onSelected: (s) {
                                     setState(() => _speed = s);
@@ -973,10 +959,10 @@ class _FullscreenVideoPageState extends State<_FullscreenVideoPage> {
                                     child: Container(
                                       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                                       decoration: BoxDecoration(
-                                        color: const Color(0xFFC09268),
+                                        color: AppColors.buttonCamel,
                                         borderRadius: BorderRadius.circular(6),
                                       ),
-                                      child: Text(_quality ?? 'کیفیت', style: const TextStyle(color: Color(0xFF1E1D34), fontSize: 12, fontWeight: FontWeight.bold)),
+                                      child: Text(_quality ?? 'کیفیت', style: AppTypography.bodyLarge.copyWith(color: Color(0xFF1E1D34))),
                                     ),
                                     onSelected: (q) {
                                       setState(() => _quality = q);
@@ -1013,7 +999,7 @@ class _FullscreenVideoPageState extends State<_FullscreenVideoPage> {
                               isEnded
                                   ? Icons.replay_rounded
                                   : (widget.controller.value.isPlaying ? Icons.pause_circle_filled_rounded : Icons.play_circle_filled_rounded),
-                              color: const Color(0xFFC09268),
+                              color: AppColors.buttonCamel,
                             ),
                             onPressed: () {
                               if (isEnded) {
@@ -1052,7 +1038,7 @@ class _FullscreenVideoPageState extends State<_FullscreenVideoPage> {
                             const SizedBox(width: 8),
                             Text(
                               '${_formatDuration(pos)} / ${_formatDuration(dur)}',
-                              style: const TextStyle(color: Colors.white, fontSize: 13, fontFamily: AppTheme.fontFamily),
+                              style: AppTypography.bodyLarge,
                             ),
                             const SizedBox(width: 14),
                             Expanded(
@@ -1061,7 +1047,7 @@ class _FullscreenVideoPageState extends State<_FullscreenVideoPage> {
                                   thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 6),
                                   overlayShape: const RoundSliderOverlayShape(overlayRadius: 12),
                                   trackHeight: 3.5,
-                                  activeTrackColor: const Color(0xFFC09268),
+                                  activeTrackColor: AppColors.buttonCamel,
                                   inactiveTrackColor: Colors.white24,
                                   thumbColor: const Color(0xFFF4DCC5),
                                 ),

@@ -7,6 +7,7 @@ class ChatSpace {
   final String? peerAvatarUrl;
   final String? peerGender;
   final bool peerIsMentor;
+  bool peerOnline;
   int peerReadSeq;
   int lastSeq;
   int lastReadSeq;
@@ -18,6 +19,8 @@ class ChatSpace {
   final bool canTag;
   String preview;
   String previewSender;
+  /// Sender of the last message, to tell one's own message (with read ticks) from others'.
+  String? previewSenderId;
   DateTime? lastActivity;
 
   ChatSpace({
@@ -28,6 +31,7 @@ class ChatSpace {
     this.peerAvatarUrl,
     this.peerGender,
     this.peerIsMentor = false,
+    this.peerOnline = false,
     this.peerReadSeq = 0,
     this.lastSeq = 0,
     this.lastReadSeq = 0,
@@ -39,10 +43,21 @@ class ChatSpace {
     this.canTag = false,
     this.preview = '',
     this.previewSender = '',
+    this.previewSenderId,
     this.lastActivity,
   });
 
   bool get isDirect => type == 'direct';
+
+  /// One person on each side: no sender names, no sessions.
+  bool get isPrivate => type == 'direct' || type == 'support';
+
+  /// Broadcast spaces: posts read as full-width cards rather than chat bubbles.
+  /// (announcements, the public channel and the inter-group arena; 'media' is a mentor's custom group).
+  bool get isChannel => const {'announcements', 'public', 'arena'}.contains(type);
+
+  /// Many people talking: bubbles with the sender's name and face.
+  bool get isGroup => !isPrivate && !isChannel;
 
   factory ChatSpace.fromJson(Map<String, dynamic> json) {
     final peer = json['peer'] as Map<String, dynamic>?;
@@ -55,6 +70,7 @@ class ChatSpace {
       peerAvatarUrl: peer?['avatarUrl'],
       peerGender: peer?['gender'],
       peerIsMentor: peer?['role'] == 'mentor',
+      peerOnline: peer?['online'] == true,
       peerReadSeq: json['peerReadSeq'] ?? 0,
       lastSeq: json['lastSeq'] ?? 0,
       lastReadSeq: json['lastReadSeq'] ?? 0,
@@ -66,6 +82,7 @@ class ChatSpace {
       canTag: json['canTag'] == true,
       preview: last?['preview'] ?? '',
       previewSender: last?['senderName'] ?? '',
+      previewSenderId: last?['senderId'],
       lastActivity: DateTime.tryParse(last?['createdAt'] ?? ''),
     );
   }
@@ -102,6 +119,10 @@ class ChatMessage {
   final bool pinned;
   final String? threadRootId;
   final int threadReplies;
+  /// Replies may be written under it (a challenge, or a message a moderator opened).
+  final bool threadOpen;
+  /// A few of the people who replied under it, newest first.
+  final List<Map<String, dynamic>> threadPeople;
   final String? clientMessageId;
   final DateTime createdAt;
   final String? senderId;
@@ -135,6 +156,8 @@ class ChatMessage {
     required this.pinned,
     required this.threadRootId,
     required this.threadReplies,
+    this.threadOpen = false,
+    this.threadPeople = const [],
     required this.clientMessageId,
     required this.createdAt,
     required this.senderId,
@@ -174,6 +197,8 @@ class ChatMessage {
       pinned: json['pinned'] == true,
       threadRootId: json['threadRootId'],
       threadReplies: json['threadReplies'] ?? 0,
+      threadOpen: json['threadOpen'] == true || (json['threadReplies'] ?? 0) > 0 || topic != null,
+      threadPeople: maps('threadPeople'),
       clientMessageId: json['clientMessageId'],
       createdAt: DateTime.tryParse(json['createdAt'] ?? '')?.toLocal() ?? DateTime.now(),
       senderId: sender?['id'],

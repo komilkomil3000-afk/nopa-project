@@ -1,4 +1,5 @@
 import 'package:nopa_app/widgets/tap_expander.dart';
+import '../../../widgets/nopa_modal_shell.dart';
 import 'dart:io' as io;
 import 'package:nopa_app/widgets/app_toast.dart';
 import 'package:flutter/cupertino.dart' show CupertinoPicker;
@@ -110,36 +111,52 @@ class _EditProfileScreenState extends State<StudentEditProfileScreen> {
     String? pickedFileName;
     bool isUploading = false;
 
-    showDialog(
-      context: context,
-      barrierDismissible: true,
+    showNopaModal<void>(
+      context,
       builder: (ctx) => StatefulBuilder(
-        builder: (context, setDialogState) => Directionality(
-          textDirection: TextDirection.rtl,
-          child: Dialog(
-            backgroundColor: const Color(0xFF28274A),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(20),
-              side: const BorderSide(color: Color(0xFF5A588B), width: 1.2),
+        builder: (context, setDialogState) => NopaModalShell(
+          maxWidth: 420,
+          headerIcon: Icons.upload_file_rounded,
+          title: 'ارسال فایل $title',
+          padding: const EdgeInsets.all(20),
+          actions: [
+            NopaModalAction(
+              label: 'آپلود فایل',
+              loading: isUploading,
+              onPressed: (pickedFile == null || isUploading) ? null : () async {
+                                  setDialogState(() => isUploading = true);
+                                  try {
+                                    final res = await HttpApiService().uploadMediaFile(
+                                      pickedFile!,
+                                      assetType: 'user_document',
+                                      title: title,
+                                    );
+                                    if (ctx.mounted) {
+                                      Navigator.pop(ctx);
+                                    }
+                                    if (context.mounted) {
+                                      final isSuccess = res != null;
+                                      if (isSuccess) {
+      AppToast.info(context, 'فایل $title با موفقیت بارگذاری و ضمیمه شد');
+    } else {
+      AppToast.error(context, 'خطایی رخ داده است. خطا در بارگذاری فایل. لطفاً مجدداً تلاش کنید.');
+    }
+                                    }
+                                  } catch (e) {
+                                    setDialogState(() => isUploading = false);
+                                    if (context.mounted) {
+                                      AppToast.error(context, 'خطایی رخ داده است. خطا در ارتباط با سرور');
+                                    }
+                                  }
+                                },
             ),
-            child: Padding(
-              padding: const EdgeInsets.all(20),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  Text(
-                    'ارسال فایل $title',
-                    textAlign: TextAlign.center,
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 15.5,
-                      fontWeight: FontWeight.bold,
-                      fontFamily: AppTheme.fontFamily,
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  TapExpander(child: GestureDetector(
+            NopaModalAction(
+              label: 'انصراف',
+              variant: NopaModalActionVariant.secondary,
+              onPressed: isUploading ? null : () => Navigator.pop(ctx),
+            ),
+          ],
+          child: TapExpander(child: GestureDetector(
                     onTap: isUploading
                         ? null
                         : () async {
@@ -169,95 +186,26 @@ class _EditProfileScreenState extends State<StudentEditProfileScreen> {
                         border: Border.all(
                           color: pickedFileName != null
                               ? const Color(0xFF10B981)
-                              : const Color(0xFFC09268).withValues(alpha: 0.5),
+                              : AppColors.buttonCamel.withValues(alpha: 0.5),
                         ),
                       ),
                       child: Column(
                         children: [
                           Icon(
                             pickedFileName != null ? Icons.check_circle_outline : Icons.cloud_upload_outlined,
-                            color: pickedFileName != null ? const Color(0xFF10B981) : const Color(0xFFC09268),
+                            color: pickedFileName != null ? const Color(0xFF10B981) : AppColors.buttonCamel,
                             size: 34,
                           ),
                           const SizedBox(height: 8),
                           Text(
                             pickedFileName ?? 'برای انتخاب فایل مدرک یا سند کلیک کنید (PDF / تصویر)',
                             textAlign: TextAlign.center,
-                            style: TextStyle(
-                              color: pickedFileName != null ? Colors.white : const Color(0xFFC7C5DD),
-                              fontSize: 11.5,
-                              fontWeight: pickedFileName != null ? FontWeight.bold : FontWeight.normal,
-                              fontFamily: AppTheme.fontFamily,
-                            ),
+                            style: AppTypography.caption.copyWith(color: pickedFileName != null ? Colors.white : const Color(0xFFC7C5DD), fontWeight: pickedFileName != null ? FontWeight.bold : FontWeight.normal),
                           ),
                         ],
                       ),
                     ),
                   )),
-                  const SizedBox(height: 18),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: OutlinedButton(
-                          onPressed: isUploading ? null : () => Navigator.pop(ctx),
-                          style: OutlinedButton.styleFrom(
-                            side: const BorderSide(color: Color(0xFF6B68A8)),
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                          ),
-                          child: const Text('انصراف', style: TextStyle(color: Colors.white70, fontFamily: AppTheme.fontFamily, fontSize: 12)),
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: ElevatedButton(
-                          onPressed: (pickedFile == null || isUploading)
-                              ? null
-                              : () async {
-                                  setDialogState(() => isUploading = true);
-                                  try {
-                                    final res = await HttpApiService().uploadMediaFile(
-                                      pickedFile!,
-                                      assetType: 'user_document',
-                                      title: title,
-                                    );
-                                    if (ctx.mounted) {
-                                      Navigator.pop(ctx);
-                                    }
-                                    if (context.mounted) {
-                                      final isSuccess = res != null;
-                                      if (isSuccess) {
-      AppToast.info(context, 'فایل $title با موفقیت بارگذاری و ضمیمه شد');
-    } else {
-      AppToast.error(context, 'خطایی رخ داده است. خطا در بارگذاری فایل. لطفاً مجدداً تلاش کنید.');
-    }
-                                    }
-                                  } catch (e) {
-                                    setDialogState(() => isUploading = false);
-                                    if (context.mounted) {
-                                      AppToast.error(context, 'خطایی رخ داده است. خطا در ارتباط با سرور');
-                                    }
-                                  }
-                                },
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: const Color(0xFFC09268),
-                            disabledBackgroundColor: const Color(0xFF454270),
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                          ),
-                          child: isUploading
-                              ? const SizedBox(
-                                  width: 18,
-                                  height: 18,
-                                  child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
-                                )
-                              : const Text('آپلود فایل', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontFamily: AppTheme.fontFamily, fontSize: 12)),
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-          ),
         ),
       ),
     );
@@ -503,7 +451,7 @@ class _EditProfileScreenState extends State<StudentEditProfileScreen> {
                                       gradient: AppColors.darkSurfaceGradient,
                                       borderRadius: BorderRadius.circular(9),
                                       border: Border.all(
-                                        color: const Color(0xFFC09268),
+                                        color: AppColors.buttonCamel,
                                         width: 1.1,
                                       ),
                                     ),
@@ -516,14 +464,9 @@ class _EditProfileScreenState extends State<StudentEditProfileScreen> {
                                               color: Color(0xFFCD8449),
                                             ),
                                           )
-                                        : const Text(
+                                        : Text(
                                             'ثبت تغییرات',
-                                            style: TextStyle(
-                                              color: Color(0xFFE1BC96),
-                                              fontSize: 14,
-                                              fontWeight: FontWeight.bold,
-                                              fontFamily: AppTheme.fontFamily,
-                                            ),
+                                            style: AppTypography.h3.copyWith(color: AppColors.accentGoldEnd),
                                           ),
                                   ),
                                 ),
@@ -553,14 +496,9 @@ class _EditProfileScreenState extends State<StudentEditProfileScreen> {
                                         width: 1.1,
                                       ),
                                     ),
-                                    child: const Text(
+                                    child: Text(
                                       'لغو',
-                                      style: TextStyle(
-                                        color: Color(0xFFB5B0D8),
-                                        fontSize: 14,
-                                        fontWeight: FontWeight.bold,
-                                        fontFamily: AppTheme.fontFamily,
-                                      ),
+                                      style: AppTypography.h3.copyWith(color: Color(0xFFB5B0D8)),
                                     ),
                                   ),
                                 ),
@@ -713,12 +651,7 @@ class _EditProfileScreenState extends State<StudentEditProfileScreen> {
           padding: const EdgeInsets.only(bottom: 6, right: 4),
           child: Text(
             label,
-            style: const TextStyle(
-              color: Color(0xFF9E9BB8),
-              fontSize: 12,
-              fontWeight: FontWeight.w500,
-              fontFamily: AppTheme.fontFamily,
-            ),
+            style: AppTypography.bodyMedium.copyWith(color: Color(0xFF9E9BB8)),
           ),
         ),
 
@@ -730,20 +663,12 @@ class _EditProfileScreenState extends State<StudentEditProfileScreen> {
             readOnly: readOnly || onTap != null,
             onTap: onTap,
             enableInteractiveSelection: !readOnly && onTap == null,
-            style: TextStyle(
-              color: readOnly ? const Color(0xFF8E889D) : const Color(0xFFEAE8F8),
-              fontSize: 13,
-              fontFamily: AppTheme.fontFamily,
-            ),
+            style: AppTypography.bodyLarge.copyWith(color: readOnly ? const Color(0xFF8E889D) : const Color(0xFFEAE8F8)),
             decoration: InputDecoration(
               isDense: true,
               border: InputBorder.none,
               hintText: hintText,
-              hintStyle: TextStyle(
-                color: Colors.white.withValues(alpha: 0.25),
-                fontSize: 12.5,
-                fontFamily: AppTheme.fontFamily,
-              ),
+              hintStyle: AppTypography.bodyMedium.copyWith(color: Colors.white.withValues(alpha: 0.25)),
               contentPadding: const EdgeInsets.symmetric(vertical: 8),
             ),
           ),
@@ -767,12 +692,7 @@ class _EditProfileScreenState extends State<StudentEditProfileScreen> {
           padding: const EdgeInsets.only(bottom: 6, right: 4),
           child: Text(
             label,
-            style: const TextStyle(
-              color: Color(0xFF9E9BB8),
-              fontSize: 12,
-              fontWeight: FontWeight.w500,
-              fontFamily: AppTheme.fontFamily,
-            ),
+            style: AppTypography.bodyMedium.copyWith(color: Color(0xFF9E9BB8)),
           ),
         ),
 
@@ -786,11 +706,7 @@ class _EditProfileScreenState extends State<StudentEditProfileScreen> {
               Expanded(
                 child: Text(
                   valueText,
-                  style: const TextStyle(
-                    color: Color(0xFFEAE8F8),
-                    fontSize: 13,
-                    fontFamily: AppTheme.fontFamily,
-                  ),
+                  style: AppTypography.bodyLarge.copyWith(color: Color(0xFFEAE8F8)),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),
@@ -805,18 +721,13 @@ class _EditProfileScreenState extends State<StudentEditProfileScreen> {
                     color: const Color(0xFF2A2835),
                     borderRadius: BorderRadius.circular(7),
                     border: Border.all(
-                      color: const Color(0xFFC09268),
+                      color: AppColors.buttonCamel,
                       width: 1.0,
                     ),
                   ),
                   child: Text(
                     buttonLabel,
-                    style: const TextStyle(
-                      color: Color(0xFFE1BC96),
-                      fontSize: 11,
-                      fontWeight: FontWeight.bold,
-                      fontFamily: AppTheme.fontFamily,
-                    ),
+                    style: AppTypography.caption.copyWith(color: AppColors.accentGoldEnd),
                   ),
                 ),
               )),
@@ -844,12 +755,7 @@ class _EditProfileScreenState extends State<StudentEditProfileScreen> {
           padding: const EdgeInsets.only(bottom: 6, right: 4),
           child: Text(
             label,
-            style: const TextStyle(
-              color: Color(0xFF9E9BB8),
-              fontSize: 12,
-              fontWeight: FontWeight.w500,
-              fontFamily: AppTheme.fontFamily,
-            ),
+            style: AppTypography.bodyMedium.copyWith(color: Color(0xFF9E9BB8)),
           ),
         ),
 
@@ -863,20 +769,12 @@ class _EditProfileScreenState extends State<StudentEditProfileScreen> {
                 child: TextField(
                   controller: controller,
                   maxLines: maxLines,
-                  style: const TextStyle(
-                    color: Color(0xFFEAE8F8),
-                    fontSize: 13,
-                    fontFamily: AppTheme.fontFamily,
-                  ),
+                  style: AppTypography.bodyLarge.copyWith(color: Color(0xFFEAE8F8)),
                   decoration: InputDecoration(
                     isDense: true,
                     border: InputBorder.none,
                     hintText: hintText,
-                    hintStyle: TextStyle(
-                      color: Colors.white.withValues(alpha: 0.25),
-                      fontSize: 12.5,
-                      fontFamily: AppTheme.fontFamily,
-                    ),
+                    hintStyle: AppTypography.bodyMedium.copyWith(color: Colors.white.withValues(alpha: 0.25)),
                     contentPadding: const EdgeInsets.symmetric(vertical: 8),
                   ),
                 ),
@@ -891,18 +789,13 @@ class _EditProfileScreenState extends State<StudentEditProfileScreen> {
                     color: const Color(0xFF2A2835),
                     borderRadius: BorderRadius.circular(7),
                     border: Border.all(
-                      color: const Color(0xFFC09268),
+                      color: AppColors.buttonCamel,
                       width: 1.0,
                     ),
                   ),
                   child: Text(
                     buttonLabel,
-                    style: const TextStyle(
-                      color: Color(0xFFE1BC96),
-                      fontSize: 11,
-                      fontWeight: FontWeight.bold,
-                      fontFamily: AppTheme.fontFamily,
-                    ),
+                    style: AppTypography.caption.copyWith(color: AppColors.accentGoldEnd),
                   ),
                 ),
               )),
@@ -957,10 +850,8 @@ class _EditProfileScreenState extends State<StudentEditProfileScreen> {
     final monthCtrl = FixedExtentScrollController(initialItem: month - 1);
     var dayCtrl = FixedExtentScrollController(initialItem: day - 1);
 
-    final picked = await showModalBottomSheet<bool>(
-      context: context,
-      backgroundColor: const Color(0xFF1E1A33),
-      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
+    final picked = await showNopaSheet<bool>(
+      context,
       builder: (ctx) => StatefulBuilder(
         builder: (ctx, setSheet) {
           final maxDay = Jalali(year, month, 1).monthLength;
@@ -977,7 +868,7 @@ class _EditProfileScreenState extends State<StudentEditProfileScreen> {
                 selectionOverlay: Container(
                   decoration: BoxDecoration(
                     border: Border.symmetric(
-                      horizontal: BorderSide(color: const Color(0xFFC09268).withValues(alpha: 0.6)),
+                      horizontal: BorderSide(color: AppColors.buttonCamel.withValues(alpha: 0.6)),
                     ),
                   ),
                 ),
@@ -987,7 +878,7 @@ class _EditProfileScreenState extends State<StudentEditProfileScreen> {
                   (i) => Center(
                     child: Text(
                       label(i),
-                      style: const TextStyle(color: Colors.white, fontSize: 16, fontFamily: AppTheme.fontFamily),
+                      style: AppTypography.bodyLarge,
                     ),
                   ),
                 ),
@@ -1003,9 +894,9 @@ class _EditProfileScreenState extends State<StudentEditProfileScreen> {
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    const Text(
+                    Text(
                       'تاریخ تولد',
-                      style: TextStyle(color: Color(0xFFE1BC96), fontSize: 14, fontWeight: FontWeight.bold, fontFamily: AppTheme.fontFamily),
+                      style: AppTypography.h3Strong.copyWith(color: AppColors.accentGoldEnd),
                     ),
                     SizedBox(
                       height: 170,
@@ -1059,16 +950,11 @@ class _EditProfileScreenState extends State<StudentEditProfileScreen> {
         decoration: BoxDecoration(
           color: const Color(0xFF1B192A),
           borderRadius: BorderRadius.circular(10),
-          border: Border.all(color: const Color(0xFFC09268), width: 1.0),
+          border: Border.all(color: AppColors.buttonCamel, width: 1.0),
         ),
         child: Text(
           label,
-          style: const TextStyle(
-            color: Color(0xFFE1BC96),
-            fontSize: 13,
-            fontWeight: FontWeight.bold,
-            fontFamily: AppTheme.fontFamily,
-          ),
+          style: AppTypography.h3.copyWith(color: AppColors.accentGoldEnd),
         ),
       ),
     ));
@@ -1083,14 +969,9 @@ class _EditProfileScreenState extends State<StudentEditProfileScreen> {
           padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
           child: Row(
             children: [
-              const Text(
+              Text(
                 'ایجاد / تغییر رمز عبور ثابت',
-                style: TextStyle(
-                  color: Color(0xFFC09268),
-                  fontSize: 13,
-                  fontWeight: FontWeight.bold,
-                  fontFamily: AppTheme.fontFamily,
-                ),
+                style: AppTypography.h3.copyWith(color: AppColors.buttonCamel),
               ),
               const SizedBox(width: 8),
               Expanded(
@@ -1099,7 +980,7 @@ class _EditProfileScreenState extends State<StudentEditProfileScreen> {
                   decoration: BoxDecoration(
                     gradient: LinearGradient(
                       colors: [
-                        const Color(0xFFC09268).withValues(alpha: 0.5),
+                        AppColors.buttonCamel.withValues(alpha: 0.5),
                         Colors.transparent,
                       ],
                     ),
@@ -1224,12 +1105,7 @@ class _ChangeRequestSupportDialogState extends State<_ChangeRequestSupportDialog
                   // Center Title
                   const Text(
                     'پیام به پشتیبانی',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                      fontFamily: AppTheme.fontFamily,
-                    ),
+                    style: AppTypography.h2,
                   ),
                 ],
               ),
@@ -1253,12 +1129,7 @@ class _ChangeRequestSupportDialogState extends State<_ChangeRequestSupportDialog
                     alignment: Alignment.center,
                     child: Text(
                       widget.requestType,
-                      style: const TextStyle(
-                        color: Color(0xFFE2E0F0),
-                        fontSize: 12.5,
-                        fontWeight: FontWeight.w600,
-                        fontFamily: AppTheme.fontFamily,
-                      ),
+                      style: AppTypography.bodyLarge.copyWith(color: Color(0xFFE2E0F0)),
                     ),
                   ),
                 ),
@@ -1283,12 +1154,7 @@ class _ChangeRequestSupportDialogState extends State<_ChangeRequestSupportDialog
                     alignment: Alignment.center,
                     child: Text(
                       widget.currentDate,
-                      style: const TextStyle(
-                        color: Color(0xFFE2E0F0),
-                        fontSize: 12.5,
-                        fontWeight: FontWeight.w600,
-                        fontFamily: AppTheme.fontFamily,
-                      ),
+                      style: AppTypography.bodyLarge.copyWith(color: Color(0xFFE2E0F0)),
                     ),
                   ),
                 ),
@@ -1315,20 +1181,12 @@ class _ChangeRequestSupportDialogState extends State<_ChangeRequestSupportDialog
                     child: TextField(
                       controller: _descCtrl,
                       maxLines: 4,
-                      style: const TextStyle(
-                        color: Color(0xFFE2E0F0),
-                        fontSize: 12.5,
-                        fontFamily: AppTheme.fontFamily,
-                      ),
+                      style: AppTypography.bodyMedium.copyWith(color: Color(0xFFE2E0F0)),
                       decoration: InputDecoration(
                         isDense: true,
                         border: InputBorder.none,
                         hintText: 'ما را در جریان قرار دهید',
-                        hintStyle: TextStyle(
-                          color: Colors.white.withValues(alpha: 0.25),
-                          fontSize: 12,
-                          fontFamily: AppTheme.fontFamily,
-                        ),
+                        hintStyle: AppTypography.bodyMedium.copyWith(color: Colors.white.withValues(alpha: 0.25)),
                       ),
                     ),
                   ),
@@ -1352,28 +1210,18 @@ class _ChangeRequestSupportDialogState extends State<_ChangeRequestSupportDialog
                         )
                       : TextButton(
                           onPressed: _submitRequest,
-                          child: const Text(
+                          child: Text(
                             'ارسال',
-                            style: TextStyle(
-                              color: AppColors.buttonCamel,
-                              fontSize: 14,
-                              fontWeight: FontWeight.bold,
-                              fontFamily: AppTheme.fontFamily,
-                            ),
+                            style: AppTypography.h3.copyWith(color: AppColors.buttonCamel),
                           ),
                         ),
 
                   // لغو on Left in RTL
                   TextButton(
                     onPressed: () => Navigator.pop(context),
-                    child: const Text(
+                    child: Text(
                       'لغو',
-                      style: TextStyle(
-                        color: AppColors.buttonCancelPurple,
-                        fontSize: 14,
-                        fontWeight: FontWeight.bold,
-                        fontFamily: AppTheme.fontFamily,
-                      ),
+                      style: AppTypography.h3.copyWith(color: AppColors.buttonCancelPurple),
                     ),
                   ),
                 ],
@@ -1398,12 +1246,7 @@ class _ChangeRequestSupportDialogState extends State<_ChangeRequestSupportDialog
           width: 70,
           child: Text(
             label,
-            style: const TextStyle(
-              color: Color(0xFFB5B0D8),
-              fontSize: 12,
-              fontWeight: FontWeight.w500,
-              fontFamily: AppTheme.fontFamily,
-            ),
+            style: AppTypography.bodyMedium.copyWith(color: Color(0xFFB5B0D8)),
           ),
         ),
         const SizedBox(width: 8),
@@ -1533,7 +1376,7 @@ class _PasswordChangeDialogState extends State<_PasswordChangeDialog> {
         Padding(
           padding: const EdgeInsets.only(bottom: 6, right: 4),
           child: Text(label,
-              style: const TextStyle(color: Color(0xFF9E9BB8), fontSize: 12, fontFamily: AppTheme.fontFamily)),
+              style: AppTypography.bodyMedium.copyWith(color: Color(0xFF9E9BB8))),
         ),
         Container(
           decoration: BoxDecoration(gradient: AppColors.strokeGradient, borderRadius: BorderRadius.circular(10)),
@@ -1549,7 +1392,7 @@ class _PasswordChangeDialogState extends State<_PasswordChangeDialog> {
                     controller: c,
                     obscureText: obscure && !visible,
                     keyboardType: keyboard,
-                    style: const TextStyle(color: Color(0xFFEAE8F8), fontSize: 13, fontFamily: AppTheme.fontFamily),
+                    style: AppTypography.bodyLarge.copyWith(color: Color(0xFFEAE8F8)),
                     decoration: const InputDecoration(isDense: true, border: InputBorder.none),
                   ),
                 ),
@@ -1583,17 +1426,12 @@ class _PasswordChangeDialogState extends State<_PasswordChangeDialog> {
           decoration: BoxDecoration(
             color: const Color(0xFF1B192A),
             borderRadius: BorderRadius.circular(10),
-            border: Border.all(color: primary ? const Color(0xFFC09268) : const Color(0xFF5A4D80), width: 1.0),
+            border: Border.all(color: primary ? AppColors.buttonCamel : const Color(0xFF5A4D80), width: 1.0),
           ),
           child: _busy && primary
               ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2, color: Color(0xFFCD8449)))
               : Text(label,
-                  style: TextStyle(
-                    color: primary ? const Color(0xFFE1BC96) : const Color(0xFFB5B0D8),
-                    fontSize: 13,
-                    fontWeight: FontWeight.bold,
-                    fontFamily: AppTheme.fontFamily,
-                  )),
+                  style: AppTypography.h3.copyWith(color: primary ? AppColors.accentGoldEnd : const Color(0xFFB5B0D8))),
         ),
       ),
     );
@@ -1603,9 +1441,9 @@ class _PasswordChangeDialogState extends State<_PasswordChangeDialog> {
     switch (_step) {
       case _PwStep.choose:
         return [
-          const Text('رمز قبلی خود را به یاد دارید؟',
+          Text('رمز قبلی خود را به یاد دارید؟',
               textAlign: TextAlign.center,
-              style: TextStyle(color: Color(0xFFE2E0F0), fontSize: 13, fontFamily: AppTheme.fontFamily)),
+              style: AppTypography.bodyLarge.copyWith(color: Color(0xFFE2E0F0))),
           const SizedBox(height: 16),
           _button('بله، یادم هست', () => setState(() {
                 _forgot = false;
@@ -1623,18 +1461,18 @@ class _PasswordChangeDialogState extends State<_PasswordChangeDialog> {
         ];
       case _PwStep.smsCode:
         return [
-          const Text('کد تایید برای شماره شما پیامک شد',
-              style: TextStyle(color: Color(0xFF9E9BB8), fontSize: 11.5, fontFamily: AppTheme.fontFamily)),
+          Text('کد تایید برای شماره شما پیامک شد',
+              style: AppTypography.caption.copyWith(color: Color(0xFF9E9BB8))),
           const SizedBox(height: 10),
           _field('کد پیامک‌شده', _codeCtrl, keyboard: TextInputType.number),
           const SizedBox(height: 6),
           TapExpander(
             child: GestureDetector(
               onTap: _busy ? null : _sendSms,
-              child: const Padding(
+              child: Padding(
                 padding: EdgeInsets.symmetric(vertical: 4, horizontal: 4),
                 child: Text('ارسال دوباره کد',
-                    style: TextStyle(color: Color(0xFFC09268), fontSize: 11.5, fontFamily: AppTheme.fontFamily)),
+                    style: AppTypography.caption.copyWith(color: AppColors.buttonCamel)),
               ),
             ),
           ),
@@ -1671,14 +1509,14 @@ class _PasswordChangeDialogState extends State<_PasswordChangeDialog> {
               children: [
                 const Text('تغییر رمز عبور',
                     textAlign: TextAlign.center,
-                    style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold, fontFamily: AppTheme.fontFamily)),
+                    style: AppTypography.h2),
                 const SizedBox(height: 18),
                 ..._body(),
                 if (_error != null) ...[
                   const SizedBox(height: 10),
                   Text(_error!,
                       textAlign: TextAlign.center,
-                      style: const TextStyle(color: Color(0xFFFF8A80), fontSize: 11.5, fontFamily: AppTheme.fontFamily)),
+                      style: AppTypography.caption.copyWith(color: Color(0xFFFF8A80))),
                 ],
                 const SizedBox(height: 12),
                 _button('انصراف', () => Navigator.pop(context), primary: false),

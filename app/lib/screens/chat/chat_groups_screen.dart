@@ -1,8 +1,8 @@
+import 'package:nopa_app/screens/chat/chat_widgets.dart';
 import 'package:flutter/material.dart' hide Text;
 import 'package:nopa_app/screens/chat/chat_theme.dart';
 import 'package:nopa_app/screens/chat/chat_topic_info_screen.dart';
 import 'package:nopa_app/services/chat_repository.dart';
-import 'package:nopa_app/widgets/app_scaffold.dart';
 import 'package:nopa_app/widgets/app_toast.dart';
 import 'package:nopa_app/widgets/fa_text.dart';
 import 'package:nopa_app/widgets/safe_avatar.dart';
@@ -44,6 +44,7 @@ class _ChatGroupsScreenState extends State<ChatGroupsScreen> {
         textDirection: TextDirection.rtl,
         child: AlertDialog(
           backgroundColor: ChatTheme.surfaceBottom,
+          shape: ChatTheme.dialogShape,
           title: Text(title, style: ChatTheme.title),
           content: TextField(controller: controller, maxLength: 60, autofocus: true, style: ChatTheme.body, decoration: chatField('نام گروه')),
           actions: [ChatButton(label: 'ثبت', onPressed: () => Navigator.pop(ctx, controller.text.trim()))],
@@ -72,6 +73,7 @@ class _ChatGroupsScreenState extends State<ChatGroupsScreen> {
         textDirection: TextDirection.rtl,
         child: AlertDialog(
           backgroundColor: ChatTheme.surfaceBottom,
+          shape: ChatTheme.dialogShape,
           title: Text('حذف گروه', style: ChatTheme.title),
           content: Text('گروه «${group['title']}» و همه‌ی پیام‌هایش برای همیشه حذف می‌شود.', style: ChatTheme.body),
           actions: [
@@ -94,7 +96,7 @@ class _ChatGroupsScreenState extends State<ChatGroupsScreen> {
       context: context,
       isScrollControlled: true,
       backgroundColor: ChatTheme.surfaceBottom,
-      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(28))),
+      shape: ChatTheme.sheetShape,
       builder: (ctx) => Directionality(
         textDirection: TextDirection.rtl,
         child: StatefulBuilder(
@@ -130,10 +132,8 @@ class _ChatGroupsScreenState extends State<ChatGroupsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return AppScaffold(
-      showBottomNavBar: false,
-      showDrawerButton: false,
-      showNotificationIcon: false,
+    return ChatPageScaffold(
+      title: 'گروه‌ها',
       body: Directionality(
         textDirection: TextDirection.rtl,
         child: _loading

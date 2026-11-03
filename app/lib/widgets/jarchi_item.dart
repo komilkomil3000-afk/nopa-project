@@ -1,4 +1,6 @@
 import 'package:nopa_app/widgets/tap_expander.dart';
+import 'package:nopa_app/core/theme/app_typography.dart';
+import 'nopa_modal_shell.dart';
 import 'package:flutter/material.dart' hide Text;
 import 'package:nopa_app/widgets/fa_text.dart';
 import 'package:nopa_app/widgets/app_toast.dart';
@@ -29,36 +31,33 @@ class JarchiItem extends StatelessWidget {
     required String content,
     String? link,
   }) {
-    showDialog(
-      context: context,
+    showNopaModal<void>(
+      context,
       builder: (BuildContext context) {
-        return Dialog(
-          backgroundColor: const Color(0xFF1E1435),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-          child: Padding(
-            padding: const EdgeInsets.all(20),
-            child: SingleChildScrollView(
-              child: Directionality(
-                textDirection: TextDirection.rtl,
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        const Text(
-                          'جزئیات اطلاعیه نپا',
-                          style: TextStyle(color: Colors.white, fontSize: 15, fontWeight: FontWeight.bold, fontFamily: 'YekanBakh'),
-                        ),
-                        IconButton(
-                          icon: const Icon(Icons.close, color: Colors.white70),
-                          onPressed: () => Navigator.pop(context),
-                        ),
-                      ],
-                    ),
-                    const Divider(color: Colors.white10),
-                    const SizedBox(height: 12),
+        return NopaModalShell(
+          maxWidth: 420,
+          headerIcon: Icons.campaign_rounded,
+          title: 'جزئیات اطلاعیه نپا',
+          padding: const EdgeInsets.all(20),
+          actions: [
+            if (link != null)
+              NopaModalAction(
+                label: 'مشاهده منبع خبر',
+                onPressed: () {
+                  Navigator.pop(context);
+                  AppToast.info(context, 'در حال باز کردن لینک: $link');
+                },
+              ),
+            NopaModalAction(
+              label: 'بستن',
+              variant: NopaModalActionVariant.secondary,
+              onPressed: () => Navigator.pop(context),
+            ),
+          ],
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
                     ClipRRect(
                       borderRadius: BorderRadius.circular(16),
                       child: CachedNetworkImage(
@@ -86,41 +85,19 @@ class JarchiItem extends StatelessWidget {
                     const SizedBox(height: 14),
                     Text(
                       title, 
-                      style: const TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.bold, fontFamily: 'YekanBakh'),
+                      style: AppTypography.h3Strong,
                     ),
                     const SizedBox(height: 4),
                     Text(
                       date, 
-                      style: const TextStyle(color: Colors.white38, fontSize: 10, fontFamily: 'YekanBakh'),
+                      style: AppTypography.caption.copyWith(color: Colors.white38),
                     ),
                     const SizedBox(height: 12),
                     Text(
                       content,
-                      style: const TextStyle(color: Colors.white70, fontSize: 12, height: 1.6, fontFamily: 'YekanBakh'),
+                      style: AppTypography.bodyMedium.copyWith(color: Colors.white70),
                     ),
-                    if (link != null) ...[
-                      const SizedBox(height: 16),
-                      ElevatedButton.icon(
-                        onPressed: () {
-                          Navigator.pop(context);
-                          AppToast.info(context, 'در حال باز کردن لینک: $link');
-                        },
-                        icon: const Icon(Icons.open_in_new, size: 16, color: Colors.white),
-                        label: const Text(
-                          'مشاهده منبع خبر',
-                          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 12, fontFamily: 'YekanBakh'),
-                        ),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFFEC4899),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                          minimumSize: const Size(double.infinity, 44),
-                        ),
-                      ),
-                    ],
-                  ],
-                ),
-              ),
-            ),
+            ],
           ),
         );
       },
@@ -181,12 +158,7 @@ class JarchiItem extends StatelessWidget {
                   children: [
                     Text(
                       title,
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 13,
-                        fontFamily: 'YekanBakh',
-                      ),
+                      style: AppTypography.h3,
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                     ),
@@ -197,11 +169,7 @@ class JarchiItem extends StatelessWidget {
               // Left: Date info (renders on the leftmost side in RTL)
               Text(
                 date,
-                style: const TextStyle(
-                  color: Colors.white38,
-                  fontSize: 10,
-                  fontFamily: 'YekanBakh',
-                ),
+                style: AppTypography.caption.copyWith(color: Colors.white38),
               ),
             ],
           ),

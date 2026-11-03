@@ -1,4 +1,5 @@
 import 'package:nopa_app/widgets/tap_expander.dart';
+import 'package:nopa_app/core/constants/app_routes.dart';
 import 'package:flutter/material.dart' hide Text;
 import 'package:nopa_app/widgets/fa_text.dart';
 import 'package:provider/provider.dart';
@@ -13,7 +14,6 @@ import '../core/theme/app_colors.dart';
 import '../core/theme/app_theme.dart';
 
 enum EventType { mediaClass, skillClass, overdue, assignment }
-typedef CalendarEventType = EventType;
 
 class CalendarEvent {
   final int year;
@@ -283,13 +283,7 @@ class _EducationCalendarState extends State<EducationCalendar> {
               alignment: Alignment.centerRight,
               child: Text(
                 'روزمان',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 14.5,
-                  fontWeight: FontWeight.bold,
-                  fontFamily: AppTheme.fontFamily,
-                  fontFamilyFallback: AppTheme.fontFamilyFallback,
-                ),
+                style: AppTypography.h3,
               ),
             ),
           ),
@@ -321,13 +315,7 @@ class _EducationCalendarState extends State<EducationCalendar> {
                         const SizedBox(width: 3),
                         Text(
                           _getPreviousMonthName(),
-                          style: const TextStyle(
-                            color: Color(0xFF9E9CEB),
-                            fontSize: 15.5,
-                            fontWeight: FontWeight.bold,
-                            fontFamily: AppTheme.fontFamily,
-                            fontFamilyFallback: AppTheme.fontFamilyFallback,
-                          ),
+                          style: AppTypography.h2.copyWith(color: Color(0xFF9E9CEB)),
                         ),
                       ],
                     ),
@@ -337,13 +325,7 @@ class _EducationCalendarState extends State<EducationCalendar> {
                   // because both side slots are Expanded and therefore equally wide
                   Text(
                     currentMonthName,
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 23,
-                      fontWeight: FontWeight.bold,
-                      fontFamily: AppTheme.fontFamily,
-                      fontFamilyFallback: AppTheme.fontFamilyFallback,
-                    ),
+                    style: AppTypography.h1,
                   ),
 
                   // Right Side: Next Month (آبان >)
@@ -355,13 +337,7 @@ class _EducationCalendarState extends State<EducationCalendar> {
                       children: [
                         Text(
                           _getNextMonthName(),
-                          style: const TextStyle(
-                            color: Color(0xFF9E9CEB),
-                            fontSize: 15.5,
-                            fontWeight: FontWeight.bold,
-                            fontFamily: AppTheme.fontFamily,
-                            fontFamilyFallback: AppTheme.fontFamilyFallback,
-                          ),
+                          style: AppTypography.h2.copyWith(color: Color(0xFF9E9CEB)),
                         ),
                         const SizedBox(width: 3),
                         const Icon(
@@ -521,25 +497,18 @@ class _EducationCalendarState extends State<EducationCalendar> {
               // 1. Day Number on Top
               Text(
                 '$dayNum'.toPersianDigits(),
-                style: TextStyle(
-                  color: isSelected ? Colors.white : const Color(0xFFB8B7DF),
-                  fontSize: 22,
-                  fontWeight: FontWeight.w900,
-                  fontFamily: AppTheme.fontFamily,
-                  fontFamilyFallback: AppTheme.fontFamilyFallback,
-                ),
+                style: AppTypography.h1.copyWith(color: isSelected ? Colors.white : const Color(0xFFB8B7DF)),
               ),
               const SizedBox(height: 2),
 
               // 2. Weekday Name
-              Text(
-                weekDayName,
-                style: TextStyle(
-                  color: isSelected ? const Color(0xFF5A3114) : const Color(0xFF9897D2),
-                  fontSize: 8.5,
-                  fontWeight: FontWeight.bold,
-                  fontFamily: AppTheme.fontFamily,
-                  fontFamilyFallback: AppTheme.fontFamilyFallback,
+              FittedBox(
+                fit: BoxFit.scaleDown,
+                child: Text(
+                  weekDayName,
+                  maxLines: 1,
+                  softWrap: false,
+                  style: AppTypography.caption.copyWith(color: isSelected ? const Color(0xFF5A3114) : const Color(0xFF9897D2)),
                 ),
               ),
               const SizedBox(height: 4),
@@ -624,7 +593,7 @@ class _EducationCalendarState extends State<EducationCalendar> {
 
     Navigator.pushNamed(
       context,
-      '/class2',
+      AppRoutes.class2,
       arguments: {
         'stationIndex': stationIndex,
         'initialTab': tab,
@@ -680,17 +649,12 @@ class _EducationCalendarState extends State<EducationCalendar> {
     required Color accentColor,
   }) {
     if (events.isEmpty) {
-      return const Padding(
+      return Padding(
         padding: EdgeInsets.symmetric(horizontal: 4.0, vertical: 4.0),
         child: Text(
           '-',
           textAlign: TextAlign.center,
-          style: TextStyle(
-            color: Color(0xFF6E6C88),
-            fontSize: 12,
-            fontFamily: AppTheme.fontFamily,
-            fontFamilyFallback: AppTheme.fontFamilyFallback,
-          ),
+          style: AppTypography.bodyMedium.copyWith(color: Color(0xFF6E6C88)),
         ),
       );
     }
@@ -729,14 +693,7 @@ class _EducationCalendarState extends State<EducationCalendar> {
                         textAlign: TextAlign.center,
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
-                          color: Color(0xFFE5E2F8),
-                          fontSize: 11.5,
-                          height: 1.3,
-                          fontWeight: FontWeight.w500,
-                          fontFamily: AppTheme.fontFamily,
-                          fontFamilyFallback: AppTheme.fontFamilyFallback,
-                        ),
+                        style: AppTypography.caption.copyWith(color: Color(0xFFE5E2F8)),
                       ),
                     ),
                     const SizedBox(width: 4),
@@ -853,13 +810,7 @@ class _EducationCalendarState extends State<EducationCalendar> {
                               child: Text(
                                 _categoryLabel(columns[i], dayEvents),
                                 textAlign: TextAlign.center,
-                                style: TextStyle(
-                                  color: _categoryColor(columns[i]),
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.bold,
-                                  fontFamily: AppTheme.fontFamily,
-                                  fontFamilyFallback: AppTheme.fontFamilyFallback,
-                                ),
+                                style: AppTypography.bodyLarge.copyWith(color: _categoryColor(columns[i])),
                               ),
                             ),
                           ),

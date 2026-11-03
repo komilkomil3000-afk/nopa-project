@@ -1,4 +1,7 @@
 import 'package:nopa_app/main.dart' show navigatorKey;
+import 'package:nopa_app/core/theme/app_colors.dart';
+import 'package:nopa_app/widgets/bottom_nav_bar.dart';
+import 'nopa_modal_shell.dart';
 import 'package:nopa_app/screens/chat/channel_manager_profile_screen.dart';
 import 'package:nopa_app/widgets/support_message_dialog.dart';
 import 'package:nopa_app/widgets/tap_expander.dart';
@@ -27,93 +30,26 @@ class CustomDrawer extends StatelessWidget {
   });
 
   void _showGuideDialog(BuildContext context) {
-    showDialog(
-      context: context,
-      builder: (ctx) => Dialog(
-        backgroundColor: const Color(0xFF1E1435),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(22),
-          side: BorderSide(
-            color: const Color(0xFF8B5CF6).withValues(alpha: 0.3),
-            width: 1.2,
+    showNopaModal<void>(
+      context,
+      builder: (ctx) => NopaModalShell(
+        maxWidth: 400,
+        headerIcon: Icons.menu_book_rounded,
+        title: 'راهنمای سامانه نپا',
+        padding: const EdgeInsets.all(22),
+        actions: [
+          NopaModalAction(
+            label: 'متوجه شدم',
+            onPressed: () => Navigator.pop(ctx),
           ),
-        ),
-        child: Container(
-          padding: const EdgeInsets.all(22),
-          constraints: const BoxConstraints(maxWidth: 400),
-          child: Directionality(
-            textDirection: TextDirection.rtl,
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Row(
-                      children: [
-                        SvgPicture.asset(
-                          'assets/svg_icons/Manual01.svg',
-                          width: 24,
-                          height: 24,
-                        ),
-                        const SizedBox(width: 8),
-                        const Text(
-                          'راهنمای سامانه نپا',
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
-                            fontFamily: AppTheme.fontFamily,
-                          ),
-                        ),
-                      ],
-                    ),
-                    IconButton(
-                      icon: const Icon(Icons.close_rounded, color: Colors.white70, size: 20),
-                      padding: EdgeInsets.zero,
-                      constraints: const BoxConstraints(minWidth: 40, minHeight: 40),
-                      onPressed: () => Navigator.pop(ctx),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 14),
-                const Text(
-                  'به کاروان یادگیری نپا خوش آمدید!\n\n'
-                  '**آموزگاه:** مشاهده نقشه‌ی سفر، گذراندن منزلگاه‌ها و جلسات مهارتی و رسانه‌ای.\n'
-                  '**چالش‌ها:** حل ماموریت‌ها و ارسال پاسخ جهت ارزیابی توسط راهبر کاروان.\n'
-                  '**بازارچه:** خرج سکه و جوایز کسب‌شده برای خرید تجهیزات و پاداش‌ها.\n'
-                  '**پشتیبانی:** ارتباط سریع با راهبر کاروان و کارشناسان نپا.',
-                  style: TextStyle(
-                    color: Color(0xFFD3D0E3),
-                    fontSize: 12.5,
-                    height: 1.7,
-                    fontFamily: AppTheme.fontFamily,
-                  ),
-                ),
-                const SizedBox(height: 18),
-                ElevatedButton(
-                  onPressed: () => Navigator.pop(ctx),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFFC09268),
-                    foregroundColor: Colors.white,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    padding: const EdgeInsets.symmetric(vertical: 10),
-                  ),
-                  child: const Text(
-                    'متوجه شدم',
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 13,
-                      fontFamily: AppTheme.fontFamily,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
+        ],
+        child: Text(
+          'به کاروان یادگیری نپا خوش آمدید!\n\n'
+          '**آموزگاه:** مشاهده نقشه‌ی سفر، گذراندن منزلگاه‌ها و جلسات مهارتی و رسانه‌ای.\n'
+          '**چالش‌ها:** حل ماموریت‌ها و ارسال پاسخ جهت ارزیابی توسط راهبر کاروان.\n'
+          '**بازارچه:** خرج سکه و جوایز کسب‌شده برای خرید تجهیزات و پاداش‌ها.\n'
+          '**پشتیبانی:** ارتباط سریع با راهبر کاروان و کارشناسان نپا.',
+          style: AppTypography.bodyMedium.copyWith(color: Color(0xFFD3D0E3)),
         ),
       ),
     );
@@ -247,13 +183,7 @@ class CustomDrawer extends StatelessWidget {
                               textAlign: TextAlign.right,
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontSize: 16,
-                                fontWeight: FontWeight.bold,
-                                fontFamily: AppTheme.fontFamily,
-                                fontFamilyFallback: AppTheme.fontFamilyFallback,
-                              ),
+                              style: AppTypography.h2,
                             ),
                             const SizedBox(height: 4),
                             Text(
@@ -261,12 +191,7 @@ class CustomDrawer extends StatelessWidget {
                               textAlign: TextAlign.right,
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
-                              style: const TextStyle(
-                                color: Color(0xFF9D99B8),
-                                fontSize: 11.5,
-                                fontFamily: AppTheme.fontFamily,
-                                fontFamilyFallback: AppTheme.fontFamilyFallback,
-                              ),
+                              style: AppTypography.caption.copyWith(color: Color(0xFF9D99B8)),
                             ),
                           ],
                         ),
@@ -289,51 +214,51 @@ class CustomDrawer extends StatelessWidget {
                     _buildMenuItem(
                       title: 'خانه',
                       svgPath: 'assets/svg_icons/home01.svg',
-                      isSelected: currentIndex == 0,
+                      isSelected: currentIndex == AppTabs.home,
                       iconSize: 22,
                       onTap: () {
                         Navigator.pop(context);
-                        onTabSelected(0);
+                        onTabSelected(AppTabs.home);
                       },
                     ),
                     _buildMenuItem(
                       title: 'آموزگاه',
                       svgPath: 'assets/svg_icons/classes01.svg',
-                      isSelected: currentIndex == 1,
+                      isSelected: currentIndex == AppTabs.academy,
                       iconSize: 23,
                       onTap: () {
                         Navigator.pop(context);
-                        onTabSelected(1);
+                        onTabSelected(AppTabs.academy);
                       },
                     ),
                     _buildMenuItem(
                       title: 'چالش ها',
                       svgPath: 'assets/svg_icons/challeng01.svg',
-                      isSelected: currentIndex == 2,
+                      isSelected: currentIndex == AppTabs.challenges,
                       iconSize: 22,
                       onTap: () {
                         Navigator.pop(context);
-                        onTabSelected(2);
+                        onTabSelected(AppTabs.challenges);
                       },
                     ),
                     _buildMenuItem(
                       title: 'بازارچه',
                       svgPath: 'assets/svg_icons/stor01.svg',
-                      isSelected: currentIndex == 3,
+                      isSelected: currentIndex == AppTabs.market,
                       iconSize: 22,
                       onTap: () {
                         Navigator.pop(context);
-                        onTabSelected(3);
+                        onTabSelected(AppTabs.market);
                       },
                     ),
                     _buildMenuItem(
                       title: 'پروفایل',
                       svgPath: 'assets/svg_icons/profile01.svg',
-                      isSelected: currentIndex == 4,
+                      isSelected: currentIndex == AppTabs.profile,
                       iconSize: 22,
                       onTap: () {
                         Navigator.pop(context);
-                        onTabSelected(4);
+                        onTabSelected(AppTabs.profile);
                       },
                     ),
                     _buildMenuItem(
@@ -343,7 +268,8 @@ class CustomDrawer extends StatelessWidget {
                       iconSize: 23,
                       onTap: () {
                         Navigator.pop(context);
-                        onTabSelected(3);
+                        // The rankings (برترین ها) are a section of the market tab
+                        onTabSelected(AppTabs.market);
                       },
                     ),
 
@@ -416,7 +342,7 @@ class CustomDrawer extends StatelessWidget {
                           Navigator.pop(context);
                           final targetRole = isMentor ? UserRole.member : UserRole.mentor;
                           Provider.of<AppRepository>(context, listen: false).setActiveRole(targetRole);
-                          onTabSelected(0);
+                          onTabSelected(AppTabs.home);
                         },
                       ),
                     ],
@@ -467,7 +393,7 @@ class CustomDrawer extends StatelessWidget {
     double iconSize = 22.0,
   }) {
     final Color effectiveIconColor = customIconColor ??
-        (isSelected ? const Color(0xFFC09268) : const Color(0xFFA5A0C8));
+        (isSelected ? AppColors.buttonCamel : const Color(0xFFA5A0C8));
     final Color effectiveTextColor = customTextColor ??
         (isSelected ? const Color(0xFFF4DCC5) : const Color(0xFFD3D0E3));
 
@@ -477,7 +403,7 @@ class CustomDrawer extends StatelessWidget {
         onTap: onTap,
         borderRadius: BorderRadius.circular(12),
         hoverColor: Colors.white.withValues(alpha: 0.04),
-        splashColor: const Color(0xFFC09268).withValues(alpha: 0.12),
+        splashColor: AppColors.buttonCamel.withValues(alpha: 0.12),
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 11),
           child: Directionality(
@@ -505,13 +431,7 @@ class CustomDrawer extends StatelessWidget {
                   child: Text(
                     title,
                     textAlign: TextAlign.right,
-                    style: TextStyle(
-                      color: effectiveTextColor,
-                      fontSize: 13.5,
-                      fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
-                      fontFamily: AppTheme.fontFamily,
-                      fontFamilyFallback: AppTheme.fontFamilyFallback,
-                    ),
+                    style: AppTypography.bodyLarge.copyWith(color: effectiveTextColor),
                   ),
                 ),
               ],

@@ -1,4 +1,8 @@
 import 'package:nopa_app/core/economy_rates.dart';
+import 'package:nopa_app/widgets/safe_avatar.dart';
+import 'package:nopa_app/core/constants/app_routes.dart';
+import 'package:nopa_app/widgets/nopa_modal_shell.dart';
+import 'package:nopa_app/widgets/nopa_pill_tabs.dart';
 import 'package:nopa_app/widgets/tap_expander.dart';
 import 'package:nopa_app/core/asset_names.dart';
 import 'package:flutter/material.dart' hide Text;
@@ -172,6 +176,7 @@ class _MarketScreenState extends State<MarketScreen> {
           return <String, dynamic>{
             'id': req['id']?.toString() ?? '',
             'studentName': student?['name']?.toString() ?? 'دانش‌آموز',
+            'studentAvatarUrl': student?['avatarUrl']?.toString() ?? '',
             'studentId': req['requestedBy']?.toString() ?? '',
             'title': _exchangeTitle(req),
             'date': _formatPersianDate(req['createdAt']),
@@ -304,12 +309,7 @@ class _MarketScreenState extends State<MarketScreen> {
                       // Title in center
                       const Text(
                         'ثبت درخواست مبادله',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                          fontFamily: AppTheme.fontFamily,
-                        ),
+                        style: AppTypography.h2,
                       ),
                     ],
                   ),
@@ -333,26 +333,16 @@ class _MarketScreenState extends State<MarketScreen> {
                           ),
                         ),
                         alignment: Alignment.center,
-                        child: const Text(
+                        child: Text(
                           'ارائه:',
-                          style: TextStyle(
-                            color: Color(0xFFE2E0F0),
-                            fontSize: 12.5,
-                            fontWeight: FontWeight.w600,
-                            fontFamily: AppTheme.fontFamily,
-                          ),
+                          style: AppTypography.bodyLarge.copyWith(color: Color(0xFFE2E0F0)),
                         ),
                       ),
 
                       // Left Value in RTL (Second child)
                       Text(
                         '${amountStr.toPersianDigits()} $_sourceAsset',
-                        style: const TextStyle(
-                          color: Color(0xFFE2E0F0),
-                          fontSize: 13,
-                          fontWeight: FontWeight.bold,
-                          fontFamily: AppTheme.fontFamily,
-                        ),
+                        style: AppTypography.h3Strong.copyWith(color: Color(0xFFE2E0F0)),
                       ),
                     ],
                   ),
@@ -376,26 +366,16 @@ class _MarketScreenState extends State<MarketScreen> {
                           ),
                         ),
                         alignment: Alignment.center,
-                        child: const Text(
+                        child: Text(
                           'خرید:',
-                          style: TextStyle(
-                            color: Color(0xFFE2E0F0),
-                            fontSize: 12.5,
-                            fontWeight: FontWeight.w600,
-                            fontFamily: AppTheme.fontFamily,
-                          ),
+                          style: AppTypography.bodyLarge.copyWith(color: Color(0xFFE2E0F0)),
                         ),
                       ),
 
                       // Left Value in RTL (Second child)
                       Text(
                         '${resultStr.toPersianDigits()} $_targetAsset',
-                        style: const TextStyle(
-                          color: Color(0xFFE2E0F0),
-                          fontSize: 13,
-                          fontWeight: FontWeight.bold,
-                          fontFamily: AppTheme.fontFamily,
-                        ),
+                        style: AppTypography.h3Strong.copyWith(color: Color(0xFFE2E0F0)),
                       ),
                     ],
                   ),
@@ -403,15 +383,10 @@ class _MarketScreenState extends State<MarketScreen> {
                   const SizedBox(height: 16),
 
                   // Description text
-                  const Text(
+                  Text(
                     'درخواست شما پس از ثبت برای راهبر ارسال شده و در صورت تایید، خرید شما اعمال میشود. شما میتوانید با راهبر خود در ارتباط باشید.',
                     textAlign: TextAlign.justify,
-                    style: TextStyle(
-                      color: Color(0xFFB3AFD0),
-                      fontSize: 11,
-                      height: 1.45,
-                      fontFamily: AppTheme.fontFamily,
-                    ),
+                    style: AppTypography.caption.copyWith(color: Color(0xFFB3AFD0)),
                   ),
 
                   const SizedBox(height: 22),
@@ -441,28 +416,18 @@ class _MarketScreenState extends State<MarketScreen> {
                             }
                           }
                         },
-                        child: const Text(
+                        child: Text(
                           'ارسال',
-                          style: TextStyle(
-                            color: AppColors.buttonCamel,
-                            fontSize: 14,
-                            fontWeight: FontWeight.bold,
-                            fontFamily: AppTheme.fontFamily,
-                          ),
+                          style: AppTypography.h3Strong.copyWith(color: AppColors.buttonCamel),
                         ),
                       ),
 
                       // لغو on Left in RTL
                       TextButton(
                         onPressed: () => Navigator.pop(ctx),
-                        child: const Text(
+                        child: Text(
                           'لغو',
-                          style: TextStyle(
-                            color: AppColors.buttonCancelPurple,
-                            fontSize: 14,
-                            fontWeight: FontWeight.bold,
-                            fontFamily: AppTheme.fontFamily,
-                          ),
+                          style: AppTypography.h3Strong.copyWith(color: AppColors.buttonCancelPurple),
                         ),
                       ),
                     ],
@@ -491,6 +456,7 @@ class _MarketScreenState extends State<MarketScreen> {
         _memberIds = members.map((m) => m['id']?.toString() ?? '').toList();
         _topMembers = members.take(3).map((m) => {
               'name': m['name']?.toString() ?? '-',
+              'avatarUrl': m['avatarUrl']?.toString() ?? '',
               'zarik': '${_formatScore(m['capital'] ?? m['zarikBalance'])} زریک',
             }).toList();
         _caravanIds = caravans.map((c) => c['id']?.toString() ?? '').toList();
@@ -537,13 +503,7 @@ class _MarketScreenState extends State<MarketScreen> {
               const Center(
                 child: Text(
                   'بازارچه',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 22,
-                    fontWeight: FontWeight.bold,
-                    fontFamily: AppTheme.fontFamily,
-                    fontFamilyFallback: AppTheme.fontFamilyFallback,
-                  ),
+                  style: AppTypography.h1,
                 ),
               ),
               if (isMentor)
@@ -553,12 +513,7 @@ class _MarketScreenState extends State<MarketScreen> {
                     alignment: Alignment.centerRight,
                     child: Text(
                       repository.selectedCaravanName,
-                      style: TextStyle(
-                        fontFamily: AppTheme.fontFamily,
-                        fontSize: 13,
-                        fontWeight: FontWeight.w600,
-                        color: const Color(0xFF9E9AC0).withValues(alpha: 0.9),
-                      ),
+                      style: AppTypography.h3.copyWith(color: const Color(0xFF9E9AC0).withValues(alpha: 0.9)),
                     ),
                   ),
                 ),
@@ -603,13 +558,7 @@ class _MarketScreenState extends State<MarketScreen> {
             alignment: Alignment.centerRight,
             child: Text(
               'نرخنامه',
-              style: TextStyle(
-                color: Colors.white,
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
-                fontFamily: AppTheme.fontFamily,
-                fontFamilyFallback: AppTheme.fontFamilyFallback,
-              ),
+              style: AppTypography.h2,
             ),
           ),
         ),
@@ -697,14 +646,7 @@ class _MarketScreenState extends State<MarketScreen> {
                         AssetNames.labelFor(item['title'] as String),
                         textAlign: TextAlign.center,
                         maxLines: 2,
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 14.5,
-                          fontWeight: FontWeight.bold,
-                          height: 1.2,
-                          fontFamily: AppTheme.fontFamily,
-                          fontFamilyFallback: AppTheme.fontFamilyFallback,
-                        ),
+                        style: AppTypography.h3,
                       ),
                     ),
                   ],
@@ -739,13 +681,7 @@ class _MarketScreenState extends State<MarketScreen> {
                   child: Text(
                     (item['priceText'] as String).toPersianDigits(),
                     textAlign: TextAlign.center,
-                    style: const TextStyle(
-                      color: Color(0xFFD6D3E6),
-                      fontSize: 11,
-                      fontWeight: FontWeight.w600,
-                      fontFamily: AppTheme.fontFamily,
-                      fontFamilyFallback: AppTheme.fontFamilyFallback,
-                    ),
+                    style: AppTypography.caption.copyWith(color: Color(0xFFD6D3E6)),
                   ),
                 ),
               ),
@@ -777,13 +713,7 @@ class _MarketScreenState extends State<MarketScreen> {
             alignment: Alignment.centerRight,
             child: Text(
               title,
-              style: const TextStyle(
-                color: Colors.white,
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
-                fontFamily: AppTheme.fontFamily,
-                fontFamilyFallback: AppTheme.fontFamilyFallback,
-              ),
+              style: AppTypography.h2,
             ),
           ),
         ),
@@ -840,32 +770,14 @@ class _MarketScreenState extends State<MarketScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        // Mode Switcher Pill Tabs matching Mentor Station Screen
         Center(
-          child: Container(
-            decoration: BoxDecoration(
-              gradient: AppColors.strokeGradient,
-              borderRadius: BorderRadius.circular(10),
-            ),
-            padding: const EdgeInsets.all(AppColors.borderWidth),
-            child: Container(
-              decoration: BoxDecoration(
-                gradient: AppColors.darkSurfaceGradient,
-                borderRadius: BorderRadius.circular(9),
-              ),
-              padding: const EdgeInsets.all(3),
-              child: Directionality(
-                textDirection: TextDirection.rtl,
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    _buildMentorTabButton('گزارش اعضا', 0),
-                    const SizedBox(width: 4),
-                    _buildMentorTabButton('مبادلات', 1),
-                  ],
-                ),
-              ),
-            ),
+          child: NopaPillTabs<int>(
+            selected: _selectedMentorMarketTab,
+            tabs: const [
+              NopaPillTab<int>(0, 'گزارش اعضا'),
+              NopaPillTab<int>(1, 'مبادلات'),
+            ],
+            onChanged: (v) => setState(() => _selectedMentorMarketTab = v),
           ),
         ),
 
@@ -880,36 +792,6 @@ class _MarketScreenState extends State<MarketScreen> {
         ),
       ],
     );
-  }
-
-  Widget _buildMentorTabButton(String title, int tabIndex) {
-    final bool isSelected = _selectedMentorMarketTab == tabIndex;
-
-    return TapExpander(child: GestureDetector(
-      onTap: () {
-        setState(() {
-          _selectedMentorMarketTab = tabIndex;
-        });
-      },
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 180),
-        padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 7),
-        decoration: BoxDecoration(
-          gradient: isSelected ? AppColors.accentGradient : null,
-          borderRadius: BorderRadius.circular(8),
-        ),
-        child: Text(
-          title,
-          style: TextStyle(
-            color: isSelected ? Colors.white : const Color(0xFF8E889D),
-            fontSize: 11.5,
-            fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
-            fontFamily: AppTheme.fontFamily,
-            fontFamilyFallback: AppTheme.fontFamilyFallback,
-          ),
-        ),
-      ),
-    ));
   }
 
   /// List of Member Assets for Mentor
@@ -930,14 +812,14 @@ class _MarketScreenState extends State<MarketScreen> {
           Text(
             failed ? 'دریافت اطلاعات بازارچه ناموفق بود.' : emptyText,
             textAlign: TextAlign.center,
-            style: const TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 12.5, color: Color(0xFFB3AFD0)),
+            style: AppTypography.bodyMedium.copyWith(color: Color(0xFFB3AFD0)),
           ),
           if (failed)
             TextButton(
               onPressed: _loadMarketData,
-              child: const Text(
+              child: Text(
                 'تلاش دوباره',
-                style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 13, fontWeight: FontWeight.bold, color: AppColors.buttonCamel),
+                style: AppTypography.h3.copyWith(color: AppColors.buttonCamel),
               ),
             ),
         ],
@@ -1001,48 +883,23 @@ class _MarketScreenState extends State<MarketScreen> {
               children: [
                 Text(
                   'مجموع سرمایه‌ها:',
-                  style: TextStyle(
-                    fontFamily: AppTheme.fontFamily,
-                    fontSize: 11,
-                    fontWeight: FontWeight.bold,
-                    color: const Color(0xFFC5BEEB),
-                  ),
+                  style: AppTypography.caption.copyWith(color: const Color(0xFFC5BEEB)),
                 ),
                 Text(
                   'زریک: ${totalZarik.toString().toPersian()}',
-                  style: TextStyle(
-                    fontFamily: AppTheme.fontFamily,
-                    fontSize: 10.5,
-                    fontWeight: FontWeight.w600,
-                    color: const Color(0xFFFFD54F),
-                  ),
+                  style: AppTypography.caption.copyWith(color: const Color(0xFFFFD54F)),
                 ),
                 Text(
                   '${AssetNames.labelFor('کلاف')}: ${totalNakh.toString().toPersian()}',
-                  style: TextStyle(
-                    fontFamily: AppTheme.fontFamily,
-                    fontSize: 10.5,
-                    fontWeight: FontWeight.w600,
-                    color: const Color(0xFF81D4FA),
-                  ),
+                  style: AppTypography.caption.copyWith(color: const Color(0xFF81D4FA)),
                 ),
                 Text(
                   '${AssetNames.labelFor('قالیچه')}: ${totalFarsh.toString().toPersian()}',
-                  style: TextStyle(
-                    fontFamily: AppTheme.fontFamily,
-                    fontSize: 10.5,
-                    fontWeight: FontWeight.w600,
-                    color: const Color(0xFFA5D6A7),
-                  ),
+                  style: AppTypography.caption.copyWith(color: const Color(0xFFA5D6A7)),
                 ),
                 Text(
                   '${AssetNames.labelFor('درفش')}: ${totalBeyragh.toString().toPersian()}',
-                  style: TextStyle(
-                    fontFamily: AppTheme.fontFamily,
-                    fontSize: 10.5,
-                    fontWeight: FontWeight.w600,
-                    color: const Color(0xFFFFAB91),
-                  ),
+                  style: AppTypography.caption.copyWith(color: const Color(0xFFFFAB91)),
                 ),
               ],
             ),
@@ -1130,33 +987,11 @@ class _MarketScreenState extends State<MarketScreen> {
                       Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          Container(
-                            width: 30,
-                            height: 30,
-                            decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              color: const Color(0xFF534C82),
-                              border: Border.all(
-                                color: const Color(0xFF837CB7).withValues(alpha: 0.5),
-                                width: 1,
-                              ),
-                            ),
-                            child: const Icon(
-                              Icons.person_rounded,
-                              color: Color(0xFFEDE9F6),
-                              size: 17,
-                            ),
-                          ),
+                          SafeAvatar(imageUrl: member['avatarUrl']?.toString(), name: name, radius: 15),
                           const SizedBox(width: 8),
                           Text(
                             name,
-                            style: const TextStyle(
-                              fontFamily: AppTheme.fontFamily,
-                              fontFamilyFallback: AppTheme.fontFamilyFallback,
-                              fontSize: 12.5,
-                              fontWeight: FontWeight.w600,
-                              color: Colors.white,
-                            ),
+                            style: AppTypography.h3,
                           ),
                         ],
                       ),
@@ -1169,7 +1004,7 @@ class _MarketScreenState extends State<MarketScreen> {
                         children: [
                           TapExpander(child: GestureDetector(
                             onTap: () {
-                              Navigator.pushNamed(context, '/tickets');
+                              Navigator.pushNamed(context, AppRoutes.tickets);
                             },
                             child: Container(
                               decoration: BoxDecoration(
@@ -1183,15 +1018,9 @@ class _MarketScreenState extends State<MarketScreen> {
                                   gradient: AppColors.darkSurfaceGradient,
                                   borderRadius: BorderRadius.circular(7),
                                 ),
-                                child: const Text(
+                                child: Text(
                                   'ارتباط',
-                                  style: TextStyle(
-                                    color: Color(0xFFC7B299),
-                                    fontSize: 10,
-                                    fontWeight: FontWeight.w600,
-                                    fontFamily: AppTheme.fontFamily,
-                                    fontFamilyFallback: AppTheme.fontFamilyFallback,
-                                  ),
+                                  style: AppTypography.caption.copyWith(color: Color(0xFFC7B299)),
                                 ),
                               ),
                             ),
@@ -1254,21 +1083,11 @@ class _MarketScreenState extends State<MarketScreen> {
         const SizedBox(width: 5),
         Text(
           '$label: ',
-          style: TextStyle(
-            fontFamily: AppTheme.fontFamily,
-            fontSize: 11,
-            fontWeight: FontWeight.normal,
-            color: Colors.white.withValues(alpha: 0.6),
-          ),
+          style: AppTypography.caption.copyWith(color: Colors.white.withValues(alpha: 0.6)),
         ),
         Text(
           value,
-          style: const TextStyle(
-            fontFamily: AppTheme.fontFamily,
-            fontSize: 11.5,
-            fontWeight: FontWeight.bold,
-            color: Colors.white,
-          ),
+          style: AppTypography.caption,
         ),
       ],
     );
@@ -1384,7 +1203,7 @@ class _MarketScreenState extends State<MarketScreen> {
                               color: const Color(0xFF4A382A),
                               borderRadius: BorderRadius.circular(7),
                               border: Border.all(
-                                color: const Color(0xFFC09268).withValues(alpha: 0.5),
+                                color: AppColors.buttonCamel.withValues(alpha: 0.5),
                                 width: 1,
                               ),
                             ),
@@ -1397,13 +1216,7 @@ class _MarketScreenState extends State<MarketScreen> {
                           const SizedBox(width: 8),
                           Text(
                             title,
-                            style: const TextStyle(
-                              fontFamily: AppTheme.fontFamily,
-                              fontFamilyFallback: AppTheme.fontFamilyFallback,
-                              fontSize: 12.5,
-                              fontWeight: FontWeight.w600,
-                              color: Colors.white,
-                            ),
+                            style: AppTypography.bodyLarge,
                           ),
                         ],
                       ),
@@ -1414,33 +1227,11 @@ class _MarketScreenState extends State<MarketScreen> {
                       Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          Container(
-                            width: 24,
-                            height: 24,
-                            decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              color: const Color(0xFF534C82),
-                              border: Border.all(
-                                color: const Color(0xFF837CB7).withValues(alpha: 0.5),
-                                width: 1,
-                              ),
-                            ),
-                            child: const Icon(
-                              Icons.person_rounded,
-                              color: Color(0xFFEDE9F6),
-                              size: 14,
-                            ),
-                          ),
+                          SafeAvatar(imageUrl: request['studentAvatarUrl']?.toString(), name: studentName, radius: 12),
                           const SizedBox(width: 6),
                           Text(
                             studentName,
-                            style: TextStyle(
-                              fontFamily: AppTheme.fontFamily,
-                              fontFamilyFallback: AppTheme.fontFamilyFallback,
-                              fontSize: 12,
-                              fontWeight: FontWeight.w500,
-                              color: Colors.white.withValues(alpha: 0.9),
-                            ),
+                            style: AppTypography.bodyMedium.copyWith(color: Colors.white.withValues(alpha: 0.9)),
                           ),
                           const SizedBox(width: 8),
                           Icon(
@@ -1485,13 +1276,7 @@ class _MarketScreenState extends State<MarketScreen> {
                           const SizedBox(width: 6),
                           Text(
                             'تاریخ: $date',
-                            style: TextStyle(
-                              fontFamily: AppTheme.fontFamily,
-                              fontFamilyFallback: AppTheme.fontFamilyFallback,
-                              fontSize: 11,
-                              fontWeight: FontWeight.normal,
-                              color: Colors.white.withValues(alpha: 0.6),
-                            ),
+                            style: AppTypography.caption.copyWith(color: Colors.white.withValues(alpha: 0.6)),
                           ),
                         ],
                       ),
@@ -1505,24 +1290,12 @@ class _MarketScreenState extends State<MarketScreen> {
                           if (status == 'cancelled')
                             Text(
                               'لغو شد',
-                              style: TextStyle(
-                                fontFamily: AppTheme.fontFamily,
-                                fontFamilyFallback: AppTheme.fontFamilyFallback,
-                                fontSize: 11,
-                                fontWeight: FontWeight.w600,
-                                color: Colors.redAccent.withValues(alpha: 0.9),
-                              ),
+                              style: AppTypography.caption.copyWith(color: Colors.redAccent.withValues(alpha: 0.9)),
                             )
                           else ...[
                             Text(
                               'انجام شد',
-                              style: TextStyle(
-                                fontFamily: AppTheme.fontFamily,
-                                fontFamilyFallback: AppTheme.fontFamilyFallback,
-                                fontSize: 11,
-                                fontWeight: FontWeight.w600,
-                                color: Colors.greenAccent.withValues(alpha: 0.85),
-                              ),
+                              style: AppTypography.caption.copyWith(color: Colors.greenAccent.withValues(alpha: 0.85)),
                             ),
                             if (canCancel) ...[
                               const SizedBox(width: 10),
@@ -1554,15 +1327,9 @@ class _MarketScreenState extends State<MarketScreen> {
                                       width: 1,
                                     ),
                                   ),
-                                  child: const Text(
+                                  child: Text(
                                     'لغو مبادله',
-                                    style: TextStyle(
-                                      fontFamily: AppTheme.fontFamily,
-                                      fontFamilyFallback: AppTheme.fontFamilyFallback,
-                                      fontSize: 10,
-                                      fontWeight: FontWeight.w600,
-                                      color: Color(0xFFDCD7F5),
-                                    ),
+                                    style: AppTypography.caption.copyWith(color: Color(0xFFDCD7F5)),
                                   ),
                                 ),
                               )),
@@ -1589,72 +1356,33 @@ class _MarketScreenState extends State<MarketScreen> {
   }) {
     final TextEditingController explanationController = TextEditingController();
 
-    showDialog(
-      context: context,
-      barrierDismissible: true,
+    showNopaModal<void>(
+      context,
+      insetPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
       builder: (BuildContext ctx) {
-        return Dialog(
-          backgroundColor: Colors.transparent,
-          insetPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
-          child: Directionality(
-            textDirection: TextDirection.rtl,
-            child: Container(
-              padding: const EdgeInsets.all(22),
-              decoration: BoxDecoration(
-                color: const Color(0xFF2C274A),
-                borderRadius: BorderRadius.circular(24),
-                border: Border.all(
-                  color: const Color(0xFF4C4578),
-                  width: 1.2,
-                ),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.5),
-                    blurRadius: 20,
-                    offset: const Offset(0, 8),
-                  ),
-                ],
-              ),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  // Top Header: Shield outline icon with user + Title
-                  Stack(
-                    alignment: Alignment.center,
-                    children: [
-                      Align(
-                        alignment: Alignment.centerRight,
-                        child: Container(
-                          width: 38,
-                          height: 38,
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            border: Border.all(
-                              color: const Color(0xFFC09268).withValues(alpha: 0.7),
-                              width: 1.2,
-                            ),
-                          ),
-                          child: const Icon(
-                            Icons.shield_outlined,
-                            color: Color(0xFFDFB690),
-                            size: 22,
-                          ),
-                        ),
-                      ),
-                      const Text(
-                        'پیام به دانش آموز',
-                        style: TextStyle(
-                          fontFamily: AppTheme.fontFamily,
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.white,
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 20),
-
+        return NopaModalShell(
+          maxWidth: 420,
+          headerIcon: Icons.shield_outlined,
+          title: 'پیام به دانش آموز',
+          padding: const EdgeInsets.all(22),
+          actions: [
+            NopaModalAction(
+              label: 'ارسال',
+              onPressed: () {
+                Navigator.pop(ctx);
+                onConfirmReject(explanationController.text.trim());
+              },
+            ),
+            NopaModalAction(
+              label: 'لغو',
+              variant: NopaModalActionVariant.secondary,
+              onPressed: () => Navigator.pop(ctx),
+            ),
+          ],
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
                   // Field 1: نام و نام خانوادگی
                   _buildDialogField(
                     label: 'نام و نام خانوادگی',
@@ -1680,17 +1408,13 @@ class _MarketScreenState extends State<MarketScreen> {
                   Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const SizedBox(
+                      SizedBox(
                         width: 90,
                         child: Padding(
                           padding: EdgeInsets.only(top: 8),
                           child: Text(
                             'شرح دهید:',
-                            style: TextStyle(
-                              fontFamily: AppTheme.fontFamily,
-                              fontSize: 13,
-                              color: Color(0xFFC7C5DD),
-                            ),
+                            style: AppTypography.bodyLarge.copyWith(color: Color(0xFFC7C5DD)),
                           ),
                         ),
                       ),
@@ -1709,19 +1433,11 @@ class _MarketScreenState extends State<MarketScreen> {
                           child: TextField(
                             controller: explanationController,
                             maxLines: 4,
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 12,
-                              fontFamily: AppTheme.fontFamily,
-                            ),
-                            decoration: const InputDecoration(
+                            style: AppTypography.bodyMedium,
+                            decoration: InputDecoration(
                               isDense: true,
                               hintText: 'توضیحات تان درمورد تصمیم تان را برای عضو مورد نظر بنویسید',
-                              hintStyle: TextStyle(
-                                color: Color(0xFF8882A8),
-                                fontSize: 11.5,
-                                fontFamily: AppTheme.fontFamily,
-                              ),
+                              hintStyle: AppTypography.caption.copyWith(color: Color(0xFF8882A8)),
                               border: InputBorder.none,
                             ),
                           ),
@@ -1730,47 +1446,7 @@ class _MarketScreenState extends State<MarketScreen> {
                     ],
                   ),
 
-                  const SizedBox(height: 24),
-
-                  // Bottom Buttons: ارسال (Right) & لغو (Left)
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      // ارسال (Send)
-                      TextButton(
-                        onPressed: () {
-                          Navigator.pop(ctx);
-                          onConfirmReject(explanationController.text.trim());
-                        },
-                        child: const Text(
-                          'ارسال',
-                          style: TextStyle(
-                            fontFamily: AppTheme.fontFamily,
-                            fontSize: 15,
-                            fontWeight: FontWeight.bold,
-                            color: Color(0xFFE5A855),
-                          ),
-                        ),
-                      ),
-
-                      // لغو (Cancel)
-                      TextButton(
-                        onPressed: () => Navigator.pop(ctx),
-                        child: const Text(
-                          'لغو',
-                          style: TextStyle(
-                            fontFamily: AppTheme.fontFamily,
-                            fontSize: 15,
-                            fontWeight: FontWeight.bold,
-                            color: Color(0xFF9E9CD6),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
+            ],
           ),
         );
       },
@@ -1784,11 +1460,7 @@ class _MarketScreenState extends State<MarketScreen> {
           width: 90,
           child: Text(
             label,
-            style: const TextStyle(
-              fontFamily: AppTheme.fontFamily,
-              fontSize: 13,
-              color: Color(0xFFC7C5DD),
-            ),
+            style: AppTypography.bodyLarge.copyWith(color: Color(0xFFC7C5DD)),
           ),
         ),
         Expanded(
@@ -1805,12 +1477,7 @@ class _MarketScreenState extends State<MarketScreen> {
             ),
             child: Text(
               value,
-              style: const TextStyle(
-                fontFamily: AppTheme.fontFamily,
-                fontSize: 13,
-                fontWeight: FontWeight.w600,
-                color: Colors.white,
-              ),
+              style: AppTypography.h3Strong,
             ),
           ),
         ),
@@ -1891,13 +1558,7 @@ class _MarketScreenState extends State<MarketScreen> {
                   child: Center(
                     child: Text(
                       badgeNumber,
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 13,
-                        fontWeight: FontWeight.bold,
-                        fontFamily: AppTheme.fontFamily,
-                        fontFamilyFallback: AppTheme.fontFamilyFallback,
-                      ),
+                      style: AppTypography.h3Strong,
                     ),
                   ),
                 ),
@@ -1905,25 +1566,13 @@ class _MarketScreenState extends State<MarketScreen> {
                 // Middle: Label
                 Text(
                   label,
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 14,
-                    fontWeight: FontWeight.bold,
-                    fontFamily: AppTheme.fontFamily,
-                    fontFamilyFallback: AppTheme.fontFamilyFallback,
-                  ),
+                  style: AppTypography.h3,
                 ),
                 const SizedBox(width: 16),
                 // Left: Value
                 Text(
                   value,
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 16,
-                    fontWeight: FontWeight.w900,
-                    fontFamily: AppTheme.fontFamily,
-                    fontFamilyFallback: AppTheme.fontFamilyFallback,
-                  ),
+                  style: AppTypography.h3,
                 ),
                 const SizedBox(width: 2),
               ],
@@ -1949,13 +1598,7 @@ class _MarketScreenState extends State<MarketScreen> {
             alignment: Alignment.centerRight,
             child: Text(
               'مبادله',
-              style: TextStyle(
-                color: Colors.white,
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
-                fontFamily: AppTheme.fontFamily,
-                fontFamilyFallback: AppTheme.fontFamilyFallback,
-              ),
+              style: AppTypography.h2,
             ),
           ),
         ),
@@ -2015,16 +1658,10 @@ class _MarketScreenState extends State<MarketScreen> {
                           const SizedBox(height: 14),
 
                           // 2. Description text
-                          const Text(
+                          Text(
                             'پس از تعیین مقدار مبادله، ثبت درخواست را بزنید تا درخواست شما برای مربی ارسال شود. درصورت تایید مربی مبادله شما نهایی خواهد شد.',
                             textAlign: TextAlign.justify,
-                            style: TextStyle(
-                              color: Color(0xFFC7C5DD),
-                              fontSize: 11,
-                              height: 1.45,
-                              fontFamily: AppTheme.fontFamily,
-                              fontFamilyFallback: AppTheme.fontFamilyFallback,
-                            ),
+                            style: AppTypography.caption.copyWith(color: Color(0xFFC7C5DD)),
                           ),
                           const SizedBox(height: 14),
 
@@ -2044,7 +1681,7 @@ class _MarketScreenState extends State<MarketScreen> {
                                 child: _buildInteractiveActionButton(
                                   text: 'ثبت درخواست',
                                   isActive: _activeActionButton == 1,
-                                  strokeBorderColor: const Color(0xFFC09268),
+                                  strokeBorderColor: AppColors.buttonCamel,
                                   onTap: _submitExchangeRequest,
                                 ),
                               ),
@@ -2065,18 +1702,12 @@ class _MarketScreenState extends State<MarketScreen> {
                             crossAxisAlignment: CrossAxisAlignment.stretch,
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
-                              const Padding(
+                              Padding(
                                 padding: EdgeInsets.only(left: 6.0, top: 2.0),
                                 child: Text(
                                   'پس از تعیین مقدار مبادله، ثبت درخواست را بزنید تا درخواست شما برای مربی ارسال شود. درصورت تایید مربی مبادله شما نهایی خواهد شد.',
                                   textAlign: TextAlign.justify,
-                                  style: TextStyle(
-                                    color: Color(0xFFC7C5DD),
-                                    fontSize: 11,
-                                    height: 1.45,
-                                    fontFamily: AppTheme.fontFamily,
-                                    fontFamilyFallback: AppTheme.fontFamilyFallback,
-                                  ),
+                                  style: AppTypography.caption.copyWith(color: Color(0xFFC7C5DD)),
                                 ),
                               ),
                               const SizedBox(height: 14),
@@ -2095,7 +1726,7 @@ class _MarketScreenState extends State<MarketScreen> {
                                     child: _buildInteractiveActionButton(
                                       text: 'ثبت درخواست',
                                       isActive: _activeActionButton == 1,
-                                      strokeBorderColor: const Color(0xFFC09268),
+                                      strokeBorderColor: AppColors.buttonCamel,
                                       onTap: _submitExchangeRequest,
                                     ),
                                   ),
@@ -2130,16 +1761,11 @@ class _MarketScreenState extends State<MarketScreen> {
         // Row 1: سرمایه ارائه شده
         Row(
           children: [
-            const SizedBox(
+            SizedBox(
               width: 58,
               child: Text(
                 'سرمایه\nارائه شده',
-                style: TextStyle(
-                  color: Colors.white70,
-                  fontSize: 10,
-                  height: 1.2,
-                  fontFamily: AppTheme.fontFamily,
-                ),
+                style: AppTypography.caption.copyWith(color: Colors.white70),
               ),
             ),
             const SizedBox(width: 4),
@@ -2156,13 +1782,9 @@ class _MarketScreenState extends State<MarketScreen> {
               ),
             ),
             const SizedBox(width: 6),
-            const Text(
+            Text(
               'مقدار',
-              style: TextStyle(
-                color: Colors.white70,
-                fontSize: 10.5,
-                fontFamily: AppTheme.fontFamily,
-              ),
+              style: AppTypography.caption.copyWith(color: Colors.white70),
             ),
             const SizedBox(width: 4),
             _buildAmountInputBox(),
@@ -2174,16 +1796,11 @@ class _MarketScreenState extends State<MarketScreen> {
         // Row 2: سرمایه درخواستی
         Row(
           children: [
-            const SizedBox(
+            SizedBox(
               width: 58,
               child: Text(
                 'سرمایه\nدرخواستی',
-                style: TextStyle(
-                  color: Colors.white70,
-                  fontSize: 10,
-                  height: 1.2,
-                  fontFamily: AppTheme.fontFamily,
-                ),
+                style: AppTypography.caption.copyWith(color: Colors.white70),
               ),
             ),
             const SizedBox(width: 4),
@@ -2200,13 +1817,9 @@ class _MarketScreenState extends State<MarketScreen> {
               ),
             ),
             const SizedBox(width: 6),
-            const Text(
+            Text(
               'مقدار',
-              style: TextStyle(
-                color: Colors.white70,
-                fontSize: 10.5,
-                fontFamily: AppTheme.fontFamily,
-              ),
+              style: AppTypography.caption.copyWith(color: Colors.white70),
             ),
             const SizedBox(width: 4),
             _buildResultBox(resultDisplay),
@@ -2240,16 +1853,11 @@ class _MarketScreenState extends State<MarketScreen> {
             dropdownColor: const Color(0xFF1E1633),
             icon: const Icon(Icons.keyboard_arrow_down_rounded, color: Color(0xFFC7B299), size: 18),
             isDense: true,
-            style: const TextStyle(
-              color: Colors.white,
-              fontSize: 12,
-              fontWeight: FontWeight.bold,
-              fontFamily: AppTheme.fontFamily,
-            ),
+            style: AppTypography.bodyLarge,
             items: _availableAssets.map((asset) {
               return DropdownMenuItem<String>(
                 value: asset,
-                child: Text(AssetNames.labelFor(asset), style: const TextStyle(fontSize: 12, color: Colors.white)),
+                child: Text(AssetNames.labelFor(asset), style: AppTypography.bodyMedium),
               );
             }).toList(),
             onChanged: onChanged,
@@ -2279,12 +1887,7 @@ class _MarketScreenState extends State<MarketScreen> {
           controller: _amountController,
           keyboardType: TextInputType.number,
           textAlign: TextAlign.center,
-          style: const TextStyle(
-            color: Colors.white,
-            fontSize: 13,
-            fontWeight: FontWeight.bold,
-            fontFamily: AppTheme.fontFamily,
-          ),
+          style: AppTypography.h3,
           decoration: const InputDecoration(
             isDense: true,
             contentPadding: EdgeInsets.zero,
@@ -2313,12 +1916,7 @@ class _MarketScreenState extends State<MarketScreen> {
         alignment: Alignment.center,
         child: Text(
           resultText,
-          style: const TextStyle(
-            color: Color(0xFFFFD580),
-            fontSize: 13,
-            fontWeight: FontWeight.bold,
-            fontFamily: AppTheme.fontFamily,
-          ),
+          style: AppTypography.h3.copyWith(color: Color(0xFFFFD580)),
         ),
       ),
     );
@@ -2362,13 +1960,7 @@ class _MarketScreenState extends State<MarketScreen> {
           child: Center(
             child: Text(
               text,
-              style: TextStyle(
-                color: isActive ? Colors.white : const Color(0xFFD6D7E5),
-                fontSize: 13.5,
-                fontWeight: FontWeight.bold,
-                fontFamily: AppTheme.fontFamily,
-                fontFamilyFallback: AppTheme.fontFamilyFallback,
-              ),
+              style: AppTypography.h3.copyWith(color: isActive ? Colors.white : const Color(0xFFD6D7E5)),
             ),
           ),
         ),
@@ -2389,6 +1981,8 @@ class _MarketScreenState extends State<MarketScreen> {
         'rank': i + 1,
         'name': hasItem ? source[i]['name'] : '-',
         'zarik': hasItem ? source[i]['zarik'] : '',
+        // Members show their own picture; caravans have none and keep the placeholder
+        'avatarUrl': isMembersTab && hasItem ? (source[i]['avatarUrl'] ?? '') : '',
         'color': podiumColors[i],
         'borderColor': podiumColors[i],
         'size': podiumSizes[i],
@@ -2414,98 +2008,23 @@ class _MarketScreenState extends State<MarketScreen> {
             alignment: Alignment.centerRight,
             child: Text(
               'برترین ها',
-              style: TextStyle(
-                color: Colors.white,
-                fontSize: 16.5,
-                fontWeight: FontWeight.bold,
-                fontFamily: AppTheme.fontFamily,
-                fontFamilyFallback: AppTheme.fontFamilyFallback,
-              ),
+              style: AppTypography.h2,
             ),
           ),
         ),
         const SizedBox(height: 14),
 
-        // 2. Tab Switcher Box styled like Login OTP/Password Segmented Box
+        // 2. Tab switcher (shared segmented style)
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 20.0),
-          child: Container(
-            decoration: BoxDecoration(
-              gradient: AppColors.strokeGradient,
-              borderRadius: BorderRadius.circular(10),
-            ),
-            padding: const EdgeInsets.all(AppColors.borderWidth),
-            child: Container(
-              decoration: BoxDecoration(
-                gradient: AppColors.darkSurfaceGradient,
-                borderRadius: BorderRadius.circular(9),
-              ),
-              padding: const EdgeInsets.all(3),
-              child: Directionality(
-                textDirection: TextDirection.rtl,
-                child: Row(
-                  children: [
-                    // Tab 0: برترین شرکت کننده ها
-                    Expanded(
-                      child: TapExpander(child: GestureDetector(
-                        onTap: () => setState(() => _selectedLeaderboardTab = 0),
-                        behavior: HitTestBehavior.opaque,
-                        child: AnimatedContainer(
-                          duration: const Duration(milliseconds: 180),
-                          padding: const EdgeInsets.symmetric(vertical: 8),
-                          decoration: BoxDecoration(
-                            gradient: _selectedLeaderboardTab == 0 ? AppColors.accentGradient : null,
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          child: Center(
-                            child: Text(
-                              'برترین شرکت کننده ها',
-                              style: TextStyle(
-                                color: _selectedLeaderboardTab == 0 ? Colors.white : const Color(0xFF8E889D),
-                                fontSize: 12.5,
-                                fontWeight: FontWeight.bold,
-                                fontFamily: AppTheme.fontFamily,
-                                fontFamilyFallback: AppTheme.fontFamilyFallback,
-                              ),
-                            ),
-                          ),
-                        ),
-                      )),
-                    ),
-
-                    const SizedBox(width: 4),
-
-                    // Tab 1: برترین کاروان ها
-                    Expanded(
-                      child: TapExpander(child: GestureDetector(
-                        onTap: () => setState(() => _selectedLeaderboardTab = 1),
-                        behavior: HitTestBehavior.opaque,
-                        child: AnimatedContainer(
-                          duration: const Duration(milliseconds: 180),
-                          padding: const EdgeInsets.symmetric(vertical: 8),
-                          decoration: BoxDecoration(
-                            gradient: _selectedLeaderboardTab == 1 ? AppColors.accentGradient : null,
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          child: Center(
-                            child: Text(
-                              'برترین کاروان ها',
-                              style: TextStyle(
-                                color: _selectedLeaderboardTab == 1 ? Colors.white : const Color(0xFF8E889D),
-                                fontSize: 12.5,
-                                fontWeight: FontWeight.bold,
-                                fontFamily: AppTheme.fontFamily,
-                                fontFamilyFallback: AppTheme.fontFamilyFallback,
-                              ),
-                            ),
-                          ),
-                        ),
-                      )),
-                    ),
-                  ],
-                ),
-              ),
-            ),
+          child: NopaPillTabs<int>(
+            expand: true,
+            selected: _selectedLeaderboardTab,
+            tabs: const [
+              NopaPillTab<int>(0, 'برترین شرکت کننده ها'),
+              NopaPillTab<int>(1, 'برترین کاروان ها'),
+            ],
+            onChanged: (v) => setState(() => _selectedLeaderboardTab = v),
           ),
         ),
 
@@ -2570,20 +2089,12 @@ class _MarketScreenState extends State<MarketScreen> {
                 // تعداد کل
                 RichText(
                   text: TextSpan(
-                    style: const TextStyle(
-                      fontFamily: AppTheme.fontFamily,
-                      fontSize: 13.5,
-                      color: Color(0xFFC7C5DD),
-                    ),
+                    style: AppTypography.bodyLarge.copyWith(color: Color(0xFFC7C5DD)),
                     children: [
                       const TextSpan(text: 'تعداد کل: '),
                       TextSpan(
                         text: totalText.toPersianDigits(),
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontWeight: FontWeight.bold,
-                          fontSize: 15,
-                        ),
+                        style: AppTypography.h3,
                       ),
                     ],
                   ),
@@ -2594,20 +2105,12 @@ class _MarketScreenState extends State<MarketScreen> {
                 // رتبه شما
                 RichText(
                   text: TextSpan(
-                    style: const TextStyle(
-                      fontFamily: AppTheme.fontFamily,
-                      fontSize: 13.5,
-                      color: Color(0xFFC7C5DD),
-                    ),
+                    style: AppTypography.bodyLarge.copyWith(color: Color(0xFFC7C5DD)),
                     children: [
                       const TextSpan(text: 'رتبه شما: '),
                       TextSpan(
                         text: myRankText.toPersianDigits(),
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontWeight: FontWeight.bold,
-                          fontSize: 15,
-                        ),
+                        style: AppTypography.h3,
                       ),
                     ],
                   ),
@@ -2645,13 +2148,20 @@ class _MarketScreenState extends State<MarketScreen> {
             ),
           ),
           child: Center(
-            child: SvgPicture.asset(
-              'assets/svg_icons/profile01.svg',
-              width: circleSize * 0.52,
-              height: circleSize * 0.52,
-              fit: BoxFit.contain,
-              colorFilter: ColorFilter.mode(iconTint, BlendMode.srcIn),
-            ),
+            child: (item['avatarUrl'] as String? ?? '').isNotEmpty
+                ? SafeAvatar(
+                    imageUrl: item['avatarUrl'] as String,
+                    name: item['name'] as String,
+                    radius: circleSize / 2 - 3,
+                    cacheSize: 260,
+                  )
+                : SvgPicture.asset(
+                    'assets/svg_icons/profile01.svg',
+                    width: circleSize * 0.52,
+                    height: circleSize * 0.52,
+                    fit: BoxFit.contain,
+                    colorFilter: ColorFilter.mode(iconTint, BlendMode.srcIn),
+                  ),
           ),
         ),
 
@@ -2683,13 +2193,7 @@ class _MarketScreenState extends State<MarketScreen> {
                 textAlign: TextAlign.center,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 13,
-                  fontWeight: FontWeight.bold,
-                  fontFamily: AppTheme.fontFamily,
-                  fontFamilyFallback: AppTheme.fontFamilyFallback,
-                ),
+                style: AppTypography.h3,
               ),
             ),
           ],
@@ -2700,13 +2204,7 @@ class _MarketScreenState extends State<MarketScreen> {
         // Zarik Wealth (flat text, no glowing shadows)
         Text(
           (item['zarik'] as String).toPersianDigits(),
-          style: const TextStyle(
-            color: Color(0xFFFFD580),
-            fontSize: 11.5,
-            fontWeight: FontWeight.w600,
-            fontFamily: AppTheme.fontFamily,
-            fontFamilyFallback: AppTheme.fontFamilyFallback,
-          ),
+          style: AppTypography.caption.copyWith(color: Color(0xFFFFD580)),
         ),
       ],
     );

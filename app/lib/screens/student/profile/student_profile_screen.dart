@@ -1,4 +1,8 @@
 import 'package:nopa_app/widgets/app_toast.dart';
+import 'package:nopa_app/widgets/zoomable_avatar.dart';
+import 'package:nopa_app/core/theme/app_colors.dart';
+import 'package:nopa_app/widgets/bottom_nav_bar.dart';
+import 'package:nopa_app/core/constants/app_routes.dart';
 import 'package:nopa_app/widgets/tap_expander.dart';
 import 'package:nopa_app/core/station_numbering.dart';
 import 'package:nopa_app/core/station_state.dart';
@@ -19,6 +23,7 @@ import 'package:nopa_app/screens/student/profile/student_edit_profile_screen.dar
 import 'package:nopa_app/screens/mentor/profile/mentor_caravans_roster_screen.dart';
 import 'package:nopa_app/widgets/app_scaffold.dart';
 import 'package:nopa_app/widgets/station_progress_stepper.dart';
+import '../../../widgets/story_dialog.dart';
 
 class StudentProfileScreen extends StatefulWidget {
   const StudentProfileScreen({super.key});
@@ -108,11 +113,11 @@ class _ProfileScreenState extends State<StudentProfileScreen> {
                 fallbackIcon: Icons.settings_rounded,
                 onTap: () => _openEditProfile(currentUser),
               ),
-              _buildProfileMenuItem(
+              if (!currentUser.chatEnabled) _buildProfileMenuItem(
                 title: 'پیام ها',
                 svgAsset: '',
                 fallbackIcon: Icons.notifications_none_rounded,
-                onTap: () => Navigator.pushNamed(context, '/notifications'),
+                onTap: () => Navigator.pushNamed(context, AppRoutes.notifications),
               ),
             ],
 
@@ -141,6 +146,12 @@ class _ProfileScreenState extends State<StudentProfileScreen> {
 
   /// Shows the profile picture large; tap anywhere to close.
   void _showEnlargedAvatar(UserModel user, String displayName) {
+    // A real picture opens in the pinch-to-zoom viewer; with none, the initial letter is shown enlarged
+    final source = SafeAvatar.sourceFor(imageUrl: user.avatarUrl, gender: user.gender);
+    if (source.asset != null || source.url != null) {
+      AvatarViewer.open(context, asset: source.asset, url: source.url, title: displayName);
+      return;
+    }
     showDialog(
       context: context,
       barrierColor: Colors.black87,
@@ -262,23 +273,12 @@ class _ProfileScreenState extends State<StudentProfileScreen> {
               children: [
                 Text(
                   displayName,
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 18.5,
-                    fontWeight: FontWeight.bold,
-                    fontFamily: AppTheme.fontFamily,
-                    fontFamilyFallback: AppTheme.fontFamilyFallback,
-                  ),
+                  style: AppTypography.h1,
                 ),
                 const SizedBox(height: 5),
                 Text(
                   subtitle,
-                  style: const TextStyle(
-                    color: Color(0xFFB5B3C8),
-                    fontSize: 12,
-                    fontFamily: AppTheme.fontFamily,
-                    fontFamilyFallback: AppTheme.fontFamilyFallback,
-                  ),
+                  style: AppTypography.bodyMediumMuted,
                 ),
               ],
             ),
@@ -328,7 +328,7 @@ class _ProfileScreenState extends State<StudentProfileScreen> {
         _buildProfileMenuItem(
           title: 'تیکت های شما',
           svgAsset: 'assets/svg_icons/ticket01.svg',
-          onTap: () => Navigator.pushNamed(context, '/tickets'),
+          onTap: () => Navigator.pushNamed(context, AppRoutes.tickets),
         ),
       ],
     );
@@ -342,7 +342,7 @@ class _ProfileScreenState extends State<StudentProfileScreen> {
           title: 'داستان',
           svgAsset: 'assets/svg_icons/stor01.svg',
           fallbackIcon: Icons.info_outline_rounded,
-          onTap: () => _StoryDialog.show(context),
+          onTap: () => StoryDialog.show(context),
         ),
         _buildProfileMenuItem(
           title: 'پشتیبانی و ارتباط با ما',
@@ -367,7 +367,7 @@ class _ProfileScreenState extends State<StudentProfileScreen> {
     bool enabled = true,
   }) {
     const Color disabledColor = Color(0xFF6B6985);
-    final Color iconColor = enabled ? const Color(0xFF9E9CD6) : disabledColor;
+    final Color iconColor = enabled ? AppColors.buttonCancelPurple : disabledColor;
     return Material(
       color: Colors.transparent,
       child: TapExpander(child: InkWell(
@@ -412,13 +412,7 @@ class _ProfileScreenState extends State<StudentProfileScreen> {
                 Expanded(
                   child: Text(
                     title,
-                    style: TextStyle(
-                      color: enabled ? const Color(0xFFE2E0F2) : disabledColor,
-                      fontSize: 13.5,
-                      fontWeight: FontWeight.w500,
-                      fontFamily: AppTheme.fontFamily,
-                      fontFamilyFallback: AppTheme.fontFamilyFallback,
-                    ),
+                    style: AppTypography.bodyLarge.copyWith(color: enabled ? const Color(0xFFE2E0F2) : disabledColor),
                   ),
                 ),
               ],
@@ -550,7 +544,7 @@ class _ReportCardAndAchievementsScreenState extends State<_ReportCardAndAchievem
       showNotificationIcon: true,
       showDrawerButton: true,
       showBottomNavBar: true,
-      currentBottomNavIndex: 4,
+      currentBottomNavIndex: AppTabs.profile,
       body: SingleChildScrollView(
         physics: const BouncingScrollPhysics(),
         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
@@ -575,14 +569,9 @@ class _ReportCardAndAchievementsScreenState extends State<_ReportCardAndAchievem
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text(
+                    Text(
                       'وضعیت کلی مسافر در کاروان',
-                      style: TextStyle(
-                        color: Color(0xFFFFD580),
-                        fontSize: 14.5,
-                        fontWeight: FontWeight.bold,
-                        fontFamily: AppTheme.fontFamily,
-                      ),
+                      style: AppTypography.h3.copyWith(color: Color(0xFFFFD580)),
                     ),
                     const SizedBox(height: 14),
                     Row(
@@ -605,14 +594,9 @@ class _ReportCardAndAchievementsScreenState extends State<_ReportCardAndAchievem
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text(
+                    Text(
                       'دارایی‌ها و پاداش‌ها',
-                      style: TextStyle(
-                        color: Color(0xFFFFD580),
-                        fontSize: 14.5,
-                        fontWeight: FontWeight.bold,
-                        fontFamily: AppTheme.fontFamily,
-                      ),
+                      style: AppTypography.h3.copyWith(color: Color(0xFFFFD580)),
                     ),
                     const SizedBox(height: 14),
                     Row(
@@ -637,25 +621,20 @@ class _ReportCardAndAchievementsScreenState extends State<_ReportCardAndAchievem
                   children: [
                     const Text(
                       'پیشرفت در منزلگاه‌ها',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 14.5,
-                        fontWeight: FontWeight.bold,
-                        fontFamily: AppTheme.fontFamily,
-                      ),
+                      style: AppTypography.h3,
                     ),
                     const SizedBox(height: 14),
                     if (_refreshing && stations.isEmpty)
                       const Padding(
                         padding: EdgeInsets.symmetric(vertical: 16),
-                        child: Center(child: CircularProgressIndicator(color: Color(0xFFC09268), strokeWidth: 2.5)),
+                        child: Center(child: CircularProgressIndicator(color: AppColors.buttonCamel, strokeWidth: 2.5)),
                       )
                     else if (stations.isEmpty)
                       const Padding(
                         padding: EdgeInsets.symmetric(vertical: 12),
                         child: Text(
                           'اطلاعات منزلگاه‌ها دریافت نشد. اتصال اینترنت را بررسی کنید و دوباره وارد این صفحه شوید.',
-                          style: TextStyle(color: Color(0xFFB5B3C8), fontSize: 12, height: 1.6, fontFamily: AppTheme.fontFamily),
+                          style: AppTypography.bodyMediumMuted,
                         ),
                       )
                     else
@@ -757,19 +736,14 @@ class _ReportCardAndAchievementsScreenState extends State<_ReportCardAndAchievem
                     Expanded(
                       child: Text(
                         'منزلگاه ${StationNumbering.numberAt(index + 1).toPersian()}: $stationTitle',
-                        style: TextStyle(
-                          color: isLocked ? Colors.white54 : Colors.white,
-                          fontSize: 13,
-                          fontWeight: FontWeight.bold,
-                          fontFamily: AppTheme.fontFamily,
-                        ),
+                        style: AppTypography.h3.copyWith(color: isLocked ? Colors.white54 : Colors.white),
                       ),
                     ),
 
                     // Chevron Arrow
                     Icon(
                       isExpanded ? Icons.keyboard_arrow_up_rounded : Icons.keyboard_arrow_down_rounded,
-                      color: const Color(0xFF9E9CD6),
+                      color: AppColors.buttonCancelPurple,
                       size: 20,
                     ),
                   ],
@@ -851,23 +825,14 @@ class _ReportCardAndAchievementsScreenState extends State<_ReportCardAndAchievem
                               children: [
                                 Text(
                                   session['title']?.toString() ?? 'جلسه ${(sIdx + 1).toPersian()}',
-                                  style: TextStyle(
-                                    color: isSessionCompleted ? Colors.white : const Color(0xFFDDD9EE),
-                                    fontSize: 12,
-                                    fontWeight: isSessionCompleted ? FontWeight.bold : FontWeight.w500,
-                                    fontFamily: AppTheme.fontFamily,
-                                  ),
+                                  style: AppTypography.bodyMedium.copyWith(color: isSessionCompleted ? Colors.white : const Color(0xFFDDD9EE)),
                                 ),
                                 const SizedBox(height: 3),
                                 Text(
                                   isSessionCompleted
                                       ? 'مشاهده‌شده و تایید شده'
                                       : (isLocked ? 'قفل شده' : 'آماده مشاهده و گذراندن'),
-                                  style: TextStyle(
-                                    color: isSessionCompleted ? const Color(0xFF10B981) : const Color(0xFF8E8B9E),
-                                    fontSize: 10.5,
-                                    fontFamily: AppTheme.fontFamily,
-                                  ),
+                                  style: AppTypography.caption.copyWith(color: isSessionCompleted ? const Color(0xFF10B981) : const Color(0xFF8E8B9E)),
                                 ),
                               ],
                             ),
@@ -932,9 +897,9 @@ class _ReportCardAndAchievementsScreenState extends State<_ReportCardAndAchievem
   static Widget _buildStatBox(String label, String value) {
     return Column(
       children: [
-        Text(value, style: const TextStyle(color: Colors.white, fontSize: 17, fontWeight: FontWeight.bold, fontFamily: AppTheme.fontFamily)),
+        Text(value, style: AppTypography.h2),
         const SizedBox(height: 4),
-        Text(label, style: const TextStyle(color: Color(0xFFB5B3C8), fontSize: 11, fontFamily: AppTheme.fontFamily)),
+        Text(label, style: AppTypography.captionMuted),
       ],
     );
   }
@@ -949,86 +914,11 @@ class _ReportCardAndAchievementsScreenState extends State<_ReportCardAndAchievem
       ),
       child: Column(
         children: [
-          Text(value, style: TextStyle(color: color, fontSize: 15, fontWeight: FontWeight.bold, fontFamily: AppTheme.fontFamily)),
+          Text(value, style: AppTypography.h3.copyWith(color: color)),
           const SizedBox(height: 2),
-          Text(label, style: const TextStyle(color: Colors.white70, fontSize: 11, fontFamily: AppTheme.fontFamily)),
+          Text(label, style: AppTypography.caption.copyWith(color: Colors.white70)),
         ],
       ),
     );
   }
 }
-
-
-
-// -----------------------------------------------------------------------------
-// DIALOG: داستان کاروان (Caravan Lore / Story)
-// -----------------------------------------------------------------------------
-class _StoryDialog {
-  static void show(BuildContext context) {
-    showDialog(
-      context: context,
-      builder: (BuildContext ctx) {
-        return Directionality(
-          textDirection: TextDirection.rtl,
-          child: Dialog(
-            backgroundColor: const Color(0xFF28274A),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(22),
-              side: const BorderSide(color: Color(0xFF5A588B), width: 1.2),
-            ),
-            child: Padding(
-              padding: const EdgeInsets.all(22),
-              child: SingleChildScrollView(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    const Center(
-                      child: Text(
-                        'داستان سفر به سرزمین نپا',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 17,
-                          fontWeight: FontWeight.w300,
-                          fontFamily: AppTheme.fontFamily,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                    const Text(
-                      'علاءالملک، حاکم سرزمین نپا با گنجینه‌ای حیرت‌آور و بی‌نظیر در انتظار زنان و مردانی است که شایستگی خود را برای کسب آن نشان دهند.\n\n'
-                      'تو در این مسیر، عضو کاروانی هستی که راهبری زبردست شما را به سوی سرزمین نپا می‌برد. مسیر مابین هر منزلگاه، عیار هر کس را می‌سنجد و توقف موقت هر کاروان در این منزلگاه‌ها، مقدمه‌ای برای طی کردن مسیرهای دشوار بعدی است.',
-                      textAlign: TextAlign.justify,
-                      style: TextStyle(
-                        color: Color(0xFFD6D3E6),
-                        fontSize: 12.5,
-                        height: 1.6,
-                        fontWeight: FontWeight.w300,
-                        fontFamily: AppTheme.fontFamily,
-                      ),
-                    ),
-                    const SizedBox(height: 20),
-                    Center(
-                      child: ElevatedButton(
-                        onPressed: () => Navigator.pop(ctx),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFFDE9959),
-                          foregroundColor: Colors.white,
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                        ),
-                        child: const Text('متوجه شدم', style: TextStyle(fontFamily: AppTheme.fontFamily, fontWeight: FontWeight.bold)),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ),
-        );
-      },
-    );
-  }
-}
-
-
-typedef ProfileScreen = StudentProfileScreen;

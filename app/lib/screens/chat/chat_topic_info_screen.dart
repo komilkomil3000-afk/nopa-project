@@ -1,3 +1,5 @@
+import 'package:nopa_app/screens/chat/chat_widgets.dart';
+import 'package:nopa_app/screens/chat/chat_profile_screen.dart';
 import 'dart:io' as io;
 
 import 'package:file_picker/file_picker.dart';
@@ -7,7 +9,6 @@ import 'package:nopa_app/models/chat_models.dart';
 import 'package:nopa_app/screens/chat/chat_cards.dart';
 import 'package:nopa_app/screens/chat/chat_theme.dart';
 import 'package:nopa_app/services/chat_repository.dart';
-import 'package:nopa_app/widgets/app_scaffold.dart';
 import 'package:nopa_app/widgets/app_toast.dart';
 import 'package:nopa_app/widgets/fa_text.dart';
 import 'package:nopa_app/widgets/safe_avatar.dart';
@@ -143,10 +144,8 @@ class _ChatTopicInfoScreenState extends State<ChatTopicInfoScreen> {
   @override
   Widget build(BuildContext context) {
     final meta = widget.card.meta ?? const {};
-    return AppScaffold(
-      showBottomNavBar: false,
-      showDrawerButton: false,
-      showNotificationIcon: false,
+    return ChatPageScaffold(
+      title: 'اطلاعات چالش',
       body: Directionality(
         textDirection: TextDirection.rtl,
         child: _loading
@@ -208,6 +207,7 @@ class _ChatTopicInfoScreenState extends State<ChatTopicInfoScreen> {
         textDirection: TextDirection.rtl,
         child: AlertDialog(
           backgroundColor: ChatTheme.surfaceBottom,
+          shape: ChatTheme.dialogShape,
           title: Text('اعتراض به نتیجه', style: ChatTheme.title),
           content: TextField(controller: controller, maxLines: 3, maxLength: 500, style: ChatTheme.body, decoration: chatField('دلیل اعتراض')),
           actions: [ChatButton(label: 'ثبت', onPressed: () => Navigator.pop(ctx, controller.text))],
@@ -261,13 +261,19 @@ class _ChatTopicInfoScreenState extends State<ChatTopicInfoScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            children: [
-              SafeAvatar(imageUrl: user['avatarUrl'], name: user['name'] ?? '', radius: 16, gender: user['gender']),
-              const SizedBox(width: 8),
-              Expanded(child: Text(user['name'] ?? '', style: ChatTheme.title)),
-              Text('سهم ${row['share']}٪ · امتیاز ${row['score']}', style: ChatTheme.caption),
-            ],
+          GestureDetector(
+            behavior: HitTestBehavior.opaque,
+            onTap: user['id'] == null
+                ? null
+                : () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => ChatMemberProfileScreen(spaceId: widget.spaceId, userId: user['id'].toString()))),
+            child: Row(
+              children: [
+                SafeAvatar(imageUrl: user['avatarUrl'], name: user['name'] ?? '', radius: 16, gender: user['gender']),
+                const SizedBox(width: 8),
+                Expanded(child: Text(user['name'] ?? '', style: ChatTheme.title)),
+                Text('سهم ${row['share']}٪ · امتیاز ${row['score']}', style: ChatTheme.caption),
+              ],
+            ),
           ),
           const SizedBox(height: 6),
           Text('موضوع ${criteria['relevance']} · کیفیت ${criteria['quality']} · همکاری ${criteria['collaboration']} · ابتکار ${criteria['initiative']}', style: ChatTheme.caption),
@@ -288,9 +294,9 @@ class _ChatTopicInfoScreenState extends State<ChatTopicInfoScreen> {
           Row(
             children: [
               Text('کلاف نهایی', style: ChatTheme.caption),
-              IconButton(visualDensity: VisualDensity.compact, onPressed: paid || value <= 0 ? null : () => setState(() => _finals[id] = value - 1), icon: const Icon(Icons.remove_circle_outline, color: ChatTheme.accent, size: 20)),
+              IconButton(visualDensity: VisualDensity.compact, onPressed: paid || value <= 0 ? null : () => setState(() => _finals[id] = value - 1), icon: const Icon(Icons.remove_circle_outline_rounded, color: ChatTheme.accent, size: 20)),
               Text('$value', style: ChatTheme.title),
-              IconButton(visualDensity: VisualDensity.compact, onPressed: paid || value >= max ? null : () => setState(() => _finals[id] = value + 1), icon: const Icon(Icons.add_circle_outline, color: ChatTheme.accent, size: 20)),
+              IconButton(visualDensity: VisualDensity.compact, onPressed: paid || value >= max ? null : () => setState(() => _finals[id] = value + 1), icon: const Icon(Icons.add_circle_outline_rounded, color: ChatTheme.accent, size: 20)),
               if (paid) ...[const Spacer(), ChatButton(label: 'اصلاح', primary: false, onPressed: () => _correct(id, value))],
             ],
           ),
@@ -309,6 +315,7 @@ class _ChatTopicInfoScreenState extends State<ChatTopicInfoScreen> {
         textDirection: TextDirection.rtl,
         child: AlertDialog(
           backgroundColor: ChatTheme.surfaceBottom,
+          shape: ChatTheme.dialogShape,
           title: Text(accept ? 'پذیرش اعتراض' : 'رد اعتراض', style: ChatTheme.title),
           content: Column(mainAxisSize: MainAxisSize.min, children: [
             if (accept) ...[
@@ -340,6 +347,7 @@ class _ChatTopicInfoScreenState extends State<ChatTopicInfoScreen> {
         textDirection: TextDirection.rtl,
         child: AlertDialog(
           backgroundColor: ChatTheme.surfaceBottom,
+          shape: ChatTheme.dialogShape,
           title: Text('اصلاح نتیجه', style: ChatTheme.title),
           content: Column(mainAxisSize: MainAxisSize.min, children: [
             TextField(controller: amount, keyboardType: TextInputType.number, style: ChatTheme.body, decoration: chatField('کلاف نهایی')),
@@ -618,10 +626,8 @@ class _ChatDashboardScreenState extends State<ChatDashboardScreen> {
   Widget build(BuildContext context) {
     final d = _data;
     List<dynamic> list(String key) => (d?[key] as List?) ?? const [];
-    return AppScaffold(
-      showBottomNavBar: false,
-      showDrawerButton: false,
-      showNotificationIcon: false,
+    return ChatPageScaffold(
+      title: 'داشبورد راهبر',
       body: Directionality(
         textDirection: TextDirection.rtl,
         child: d == null

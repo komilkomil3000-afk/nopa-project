@@ -9,6 +9,7 @@ import { correctEvaluation, fileObjection, getEvaluation, myReport, payEvaluatio
 import { askJudge, getTiers, judgeEntry, judgeList, saveTiers, submitEntry } from './intergroup';
 import { exportTopic, exportTopicLink, mentorDashboard, reportMessage, serveTopicExport, topicInsight } from './reports';
 import { myCases, openSupport, rateCase } from './support';
+import { memberProfile, spaceMedia, spaceProfile } from './profiles';
 
 const router = Router();
 
@@ -50,6 +51,9 @@ router.get('/spaces/:id/search', chat.searchMessages as any);
 router.get('/spaces/:id/people', chat.listPeople as any);
 router.post('/spaces/:id/members/:userId/mute', chat.muteMember as any);
 router.get('/spaces/:id/stations', chat.listSpaceStations as any);
+router.get('/spaces/:id/profile', spaceProfile as any);
+router.get('/spaces/:id/media', spaceMedia as any);
+router.get('/spaces/:id/members/:userId', memberProfile as any);
 router.patch('/messages/:id', chat.editMessage as any);
 router.delete('/messages/:id', chat.deleteMessage as any);
 router.post('/messages/:id/reactions', chat.toggleReaction as any);

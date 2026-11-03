@@ -1,4 +1,6 @@
 import 'package:nopa_app/widgets/tap_expander.dart';
+import 'package:nopa_app/core/theme/app_colors.dart';
+import 'package:nopa_app/core/constants/app_routes.dart';
 import 'package:flutter/material.dart' hide Text;
 import 'package:nopa_app/widgets/fa_text.dart';
 import 'package:flutter_svg/flutter_svg.dart';
@@ -26,6 +28,9 @@ class AppTopBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // With chat switched on, conversations take the place of notifications everywhere in the app.
+    final chatEnabled = context.select<AppRepository, bool>((r) => r.currentUser.chatEnabled);
+    final showNotificationIcon = this.showNotificationIcon && !chatEnabled;
     return Padding(
       padding: const EdgeInsets.only(left: 18, right: 18, top: 10, bottom: 6),
       child: Directionality(
@@ -46,21 +51,15 @@ class AppTopBar extends StatelessWidget {
                     child: ShaderMask(
                       shaderCallback: (bounds) => const LinearGradient(
                         colors: [
-                          Color(0xFFC09268),
+                          AppColors.buttonCamel,
                           Color(0xFFF4DCC5),
                         ],
                         begin: Alignment.bottomCenter,
                         end: Alignment.topCenter,
                       ).createShader(bounds),
-                      child: const Text(
+                      child: Text(
                         'NOPA',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 21,
-                          fontWeight: FontWeight.bold,
-                          letterSpacing: 1.2,
-                          fontFamily: AppTheme.logoFontFamily,
-                        ),
+                        style: AppTypography.logo,
                       ),
                     ),
                   ),
@@ -88,7 +87,7 @@ class AppTopBar extends StatelessWidget {
               ],
             ),
 
-            // Right Column: (Row: Notification Bell + Hamburger Menu) + Caravan Name underneath
+            // Right Column: (Row: Notification Bell + Hamburger Menu) 
             Column(
               crossAxisAlignment: CrossAxisAlignment.end,
               mainAxisSize: MainAxisSize.min,
@@ -107,7 +106,7 @@ class AppTopBar extends StatelessWidget {
                             child: TapExpander(child: InkWell(
                               onTap: () {
                                 repository.fetchNotifications();
-                                Navigator.pushNamed(context, '/notifications');
+                                Navigator.pushNamed(context, AppRoutes.notifications);
                               },
                               borderRadius: BorderRadius.circular(22),
                               child: Stack(
@@ -143,13 +142,7 @@ class AppTopBar extends StatelessWidget {
                                         child: Center(
                                           child: Text(
                                             count > 9 ? '+۹' : count.toPersian(),
-                                            style: const TextStyle(
-                                              color: Colors.white,
-                                              fontSize: 8,
-                                              fontWeight: FontWeight.bold,
-                                              height: 1,
-                                              fontFamily: AppTheme.fontFamily,
-                                            ),
+                                            style: AppTypography.caption.copyWith(fontSize: 8, fontWeight: FontWeight.bold, height: 1),
                                           ),
                                         ),
                                       ),
@@ -188,27 +181,6 @@ class AppTopBar extends StatelessWidget {
                         ),
                       ),
                   ],
-                ),
-                Consumer<AppRepository>(
-                  builder: (context, repository, _) {
-                    final caravanName = repository.currentUser.caravanName;
-                    if (caravanName == null || caravanName.isEmpty) return const SizedBox.shrink();
-                    return Padding(
-                      padding: const EdgeInsets.only(top: 3, right: 2),
-                      child: Text(
-                        caravanName,
-                        style: TextStyle(
-                          color: const Color(0xFFC7B299).withValues(alpha: 0.85),
-                          fontSize: 10,
-                          fontWeight: FontWeight.w500,
-                          fontFamily: AppTheme.fontFamily,
-                          fontFamilyFallback: AppTheme.fontFamilyFallback,
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    );
-                  },
                 ),
               ],
             ),

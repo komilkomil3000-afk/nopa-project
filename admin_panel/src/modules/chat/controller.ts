@@ -10,7 +10,8 @@ import { canModerate, canPostTopLevel, canReply, canStartDirect, canTag, ChatAct
 import { blockedWord, runCommand } from './bots';
 import { handler, requireMessage, requireSpace } from './http';
 import { notifyAbsent, publishMessage, publishUpdate } from './publish';
-import { emitToSpace, refreshUserRooms } from './realtime';
+import { emitToSpace, isOnline, refreshUserRooms } from './realtime';
+import { peopleOf } from './profiles';
 import { ensureOpenCase } from './support';
 import {
   attachmentKind, CHAT_FILES_DIR, ChatError, directKey, findVisibleSpace, MAX_BODY, MESSAGE_INCLUDE, PAGE_SIZE,
@@ -43,7 +44,7 @@ export const listSpaces = handler(async (_req, res, actor) => {
       where: { spaceId: { in: ids }, threadRootId: null },
       orderBy: { seq: 'desc' },
       distinct: ['spaceId'],
-      select: { spaceId: true, body: true, kind: true, deletedAt: true, createdAt: true, sender: { select: { name: true } } },
+      select: { spaceId: true, body: true, kind: true, deletedAt: true, createdAt: true, senderId: true, sender: { select: { name: true } } },
     }),
     prisma.chatMember.findMany({
       where: { spaceId: { in: spaces.filter(s => s.type === 'direct').map(s => s.id) }, userId: { not: actor.id } },
@@ -59,7 +60,7 @@ export const listSpaces = handler(async (_req, res, actor) => {
       id: s.id,
       type: s.type,
       title: peer?.user.name || (s.caravan && s.type === 'caravan' ? s.caravan.name : s.title),
-      peer: peer?.user || null,
+      peer: peer ? { ...peer.user, online: isOnline(peer.user.id) } : null,
       peerReadSeq: peer?.lastReadSeq ?? 0,
       lastSeq: s.lastSeq,
       lastReadSeq: me?.lastReadSeq ?? 0,
@@ -70,6 +71,7 @@ export const listSpaces = handler(async (_req, res, actor) => {
       canModerate: canModerate(actor, s),
       canTag: canTag(actor, s),
       lastMessage: last && {
+        senderId: last.senderId,
         senderName: last.sender?.name || '',
         preview: last.deletedAt ? '' : (last.body.slice(0, 80) || (last.kind === 'file' ? 'فایل' : '')),
         createdAt: last.createdAt,
@@ -135,7 +137,22 @@ export const listMessages = handler(async (req, res, actor) => {
   const staffTags = canTag(actor, space)
     ? Object.fromEntries(ordered.map(m => [m.id, m.tags.map(t => t.tag).filter(t => t.visibility === 'staff')]).filter(([, tags]) => tags.length))
     : {};
-  res.json({ messages: ordered.map(serializeMessage), lastReadSeq: member?.lastReadSeq ?? 0, staffTags });
+  // Small faces of who took part, beside the way into each conversation under a message
+  const roots = ordered.filter(m => !m.threadRootId && m.threadReplies > 0).map(m => m.id);
+  const replies = roots.length
+    ? await prisma.chatMessage.findMany({
+        where: { threadRootId: { in: roots }, senderId: { not: null }, deletedAt: null },
+        distinct: ['threadRootId', 'senderId'], orderBy: { createdAt: 'desc' },
+        select: { threadRootId: true, sender: { select: { id: true, name: true, avatarUrl: true, role: true, gender: true } } },
+      })
+    : [];
+  const people = new Map<string, unknown[]>();
+  for (const r of replies) {
+    const list = people.get(r.threadRootId!) ?? [];
+    if (list.length < 4 && r.sender) list.push(r.sender);
+    people.set(r.threadRootId!, list);
+  }
+  res.json({ messages: ordered.map(m => ({ ...serializeMessage(m), threadPeople: people.get(m.id) ?? [] })), lastReadSeq: member?.lastReadSeq ?? 0, staffTags });
 });
 
 export const sendMessage = handler(async (req, res, actor) => {
@@ -155,8 +172,13 @@ export const sendMessage = handler(async (req, res, actor) => {
 
   if (threadRootId ? !canReply(actor, space) : !canPostTopLevel(actor, space)) throw new ChatError(403, 'امکان ارسال پیام در این گفتگو وجود ندارد');
   if (threadRootId) {
+    const root = await prisma.chatMessage.findUnique({ where: { id: threadRootId }, select: { spaceId: true, threadRootId: true, marks: true, threadReplies: true } });
+    if (!root || root.spaceId !== space.id || root.threadRootId) throw new ChatError(404, 'پیام یافت نشد');
     const topic = await prisma.chatTopic.findUnique({ where: { messageId: threadRootId } });
     if (topic && topic.status !== 'open') throw new ChatError(403, 'این چالش بسته شده است');
+    // Only a message a moderator opened (or a challenge) takes replies under it
+    const open = !!topic || root.marks.includes('thread') || root.threadReplies > 0 || canModerate(actor, space);
+    if (!open) throw new ChatError(403, 'گفتگو زیر این پیام باز نشده است');
   }
   const word = await blockedWord(body);
   if (word) throw new ChatError(400, 'این پیام شامل واژه‌ی نامناسب است');
@@ -177,7 +199,8 @@ export const sendMessage = handler(async (req, res, actor) => {
   });
   if (created) {
     if (space.type === 'support' && space.key === `support:${actor.id}`) await ensureOpenCase(space.id, actor.id, body, message.seq);
-    await notifyAbsent(space, actor.id, actor.name, message.body, mentions);
+    // Bold/italic markers stay in the chat, not in the notification
+    await notifyAbsent(space, actor.id, actor.name, message.body.replace(/\*\*(.+?)\*\*|__(.+?)__/gs, (_m: string, b?: string, i?: string) => b ?? i ?? ''), mentions);
   }
   res.status(created ? 201 : 200).json(message);
 });
@@ -285,17 +308,6 @@ export const searchMessages = handler(async (req, res, actor) => {
   });
   res.json(rows.map(serializeMessage));
 });
-
-async function peopleOf(space: { id: string; caravanId: string | null }) {
-  const select = { id: true, name: true, avatarUrl: true, role: true, gender: true };
-  if (space.caravanId) {
-    const caravan = await prisma.caravan.findUnique({ where: { id: space.caravanId }, select: { mentor: { select } } });
-    const members = await prisma.user.findMany({ where: { caravanId: space.caravanId, role: 'student' }, select, take: 200 });
-    return [...(caravan?.mentor ? [caravan.mentor] : []), ...members];
-  }
-  const members = await prisma.chatMember.findMany({ where: { spaceId: space.id }, select: { user: { select } }, take: 200 });
-  return members.map(m => m.user);
-}
 
 /** People a member can mention in a space. */
 export const listPeople = handler(async (req, res, actor) => {

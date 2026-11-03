@@ -1,13 +1,10 @@
-import 'package:nopa_app/widgets/tap_expander.dart';
-import 'package:flutter/material.dart' hide Text;
-import 'package:nopa_app/widgets/fa_text.dart';
+import 'package:flutter/material.dart';
+import 'package:nopa_app/core/constants/app_routes.dart';
 import 'package:nopa_app/widgets/app_toast.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import '../core/theme/app_colors.dart';
-import '../core/theme/app_theme.dart';
 import '../services/app_state_repository.dart';
-import 'nopa_dialog_container.dart';
+import 'nopa_modal_shell.dart';
 
 class LogoutDialog extends StatefulWidget {
   const LogoutDialog({super.key});
@@ -43,7 +40,7 @@ class _LogoutDialogState extends State<LogoutDialog> {
 
       if (mounted) {
         Navigator.of(context, rootNavigator: true).pushNamedAndRemoveUntil(
-          '/auth',
+          AppRoutes.auth,
           (route) => false,
         );
       }
@@ -63,115 +60,23 @@ class _LogoutDialogState extends State<LogoutDialog> {
         backgroundColor: Colors.transparent,
         elevation: 0,
         insetPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
-        child: NopaDialogContainer(
+        child: NopaModalShell(
           maxWidth: 400,
-          radius: 24,
-          padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 26),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              // Header: Icon on Right in RTL + Centered Title
-              Stack(
-                alignment: Alignment.center,
-                children: [
-                  const Align(
-                    alignment: Alignment.centerRight,
-                    child: Icon(
-                      Icons.logout_rounded,
-                      color: Color(0xFF9E9CD6),
-                      size: 26,
-                    ),
-                  ),
-                  const Text(
-                    'واقعا میخواهید از برنامه خارج شوید؟',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                      fontFamily: AppTheme.fontFamily,
-                    ),
-                    textAlign: TextAlign.center,
-                  ),
-                ],
-              ),
-              const SizedBox(height: 24),
-
-              // Action Buttons Row: Right (Action) | Left (Cancel)
-              Row(
-                children: [
-                  // 1. Right Button (in RTL): آره ولی زود برمیگردم (Action - Camel)
-                  Expanded(
-                    child: TapExpander(child: InkWell(
-                      onTap: _isLoading ? null : _handleLogout,
-                      borderRadius: BorderRadius.circular(12),
-                      child: Container(
-                        height: 44,
-                        alignment: Alignment.center,
-                        decoration: BoxDecoration(
-                          color: Colors.transparent,
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(
-                            color: AppColors.buttonCamel,
-                            width: 1.2,
-                          ),
-                        ),
-                        child: _isLoading
-                            ? const SizedBox(
-                                width: 20,
-                                height: 20,
-                                child: CircularProgressIndicator(
-                                  strokeWidth: 2,
-                                  color: AppColors.buttonCamel,
-                                ),
-                              )
-                            : const Text(
-                                'آره ولی زود برمیگردم',
-                                style: TextStyle(
-                                  color: AppColors.buttonCamel,
-                                  fontSize: 13,
-                                  fontWeight: FontWeight.bold,
-                                  fontFamily: AppTheme.fontFamily,
-                                ),
-                                textAlign: TextAlign.center,
-                              ),
-                      ),
-                    )),
-                  ),
-                  const SizedBox(width: 12),
-
-                  // 2. Left Button (in RTL): نه، دستم خورد (Cancel - Purple)
-                  Expanded(
-                    child: TapExpander(child: InkWell(
-                      onTap: _isLoading ? null : () => Navigator.pop(context),
-                      borderRadius: BorderRadius.circular(12),
-                      child: Container(
-                        height: 44,
-                        alignment: Alignment.center,
-                        decoration: BoxDecoration(
-                          color: Colors.transparent,
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(
-                            color: AppColors.buttonCancelPurple,
-                            width: 1.1,
-                          ),
-                        ),
-                        child: const Text(
-                          'نه، دستم خورد',
-                          style: TextStyle(
-                            color: Color(0xFFDDD9EE),
-                            fontSize: 13,
-                            fontWeight: FontWeight.w600,
-                            fontFamily: AppTheme.fontFamily,
-                          ),
-                          textAlign: TextAlign.center,
-                        ),
-                      ),
-                    )),
-                  ),
-                ],
-              ),
-            ],
-          ),
+          headerIcon: Icons.logout_rounded,
+          title: 'واقعا میخواهید از برنامه خارج شوید؟',
+          actions: [
+            NopaModalAction(
+              label: 'آره ولی زود برمیگردم',
+              variant: NopaModalActionVariant.primary,
+              loading: _isLoading,
+              onPressed: _handleLogout,
+            ),
+            NopaModalAction(
+              label: 'نه، دستم خورد',
+              variant: NopaModalActionVariant.secondary,
+              onPressed: _isLoading ? null : () => Navigator.pop(context),
+            ),
+          ],
         ),
       ),
     );

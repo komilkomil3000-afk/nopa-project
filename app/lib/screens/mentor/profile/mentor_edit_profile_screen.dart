@@ -1,4 +1,5 @@
 import 'package:nopa_app/widgets/tap_expander.dart';
+import '../../../widgets/nopa_modal_shell.dart';
 import 'package:flutter/material.dart' hide Text;
 import 'package:nopa_app/widgets/fa_text.dart';
 import 'package:nopa_app/widgets/app_toast.dart';
@@ -112,92 +113,48 @@ class _EditProfileScreenState extends State<MentorEditProfileScreen> {
   }
 
   void _openFileUploadDialog({required String title}) {
-    showDialog(
-      context: context,
-      barrierDismissible: true,
-      builder: (ctx) => Directionality(
-        textDirection: TextDirection.rtl,
-        child: Dialog(
-          backgroundColor: const Color(0xFF28274A),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(20),
-            side: const BorderSide(color: Color(0xFF5A588B), width: 1.2),
+    showNopaModal<void>(
+      context,
+      builder: (ctx) => NopaModalShell(
+        maxWidth: 420,
+        headerIcon: Icons.upload_file_rounded,
+        title: 'ارسال فایل $title',
+        padding: const EdgeInsets.all(20),
+        actions: [
+          NopaModalAction(
+            label: 'آپلود فایل',
+            onPressed: () {
+              Navigator.pop(ctx);
+              AppToast.info(context, 'فایل $title با موفقیت ضمیمه شد');
+            },
           ),
-          child: Padding(
-            padding: const EdgeInsets.all(20),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Text(
-                  'ارسال فایل $title',
-                  textAlign: TextAlign.center,
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 15.5,
-                    fontWeight: FontWeight.bold,
-                    fontFamily: AppTheme.fontFamily,
-                  ),
-                ),
-                const SizedBox(height: 16),
-                Container(
+          NopaModalAction(
+            label: 'انصراف',
+            variant: NopaModalActionVariant.secondary,
+            onPressed: () => Navigator.pop(ctx),
+          ),
+        ],
+        child: Container(
                   padding: const EdgeInsets.symmetric(vertical: 22, horizontal: 16),
                   decoration: BoxDecoration(
                     color: const Color(0xFF1E1D36),
                     borderRadius: BorderRadius.circular(12),
                     border: Border.all(
-                      color: const Color(0xFFC09268).withValues(alpha: 0.5),
+                      color: AppColors.buttonCamel.withValues(alpha: 0.5),
                     ),
                   ),
                   child: Column(
-                    children: const [
-                      Icon(Icons.cloud_upload_outlined, color: Color(0xFFC09268), size: 34),
+                    children: [
+                      Icon(Icons.cloud_upload_outlined, color: AppColors.buttonCamel, size: 34),
                       SizedBox(height: 8),
                       Text(
                         'برای انتخاب فایل مدرک یا سند کلیک کنید (PDF / تصویر)',
                         textAlign: TextAlign.center,
-                        style: TextStyle(
-                          color: Color(0xFFC7C5DD),
-                          fontSize: 11.5,
-                          fontFamily: AppTheme.fontFamily,
-                        ),
+                        style: AppTypography.caption.copyWith(color: Color(0xFFC7C5DD)),
                       ),
                     ],
                   ),
                 ),
-                const SizedBox(height: 18),
-                Row(
-                  children: [
-                    Expanded(
-                      child: OutlinedButton(
-                        onPressed: () => Navigator.pop(ctx),
-                        style: OutlinedButton.styleFrom(
-                          side: const BorderSide(color: Color(0xFF6B68A8)),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                        ),
-                        child: const Text('انصراف', style: TextStyle(color: Colors.white70, fontFamily: AppTheme.fontFamily, fontSize: 12)),
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: ElevatedButton(
-                        onPressed: () {
-                          Navigator.pop(ctx);
-                          AppToast.info(context, 'فایل $title با موفقیت ضمیمه شد');
-                        },
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFFC09268),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                        ),
-                        child: const Text('آپلود فایل', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontFamily: AppTheme.fontFamily, fontSize: 12)),
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-        ),
       ),
     );
   }
@@ -450,7 +407,7 @@ class _EditProfileScreenState extends State<MentorEditProfileScreen> {
                                       gradient: AppColors.darkSurfaceGradient,
                                       borderRadius: BorderRadius.circular(9),
                                       border: Border.all(
-                                        color: const Color(0xFFC09268),
+                                        color: AppColors.buttonCamel,
                                         width: 1.1,
                                       ),
                                     ),
@@ -463,14 +420,9 @@ class _EditProfileScreenState extends State<MentorEditProfileScreen> {
                                               color: Color(0xFFCD8449),
                                             ),
                                           )
-                                        : const Text(
+                                        : Text(
                                             'ثبت تغییرات',
-                                            style: TextStyle(
-                                              color: Color(0xFFE1BC96),
-                                              fontSize: 14,
-                                              fontWeight: FontWeight.bold,
-                                              fontFamily: AppTheme.fontFamily,
-                                            ),
+                                            style: AppTypography.h3.copyWith(color: AppColors.accentGoldEnd),
                                           ),
                                   ),
                                 ),
@@ -500,14 +452,9 @@ class _EditProfileScreenState extends State<MentorEditProfileScreen> {
                                         width: 1.1,
                                       ),
                                     ),
-                                    child: const Text(
+                                    child: Text(
                                       'لغو',
-                                      style: TextStyle(
-                                        color: Color(0xFFB5B0D8),
-                                        fontSize: 14,
-                                        fontWeight: FontWeight.bold,
-                                        fontFamily: AppTheme.fontFamily,
-                                      ),
+                                      style: AppTypography.h3.copyWith(color: Color(0xFFB5B0D8)),
                                     ),
                                   ),
                                 ),
@@ -658,12 +605,7 @@ class _EditProfileScreenState extends State<MentorEditProfileScreen> {
           padding: const EdgeInsets.only(bottom: 6, right: 4),
           child: Text(
             label,
-            style: const TextStyle(
-              color: Color(0xFF9E9BB8),
-              fontSize: 12,
-              fontWeight: FontWeight.w500,
-              fontFamily: AppTheme.fontFamily,
-            ),
+            style: AppTypography.bodyMedium.copyWith(color: Color(0xFF9E9BB8)),
           ),
         ),
 
@@ -672,20 +614,12 @@ class _EditProfileScreenState extends State<MentorEditProfileScreen> {
           child: TextField(
             controller: controller,
             keyboardType: keyboardType,
-            style: const TextStyle(
-              color: Color(0xFFEAE8F8),
-              fontSize: 13,
-              fontFamily: AppTheme.fontFamily,
-            ),
+            style: AppTypography.bodyLarge.copyWith(color: Color(0xFFEAE8F8)),
             decoration: InputDecoration(
               isDense: true,
               border: InputBorder.none,
               hintText: hintText,
-              hintStyle: TextStyle(
-                color: Colors.white.withValues(alpha: 0.25),
-                fontSize: 12.5,
-                fontFamily: AppTheme.fontFamily,
-              ),
+              hintStyle: AppTypography.bodyMedium.copyWith(color: Colors.white.withValues(alpha: 0.25)),
               contentPadding: const EdgeInsets.symmetric(vertical: 8),
             ),
           ),
@@ -709,12 +643,7 @@ class _EditProfileScreenState extends State<MentorEditProfileScreen> {
           padding: const EdgeInsets.only(bottom: 6, right: 4),
           child: Text(
             label,
-            style: const TextStyle(
-              color: Color(0xFF9E9BB8),
-              fontSize: 12,
-              fontWeight: FontWeight.w500,
-              fontFamily: AppTheme.fontFamily,
-            ),
+            style: AppTypography.bodyMedium.copyWith(color: Color(0xFF9E9BB8)),
           ),
         ),
 
@@ -728,11 +657,7 @@ class _EditProfileScreenState extends State<MentorEditProfileScreen> {
               Expanded(
                 child: Text(
                   valueText,
-                  style: const TextStyle(
-                    color: Color(0xFFEAE8F8),
-                    fontSize: 13,
-                    fontFamily: AppTheme.fontFamily,
-                  ),
+                  style: AppTypography.bodyLarge.copyWith(color: Color(0xFFEAE8F8)),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),
@@ -747,18 +672,13 @@ class _EditProfileScreenState extends State<MentorEditProfileScreen> {
                     color: const Color(0xFF2A2835),
                     borderRadius: BorderRadius.circular(7),
                     border: Border.all(
-                      color: const Color(0xFFC09268),
+                      color: AppColors.buttonCamel,
                       width: 1.0,
                     ),
                   ),
                   child: Text(
                     buttonLabel,
-                    style: const TextStyle(
-                      color: Color(0xFFE1BC96),
-                      fontSize: 11,
-                      fontWeight: FontWeight.bold,
-                      fontFamily: AppTheme.fontFamily,
-                    ),
+                    style: AppTypography.caption.copyWith(color: AppColors.accentGoldEnd),
                   ),
                 ),
               )),
@@ -786,12 +706,7 @@ class _EditProfileScreenState extends State<MentorEditProfileScreen> {
           padding: const EdgeInsets.only(bottom: 6, right: 4),
           child: Text(
             label,
-            style: const TextStyle(
-              color: Color(0xFF9E9BB8),
-              fontSize: 12,
-              fontWeight: FontWeight.w500,
-              fontFamily: AppTheme.fontFamily,
-            ),
+            style: AppTypography.bodyMedium.copyWith(color: Color(0xFF9E9BB8)),
           ),
         ),
 
@@ -805,20 +720,12 @@ class _EditProfileScreenState extends State<MentorEditProfileScreen> {
                 child: TextField(
                   controller: controller,
                   maxLines: maxLines,
-                  style: const TextStyle(
-                    color: Color(0xFFEAE8F8),
-                    fontSize: 13,
-                    fontFamily: AppTheme.fontFamily,
-                  ),
+                  style: AppTypography.bodyLarge.copyWith(color: Color(0xFFEAE8F8)),
                   decoration: InputDecoration(
                     isDense: true,
                     border: InputBorder.none,
                     hintText: hintText,
-                    hintStyle: TextStyle(
-                      color: Colors.white.withValues(alpha: 0.25),
-                      fontSize: 12.5,
-                      fontFamily: AppTheme.fontFamily,
-                    ),
+                    hintStyle: AppTypography.bodyMedium.copyWith(color: Colors.white.withValues(alpha: 0.25)),
                     contentPadding: const EdgeInsets.symmetric(vertical: 8),
                   ),
                 ),
@@ -833,18 +740,13 @@ class _EditProfileScreenState extends State<MentorEditProfileScreen> {
                     color: const Color(0xFF2A2835),
                     borderRadius: BorderRadius.circular(7),
                     border: Border.all(
-                      color: const Color(0xFFC09268),
+                      color: AppColors.buttonCamel,
                       width: 1.0,
                     ),
                   ),
                   child: Text(
                     buttonLabel,
-                    style: const TextStyle(
-                      color: Color(0xFFE1BC96),
-                      fontSize: 11,
-                      fontWeight: FontWeight.bold,
-                      fontFamily: AppTheme.fontFamily,
-                    ),
+                    style: AppTypography.caption.copyWith(color: AppColors.accentGoldEnd),
                   ),
                 ),
               )),
@@ -865,14 +767,9 @@ class _EditProfileScreenState extends State<MentorEditProfileScreen> {
           padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
           child: Row(
             children: [
-              const Text(
+              Text(
                 'ایجاد / تغییر رمز عبور ثابت',
-                style: TextStyle(
-                  color: Color(0xFFC09268),
-                  fontSize: 13,
-                  fontWeight: FontWeight.bold,
-                  fontFamily: AppTheme.fontFamily,
-                ),
+                style: AppTypography.h3.copyWith(color: AppColors.buttonCamel),
               ),
               const SizedBox(width: 8),
               Expanded(
@@ -881,7 +778,7 @@ class _EditProfileScreenState extends State<MentorEditProfileScreen> {
                   decoration: BoxDecoration(
                     gradient: LinearGradient(
                       colors: [
-                        const Color(0xFFC09268).withValues(alpha: 0.5),
+                        AppColors.buttonCamel.withValues(alpha: 0.5),
                         Colors.transparent,
                       ],
                     ),
@@ -900,16 +797,11 @@ class _EditProfileScreenState extends State<MentorEditProfileScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Padding(
+                  Padding(
                     padding: EdgeInsets.only(bottom: 6, right: 4),
                     child: Text(
                       'رمز عبور جدید',
-                      style: TextStyle(
-                        color: Color(0xFF9E9BB8),
-                        fontSize: 12,
-                        fontWeight: FontWeight.w500,
-                        fontFamily: AppTheme.fontFamily,
-                      ),
+                      style: AppTypography.bodyMedium.copyWith(color: Color(0xFF9E9BB8)),
                     ),
                   ),
                   _buildDecoratedInputBox(
@@ -919,20 +811,12 @@ class _EditProfileScreenState extends State<MentorEditProfileScreen> {
                           child: TextField(
                             controller: _newPasswordCtrl,
                             obscureText: !_isNewPasswordVisible,
-                            style: const TextStyle(
-                              color: Color(0xFFEAE8F8),
-                              fontSize: 13,
-                              fontFamily: AppTheme.fontFamily,
-                            ),
+                            style: AppTypography.bodyLarge.copyWith(color: Color(0xFFEAE8F8)),
                             decoration: InputDecoration(
                               isDense: true,
                               border: InputBorder.none,
                               hintText: 'رمز عبور جدید',
-                              hintStyle: TextStyle(
-                                color: Colors.white.withValues(alpha: 0.25),
-                                fontSize: 11.5,
-                                fontFamily: AppTheme.fontFamily,
-                              ),
+                              hintStyle: AppTypography.caption.copyWith(color: Colors.white.withValues(alpha: 0.25)),
                               contentPadding: const EdgeInsets.symmetric(vertical: 8),
                             ),
                           ),
@@ -958,16 +842,11 @@ class _EditProfileScreenState extends State<MentorEditProfileScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Padding(
+                  Padding(
                     padding: EdgeInsets.only(bottom: 6, right: 4),
                     child: Text(
                       'تکرار رمز عبور',
-                      style: TextStyle(
-                        color: Color(0xFF9E9BB8),
-                        fontSize: 12,
-                        fontWeight: FontWeight.w500,
-                        fontFamily: AppTheme.fontFamily,
-                      ),
+                      style: AppTypography.bodyMedium.copyWith(color: Color(0xFF9E9BB8)),
                     ),
                   ),
                   _buildDecoratedInputBox(
@@ -977,20 +856,12 @@ class _EditProfileScreenState extends State<MentorEditProfileScreen> {
                           child: TextField(
                             controller: _confirmPasswordCtrl,
                             obscureText: !_isConfirmPasswordVisible,
-                            style: const TextStyle(
-                              color: Color(0xFFEAE8F8),
-                              fontSize: 13,
-                              fontFamily: AppTheme.fontFamily,
-                            ),
+                            style: AppTypography.bodyLarge.copyWith(color: Color(0xFFEAE8F8)),
                             decoration: InputDecoration(
                               isDense: true,
                               border: InputBorder.none,
                               hintText: 'تکرار رمز عبور',
-                              hintStyle: TextStyle(
-                                color: Colors.white.withValues(alpha: 0.25),
-                                fontSize: 11.5,
-                                fontFamily: AppTheme.fontFamily,
-                              ),
+                              hintStyle: AppTypography.caption.copyWith(color: Colors.white.withValues(alpha: 0.25)),
                               contentPadding: const EdgeInsets.symmetric(vertical: 8),
                             ),
                           ),
@@ -1112,12 +983,7 @@ class _ChangeRequestSupportDialogState extends State<_ChangeRequestSupportDialog
                   // Center Title
                   const Text(
                     'پیام به پشتیبانی',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                      fontFamily: AppTheme.fontFamily,
-                    ),
+                    style: AppTypography.h2,
                   ),
                 ],
               ),
@@ -1141,12 +1007,7 @@ class _ChangeRequestSupportDialogState extends State<_ChangeRequestSupportDialog
                     alignment: Alignment.center,
                     child: Text(
                       widget.requestType,
-                      style: const TextStyle(
-                        color: Color(0xFFE2E0F0),
-                        fontSize: 12.5,
-                        fontWeight: FontWeight.w600,
-                        fontFamily: AppTheme.fontFamily,
-                      ),
+                      style: AppTypography.bodyLarge.copyWith(color: Color(0xFFE2E0F0)),
                     ),
                   ),
                 ),
@@ -1171,12 +1032,7 @@ class _ChangeRequestSupportDialogState extends State<_ChangeRequestSupportDialog
                     alignment: Alignment.center,
                     child: Text(
                       widget.currentDate,
-                      style: const TextStyle(
-                        color: Color(0xFFE2E0F0),
-                        fontSize: 12.5,
-                        fontWeight: FontWeight.w600,
-                        fontFamily: AppTheme.fontFamily,
-                      ),
+                      style: AppTypography.bodyLarge.copyWith(color: Color(0xFFE2E0F0)),
                     ),
                   ),
                 ),
@@ -1203,20 +1059,12 @@ class _ChangeRequestSupportDialogState extends State<_ChangeRequestSupportDialog
                     child: TextField(
                       controller: _descCtrl,
                       maxLines: 4,
-                      style: const TextStyle(
-                        color: Color(0xFFE2E0F0),
-                        fontSize: 12.5,
-                        fontFamily: AppTheme.fontFamily,
-                      ),
+                      style: AppTypography.bodyMedium.copyWith(color: Color(0xFFE2E0F0)),
                       decoration: InputDecoration(
                         isDense: true,
                         border: InputBorder.none,
                         hintText: 'ما را در جریان قرار دهید',
-                        hintStyle: TextStyle(
-                          color: Colors.white.withValues(alpha: 0.25),
-                          fontSize: 12,
-                          fontFamily: AppTheme.fontFamily,
-                        ),
+                        hintStyle: AppTypography.bodyMedium.copyWith(color: Colors.white.withValues(alpha: 0.25)),
                       ),
                     ),
                   ),
@@ -1240,28 +1088,18 @@ class _ChangeRequestSupportDialogState extends State<_ChangeRequestSupportDialog
                         )
                       : TextButton(
                           onPressed: _submitRequest,
-                          child: const Text(
+                          child: Text(
                             'ارسال',
-                            style: TextStyle(
-                              color: AppColors.buttonCamel,
-                              fontSize: 14,
-                              fontWeight: FontWeight.bold,
-                              fontFamily: AppTheme.fontFamily,
-                            ),
+                            style: AppTypography.h3.copyWith(color: AppColors.buttonCamel),
                           ),
                         ),
 
                   // لغو on Left in RTL
                   TextButton(
                     onPressed: () => Navigator.pop(context),
-                    child: const Text(
+                    child: Text(
                       'لغو',
-                      style: TextStyle(
-                        color: AppColors.buttonCancelPurple,
-                        fontSize: 14,
-                        fontWeight: FontWeight.bold,
-                        fontFamily: AppTheme.fontFamily,
-                      ),
+                      style: AppTypography.h3.copyWith(color: AppColors.buttonCancelPurple),
                     ),
                   ),
                 ],
@@ -1286,12 +1124,7 @@ class _ChangeRequestSupportDialogState extends State<_ChangeRequestSupportDialog
           width: 70,
           child: Text(
             label,
-            style: const TextStyle(
-              color: Color(0xFFB5B0D8),
-              fontSize: 12,
-              fontWeight: FontWeight.w500,
-              fontFamily: AppTheme.fontFamily,
-            ),
+            style: AppTypography.bodyMedium.copyWith(color: Color(0xFFB5B0D8)),
           ),
         ),
         const SizedBox(width: 8),

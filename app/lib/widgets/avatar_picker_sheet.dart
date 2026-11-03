@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart' hide Text;
+import 'package:nopa_app/core/theme/app_typography.dart';
 import 'package:nopa_app/widgets/fa_text.dart';
 import '../core/avatar_catalog.dart';
 import '../models/models.dart';
@@ -70,7 +71,7 @@ class _AvatarPickerBodyState extends State<_AvatarPickerBody> {
             const Text(
               'انتخاب تصویر پروفایل',
               textAlign: TextAlign.center,
-              style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold, fontFamily: 'YekanBakh'),
+              style: AppTypography.h2,
             ),
             const SizedBox(height: 16),
             Wrap(

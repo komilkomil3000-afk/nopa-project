@@ -1,4 +1,6 @@
 import 'package:nopa_app/widgets/tap_expander.dart';
+import 'package:nopa_app/widgets/bottom_nav_bar.dart';
+import 'package:nopa_app/core/constants/app_routes.dart';
 import 'package:nopa_app/core/station_numbering.dart';
 import 'package:nopa_app/core/station_state.dart';
 import 'package:nopa_app/core/asset_names.dart';
@@ -10,8 +12,7 @@ import 'package:provider/provider.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:nopa_app/services/api_service.dart';
 import 'package:nopa_app/core/constants/api_constants.dart';
-import 'package:nopa_app/core/theme/app_theme.dart';
-import 'package:nopa_app/services/app_state_repository.dart';
+import 'package:nopa_app/core/theme/app_theme.dart';import 'package:nopa_app/services/app_state_repository.dart';
 import 'package:nopa_app/models/user_model.dart';
 import 'package:nopa_app/models/station.dart';
 import 'package:nopa_app/widgets/education_calendar.dart';
@@ -132,7 +133,7 @@ class _HomeScreenState extends State<StudentHomeScreen> {
                       imageUrl: currentStationMap == null ? '' : Station.imageFrom(currentStationMap),
                       orderIndex: stationOrder,
                     );
-                    Navigator.pushNamed(context, '/class1', arguments: station);
+                    Navigator.pushNamed(context, AppRoutes.class1, arguments: station);
                   },
                   child: _buildInfoColumn(
                     title: 'منزلگاه کنونی',
@@ -165,15 +166,15 @@ class _HomeScreenState extends State<StudentHomeScreen> {
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start, // Right aligned in RTL
         children: [
-          Text(
-            title,
-            textAlign: TextAlign.right,
-            style: const TextStyle(
-              color: Colors.white,
-              fontWeight: FontWeight.bold,
-              fontSize: 12.5,
-              fontFamily: AppTheme.fontFamily,
-              fontFamilyFallback: AppTheme.fontFamilyFallback,
+          FittedBox(
+            fit: BoxFit.scaleDown,
+            alignment: Alignment.centerRight,
+            child: Text(
+              title,
+              textAlign: TextAlign.right,
+              maxLines: 1,
+              softWrap: false,
+              style: AppTypography.bodyMedium,
             ),
           ),
           const SizedBox(height: 3),
@@ -182,13 +183,7 @@ class _HomeScreenState extends State<StudentHomeScreen> {
             textAlign: TextAlign.right,
             maxLines: isExpanded ? 3 : 1,
             overflow: isExpanded ? TextOverflow.visible : TextOverflow.ellipsis,
-            style: const TextStyle(
-              color: Color(0xFFB5B3C8),
-              fontSize: 10.5,
-              height: 1.25,
-              fontFamily: AppTheme.fontFamily,
-              fontFamilyFallback: AppTheme.fontFamilyFallback,
-            ),
+            style: AppTypography.captionMuted,
           ),
         ],
       ),
@@ -208,13 +203,7 @@ class _HomeScreenState extends State<StudentHomeScreen> {
             alignment: Alignment.centerRight,
             child: Text(
               'سرمایه ها',
-              style: TextStyle(
-                color: Colors.white,
-                fontSize: 14.5,
-                fontWeight: FontWeight.bold,
-                fontFamily: AppTheme.fontFamily,
-                fontFamilyFallback: AppTheme.fontFamilyFallback,
-              ),
+              style: AppTypography.h3,
             ),
           ),
         ),
@@ -341,13 +330,7 @@ class _HomeScreenState extends State<StudentHomeScreen> {
                   child: Center(
                     child: Text(
                       badgeNumber,
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 13,
-                        fontWeight: FontWeight.bold,
-                        fontFamily: AppTheme.fontFamily,
-                        fontFamilyFallback: AppTheme.fontFamilyFallback,
-                      ),
+                      style: AppTypography.h3Strong,
                     ),
                   ),
                 ),
@@ -355,25 +338,13 @@ class _HomeScreenState extends State<StudentHomeScreen> {
                 // Middle: Label (زریک, درفش, نخ, فرش)
                 Text(
                   label,
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 14,
-                    fontWeight: FontWeight.bold,
-                    fontFamily: AppTheme.fontFamily,
-                    fontFamilyFallback: AppTheme.fontFamilyFallback,
-                  ),
+                  style: AppTypography.h3,
                 ),
                 const SizedBox(width: 16),
                 // Left: Value (0, 100, etc.)
                 Text(
                   value,
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 16,
-                    fontWeight: FontWeight.w900,
-                    fontFamily: AppTheme.fontFamily,
-                    fontFamilyFallback: AppTheme.fontFamilyFallback,
-                  ),
+                  style: AppTypography.h3,
                 ),
                 const SizedBox(width: 2),
               ],
@@ -402,7 +373,7 @@ class _HomeScreenState extends State<StudentHomeScreen> {
           children: [
             const Icon(Icons.error_outline, size: 48, color: Colors.redAccent),
             const SizedBox(height: 16),
-            Text(_errorMessage!, style: const TextStyle(fontSize: 16, color: Colors.white, fontFamily: AppTheme.fontFamily)),
+            Text(_errorMessage!, style: AppTypography.bodyLarge),
             const SizedBox(height: 16),
             ElevatedButton(
               onPressed: _fetchData,
@@ -410,7 +381,7 @@ class _HomeScreenState extends State<StudentHomeScreen> {
                 backgroundColor: const Color(0xFFCD8449),
                 foregroundColor: Colors.white,
               ),
-              child: const Text('تلاش مجدد', style: TextStyle(fontFamily: AppTheme.fontFamily)),
+              child: const Text('تلاش مجدد', style: AppTypography.bodyMedium),
             ),
           ],
         ),
@@ -452,17 +423,11 @@ class _HomeScreenState extends State<StudentHomeScreen> {
                     children: [
                       const Text(
                         'منزلگاه ها',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 14.5,
-                          fontWeight: FontWeight.bold,
-                          fontFamily: AppTheme.fontFamily,
-                          fontFamilyFallback: AppTheme.fontFamilyFallback,
-                        ),
+                        style: AppTypography.h3,
                       ),
                       TextButton(
                         onPressed: () {
-                          context.findAncestorStateOfType<MainScreenState>()?.setIndex(1); // 1 is MapScreen
+                          context.findAncestorStateOfType<MainScreenState>()?.setIndex(AppTabs.academy); // 1 is MapScreen
                         },
                         style: TextButton.styleFrom(
                           padding: EdgeInsets.zero,
@@ -471,12 +436,7 @@ class _HomeScreenState extends State<StudentHomeScreen> {
                         ),
                         child: const Text(
                           'همه',
-                          style: TextStyle(
-                            color: Color(0xFFB5B3C8),
-                            fontSize: 13.5,
-                            fontFamily: AppTheme.fontFamily,
-                            fontFamilyFallback: AppTheme.fontFamilyFallback,
-                          ),
+                          style: AppTypography.bodyLargeMuted,
                         ),
                       ),
                     ],
@@ -487,7 +447,7 @@ class _HomeScreenState extends State<StudentHomeScreen> {
               SizedBox(
                 height: 230,
                 child: _stations.isEmpty
-                    ? const Center(child: Text('منزلگاهی یافت نشد', style: TextStyle(color: Colors.white54, fontFamily: AppTheme.fontFamily)))
+                    ? const Center(child: Text('منزلگاهی یافت نشد', style: AppTypography.bodyMedium))
                     : Directionality(
                         textDirection: TextDirection.rtl,
                         child: ListView.builder(
@@ -530,7 +490,7 @@ class _HomeScreenState extends State<StudentHomeScreen> {
                             return StationCard(
                               station: station,
                               onTap: () async {
-                                final result = await Navigator.pushNamed(context, '/class1', arguments: station);
+                                final result = await Navigator.pushNamed(context, AppRoutes.class1, arguments: station);
                                 if (result is int && context.mounted) {
                                   navigateToMainTab(result);
                                 }

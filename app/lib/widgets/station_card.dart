@@ -192,13 +192,7 @@ class StationCard extends StatelessWidget {
                           // Station Number (Right in RTL)
                           Text(
                             station.orderIndex.toPersian(),
-                            style: const TextStyle(
-                              color: Color(0xFF9292E2),
-                              fontSize: 17,
-                              fontWeight: FontWeight.bold,
-                              fontFamily: AppTheme.fontFamily,
-                              fontFamilyFallback: AppTheme.fontFamilyFallback,
-                            ),
+                            style: AppTypography.h2.copyWith(color: Color(0xFF9292E2)),
                           ),
                           const SizedBox(width: 8),
                           // Station Title (Left in RTL - pure name without prefix)
@@ -208,13 +202,7 @@ class StationCard extends StatelessWidget {
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
                               textAlign: TextAlign.right,
-                              style: const TextStyle(
-                                color: Color(0xFFF4EFEA),
-                                fontSize: 12.5,
-                                fontWeight: FontWeight.w500,
-                                fontFamily: AppTheme.fontFamily,
-                                fontFamilyFallback: AppTheme.fontFamilyFallback,
-                              ),
+                              style: AppTypography.bodyMedium.copyWith(color: Color(0xFFF4EFEA)),
                             ),
                           ),
                         ],

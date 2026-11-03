@@ -1,11 +1,17 @@
 import 'package:nopa_app/widgets/tap_expander.dart';
+import 'package:nopa_app/core/theme/app_typography.dart';
 import 'package:flutter/material.dart' hide Text;
 import 'package:nopa_app/widgets/fa_text.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import '../models/user_model.dart';
 import '../utils/constants.dart';
 
+/// Indexes of the main shell tabs (same order for students and mentors).
 class AppTabs {
+  static const int home = 0;
+  static const int academy = 1;
+  static const int challenges = 2;
+  static const int market = 3;
   static const int profile = 4;
   static const int chat = 5;
 }
@@ -122,16 +128,9 @@ class CustomBottomNavBar extends StatelessWidget {
                     const SizedBox(height: 6),
                     Text(
                       item.label,
-                      style: TextStyle(
-                        fontFamily: 'YekanBakh',
-                        fontSize: 11.5,
-                        fontWeight: isSelected
-                            ? FontWeight.bold
-                            : FontWeight.w500,
-                        color: isSelected
+                      style: AppTypography.caption.copyWith(color: isSelected
                             ? const Color(0xFFEDE9F6)
-                            : const Color(0xFF8B88A8),
-                      ),
+                            : const Color(0xFF8B88A8)),
                     ),
                   ],
                 ),

@@ -22,6 +22,7 @@ async function cardMeta(c: Challenge) {
     description: c.description.slice(0, 300),
     stationTitle: station?.title || null,
     creatorName: creator?.role === 'admin' ? 'مدیر سیستم' : (creator?.name || 'راهبر'),
+    creatorRole: creator?.role ?? 'mentor',
     startDate: c.startDate,
     dueDate: c.dueDate,
     reward: c.category === 'inter_group'
@@ -229,8 +230,9 @@ export const toggleMessageTag = handler(async (req, res, actor) => {
 export const toggleMark = handler(async (req, res, actor) => {
   const { message, space } = await requireMessage(actor, req.params.id);
   const mark = String(req.body?.mark || '');
-  if (!['best', 'evidence'].includes(mark)) throw new ChatError(400, 'نشان معتبر نیست');
-  if (!canTag(actor, space)) throw new ChatError(403, 'اجازه‌ی این کار را ندارید');
+  if (!['best', 'evidence', 'thread'].includes(mark)) throw new ChatError(400, 'نشان معتبر نیست');
+  // Opening the conversation under a message is for mentors, admins and channel managers; never in a private chat
+  if (mark === 'thread' ? (!canModerate(actor, space) || message.threadRootId) : !canTag(actor, space)) throw new ChatError(403, 'اجازه‌ی این کار را ندارید');
   const marks = message.marks.includes(mark) ? message.marks.filter(m => m !== mark) : [...message.marks, mark];
   await prisma.chatMessage.update({ where: { id: message.id }, data: { marks } });
   await publishUpdate(message.id);

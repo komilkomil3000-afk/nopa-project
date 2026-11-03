@@ -319,13 +319,7 @@ class _ChallengeSubmissionDialogState extends State<ChallengeSubmissionDialog> {
           child: Center(
             child: Text(
               _readOnly ? 'پاسخ من' : (widget.status == 'rejected' ? 'اصلاح پاسخ' : 'شرکت در چالش'),
-              style: const TextStyle(
-                color: Colors.white,
-                fontSize: 17,
-                fontWeight: FontWeight.bold,
-                fontFamily: AppTheme.fontFamily,
-                fontFamilyFallback: AppTheme.fontFamilyFallback,
-              ),
+              style: AppTypography.h2,
             ),
           ),
         ),
@@ -366,12 +360,7 @@ class _ChallengeSubmissionDialogState extends State<ChallengeSubmissionDialog> {
       ),
       child: Text(
         label,
-        style: const TextStyle(
-          color: Color(0xFFD6D3E6),
-          fontSize: 11,
-          fontWeight: FontWeight.bold,
-          fontFamily: AppTheme.fontFamily,
-        ),
+        style: AppTypography.caption.copyWith(color: Color(0xFFD6D3E6)),
       ),
     );
   }
@@ -423,13 +412,7 @@ class _ChallengeSubmissionDialogState extends State<ChallengeSubmissionDialog> {
           Expanded(
             child: Text(
               text,
-              style: TextStyle(
-                color: color,
-                fontSize: 11.5,
-                height: 1.5,
-                fontFamily: AppTheme.fontFamily,
-                fontFamilyFallback: AppTheme.fontFamilyFallback,
-              ),
+              style: AppTypography.caption.copyWith(color: color),
             ),
           ),
         ],
@@ -465,23 +448,13 @@ class _ChallengeSubmissionDialogState extends State<ChallengeSubmissionDialog> {
               children: [
                 Text(
                   (index + 1).toString().toPersianDigits(),
-                  style: TextStyle(
-                    color: isSelected ? const Color(0xFFDE9959) : const Color(0xFF8E88B0),
-                    fontSize: 13,
-                    fontWeight: FontWeight.bold,
-                    fontFamily: AppTheme.fontFamily,
-                  ),
+                  style: AppTypography.h3Strong.copyWith(color: isSelected ? const Color(0xFFDE9959) : const Color(0xFF8E88B0)),
                 ),
                 const SizedBox(width: 12),
                 Expanded(
                   child: Text(
                     options[index],
-                    style: TextStyle(
-                      color: isSelected ? Colors.white : const Color(0xFFD3D0E3),
-                      fontSize: 12,
-                      fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
-                      fontFamily: AppTheme.fontFamily,
-                    ),
+                    style: AppTypography.bodyLarge.copyWith(color: isSelected ? Colors.white : const Color(0xFFD3D0E3)),
                   ),
                 ),
               ],
@@ -507,12 +480,7 @@ class _ChallengeSubmissionDialogState extends State<ChallengeSubmissionDialog> {
         ),
         Text(
           'سوال ${(_step + 1).toString().toPersianDigits()} از ${_questions.length.toString().toPersianDigits()}',
-          style: const TextStyle(
-            color: Color(0xFF9E92E8),
-            fontSize: 12,
-            fontWeight: FontWeight.bold,
-            fontFamily: AppTheme.fontFamily,
-          ),
+          style: AppTypography.bodyLarge.copyWith(color: Color(0xFF9E92E8)),
         ),
         TextButton(
           onPressed: last || _sending ? null : () => setState(() => _step++),
@@ -536,11 +504,11 @@ class _ChallengeSubmissionDialogState extends State<ChallengeSubmissionDialog> {
               controller: _textCtrl,
               readOnly: _readOnly,
               maxLines: 4,
-              style: const TextStyle(color: Colors.white, fontSize: 12.5, fontFamily: AppTheme.fontFamily),
+              style: AppTypography.bodyMedium,
               textAlign: TextAlign.right,
               decoration: InputDecoration(
                 hintText: _readOnly ? 'پاسخ متنی ثبت نشده است' : 'پاسخ تشریحی خود را بنویسید...',
-                hintStyle: const TextStyle(color: Color(0xFF7E789F), fontSize: 11.5, fontFamily: AppTheme.fontFamily),
+                hintStyle: AppTypography.caption.copyWith(color: Color(0xFF7E789F)),
                 filled: true,
                 fillColor: const Color(0xFF1E1D38),
                 contentPadding: const EdgeInsets.all(12),
@@ -592,12 +560,7 @@ class _ChallengeSubmissionDialogState extends State<ChallengeSubmissionDialog> {
                               : (hasExisting ? 'جایگزینی فایل قبلی' : 'انتخاب فایل از دستگاه'),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
-                          style: TextStyle(
-                            color: hasPicked ? const Color(0xFF22C55E) : const Color(0xFF7E789F),
-                            fontSize: 11.5,
-                            fontWeight: hasPicked ? FontWeight.bold : FontWeight.normal,
-                            fontFamily: AppTheme.fontFamily,
-                          ),
+                          style: AppTypography.caption.copyWith(color: hasPicked ? const Color(0xFF22C55E) : const Color(0xFF7E789F), fontWeight: hasPicked ? FontWeight.bold : FontWeight.normal),
                         ),
                       ),
                       Icon(
@@ -638,20 +601,15 @@ class _ChallengeSubmissionDialogState extends State<ChallengeSubmissionDialog> {
                   name.isNotEmpty ? name : 'فایل پیوست',
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(color: Color(0xFFD6D3E6), fontSize: 12, fontFamily: AppTheme.fontFamily),
+                  style: AppTypography.bodyMedium.copyWith(color: Color(0xFFD6D3E6)),
                 ),
               ),
               if (!picked && _existingFileUrl != null)
                 TapExpander(child: GestureDetector(
                   onTap: () => _openUrl(_existingFileUrl),
-                  child: const Text(
+                  child: Text(
                     'باز کردن',
-                    style: TextStyle(
-                      color: AppColors.buttonCamel,
-                      fontSize: 11.5,
-                      fontWeight: FontWeight.bold,
-                      fontFamily: AppTheme.fontFamily,
-                    ),
+                    style: AppTypography.caption.copyWith(color: AppColors.buttonCamel),
                   ),
                 )),
             ],
@@ -688,12 +646,7 @@ class _ChallengeSubmissionDialogState extends State<ChallengeSubmissionDialog> {
       onPressed: _sending ? null : () => Navigator.pop(context),
       child: Text(
         _readOnly ? 'بستن' : 'لغو',
-        style: const TextStyle(
-          color: AppColors.buttonCancelPurple,
-          fontSize: 14,
-          fontWeight: FontWeight.w600,
-          fontFamily: AppTheme.fontFamily,
-        ),
+        style: AppTypography.h3Strong.copyWith(color: AppColors.buttonCancelPurple),
       ),
     );
     if (_readOnly) return Center(child: close);
@@ -711,12 +664,7 @@ class _ChallengeSubmissionDialogState extends State<ChallengeSubmissionDialog> {
                 )
               : Text(
                   widget.status == 'rejected' ? 'ارسال مجدد' : 'ارسال',
-                  style: const TextStyle(
-                    color: AppColors.buttonCamel,
-                    fontSize: 15,
-                    fontWeight: FontWeight.bold,
-                    fontFamily: AppTheme.fontFamily,
-                  ),
+                  style: AppTypography.h3Strong.copyWith(color: AppColors.buttonCamel),
                 ),
         ),
         close,

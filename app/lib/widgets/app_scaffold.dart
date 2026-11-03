@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:nopa_app/core/constants/app_routes.dart';
 import 'package:provider/provider.dart';
 import '../core/theme/app_colors.dart';
 import '../main.dart';
@@ -64,7 +65,7 @@ class AppScaffold extends StatelessWidget {
                     currentIndex: currentBottomNavIndex,
                     onTabSelected: (idx) {
                       Navigator.pop(context);
-                      Navigator.of(context).popUntil((route) => route.isFirst || route.settings.name == '/dashboard');
+                      Navigator.of(context).popUntil((route) => route.isFirst || route.settings.name == AppRoutes.dashboard);
                       navigateToMainTab(idx);
                     },
                   )
@@ -75,7 +76,7 @@ class AppScaffold extends StatelessWidget {
                 role: userRole,
                 onTap: (idx) {
                   if (Navigator.of(context).canPop()) {
-                    Navigator.of(context).popUntil((route) => route.isFirst || route.settings.name == '/dashboard');
+                    Navigator.of(context).popUntil((route) => route.isFirst || route.settings.name == AppRoutes.dashboard);
                   }
                   navigateToMainTab(idx);
                 },

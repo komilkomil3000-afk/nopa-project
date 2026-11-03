@@ -49,12 +49,7 @@ class AppToast {
           textDirection: TextDirection.rtl,
           child: Text(
             message,
-            style: const TextStyle(
-              color: textColor,
-              fontSize: 12.5,
-              fontFamily: AppTheme.fontFamily,
-              fontFamilyFallback: AppTheme.fontFamilyFallback,
-            ),
+            style: AppTypography.bodyMedium.copyWith(color: textColor),
           ),
         ),
         backgroundColor: color,
