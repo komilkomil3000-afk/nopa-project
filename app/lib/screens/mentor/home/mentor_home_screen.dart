@@ -724,7 +724,7 @@ class _MentorHomeScreenState extends State<MentorHomeScreen> {
                 backgroundColor: const Color(0xFFCD8449),
                 foregroundColor: Colors.white,
               ),
-              child: const Text('تلاش مجدد', style: TextStyle(fontFamily: AppTheme.fontFamily)),
+              child: const Text('تلاش مجدد', style: AppTypography.bodyMedium),
             ),
           ],
         ),

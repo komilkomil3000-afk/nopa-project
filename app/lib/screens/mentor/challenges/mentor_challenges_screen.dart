@@ -2,7 +2,6 @@ import 'package:nopa_app/screens/chat/challenge_chat_button.dart';
 import '../../../widgets/nopa_modal_shell.dart';
 import 'package:nopa_app/screens/shell/app_shell.dart' show challengeFocusRequest;
 import 'package:nopa_app/core/economy_rates.dart';
-import 'package:nopa_app/core/schedule_utils.dart';
 import 'package:nopa_app/widgets/tap_expander.dart';
 import 'package:nopa_app/core/asset_names.dart';
 import 'dart:async';
@@ -15,7 +14,6 @@ import 'package:provider/provider.dart';
 import 'package:shamsi_date/shamsi_date.dart';
 import 'package:nopa_app/services/app_state_repository.dart';
 import 'package:nopa_app/services/api_service.dart';
-import 'package:nopa_app/services/local_cache.dart';
 import 'package:nopa_app/models/models.dart';
 import 'package:nopa_app/core/theme/app_colors.dart';
 import 'package:nopa_app/core/theme/app_theme.dart';
@@ -749,16 +747,9 @@ class _ChallengesScreenState extends State<MentorChallengesScreen> {
               ),
             ),
 
-            // Top Action Buttons: [ + ایجاد چالش جدید ] [ + ایجاد پیام ]
+            // Top Action Button: [ + ایجاد چالش جدید ]
             Row(
               children: [
-                Expanded(
-                  child: _buildMentorHeaderButton(
-                    title: 'ایجاد پیام',
-                    onTap: () => _showCreateMessageDialog(context, user),
-                  ),
-                ),
-                const SizedBox(width: 12),
                 Expanded(
                   child: _buildMentorHeaderButton(
                     title: 'ایجاد چالش جدید',
@@ -1840,242 +1831,6 @@ class _ChallengesScreenState extends State<MentorChallengesScreen> {
             );
           },
         );
-      },
-    );
-  }
-
-  void _showCreateMessageDialog(BuildContext context, UserModel user) {
-    final titleCtrl = DraftTextController(draftKey: 'mentor_message.title');
-    final messageCtrl = DraftTextController(draftKey: 'mentor_message.body');
-    String? selectedUserId; // null = all members
-    List<Map<String, dynamic>> members = [];
-    bool membersRequested = false;
-    bool isSending = false;
-    final today = ScheduleUtils.todayJalali();
-    final todayText = '${today.year}/${today.month.toString().padLeft(2, '0')}/${today.day.toString().padLeft(2, '0')}'.toPersianDigits();
-    final caravanForMessage = Provider.of<AppRepository>(context, listen: false);
-    final messageCaravanId = caravanForMessage.selectedCaravanId.isNotEmpty ? caravanForMessage.selectedCaravanId : caravanForMessage.activeCaravanId;
-
-    showDialog(
-      context: context,
-      barrierDismissible: true,
-      builder: (BuildContext ctx) {
-        return StatefulBuilder(builder: (ctx, setDialogState) {
-        if (!membersRequested) {
-          membersRequested = true;
-          HttpApiService().getMentorCaravanProgress(caravanId: messageCaravanId).then((data) {
-            if (data != null && data['members'] is List && ctx.mounted) {
-              setDialogState(() => members = List<Map<String, dynamic>>.from(data['members']));
-            }
-          });
-        }
-        return Directionality(
-          textDirection: TextDirection.rtl,
-          child: Dialog(
-            backgroundColor: Colors.transparent,
-            insetPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
-            child: NopaDialogContainer(
-              maxWidth: 420,
-              radius: 24,
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 22),
-              child: SingleChildScrollView(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    // Header: Message Icon on right and Centered Title (Matching ContactUsDialog)
-                    Stack(
-                      alignment: Alignment.center,
-                      children: [
-                        const Align(
-                          alignment: Alignment.centerRight,
-                          child: Icon(
-                            Icons.chat_bubble_outline_rounded,
-                            color: AppColors.buttonCancelPurple,
-                            size: 32,
-                          ),
-                        ),
-                        const Text(
-                          'ایجاد پیام',
-                          style: AppTypography.h2,
-                          textAlign: TextAlign.center,
-                        ),
-                      ],
-                    ),
-
-                    const SizedBox(height: 22),
-
-                    // Field 1: ایجاد کننده
-                    _buildContactDialogFieldRow(
-                      label: 'ایجاد کننده:',
-                      child: _buildContactDialogValueText(user.name),
-                    ),
-                    const SizedBox(height: 12),
-
-                    // Field 2: نام کاروان
-                    _buildContactDialogFieldRow(
-                      label: 'نام کاروان:',
-                      child: _buildContactDialogValueText(user.caravanName ?? 'کاروان شماره پنجم'),
-                    ),
-                    const SizedBox(height: 12),
-
-                    // Field 3: دریافت کننده
-                    _buildContactDialogFieldRow(
-                      label: 'دریافت کننده:',
-                      child: Container(
-                        height: 38,
-                        padding: const EdgeInsets.symmetric(horizontal: 10),
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(10),
-                          border: Border.all(color: const Color(0xFF7A709E), width: 1.1),
-                        ),
-                        child: DropdownButtonHideUnderline(
-                          child: DropdownButton<String?>(
-                            value: selectedUserId,
-                            isExpanded: true,
-                            dropdownColor: const Color(0xFF2A2550),
-                            iconEnabledColor: AppColors.buttonCancelPurple,
-                            style: AppTypography.bodyLarge,
-                            items: [
-                              const DropdownMenuItem<String?>(value: null, child: Text('همه اعضا')),
-                              ...members.where((m) => m['id'] != null).map((m) => DropdownMenuItem<String?>(
-                                    value: m['id'].toString(),
-                                    child: Text(m['name']?.toString() ?? 'عضو', overflow: TextOverflow.ellipsis),
-                                  )),
-                            ],
-                            onChanged: (v) => setDialogState(() => selectedUserId = v),
-                          ),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-
-                    // Field 4: تاریخ
-                    _buildContactDialogFieldRow(
-                      label: 'تاریخ:',
-                      child: _buildContactDialogValueText(todayText),
-                    ),
-                    const SizedBox(height: 12),
-
-                    // Field 5: تیتر:
-                    _buildContactDialogFieldRow(
-                      label: 'تیتر:',
-                      child: Container(
-                        height: 38,
-                        padding: const EdgeInsets.symmetric(horizontal: 10),
-                        decoration: BoxDecoration(
-                          color: Colors.transparent,
-                          borderRadius: BorderRadius.circular(10),
-                          border: Border.all(
-                            color: const Color(0xFF7A709E),
-                            width: 1.1,
-                          ),
-                        ),
-                        alignment: Alignment.center,
-                        child: TextField(
-                          controller: titleCtrl,
-                          style: AppTypography.bodyLarge,
-                          decoration: const InputDecoration(
-                            border: InputBorder.none,
-                            isDense: true,
-                            contentPadding: EdgeInsets.zero,
-                          ),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-
-                    // Field 6: متن پیام
-                    _buildContactDialogFieldRow(
-                      label: 'متن پیام:',
-                      isTopAligned: true,
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-                        decoration: BoxDecoration(
-                          color: Colors.transparent,
-                          borderRadius: BorderRadius.circular(10),
-                          border: Border.all(
-                            color: const Color(0xFF7A709E),
-                            width: 1.1,
-                          ),
-                        ),
-                        child: TextField(
-                          controller: messageCtrl,
-                          maxLines: 3,
-                          style: AppTypography.bodyMedium,
-                          decoration: const InputDecoration(
-                            border: InputBorder.none,
-                            isDense: true,
-                            contentPadding: EdgeInsets.zero,
-                          ),
-                        ),
-                      ),
-                    ),
-
-                    const SizedBox(height: 24),
-
-                    // Bottom Actions: ارسال & لغو (Matching ContactUsDialog)
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        // ارسال (Right in RTL)
-                        TextButton(
-                          onPressed: () async {
-                            final title = titleCtrl.text.trim();
-                            final text = messageCtrl.text.trim();
-                            if (title.isEmpty || text.isEmpty) {
-                              AppToast.error(context, 'لطفاً تیتر و متن پیام را وارد کنید');
-                              return;
-                            }
-                            if (isSending) return;
-                            isSending = true;
-                            final api = HttpApiService();
-                            final sent = await api.sendMentorMessage(
-                              title: title,
-                              message: text,
-                              caravanId: messageCaravanId,
-                              userId: selectedUserId,
-                            );
-                            if (!ctx.mounted) return;
-                            if (sent == null) {
-                              isSending = false;
-                              AppToast.error(context, api.lastMentorMessageError ?? 'ارسال پیام انجام نشد. دوباره تلاش کنید.');
-                              return;
-                            }
-                            titleCtrl.clearDraft();
-                            messageCtrl.clearDraft();
-                            Navigator.pop(ctx);
-                            AppToast.info(context, 'پیام برای ${sent.toPersian()} عضو کاروان ارسال شد');
-                          },
-                          style: TextButton.styleFrom(
-                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                          ),
-                          child: Text(
-                            'ارسال',
-                            style: AppTypography.h3.copyWith(color: AppColors.buttonCancelPurple),
-                          ),
-                        ),
-
-                        // لغو (Left in RTL)
-                        TextButton(
-                          onPressed: () => Navigator.pop(ctx),
-                          style: TextButton.styleFrom(
-                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                          ),
-                          child: Text(
-                            'لغو',
-                            style: AppTypography.h3.copyWith(color: AppColors.buttonCancelPurple),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ),
-        );
-        });
       },
     );
   }

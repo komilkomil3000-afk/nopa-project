@@ -1,4 +1,5 @@
 import 'package:nopa_app/core/economy_rates.dart';
+import 'package:nopa_app/widgets/safe_avatar.dart';
 import 'package:nopa_app/core/constants/app_routes.dart';
 import 'package:nopa_app/widgets/nopa_modal_shell.dart';
 import 'package:nopa_app/widgets/nopa_pill_tabs.dart';
@@ -175,6 +176,7 @@ class _MarketScreenState extends State<MarketScreen> {
           return <String, dynamic>{
             'id': req['id']?.toString() ?? '',
             'studentName': student?['name']?.toString() ?? 'دانش‌آموز',
+            'studentAvatarUrl': student?['avatarUrl']?.toString() ?? '',
             'studentId': req['requestedBy']?.toString() ?? '',
             'title': _exchangeTitle(req),
             'date': _formatPersianDate(req['createdAt']),
@@ -454,6 +456,7 @@ class _MarketScreenState extends State<MarketScreen> {
         _memberIds = members.map((m) => m['id']?.toString() ?? '').toList();
         _topMembers = members.take(3).map((m) => {
               'name': m['name']?.toString() ?? '-',
+              'avatarUrl': m['avatarUrl']?.toString() ?? '',
               'zarik': '${_formatScore(m['capital'] ?? m['zarikBalance'])} زریک',
             }).toList();
         _caravanIds = caravans.map((c) => c['id']?.toString() ?? '').toList();
@@ -984,23 +987,7 @@ class _MarketScreenState extends State<MarketScreen> {
                       Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          Container(
-                            width: 30,
-                            height: 30,
-                            decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              color: const Color(0xFF534C82),
-                              border: Border.all(
-                                color: const Color(0xFF837CB7).withValues(alpha: 0.5),
-                                width: 1,
-                              ),
-                            ),
-                            child: const Icon(
-                              Icons.person_rounded,
-                              color: Color(0xFFEDE9F6),
-                              size: 17,
-                            ),
-                          ),
+                          SafeAvatar(imageUrl: member['avatarUrl']?.toString(), name: name, radius: 15),
                           const SizedBox(width: 8),
                           Text(
                             name,
@@ -1240,23 +1227,7 @@ class _MarketScreenState extends State<MarketScreen> {
                       Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          Container(
-                            width: 24,
-                            height: 24,
-                            decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              color: const Color(0xFF534C82),
-                              border: Border.all(
-                                color: const Color(0xFF837CB7).withValues(alpha: 0.5),
-                                width: 1,
-                              ),
-                            ),
-                            child: const Icon(
-                              Icons.person_rounded,
-                              color: Color(0xFFEDE9F6),
-                              size: 14,
-                            ),
-                          ),
+                          SafeAvatar(imageUrl: request['studentAvatarUrl']?.toString(), name: studentName, radius: 12),
                           const SizedBox(width: 6),
                           Text(
                             studentName,
@@ -2010,6 +1981,8 @@ class _MarketScreenState extends State<MarketScreen> {
         'rank': i + 1,
         'name': hasItem ? source[i]['name'] : '-',
         'zarik': hasItem ? source[i]['zarik'] : '',
+        // Members show their own picture; caravans have none and keep the placeholder
+        'avatarUrl': isMembersTab && hasItem ? (source[i]['avatarUrl'] ?? '') : '',
         'color': podiumColors[i],
         'borderColor': podiumColors[i],
         'size': podiumSizes[i],
@@ -2175,13 +2148,20 @@ class _MarketScreenState extends State<MarketScreen> {
             ),
           ),
           child: Center(
-            child: SvgPicture.asset(
-              'assets/svg_icons/profile01.svg',
-              width: circleSize * 0.52,
-              height: circleSize * 0.52,
-              fit: BoxFit.contain,
-              colorFilter: ColorFilter.mode(iconTint, BlendMode.srcIn),
-            ),
+            child: (item['avatarUrl'] as String? ?? '').isNotEmpty
+                ? SafeAvatar(
+                    imageUrl: item['avatarUrl'] as String,
+                    name: item['name'] as String,
+                    radius: circleSize / 2 - 3,
+                    cacheSize: 260,
+                  )
+                : SvgPicture.asset(
+                    'assets/svg_icons/profile01.svg',
+                    width: circleSize * 0.52,
+                    height: circleSize * 0.52,
+                    fit: BoxFit.contain,
+                    colorFilter: ColorFilter.mode(iconTint, BlendMode.srcIn),
+                  ),
           ),
         ),
 

@@ -7,6 +7,7 @@ import 'package:nopa_app/models/chat_models.dart';
 import 'package:nopa_app/screens/chat/chat_cards.dart';
 import 'package:nopa_app/screens/chat/chat_format.dart';
 import 'package:nopa_app/screens/chat/chat_theme.dart';
+import 'package:nopa_app/screens/chat/chat_waveform.dart';
 import 'package:nopa_app/screens/chat/chat_widgets.dart';
 import 'package:nopa_app/services/audio_exclusivity_service.dart';
 import 'package:nopa_app/widgets/fa_text.dart';
@@ -214,7 +215,7 @@ class _ChatMessageBubbleState extends State<ChatMessageBubble> {
       m.senderName,
       maxLines: 1,
       overflow: TextOverflow.ellipsis,
-      style: ChatTheme.caption.copyWith(color: _mineLook ? ChatTheme.accent : ChatTheme.ink, fontWeight: FontWeight.bold, fontSize: 11.5),
+      style: ChatTheme.caption.copyWith(color: _mineLook ? ChatTheme.accent : ChatTheme.goldTitle, fontWeight: FontWeight.bold, fontSize: 11.5),
     );
     return Padding(
       padding: const EdgeInsets.only(bottom: 4),
@@ -235,7 +236,7 @@ class _ChatMessageBubbleState extends State<ChatMessageBubble> {
       TextSpan(
         children: ChatFormat.spans(
           m.body,
-          linkColor: _mineLook ? ChatTheme.accent : ChatTheme.ink,
+          linkColor: _mineLook ? ChatTheme.accent : ChatTheme.goldTitle,
           mentionColor: _mineLook ? ChatTheme.lavender : const Color(0xFF3A2A7A),
           mentionNames: widget.mentionNames,
         ),
@@ -287,7 +288,7 @@ class _ChatMessageBubbleState extends State<ChatMessageBubble> {
   }
 
   Widget _quote() {
-    final edge = _mineLook ? ChatTheme.lavender : ChatTheme.ink;
+    final edge = _mineLook ? ChatTheme.lavender : ChatTheme.goldTitle;
     return Container(
       margin: const EdgeInsets.only(bottom: 5),
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
@@ -315,7 +316,7 @@ class _ChatMessageBubbleState extends State<ChatMessageBubble> {
       if (r['userId'] == widget.myId) mineSet.add(r['type']);
       if (widget.staffIds.contains(r['userId'])) byStaff.add(r['type']);
     }
-    final base = _mineLook ? ChatTheme.lavender : ChatTheme.ink;
+    final base = _mineLook ? ChatTheme.lavender : ChatTheme.goldTitle;
     return Padding(
       padding: const EdgeInsets.only(top: 6),
       child: Wrap(
@@ -335,7 +336,7 @@ class _ChatMessageBubbleState extends State<ChatMessageBubble> {
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Icon(ChatTheme.reactions[entry.key]?.icon ?? Icons.star_rounded, size: 13, color: _mineLook ? ChatTheme.accent : ChatTheme.ink),
+                    Icon(ChatTheme.reactions[entry.key]?.icon ?? Icons.star_rounded, size: 13, color: _mineLook ? ChatTheme.accent : ChatTheme.goldTitle),
                     const SizedBox(width: 3),
                     Text('${entry.value}', style: ChatTheme.caption.copyWith(color: _textColor)),
                     // A mentor's reaction wears the mentor's badge
@@ -351,7 +352,7 @@ class _ChatMessageBubbleState extends State<ChatMessageBubble> {
 
   /// The way into the conversation under this message, with the faces of who is talking there.
   Widget _threadBox() {
-    final fg = _mineLook ? ChatTheme.accent : ChatTheme.ink;
+    final fg = _mineLook ? ChatTheme.accent : ChatTheme.goldTitle;
     final faces = m.threadPeople.take(4).toList();
     final label = m.threadReplies > 0 ? 'ورود به گفتگو · ${m.threadReplies} پاسخ' : 'ورود به گفتگو';
     return GestureDetector(
@@ -379,7 +380,7 @@ class _ChatMessageBubbleState extends State<ChatMessageBubble> {
                       PositionedDirectional(
                         start: i * 13.0,
                         child: Container(
-                          decoration: BoxDecoration(shape: BoxShape.circle, border: Border.all(color: _mineLook ? ChatTheme.surfaceBottom : const Color(0xFFE5A66B), width: 1.5)),
+                          decoration: BoxDecoration(shape: BoxShape.circle, border: Border.all(color: _mineLook ? ChatTheme.surfaceBottom : ChatTheme.goldFill, width: 1.5)),
                           child: SafeAvatar(
                             imageUrl: faces[i]['avatarUrl'],
                             name: faces[i]['name'] ?? '',
@@ -442,7 +443,7 @@ class _InfoBox extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final fg = onGold ? ChatTheme.ink : ChatTheme.text;
+    final fg = onGold ? ChatTheme.goldTitle : ChatTheme.text;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
       decoration: BoxDecoration(
@@ -514,9 +515,9 @@ class ChatAttachmentView extends StatelessWidget {
           ),
         );
       case 'audio':
-        return ChatAudioPlayer(url: _url, onGold: onGold);
+        return ChatAudioPlayer(url: _url, onGold: onGold, peaks: ChatWaveform.decodePeaks(attachment.name), seed: attachment.id);
       default:
-        final color = onGold ? ChatTheme.ink : ChatTheme.accent;
+        final color = onGold ? ChatTheme.goldTitle : ChatTheme.accent;
         return GestureDetector(
           onTap: () => launchUrl(Uri.parse(_url), mode: LaunchMode.externalApplication),
           child: Padding(
@@ -526,7 +527,7 @@ class ChatAttachmentView extends StatelessWidget {
               children: [
                 Icon(attachment.kind == 'video' ? Icons.movie_rounded : Icons.description_rounded, color: color, size: 24),
                 const SizedBox(width: 6),
-                Flexible(child: Text(attachment.name, style: ChatTheme.caption.copyWith(color: onGold ? ChatTheme.ink : ChatTheme.text), maxLines: 2, overflow: TextOverflow.ellipsis)),
+                Flexible(child: Text(attachment.name, style: ChatTheme.caption.copyWith(color: onGold ? ChatTheme.goldInk : ChatTheme.text), maxLines: 2, overflow: TextOverflow.ellipsis)),
               ],
             ),
           ),
@@ -535,11 +536,24 @@ class ChatAttachmentView extends StatelessWidget {
   }
 }
 
-/// Play/pause and progress of one voice message.
+/// One voice message: play/pause and its waveform. Tap or drag the waveform to jump to any moment.
 class ChatAudioPlayer extends StatefulWidget {
   final String url;
   final bool onGold;
-  const ChatAudioPlayer({super.key, required this.url, this.onGold = false});
+
+  /// The recording's bars (see [ChatWaveform.decodePeaks]); without them a stable shape is drawn from [seed].
+  final List<double>? peaks;
+  final String? seed;
+
+  /// A recording still on the device (the voice composer's preview); then [url] is not used.
+  final String? filePath;
+
+  /// Overrides the colour of the controls and bars (the composer bar is light, a bubble is not).
+  final Color? color;
+
+  /// Defaults to a width that fits a bubble; the composer lets it fill the bar.
+  final double? width;
+  const ChatAudioPlayer({super.key, required this.url, this.onGold = false, this.peaks, this.seed, this.filePath, this.color, this.width});
 
   @override
   State<ChatAudioPlayer> createState() => _ChatAudioPlayerState();
@@ -547,9 +561,16 @@ class ChatAudioPlayer extends StatefulWidget {
 
 class _ChatAudioPlayerState extends State<ChatAudioPlayer> {
   final AudioPlayer _player = AudioPlayer();
+  late final List<double> _peaks = widget.peaks ?? ChatWaveform.pseudoPeaks(widget.seed ?? widget.filePath ?? widget.url);
+  Source get _source => widget.filePath != null ? DeviceFileSource(widget.filePath!) : UrlSource(widget.url);
   bool _playing = false;
+  bool _loaded = false;
+  bool _completed = false;
   Duration _position = Duration.zero;
   Duration _total = Duration.zero;
+
+  /// The fraction under the finger while dragging; null otherwise.
+  double? _scrub;
 
   @override
   void initState() {
@@ -558,10 +579,18 @@ class _ChatAudioPlayerState extends State<ChatAudioPlayer> {
       if (mounted) setState(() => _playing = s == PlayerState.playing);
     });
     _player.onPositionChanged.listen((p) {
-      if (mounted) setState(() => _position = p);
+      if (mounted && _scrub == null) setState(() => _position = p);
     });
     _player.onDurationChanged.listen((d) {
       if (mounted) setState(() => _total = d);
+    });
+    _player.onPlayerComplete.listen((_) {
+      if (mounted) {
+        setState(() {
+          _completed = true;
+          _position = Duration.zero;
+        });
+      }
     });
   }
 
@@ -571,21 +600,61 @@ class _ChatAudioPlayerState extends State<ChatAudioPlayer> {
     super.dispose();
   }
 
+  Future<void> _ensureLoaded() async {
+    if (_loaded) return;
+    await _player.setSource(_source);
+    _loaded = true;
+    final duration = await _player.getDuration();
+    if (duration != null && mounted) setState(() => _total = duration);
+  }
+
   Future<void> _toggle() async {
     if (_playing) {
       await _player.pause();
-    } else {
-      AudioExclusivityService.registerAudioPlayer(_player);
-      await _player.play(UrlSource(widget.url));
+      return;
     }
+    AudioExclusivityService.registerAudioPlayer(_player);
+    if (_completed) {
+      _completed = false;
+      _loaded = true;
+      await _player.play(_source);
+      return;
+    }
+    await _ensureLoaded();
+    await _player.resume();
+  }
+
+  Future<void> _seekTo(double fraction) async {
+    await _ensureLoaded();
+    if (!mounted) return;
+    if (_total == Duration.zero) {
+      setState(() => _scrub = null);
+      return;
+    }
+    final target = Duration(milliseconds: (_total.inMilliseconds * fraction).round());
+    _completed = false;
+    await _player.seek(target);
+    if (mounted) {
+      setState(() {
+        _position = target;
+        _scrub = null;
+      });
+    }
+  }
+
+  static String _clock(Duration d) {
+    final minutes = d.inMinutes.remainder(60).toString().padLeft(2, '0');
+    final seconds = d.inSeconds.remainder(60).toString().padLeft(2, '0');
+    return '$minutes:$seconds';
   }
 
   @override
   Widget build(BuildContext context) {
-    final value = _total.inMilliseconds > 0 ? (_position.inMilliseconds / _total.inMilliseconds).clamp(0.0, 1.0) : 0.0;
-    final color = widget.onGold ? ChatTheme.ink : ChatTheme.accent;
+    final fraction = _scrub ?? (_total.inMilliseconds > 0 ? (_position.inMilliseconds / _total.inMilliseconds).clamp(0.0, 1.0) : 0.0);
+    final shown = _scrub != null ? Duration(milliseconds: (_total.inMilliseconds * _scrub!).round()) : _position;
+    final color = widget.color ?? (widget.onGold ? ChatTheme.goldTitle : ChatTheme.accent);
     return SizedBox(
-      width: 190,
+      width: widget.width ?? 230,
       child: Row(
         children: [
           IconButton(
@@ -593,7 +662,31 @@ class _ChatAudioPlayerState extends State<ChatAudioPlayer> {
             onPressed: _toggle,
             icon: Icon(_playing ? Icons.pause_circle_filled_rounded : Icons.play_circle_fill_rounded, color: color, size: 30),
           ),
-          Expanded(child: LinearProgressIndicator(value: value, color: color, backgroundColor: color.withValues(alpha: 0.2))),
+          Expanded(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                ChatWaveform(
+                  peaks: _peaks,
+                  progress: fraction,
+                  activeColor: color,
+                  idleColor: color.withValues(alpha: 0.28),
+                  height: 30,
+                  onScrub: (f) => setState(() => _scrub = f),
+                  onSeek: _seekTo,
+                ),
+                const SizedBox(height: 2),
+                Directionality(
+                  textDirection: TextDirection.ltr,
+                  child: Text(
+                    _total > Duration.zero ? '${_clock(shown)} / ${_clock(_total)}' : _clock(shown),
+                    style: ChatTheme.caption.copyWith(color: color, fontSize: 10),
+                  ),
+                ),
+              ],
+            ),
+          ),
         ],
       ),
     );

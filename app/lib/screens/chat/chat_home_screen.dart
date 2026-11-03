@@ -48,6 +48,31 @@ class ChatHomeScreen extends StatefulWidget {
 
 class _ChatHomeScreenState extends State<ChatHomeScreen> {
   ChatFilter _filter = ChatFilter.all;
+  final PageController _pages = PageController();
+
+  /// Set while a tap on a header tab animates the pages, so the pages passed on the way don't flip the tab.
+  ChatFilter? _tapTarget;
+
+  @override
+  void dispose() {
+    _pages.dispose();
+    super.dispose();
+  }
+
+  void _selectFilter(ChatFilter f) {
+    setState(() => _filter = f);
+    if (!_pages.hasClients) return;
+    _tapTarget = f;
+    _pages
+        .animateToPage(f.index, duration: const Duration(milliseconds: 260), curve: Curves.easeOutCubic)
+        .whenComplete(() => _tapTarget = null);
+  }
+
+  void _onPageChanged(int index) {
+    final f = ChatFilter.values[index];
+    if (_tapTarget != null && f != _tapTarget) return;
+    if (f != _filter) setState(() => _filter = f);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -55,7 +80,6 @@ class _ChatHomeScreenState extends State<ChatHomeScreen> {
     return ListenableBuilder(
       listenable: chat,
       builder: (context, _) {
-        final spaces = chat.spaces.where(_filter.matches).toList();
         return Directionality(
           textDirection: TextDirection.rtl,
           child: Column(
@@ -63,7 +87,7 @@ class _ChatHomeScreenState extends State<ChatHomeScreen> {
               _ChatHeader(
                 connected: chat.connected,
                 filter: _filter,
-                onFilter: (f) => setState(() => _filter = f),
+                onFilter: _selectFilter,
               ),
               Expanded(
                 child: Stack(
@@ -71,26 +95,12 @@ class _ChatHomeScreenState extends State<ChatHomeScreen> {
                     if (chat.spaces.isEmpty && chat.loadingSpaces)
                       const Center(child: CircularProgressIndicator(color: ChatTheme.accent))
                     else
-                      RefreshIndicator(
-                        color: ChatTheme.accent,
-                        onRefresh: chat.refreshSpaces,
-                        child: ListView.builder(
-                          physics: const AlwaysScrollableScrollPhysics(),
-                          padding: const EdgeInsets.fromLTRB(0, 10, 0, 180),
-                          itemCount: spaces.length + 2,
-                          itemBuilder: (context, i) {
-                            if (i == 0) return const _StaffTools();
-                            if (i == 1) {
-                              return spaces.isEmpty
-                                  ? const Padding(
-                                      padding: EdgeInsets.only(top: 80),
-                                      child: ChatNotice(title: 'گفتگوها', message: 'گفتگویی برای نمایش وجود ندارد.'),
-                                    )
-                                  : const SizedBox.shrink();
-                            }
-                            return _SpaceTile(space: spaces[i - 2], myId: chat.userId);
-                          },
-                        ),
+                      // One page per filter: swiping sideways moves between the tabs, right to left
+                      PageView.builder(
+                        controller: _pages,
+                        itemCount: ChatFilter.values.length,
+                        onPageChanged: _onPageChanged,
+                        itemBuilder: (context, page) => _buildPage(chat, ChatFilter.values[page]),
                       ),
                     Positioned(
                       left: 16,
@@ -110,6 +120,31 @@ class _ChatHomeScreenState extends State<ChatHomeScreen> {
           ),
         );
       },
+    );
+  }
+
+  Widget _buildPage(ChatRepository chat, ChatFilter filter) {
+    final spaces = chat.spaces.where(filter.matches).toList();
+    return RefreshIndicator(
+      color: ChatTheme.accent,
+      onRefresh: chat.refreshSpaces,
+      child: ListView.builder(
+        physics: const AlwaysScrollableScrollPhysics(),
+        padding: const EdgeInsets.fromLTRB(0, 10, 0, 180),
+        itemCount: spaces.length + 2,
+        itemBuilder: (context, i) {
+          if (i == 0) return const _StaffTools();
+          if (i == 1) {
+            return spaces.isEmpty
+                ? const Padding(
+                    padding: EdgeInsets.only(top: 80),
+                    child: ChatNotice(title: 'گفتگوها', message: 'گفتگویی برای نمایش وجود ندارد.'),
+                  )
+                : const SizedBox.shrink();
+          }
+          return _SpaceTile(space: spaces[i - 2], myId: chat.userId);
+        },
+      ),
     );
   }
 

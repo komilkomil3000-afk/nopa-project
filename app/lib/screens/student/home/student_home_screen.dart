@@ -203,7 +203,7 @@ class _HomeScreenState extends State<StudentHomeScreen> {
             alignment: Alignment.centerRight,
             child: Text(
               'سرمایه ها',
-              style: AppTypography.h1,
+              style: AppTypography.h3,
             ),
           ),
         ),
@@ -423,7 +423,7 @@ class _HomeScreenState extends State<StudentHomeScreen> {
                     children: [
                       const Text(
                         'منزلگاه ها',
-                        style: AppTypography.h1,
+                        style: AppTypography.h3,
                       ),
                       TextButton(
                         onPressed: () {

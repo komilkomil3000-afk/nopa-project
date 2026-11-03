@@ -4099,3 +4099,126 @@ When logging changes, append a new entry to the bottom of the "Change Entries" s
 - **Verification / Checkpoints Executed:**
   - flutter analyze (app/): No issues found
 - **Status:** Completed
+
+### [2026-11-03 13:54] - Flutter UI Architect (Claude)
+- **Triggered By:** GitHub: komilkomil3000-afk | System: komeil
+- **Target Component(s):** app
+- **Files Modified / Created / Deleted:**
+  - `pp/lib/screens/chat/chat_home_screen.dart` (Modified)
+  - `app/lib/screens/chat/chat_message_bubble.dart` (Modified)
+  - `app/lib/screens/chat/chat_theme.dart` (Modified)
+  - `app/lib/screens/mentor/challenges/mentor_challenges_screen.dart` (Modified)
+  - `app/lib/screens/student/challenges/student_challenges_screen.dart` (Modified)
+- **Description of Changes:**
+  - GROUP 1 chat polish: (1) incoming/gold bubble re-tuned to a camel palette slightly brighter than the header (ChatTheme.goldFill/goldFillDeep, bronze stroke, tail colours) with a 3-tone text hierarchy goldInk (body) / goldTitle (sender, titles, links, icons, info chips, audio) / goldMeta (time, ticks, captions), applied across chat_theme.dart and chat_message_bubble.dart
+  - (2) chat_home_screen.dart: filter tabs (همه، چالش ها، شخصی، دورهمی، آموزگاه) now a PageView with one page per filter, swipe and header-tab tap stay in sync (PageController, tap-animation guard), RTL page order
+  - (3) removed the 'ایجاد پیام' button and its now-dead _showCreateMessageDialog from student_challenges_screen.dart and mentor_challenges_screen.dart (the button lived in the Challenges tab screens, not inside chat), plus two imports only it used
+  - no API/repository changes
+- **Verification / Checkpoints Executed:**
+  - flutter analyze run from app/ : 0 issues; flutter test: 25 passed; dart format NOT run (per instruction)
+- **Status:** Completed
+
+### [2026-11-03 14:05] - Flutter UI Architect (Claude)
+- **Triggered By:** GitHub: komilkomil3000-afk | System: komeil
+- **Target Component(s):** app, admin_panel
+- **Files Modified / Created / Deleted:**
+  - `GENT_CHANGELOG.md` (Modified)
+  - `admin_panel/src/modules/chat/profiles.ts` (Modified)
+  - `app/lib/screens/chat/chat_conversation_screen.dart` (Modified)
+  - `app/lib/screens/chat/chat_home_screen.dart` (Modified)
+  - `app/lib/screens/chat/chat_message_bubble.dart` (Modified)
+  - `app/lib/screens/chat/chat_profile_screen.dart` (Modified)
+  - `app/lib/screens/chat/chat_theme.dart` (Modified)
+  - `app/lib/screens/chat/chat_topic_info_screen.dart` (Modified)
+  - `app/lib/screens/market/market_screen.dart` (Modified)
+  - `app/lib/screens/mentor/academy/mentor_station_class1_screen.dart` (Modified)
+  - `app/lib/screens/mentor/challenges/mentor_challenge_grading_screen.dart` (Modified)
+  - `app/lib/screens/mentor/challenges/mentor_challenges_screen.dart` (Modified)
+  - `app/lib/screens/student/challenges/student_challenges_screen.dart` (Modified)
+  - `app/lib/screens/student/profile/student_profile_screen.dart` (Modified)
+  - `app/lib/services/chat_repository.dart` (Modified)
+  - `app/lib/widgets/safe_avatar.dart` (Modified)
+  - `app/lib/widgets/zoomable_avatar.dart` (Created)
+- **Description of Changes:**
+  - GROUP 2 profile/media/avatars: (4) own-message avatar tap now opens the member profile (chat_conversation_screen.dart), evaluation participant rows open profiles (chat_topic_info_screen.dart), new widgets/zoomable_avatar.dart (ZoomableAvatar + AvatarViewer: full-screen InteractiveViewer pinch/pan, double-tap zoom, handles bundled asset: and uploaded pictures) used on the chat member profile and the own profile enlarged avatar (student_profile_screen.dart)
+  - (5) chat_profile_screen.dart: assets row zarik/kalaf/ghalicheh/derafsh shown for any profile the server sends them for, mentor with all zeros hidden, own-profile fallback to local balances
+  - (6) shared-media tabs: per-tab window of 9 items revealed on scroll (listener on page ScrollPosition, fill-if-short check), next page fetched via new chat_repository.media(before, limit) only when held items are exhausted, de-dup by id so an old server just ends the list
+  - backend admin_panel/src/modules/chat/profiles.ts spaceMedia gained optional 'before' and 'limit' query params (additive, backward compatible
+  - needs deploy for >60 items)
+  - (7) avatar sync: SafeAvatar now prefers the user's chosen picture over the mentor gender default and exposes SafeAvatar.sourceFor
+  - real avatars on leaderboard podium (members tab), market members report and exchange cards, challenge submissions report, and members training report (which could not show bundled asset: avatars) via the already-returned avatarUrl fields
+- **Verification / Checkpoints Executed:**
+  - flutter analyze run from app/ : 0 issues; flutter test: 25 passed; npx tsc --noEmit in admin_panel: exit 0; dart format NOT run
+- **Status:** Completed
+
+### [2026-11-03 14:11] - Flutter UI Typography Architect (Claude)
+- **Triggered By:** GitHub: komilkomil3000-afk | System: komeil
+- **Target Component(s):** app
+- **Files Modified / Created / Deleted:**
+  - `GENT_CHANGELOG.md` (Modified)
+  - `admin_panel/src/modules/chat/profiles.ts` (Modified)
+  - `app/lib/screens/chat/chat_conversation_screen.dart` (Modified)
+  - `app/lib/screens/chat/chat_home_screen.dart` (Modified)
+  - `app/lib/screens/chat/chat_message_bubble.dart` (Modified)
+  - `app/lib/screens/chat/chat_profile_screen.dart` (Modified)
+  - `app/lib/screens/chat/chat_theme.dart` (Modified)
+  - `app/lib/screens/chat/chat_topic_info_screen.dart` (Modified)
+  - `app/lib/screens/market/market_screen.dart` (Modified)
+  - `app/lib/screens/mentor/academy/mentor_station_class1_screen.dart` (Modified)
+  - `app/lib/screens/mentor/challenges/mentor_challenge_grading_screen.dart` (Modified)
+  - `app/lib/screens/mentor/challenges/mentor_challenges_screen.dart` (Modified)
+  - `app/lib/screens/mentor/home/mentor_home_screen.dart` (Modified)
+  - `app/lib/screens/student/challenges/student_challenges_screen.dart` (Modified)
+  - `app/lib/screens/student/home/student_home_screen.dart` (Modified)
+  - `app/lib/screens/student/profile/student_profile_screen.dart` (Modified)
+  - `app/lib/services/chat_repository.dart` (Modified)
+  - `app/lib/widgets/safe_avatar.dart` (Modified)
+  - `app/lib/screens/chat/chat_voice_composer.dart` (Created)
+  - `app/lib/screens/chat/chat_waveform.dart` (Created)
+  - `app/lib/widgets/zoomable_avatar.dart` (Created)
+  - `app/test/chat_waveform_test.dart` (Created)
+- **Description of Changes:**
+  - Aligned mentor panel typography with student panel: student home section headers set to h3 (same as mentor), remaining raw TextStyles in mentor home/station/grading screens converted to AppTypography tokens
+- **Verification / Checkpoints Executed:**
+  - flutter analyze (app/): No issues found
+- **Status:** Completed
+
+### [2026-11-03 14:12] - Flutter UI Architect (Claude)
+- **Triggered By:** GitHub: komilkomil3000-afk | System: komeil
+- **Target Component(s):** app
+- **Files Modified / Created / Deleted:**
+  - `GENT_CHANGELOG.md` (Modified)
+  - `admin_panel/src/modules/chat/profiles.ts` (Modified)
+  - `app/lib/screens/chat/chat_conversation_screen.dart` (Modified)
+  - `app/lib/screens/chat/chat_home_screen.dart` (Modified)
+  - `app/lib/screens/chat/chat_message_bubble.dart` (Modified)
+  - `app/lib/screens/chat/chat_profile_screen.dart` (Modified)
+  - `app/lib/screens/chat/chat_theme.dart` (Modified)
+  - `app/lib/screens/chat/chat_topic_info_screen.dart` (Modified)
+  - `app/lib/screens/market/market_screen.dart` (Modified)
+  - `app/lib/screens/mentor/academy/mentor_station_class1_screen.dart` (Modified)
+  - `app/lib/screens/mentor/challenges/mentor_challenge_grading_screen.dart` (Modified)
+  - `app/lib/screens/mentor/challenges/mentor_challenges_screen.dart` (Modified)
+  - `app/lib/screens/mentor/home/mentor_home_screen.dart` (Modified)
+  - `app/lib/screens/student/challenges/student_challenges_screen.dart` (Modified)
+  - `app/lib/screens/student/home/student_home_screen.dart` (Modified)
+  - `app/lib/screens/student/profile/student_profile_screen.dart` (Modified)
+  - `app/lib/services/chat_repository.dart` (Modified)
+  - `app/lib/widgets/safe_avatar.dart` (Modified)
+  - `app/lib/screens/chat/chat_voice_composer.dart` (Created)
+  - `app/lib/screens/chat/chat_waveform.dart` (Created)
+  - `app/lib/widgets/zoomable_avatar.dart` (Created)
+  - `app/test/chat_waveform_test.dart` (Created)
+- **Description of Changes:**
+  - GROUP 3 voice engine: new screens/chat/chat_voice_composer.dart (ChatVoiceComposer): recording hard-capped at 60s with auto-stop, live amplitude waveform and timer, NO auto-send
+  - pause/stop (or the limit) stages the clip
+  - staging step has playback preview with waveform scrubbing, delete, optional caption, explicit send button and a confirmation dialog 'آیا از ارسال پیام مطمئن هستید؟' before dispatch
+  - clips under 0.8s are dropped as accidental
+  - new screens/chat/chat_waveform.dart (ChatWaveform): amplitude bars with tap/drag seeking (timeline always LTR), downsample, bars packed into the upload file name as base36 (voice-<ts>~<bars>.m4a, no backend change since the name is stored raw up to 200 chars) with decodePeaks on the receiving side and a stable seeded pseudoPeaks stand-in for older voices
+  - ChatAudioPlayer (chat_message_bubble.dart) now draws the waveform instead of LinearProgressIndicator, supports scrub/seek before and during playback, position / duration label, local filePath/colour/width options used by the composer preview
+  - chat_conversation_screen.dart: old one-tap record-and-send (_recorder/_recording/_toggleRecording) replaced by _voiceMode + _sendVoice (uploads, sends caption as message body)
+  - chat_profile_screen.dart voice sheet passes bars to the player
+  - added test/chat_waveform_test.dart (7 tests)
+- **Verification / Checkpoints Executed:**
+  - flutter analyze run from app/ : 0 issues; flutter test: 32 passed (two consecutive full runs; one earlier run had a transient widget_test.dart load failure that did not reproduce); microphone recording itself not testable headless and not run on a device; dart format NOT run
+- **Status:** Completed

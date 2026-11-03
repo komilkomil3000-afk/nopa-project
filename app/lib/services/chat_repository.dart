@@ -628,9 +628,16 @@ class ChatRepository extends ChangeNotifier {
     return data;
   }
 
-  /// Photos (image), voices (audio), links (link) or sessions (session) of a space.
-  Future<List<Map<String, dynamic>>> media(String spaceId, String kind, {String? userId}) =>
-      _people(Uri(path: '/chat/spaces/$spaceId/media', queryParameters: {'kind': kind, 'userId': ?userId}).toString());
+  /// Photos (image), voices (audio), links (link) or sessions (session) of a space, newest first.
+  /// [before] (the createdAt of the last item held) and [limit] page through older ones; a server that
+  /// does not know them simply returns its first page again.
+  Future<List<Map<String, dynamic>>> media(String spaceId, String kind, {String? userId, String? before, int? limit}) =>
+      _people(Uri(path: '/chat/spaces/$spaceId/media', queryParameters: {
+        'kind': kind,
+        'userId': ?userId,
+        'before': ?before,
+        if (limit != null) 'limit': '$limit',
+      }).toString());
   Future<List<Map<String, dynamic>>> contacts() => _people('/chat/contacts');
 
   /// Opens a private conversation and returns it.

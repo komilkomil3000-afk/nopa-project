@@ -110,16 +110,23 @@ export const memberProfile = handler(async (req, res, actor) => {
   });
 });
 
-/** Photos, voices, links or sessions (threads) of a space; with userId, only that member's. */
+/**
+ * Photos, voices, links or sessions (threads) of a space; with userId, only that member's.
+ * Newest first. Pages: `limit` (default and maximum MEDIA_LIMIT) and `before` (ISO time of the last item
+ * already held) give the next older items; without them the first MEDIA_LIMIT come back as before.
+ */
 export const spaceMedia = handler(async (req, res, actor) => {
   const { space } = await requireSpace(actor, req.params.id);
   const kind = String(req.query.kind || 'image');
   const userId = typeof req.query.userId === 'string' && req.query.userId ? req.query.userId : undefined;
+  const limit = Math.min(Math.max(Math.floor(Number(req.query.limit)) || MEDIA_LIMIT, 1), MEDIA_LIMIT);
+  const beforeRaw = typeof req.query.before === 'string' ? new Date(req.query.before) : null;
+  const olderThan = beforeRaw && !isNaN(beforeRaw.getTime()) ? { createdAt: { lt: beforeRaw } } : {};
 
   if (kind === 'image' || kind === 'audio') {
     const rows = await prisma.chatAttachment.findMany({
-      where: { spaceId: space.id, kind, messageId: { not: null }, message: { deletedAt: null }, ...(userId ? { uploaderId: userId } : {}) },
-      orderBy: { createdAt: 'desc' }, take: MEDIA_LIMIT,
+      where: { spaceId: space.id, kind, messageId: { not: null }, message: { deletedAt: null }, ...olderThan, ...(userId ? { uploaderId: userId } : {}) },
+      orderBy: { createdAt: 'desc' }, take: limit,
       select: { id: true, name: true, kind: true, createdAt: true, messageId: true },
     });
     return res.json(rows.map(a => ({ ...a, url: signFileUrl(a.id) })));
@@ -127,8 +134,8 @@ export const spaceMedia = handler(async (req, res, actor) => {
 
   if (kind === 'link') {
     const rows = await prisma.chatMessage.findMany({
-      where: { spaceId: space.id, deletedAt: null, body: { contains: 'http' }, ...(userId ? { senderId: userId } : {}) },
-      orderBy: { createdAt: 'desc' }, take: MEDIA_LIMIT,
+      where: { spaceId: space.id, deletedAt: null, body: { contains: 'http' }, ...olderThan, ...(userId ? { senderId: userId } : {}) },
+      orderBy: { createdAt: 'desc' }, take: limit,
       select: { id: true, body: true, createdAt: true, sender: { select: { name: true } } },
     });
     return res.json(rows.map(m => ({ id: m.id, body: m.body.slice(0, 300), createdAt: m.createdAt, senderName: m.sender?.name ?? '' })));
@@ -139,10 +146,10 @@ export const spaceMedia = handler(async (req, res, actor) => {
     if (space.type === 'direct' || space.type === 'support') return res.json([]);
     const rows = await prisma.chatMessage.findMany({
       where: {
-        spaceId: space.id, threadRootId: null, deletedAt: null,
+        spaceId: space.id, threadRootId: null, deletedAt: null, ...olderThan,
         OR: [{ threadReplies: { gt: 0 } }, { topic: { isNot: null } }],
       },
-      orderBy: { createdAt: 'desc' }, take: MEDIA_LIMIT,
+      orderBy: { createdAt: 'desc' }, take: limit,
       select: { id: true, body: true, kind: true, meta: true, threadReplies: true, createdAt: true, topic: { select: { id: true, status: true } } },
     });
     let list = rows;

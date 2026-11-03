@@ -1,4 +1,5 @@
 import 'package:nopa_app/widgets/tap_expander.dart';
+import 'package:nopa_app/widgets/safe_avatar.dart';
 import '../../../widgets/nopa_modal_shell.dart';
 import 'package:nopa_app/widgets/nopa_pill_tabs.dart';
 import 'package:nopa_app/widgets/station_gallery_item.dart';
@@ -1011,10 +1012,7 @@ class _MentorStationScreenState extends State<MentorStationClass1Screen> {
             _loadFailed
                 ? 'دریافت اطلاعات اعضا ممکن نشد. دوباره تلاش کنید.'
                 : 'عضوی در این کاروان یافت نشد',
-            style: TextStyle(
-              fontFamily: AppTheme.fontFamily,
-              color: Colors.white.withValues(alpha: 0.6),
-            ),
+            style: AppTypography.bodyMedium.copyWith(color: Colors.white.withValues(alpha: 0.6)),
           ),
         ),
       );
@@ -1120,43 +1118,7 @@ class _MentorStationScreenState extends State<MentorStationClass1Screen> {
                         Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            Container(
-                              width: 30,
-                              height: 30,
-                              decoration: BoxDecoration(
-                                shape: BoxShape.circle,
-                                color: const Color(0xFF534C82),
-                                border: Border.all(
-                                  color: const Color(
-                                    0xFF837CB7,
-                                  ).withValues(alpha: 0.5),
-                                  width: 1,
-                                ),
-                              ),
-                              child: ClipOval(
-                                child: avatarUrl.isNotEmpty
-                                    ? CachedNetworkImage(
-                                        imageUrl: avatarUrl,
-                                        fit: BoxFit.cover,
-                                        placeholder: (ctx, url) => const Icon(
-                                          Icons.person,
-                                          color: Colors.white70,
-                                          size: 17,
-                                        ),
-                                        errorWidget: (ctx, url, error) =>
-                                            const Icon(
-                                              Icons.person,
-                                              color: Colors.white70,
-                                              size: 17,
-                                            ),
-                                      )
-                                    : const Icon(
-                                        Icons.person_rounded,
-                                        color: Color(0xFFEDE9F6),
-                                        size: 17,
-                                      ),
-                              ),
-                            ),
+                            SafeAvatar(imageUrl: avatarUrl, name: name, radius: 15),
                             const SizedBox(width: 8),
                             Text(
                               name,

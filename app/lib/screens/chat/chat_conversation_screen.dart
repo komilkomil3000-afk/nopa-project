@@ -15,6 +15,7 @@ import 'package:nopa_app/screens/chat/chat_message_bubble.dart';
 import 'package:nopa_app/screens/chat/chat_message_menu.dart';
 import 'package:nopa_app/screens/chat/chat_profile_screen.dart';
 import 'package:nopa_app/screens/chat/chat_topic_info_screen.dart';
+import 'package:nopa_app/screens/chat/chat_voice_composer.dart';
 import 'package:nopa_app/screens/chat/chat_widgets.dart';
 import 'package:nopa_app/screens/shell/app_shell.dart';
 import 'package:nopa_app/screens/chat/chat_theme.dart';
@@ -27,7 +28,6 @@ import 'package:image/image.dart' as img;
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 import 'package:provider/provider.dart';
-import 'package:record/record.dart';
 
 /// A conversation, or with [threadRoot] the replies under one message.
 class ChatConversationScreen extends StatefulWidget {
@@ -43,7 +43,6 @@ class ChatConversationScreen extends StatefulWidget {
 class _ChatConversationScreenState extends State<ChatConversationScreen> {
   final ChatRepository _chat = ChatRepository.instance;
   final ScrollController _scroll = ScrollController();
-  final AudioRecorder _recorder = AudioRecorder();
   final FocusNode _focus = FocusNode();
   late final DraftTextController _input = DraftTextController(draftKey: 'chat-${widget.spaceId}-${widget.threadRoot?.id ?? ''}');
 
@@ -52,7 +51,8 @@ class _ChatConversationScreenState extends State<ChatConversationScreen> {
   bool _loadingOlder = false;
   bool _reachedStart = false;
   bool _uploading = false;
-  bool _recording = false;
+  /// The composer shows the voice recorder (record, then review and send) instead of the text row.
+  bool _voiceMode = false;
   bool _emojiOpen = false;
   bool _menuOpen = false;
   List<Map<String, dynamic>> _people = [];
@@ -96,7 +96,6 @@ class _ChatConversationScreenState extends State<ChatConversationScreen> {
     _scroll.dispose();
     _input.dispose();
     _focus.dispose();
-    _recorder.dispose();
     super.dispose();
   }
 
@@ -271,21 +270,20 @@ class _ChatConversationScreenState extends State<ChatConversationScreen> {
     if (path != null) await _sendFile(io.File(path));
   }
 
-  Future<void> _toggleRecording() async {
-    if (_recording) {
-      final path = await _recorder.stop();
-      setState(() => _recording = false);
-      if (path != null) await _sendFile(io.File(path));
-      return;
+  /// Sends a voice message the user has reviewed: the clip, with the caption they typed (if any).
+  /// Returns whether it went; the voice composer stays open on failure so nothing is lost.
+  Future<bool> _sendVoice(io.File file, String caption) async {
+    setState(() => _uploading = true);
+    final attachment = await _chat.upload(file, widget.spaceId);
+    if (!mounted) return false;
+    setState(() => _uploading = false);
+    if (attachment == null) {
+      AppToast.error(context, 'ارسال فایل انجام نشد. اتصال اینترنت را بررسی کنید و دوباره تلاش کنید.');
+      return false;
     }
-    if (!await _recorder.hasPermission()) {
-      if (mounted) AppToast.error(context, 'برای ضبط صدا، اجازه‌ی میکروفون لازم است.');
-      return;
-    }
-    final dir = await getTemporaryDirectory();
-    final path = p.join(dir.path, 'voice-${DateTime.now().millisecondsSinceEpoch}.m4a');
-    await _recorder.start(const RecordConfig(encoder: AudioEncoder.aacLc, bitRate: 48000), path: path);
-    setState(() => _recording = true);
+    await _chat.send(spaceId: widget.spaceId, sender: _me(), body: caption.trim(), threadRootId: _threadId, attachments: [attachment]);
+    if (mounted) setState(() => _voiceMode = false);
+    return true;
   }
 
   void _openThread(ChatMessage message) {
@@ -805,7 +803,7 @@ class _ChatConversationScreenState extends State<ChatConversationScreen> {
           seen: space != null && space.isDirect && message.seq > 0 && message.seq <= space.peerReadSeq,
           onTap: (rect) => _showActions(message, space, mine, rect, card: style == ChatBubbleStyle.channel),
           onOpenThread: _threadId == null && _threadAllowed(message, space) ? () => _openThread(message) : null,
-          onOpenSender: message.senderId == null || mine ? null : () => _openMember(message.senderId),
+          onOpenSender: message.senderId == null ? null : () => _openMember(message.senderId),
           onRetry: () => _chat.retry(message),
           onReact: (type) => _chat.react(message, type),
         );
@@ -980,6 +978,15 @@ class _ChatConversationScreenState extends State<ChatConversationScreen> {
                   ],
                 ),
               ),
+            if (_voiceMode)
+              ChatVoiceComposer(
+                key: const ValueKey('voice-composer'),
+                onSend: _sendVoice,
+                onClose: () {
+                  if (mounted) setState(() => _voiceMode = false);
+                },
+              )
+            else
             Padding(
               padding: const EdgeInsets.fromLTRB(6, 2, 4, 2),
               child: Row(
@@ -1016,13 +1023,13 @@ class _ChatConversationScreenState extends State<ChatConversationScreen> {
                                 mainAxisSize: MainAxisSize.min,
                                 children: [
                                   IconButton(
-                                    tooltip: _recording ? 'پایان ضبط و ارسال' : 'پیام صوتی',
-                                    onPressed: _toggleRecording,
-                                    icon: Icon(_recording ? Icons.stop_circle_rounded : Icons.mic_none_rounded, color: _recording ? ChatTheme.danger : inkSoft, size: 25),
+                                    tooltip: 'پیام صوتی',
+                                    onPressed: () => setState(() => _voiceMode = true),
+                                    icon: Icon(Icons.mic_none_rounded, color: inkSoft, size: 25),
                                   ),
                                   IconButton(
                                     tooltip: 'پیوست',
-                                    onPressed: _uploading || _recording ? null : _pickFile,
+                                    onPressed: _uploading ? null : _pickFile,
                                     icon: _uploading
                                         ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.buttonCamel))
                                         : Transform.rotate(angle: 0.6, child: Icon(Icons.attach_file_rounded, color: inkSoft, size: 24)),
@@ -1048,8 +1055,8 @@ class _ChatConversationScreenState extends State<ChatConversationScreen> {
                         isDense: true,
                         border: InputBorder.none,
                         contentPadding: const EdgeInsets.fromLTRB(8, 13, 8, 13),
-                        hintText: _recording ? 'در حال ضبط صدا...' : 'پیام...',
-                        hintStyle: caption.copyWith(fontSize: 13, color: _recording ? ChatTheme.danger : ChatTheme.ink.withValues(alpha: 0.45)),
+                        hintText: 'پیام...',
+                        hintStyle: caption.copyWith(fontSize: 13, color: ChatTheme.ink.withValues(alpha: 0.45)),
                       ),
                     ),
                   ),

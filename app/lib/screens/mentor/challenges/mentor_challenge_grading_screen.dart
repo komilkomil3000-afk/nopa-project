@@ -1,4 +1,5 @@
 import 'package:nopa_app/widgets/tap_expander.dart';
+import '../../../widgets/safe_avatar.dart';
 import 'package:nopa_app/widgets/bottom_nav_bar.dart';
 import 'package:nopa_app/core/asset_names.dart';
 import 'package:flutter/material.dart' hide Text;
@@ -77,6 +78,7 @@ class _MentorChallengeDetailsScreenState extends State<MentorChallengeGradingScr
           return <String, dynamic>{
             'id': sub['id']?.toString() ?? '',
             'name': sub['student']?['name']?.toString() ?? 'عضو کاروان',
+            'avatarUrl': sub['student']?['avatarUrl']?.toString() ?? '',
             'typeLabel': typeLabel,
             'createdDate': createdDate,
             'answerDate': _jalali(sub['submittedAt']),
@@ -396,11 +398,11 @@ class _MentorChallengeDetailsScreenState extends State<MentorChallengeGradingScr
               TextField(
                 controller: rewardCtrl,
                 keyboardType: TextInputType.number,
-                style: const TextStyle(color: Colors.white, fontFamily: AppTheme.fontFamily),
+                style: AppTypography.bodyLarge,
                 decoration: InputDecoration(
                   isDense: true,
                   suffixText: asset,
-                  suffixStyle: const TextStyle(color: Color(0xFFDFB690), fontFamily: AppTheme.fontFamily),
+                  suffixStyle: AppTypography.bodyLarge.copyWith(color: const Color(0xFFDFB690)),
                   enabledBorder: const OutlineInputBorder(borderSide: BorderSide(color: Color(0xFF4C4578))),
                   focusedBorder: const OutlineInputBorder(borderSide: BorderSide(color: AppColors.buttonCamel)),
                 ),
@@ -640,8 +642,8 @@ class _MentorChallengeDetailsScreenState extends State<MentorChallengeGradingScr
                         });
                         _loadParticipants();
                       },
-                      child: const Text('دریافت پاسخ‌ها ناموفق بود؛ تلاش دوباره',
-                          style: TextStyle(fontFamily: AppTheme.fontFamily, color: Color(0xFFDFB690))),
+                      child: Text('دریافت پاسخ‌ها ناموفق بود؛ تلاش دوباره',
+                          style: AppTypography.bodyMedium.copyWith(color: Color(0xFFDFB690))),
                     ),
                   ),
                 )
@@ -768,23 +770,7 @@ class _MentorChallengeDetailsScreenState extends State<MentorChallengeGradingScr
                         child: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            Container(
-                              width: 30,
-                              height: 30,
-                              decoration: BoxDecoration(
-                                shape: BoxShape.circle,
-                                color: const Color(0xFF534C82),
-                                border: Border.all(
-                                  color: const Color(0xFF837CB7).withValues(alpha: 0.5),
-                                  width: 1,
-                                ),
-                              ),
-                              child: const Icon(
-                                Icons.person_rounded,
-                                color: Color(0xFFEDE9F6),
-                                size: 17,
-                              ),
-                            ),
+                            SafeAvatar(imageUrl: item['avatarUrl']?.toString(), name: name.toString(), radius: 15),
                             const SizedBox(width: 8),
                             Flexible(
                               child: Text(

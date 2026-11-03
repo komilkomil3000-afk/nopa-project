@@ -1,4 +1,5 @@
 import 'package:nopa_app/widgets/app_toast.dart';
+import 'package:nopa_app/widgets/zoomable_avatar.dart';
 import 'package:nopa_app/core/theme/app_colors.dart';
 import 'package:nopa_app/widgets/bottom_nav_bar.dart';
 import 'package:nopa_app/core/constants/app_routes.dart';
@@ -145,6 +146,12 @@ class _ProfileScreenState extends State<StudentProfileScreen> {
 
   /// Shows the profile picture large; tap anywhere to close.
   void _showEnlargedAvatar(UserModel user, String displayName) {
+    // A real picture opens in the pinch-to-zoom viewer; with none, the initial letter is shown enlarged
+    final source = SafeAvatar.sourceFor(imageUrl: user.avatarUrl, gender: user.gender);
+    if (source.asset != null || source.url != null) {
+      AvatarViewer.open(context, asset: source.asset, url: source.url, title: displayName);
+      return;
+    }
     showDialog(
       context: context,
       barrierColor: Colors.black87,

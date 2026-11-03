@@ -1,4 +1,7 @@
+import 'dart:math' as math;
+import 'package:nopa_app/screens/chat/chat_waveform.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:nopa_app/widgets/zoomable_avatar.dart';
 import 'package:nopa_app/widgets/nopa_pill_tabs.dart';
 import 'package:flutter/material.dart' hide Text;
 import 'package:nopa_app/core/constants/api_constants.dart';
@@ -209,6 +212,23 @@ class _ChatMemberProfileScreenState extends State<ChatMemberProfileScreen> {
     ));
   }
 
+  /// The person's zarik / kalaf / ghalicheh / derafsh for the profile header: what the server sent, or for
+  /// one's own profile (when the server sent none) the balances the app already holds.
+  /// Null when there is nothing worth showing (e.g. a mentor, who holds none).
+  Map<String, dynamic>? _assetsOf(Map<String, dynamic> p, UserModel me, bool self) {
+    const keys = ['zarik', 'nakh', 'farsh', 'derafsh'];
+    Map<String, dynamic>? assets;
+    if (keys.any(p.containsKey)) {
+      assets = {for (final k in keys) k: p[k] ?? 0};
+    } else if (self) {
+      assets = {'zarik': me.zarik, 'nakh': me.nakh, 'farsh': me.farsh, 'derafsh': me.beyragh};
+    }
+    if (assets == null) return null;
+    final isMentor = p['role'] == 'mentor';
+    if (isMentor && keys.every((k) => ((assets![k] as num?) ?? 0) == 0)) return null;
+    return assets;
+  }
+
   @override
   Widget build(BuildContext context) {
     final me = Provider.of<AppRepository>(context, listen: false).currentUser;
@@ -229,24 +249,25 @@ class _ChatMemberProfileScreenState extends State<ChatMemberProfileScreen> {
         final stats = p['stats'] is Map ? Map<String, dynamic>.from(p['stats'] as Map) : null;
         final self = widget.userId == me.id;
         final canReport = me.role.isMentorLike && !isMentor && p['caravanId'] != null;
+        final assets = _assetsOf(p, me, self);
         return [
           _ProfilePanel(
             children: [
               _IdentityRow(
-                avatar: SafeAvatar(imageUrl: p['avatarUrl'], name: p['name'] ?? '', radius: 40, gender: p['gender'], isMentor: isMentor),
+                avatar: ZoomableAvatar(imageUrl: p['avatarUrl'], name: p['name'] ?? '', radius: 40, gender: p['gender'], isMentor: isMentor, cacheSize: 320),
                 online: _chat.isOnline(widget.userId),
                 name: p['name'] ?? '',
                 subtitle: subtitle,
                 rank: isMentor ? null : (p['rank'] as num?)?.toInt(),
               ),
-              if (!isMentor && p.containsKey('zarik')) ...[
+              if (assets != null) ...[
                 const SizedBox(height: 18),
                 Row(
                   children: [
-                    _Stat(label: AppStrings.zarik, value: p['zarik']),
-                    _Stat(label: AppStrings.nakh, value: p['nakh']),
-                    _Stat(label: AppStrings.farsh, value: p['farsh']),
-                    _Stat(label: AppStrings.beyragh, value: p['derafsh']),
+                    _Stat(label: AppStrings.zarik, value: assets['zarik']),
+                    _Stat(label: AppStrings.nakh, value: assets['nakh']),
+                    _Stat(label: AppStrings.farsh, value: assets['farsh']),
+                    _Stat(label: AppStrings.beyragh, value: assets['derafsh']),
                   ],
                 ),
               ],
@@ -590,10 +611,27 @@ class _SharedMedia extends StatefulWidget {
   State<_SharedMedia> createState() => _SharedMediaState();
 }
 
+/// What one tab has loaded and how much of it is on screen.
+class _MediaFeed {
+  final List<Map<String, dynamic>> items = [];
+  int visible = 0;
+  bool loaded = false;
+  bool loading = false;
+  bool exhausted = false;
+}
+
 class _SharedMediaState extends State<_SharedMedia> {
+  /// Items revealed at a time, and items asked of the server at a time.
+  static const int _step = 9;
+  static const int _pageSize = 27;
+
   final ChatRepository _chat = ChatRepository.instance;
-  final Map<String, List<Map<String, dynamic>>> _loaded = {};
+  final Map<String, _MediaFeed> _feeds = {};
+  ScrollPosition? _position;
+  bool _revealing = false;
   String _kind = 'image';
+
+  _MediaFeed _feedOf(String kind) => _feeds.putIfAbsent(kind, _MediaFeed.new);
 
   List<(String, String)> get _tabs => [
         ('image', 'عکس ها'),
@@ -605,18 +643,88 @@ class _SharedMediaState extends State<_SharedMedia> {
   @override
   void initState() {
     super.initState();
-    _fetch(_kind);
+    _loadFirst(_kind);
   }
 
-  Future<void> _fetch(String kind) async {
-    if (_loaded.containsKey(kind)) return;
-    final list = await _chat.media(widget.spaceId, kind, userId: widget.userId);
-    if (mounted) setState(() => _loaded[kind] = list);
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // The page scrolls as a whole; reaching its end reveals the next items of the open tab
+    final position = Scrollable.maybeOf(context)?.position;
+    if (position != _position) {
+      _position?.removeListener(_onScroll);
+      _position = position;
+      _position?.addListener(_onScroll);
+    }
+  }
+
+  @override
+  void dispose() {
+    _position?.removeListener(_onScroll);
+    super.dispose();
+  }
+
+  Future<void> _loadFirst(String kind) async {
+    final feed = _feedOf(kind);
+    if (feed.loaded || feed.loading) return;
+    feed.loading = true;
+    final list = await _chat.media(widget.spaceId, kind, userId: widget.userId, limit: _pageSize);
+    if (!mounted) return;
+    setState(() {
+      feed.items.addAll(list);
+      feed.loaded = true;
+      feed.loading = false;
+      feed.exhausted = list.length < _pageSize;
+      feed.visible = math.min(_step, feed.items.length);
+    });
+    _checkFilled();
+  }
+
+  void _onScroll() {
+    final position = _position;
+    if (position != null && position.extentAfter < 320) _showMore();
+  }
+
+  /// Reveals the next [_step] items of the open tab, asking the server for older ones when all held are shown.
+  Future<void> _showMore() async {
+    final feed = _feedOf(_kind);
+    if (!feed.loaded || feed.loading || _revealing) return;
+    if (feed.visible < feed.items.length) {
+      _revealing = true;
+      setState(() => feed.visible = math.min(feed.visible + _step, feed.items.length));
+      _checkFilled();
+      return;
+    }
+    if (feed.exhausted) return;
+    setState(() => feed.loading = true);
+    final list = await _chat.media(widget.spaceId, _kind, userId: widget.userId, before: feed.items.last['createdAt']?.toString(), limit: _pageSize);
+    if (!mounted) return;
+    final known = feed.items.map((e) => e['id']).toSet();
+    final fresh = list.where((e) => !known.contains(e['id'])).toList();
+    setState(() {
+      feed.items.addAll(fresh);
+      feed.loading = false;
+      // Nothing new (or a short page) means the end of the list
+      if (fresh.isEmpty || list.length < _pageSize) feed.exhausted = true;
+      feed.visible = math.min(feed.visible + _step, feed.items.length);
+    });
+    _checkFilled();
+  }
+
+  /// After a layout: if the page is too short to scroll (or already near its end), reveal more.
+  void _checkFilled() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _revealing = false;
+      if (!mounted) return;
+      final position = _position;
+      if (position != null && position.hasContentDimensions && position.extentAfter < 320) _showMore();
+    });
   }
 
   void _select(String kind) {
     setState(() => _kind = kind);
-    _fetch(kind);
+    _loadFirst(kind);
+    _checkFilled();
   }
 
   void _openSession(Map<String, dynamic> s) {
@@ -644,7 +752,7 @@ class _SharedMediaState extends State<_SharedMedia> {
           child: Column(mainAxisSize: MainAxisSize.min, children: [
             Text(chatTimeLabel(DateTime.tryParse(a['createdAt']?.toString() ?? '')), style: ChatTheme.caption),
             const SizedBox(height: 8),
-            ChatAudioPlayer(url: ApiConstants.resolveImageUrl(a['url'] ?? '')),
+            ChatAudioPlayer(url: ApiConstants.resolveImageUrl(a['url'] ?? ''), peaks: ChatWaveform.decodePeaks(a['name']?.toString()), seed: a['id']?.toString()),
           ]),
         ),
       ),
@@ -653,7 +761,8 @@ class _SharedMediaState extends State<_SharedMedia> {
 
   @override
   Widget build(BuildContext context) {
-    final items = _loaded[_kind];
+    final feed = _feedOf(_kind);
+    final items = feed.items.take(feed.visible).toList();
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: ChatTheme.gutter),
       child: Column(
@@ -661,7 +770,7 @@ class _SharedMediaState extends State<_SharedMedia> {
         children: [
           Center(child: _tabBar()),
           const SizedBox(height: 16),
-          if (items == null)
+          if (!feed.loaded)
             const Padding(padding: EdgeInsets.all(30), child: Center(child: CircularProgressIndicator(color: ChatTheme.accent)))
           else if (_kind == 'image' || _kind == 'audio')
             _grid(items)
@@ -672,6 +781,9 @@ class _SharedMediaState extends State<_SharedMedia> {
             )
           else
             for (final item in items) _kind == 'link' ? _linkRow(item) : _sessionRow(item),
+          // Older items are on their way
+          if (feed.loaded && feed.loading)
+            const Padding(padding: EdgeInsets.symmetric(vertical: 14), child: Center(child: SizedBox(width: 22, height: 22, child: CircularProgressIndicator(strokeWidth: 2, color: ChatTheme.accent)))),
         ],
       ),
     );

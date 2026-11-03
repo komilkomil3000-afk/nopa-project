@@ -6,8 +6,8 @@ import '../core/constants/api_constants.dart';
 
 /// Round profile picture. Resolution order:
 ///  1. bundled avatar (`asset:boy_2`) – always available offline,
-///  2. mentor default picture by [gender] when [isMentor] and nothing was chosen,
-///  3. network image (disk-cached by CachedNetworkImage, shown offline once downloaded once),
+///  2. network image (disk-cached by CachedNetworkImage, shown offline once downloaded once),
+///  3. mentor default picture by [gender] when [isMentor] and nothing was chosen,
 ///  4. initial letter of the name.
 class SafeAvatar extends StatelessWidget {
   final String? imageUrl;
@@ -30,11 +30,24 @@ class SafeAvatar extends StatelessWidget {
     this.cacheSize = 160,
   });
 
+  /// Where the picture comes from, in the order the avatar uses: the user's chosen bundled picture or
+  /// uploaded image first, then (for a mentor with nothing chosen) the default by gender.
+  /// Both are null when only the initial letter can be shown. Shared with the full-screen viewer.
+  static ({String? asset, String? url}) sourceFor({String? imageUrl, String? gender, bool isMentor = false}) {
+    final resolvedUrl = ApiConstants.resolveImageUrl(imageUrl);
+    final hasValidUrl = resolvedUrl.isNotEmpty && resolvedUrl.startsWith('http');
+    final asset = AvatarCatalog.assetFor(imageUrl) ?? (!hasValidUrl && isMentor ? AvatarCatalog.mentorDefault(gender) : null);
+    return (asset: asset, url: asset == null && hasValidUrl ? resolvedUrl : null);
+  }
+
   @override
   Widget build(BuildContext context) {
     final initial = name.trim().isNotEmpty ? name.trim()[0] : '؟';
 
-    final assetPath = (isMentor ? AvatarCatalog.mentorDefault(gender) : null) ?? AvatarCatalog.assetFor(imageUrl);
+    final source = sourceFor(imageUrl: imageUrl, gender: gender, isMentor: isMentor);
+    final assetPath = source.asset;
+    final resolvedUrl = source.url ?? '';
+    final hasValidUrl = source.url != null;
     if (assetPath != null) {
       return CircleAvatar(
         radius: radius,
@@ -51,9 +64,6 @@ class SafeAvatar extends StatelessWidget {
         ),
       );
     }
-
-    final resolvedUrl = ApiConstants.resolveImageUrl(imageUrl);
-    final hasValidUrl = resolvedUrl.isNotEmpty && resolvedUrl.startsWith('http');
 
     if (!hasValidUrl) {
       return _buildFallback(initial);

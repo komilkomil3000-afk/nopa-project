@@ -1,4 +1,5 @@
 import 'package:nopa_app/screens/chat/chat_widgets.dart';
+import 'package:nopa_app/screens/chat/chat_profile_screen.dart';
 import 'dart:io' as io;
 
 import 'package:file_picker/file_picker.dart';
@@ -260,13 +261,19 @@ class _ChatTopicInfoScreenState extends State<ChatTopicInfoScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            children: [
-              SafeAvatar(imageUrl: user['avatarUrl'], name: user['name'] ?? '', radius: 16, gender: user['gender']),
-              const SizedBox(width: 8),
-              Expanded(child: Text(user['name'] ?? '', style: ChatTheme.title)),
-              Text('سهم ${row['share']}٪ · امتیاز ${row['score']}', style: ChatTheme.caption),
-            ],
+          GestureDetector(
+            behavior: HitTestBehavior.opaque,
+            onTap: user['id'] == null
+                ? null
+                : () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => ChatMemberProfileScreen(spaceId: widget.spaceId, userId: user['id'].toString()))),
+            child: Row(
+              children: [
+                SafeAvatar(imageUrl: user['avatarUrl'], name: user['name'] ?? '', radius: 16, gender: user['gender']),
+                const SizedBox(width: 8),
+                Expanded(child: Text(user['name'] ?? '', style: ChatTheme.title)),
+                Text('سهم ${row['share']}٪ · امتیاز ${row['score']}', style: ChatTheme.caption),
+              ],
+            ),
           ),
           const SizedBox(height: 6),
           Text('موضوع ${criteria['relevance']} · کیفیت ${criteria['quality']} · همکاری ${criteria['collaboration']} · ابتکار ${criteria['initiative']}', style: ChatTheme.caption),

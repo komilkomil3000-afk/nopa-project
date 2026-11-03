@@ -81,24 +81,34 @@ class ChatTheme {
     colors: [Color(0xFF3D3C67), Color(0xFF36345C), Color(0xFF333359)],
   );
 
-  /// Everyone else's bubble: the selected زریک option (gold edge, copper fill).
+  /// Everyone else's bubble: camel, the family of the header's [AppColors.buttonCamel] but a touch
+  /// brighter so it doesn't melt into it. Three text tones keep the hierarchy readable on it.
+  static const Color goldFill = Color(0xFFDDB48C);
+  static const Color goldFillDeep = Color(0xFFCE9F74);
+  /// Body text on the camel bubble.
+  static const Color goldInk = Color(0xFF2A1B10);
+  /// Sender name, titles, links and icons on the camel bubble.
+  static const Color goldTitle = Color(0xFF6A3B12);
+  /// Time, ticks and captions on the camel bubble.
+  static const Color goldMeta = Color(0xFF5A4430);
+
   static const LinearGradient otherStroke = LinearGradient(
     begin: Alignment.centerLeft,
     end: Alignment.centerRight,
     stops: [0.0, 0.5, 1.0],
-    colors: [Color(0xFF8D5B2C), Color(0xFFFFD580), Color(0xFF8D5B2C)],
+    colors: [Color(0xFF8A6038), Color(0xFFEBC9A0), Color(0xFF8A6038)],
   );
   static const LinearGradient otherFillGradient = LinearGradient(
     begin: Alignment.centerLeft,
     end: Alignment.centerRight,
-    colors: [Color(0xFFE5A66B), Color(0xFFC7844E)],
+    colors: [goldFill, goldFillDeep],
   );
 
   /// Fill under the tail, where the bubble meets its sender's face.
-  static Color bubbleFill({required bool mine}) => mine ? const Color(0xFF333359) : const Color(0xFFE5A66B);
-  static Color tailStroke({required bool mine}) => mine ? const Color(0xFF5B5B9E) : const Color(0xFFA9773F);
-  static Color bubbleText({required bool mine}) => mine ? text : ink;
-  static Color bubbleMuted({required bool mine}) => mine ? muted : ink.withValues(alpha: 0.6);
+  static Color bubbleFill({required bool mine}) => mine ? const Color(0xFF333359) : goldFill;
+  static Color tailStroke({required bool mine}) => mine ? const Color(0xFF5B5B9E) : const Color(0xFF9A7048);
+  static Color bubbleText({required bool mine}) => mine ? text : goldInk;
+  static Color bubbleMuted({required bool mine}) => mine ? muted : goldMeta;
 
   static const TextStyle body = TextStyle(color: text, fontFamily: AppTheme.fontFamily, fontSize: 13.5, height: 1.6);
   static const TextStyle title = TextStyle(color: text, fontFamily: AppTheme.fontFamily, fontSize: 14, fontWeight: FontWeight.bold);
