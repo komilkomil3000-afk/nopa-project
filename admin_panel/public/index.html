@@ -1910,11 +1910,9 @@
                 </label>
 
                 <fieldset class="lse-options">
-                  <legend>گزینه‌ها <small>دایره کنار پاسخ درست را انتخاب کنید</small></legend>
-                  <label class="lse-option"><input type="radio" name="quiz-correct-opt" value="0" id="opt-radio-0" checked><span>۱</span><input type="text" id="quiz-opt-0" class="input-ctrl" placeholder="گزینه اول" required></label>
-                  <label class="lse-option"><input type="radio" name="quiz-correct-opt" value="1" id="opt-radio-1"><span>۲</span><input type="text" id="quiz-opt-1" class="input-ctrl" placeholder="گزینه دوم" required></label>
-                  <label class="lse-option"><input type="radio" name="quiz-correct-opt" value="2" id="opt-radio-2"><span>۳</span><input type="text" id="quiz-opt-2" class="input-ctrl" placeholder="گزینه سوم" required></label>
-                  <label class="lse-option"><input type="radio" name="quiz-correct-opt" value="3" id="opt-radio-3"><span>۴</span><input type="text" id="quiz-opt-3" class="input-ctrl" placeholder="گزینه چهارم" required></label>
+                  <legend>گزینه‌ها <small>دایره کنار پاسخ درست را انتخاب کنید؛ برای جابجایی، گزینه را بکشید</small></legend>
+                  <div class="chl-opts" id="quiz-opts"></div>
+                  <button type="button" class="lse-add-row chl-opt-add" id="quiz-opt-add"><i class="fa-solid fa-plus"></i> گزینه جدید</button>
                 </fieldset>
               </div>
 
@@ -2010,6 +2008,7 @@
             <div class="chl-toolbar">
               <select aria-label="فیلتر کاروان" id="filter-challenges-caravan" data-change="filterChallengesList" class="select-ctrl">
                 <option value="all">همه کاروان‌ها و راهبران</option>
+                <option value="public">فقط چالش‌های عمومی (همه کاروان‌ها)</option>
               </select>
               <select aria-label="فیلتر سازنده" id="filter-challenges-creator" data-change="filterChallengesList" class="select-ctrl">
                 <option value="all">همه سازندگان (مدیر و راهبر)</option>
@@ -2028,6 +2027,11 @@
                 <div class="lst-mini-stat"><span class="stat-label">در انتظار ارزیابی</span><span class="stat-value u-c-accent-text" id="stat-pending-submissions">۰</span></div>
                 <div class="lst-mini-stat"><span class="stat-label">تایید شده</span><span class="stat-value u-c-success-text" id="stat-approved-submissions">۰</span></div>
               </div>
+            </div>
+
+            <div class="lst-tile glass">
+              <h4 class="lst-tile-title"><i class="fa-solid fa-ranking-star"></i> رتبه‌بندی و امتیازات کاروان‌ها <span class="lst-tile-sub">بر اساس امتیاز گروهی</span></h4>
+              <div id="chl-bento-caravans"></div>
             </div>
 
             <div class="lst-tile glass">

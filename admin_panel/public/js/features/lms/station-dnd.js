@@ -11,6 +11,9 @@
 //   - gallery pictures (draft only, saved with the editor)    (.lse-gitem[data-gi] in .lse-gallery)
 //   - the wizard's new categories (draft only)                (.lse-newcat[data-ni] in .lse-newcats)
 //   - questions in the challenge editor (draft only)           (.chl-qrow[data-qid] in .chl-qindex)
+//   - answer options of a question (draft only)                (.lse-option in .chl-opts)
+//   - answer options in the station quiz modal                 (.lse-option in #quiz-opts)
+//   - caravans in an inter-group challenge's ranking           (.chl-rank-item in .chl-rank-list)
 // Mouse: drag from anywhere on the item (after 5px; a plain click still clicks). Touch: from the grip handle only,
 // so swiping still scrolls. Video parts are full of inputs, so they move by their grip only. Escape cancels. Renders are deferred while dragging. Styles: css/stations.css.
 
@@ -324,6 +327,42 @@ window.lmsSaveInBackground = async function(requests, okMessage, errMessage, onF
       scroller: item => item.closest('.lse-body'),
       refresh: () => ['new', 'edit'].forEach(m => { if (window.chlQuestionRedraw) window.chlQuestionRedraw(m); }),
       commit: (item, box, _to, sortable) => window.chlQuestionReorder(String(box.id).indexOf('new-') === 0 ? 'new' : 'edit', sortable.items(box).map(r => r.getAttribute('data-qid')))
+    },
+    {
+      // answer options of a multiple-choice question in the challenge editor (js/features/challenges.js)
+      name: 'chl-option',
+      mode: 'list',
+      match: e => pickItem(e, '.lse-overlay .challenge-q-card .lse-option', '.chl-opt-grip'),
+      containers: item => [item.parentElement],
+      items: box => Array.from(box.querySelectorAll(':scope > .lse-option')),
+      anchor: () => null,
+      scroller: item => item.closest('.lse-body'),
+      refresh: () => document.querySelectorAll('.challenge-q-card .chl-opts').forEach(b => window.chlOptionsRedraw && window.chlOptionsRedraw(b)),
+      commit: (item, box) => window.chlOptionsReorder(box)
+    },
+    {
+      // answer options in the station quiz modal (js/features/lms/quiz.js)
+      name: 'quiz-option',
+      mode: 'list',
+      match: e => pickItem(e, '#lms-quiz-editor-modal .lse-option', '.chl-opt-grip'),
+      containers: item => [item.parentElement],
+      items: box => Array.from(box.querySelectorAll(':scope > .lse-option')),
+      anchor: () => null,
+      scroller: item => item.closest('.lse-body'),
+      refresh: () => window.quizRenumberOptions && window.quizRenumberOptions(),
+      commit: () => { window.quizRenumberOptions(); return true; }
+    },
+    {
+      // caravans of an inter-group challenge's ranking, while the ranking is open for arranging (js/features/challenges.js)
+      name: 'chl-rank',
+      mode: 'list',
+      match: e => pickItem(e, '#chl-detail-view .chl-rank-list.is-editable .chl-rank-item', '.chl-rank-grip'),
+      containers: item => [item.parentElement],
+      items: box => Array.from(box.querySelectorAll(':scope > .chl-rank-item')),
+      anchor: () => null,
+      scroller: () => null,
+      refresh: () => document.querySelectorAll('#chl-detail-view .chl-rank-list').forEach(b => window.chlRankRedraw && window.chlRankRedraw(b)),
+      commit: (item, box) => window.chlRankReorder(box)
     },
     {
       name: 'newcat',

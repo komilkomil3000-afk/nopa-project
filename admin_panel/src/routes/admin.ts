@@ -57,7 +57,7 @@ import { getChallenges, createChallenge, updateChallenge, deleteChallenge } from
 import { listDrafts, saveDraft, deleteDraft } from '../controllers/draftController';
 import { listAssetTypes, updateAssetType } from '../controllers/assetController';
 import { getEconomyAdmin, updateEconomy } from '../controllers/economyController';
-import { getChallengeRanking, finalizeChallengeRanking } from '../controllers/caravanBannerController';
+import { getChallengeRanking, finalizeChallengeRanking, editChallengeRanking } from '../controllers/caravanBannerController';
 import { getEconomyHubAnalytics } from '../controllers/walletController';
 import { 
   broadcastNotification, 
@@ -158,6 +158,7 @@ router.patch('/challenges/:id', updateChallenge as any);
 router.delete('/challenges/:id', deleteChallenge as any);
 router.get('/challenges/:id/ranking', getChallengeRanking as any);
 router.post('/challenges/:id/ranking', finalizeChallengeRanking as any);
+router.put('/challenges/:id/ranking', editChallengeRanking as any);
 router.get('/assets', listAssetTypes as any);
 router.put('/assets/:key', updateAssetType as any);
 router.get('/economy', getEconomyAdmin as any);

@@ -57,7 +57,7 @@ window.chlSetLoading = function(on) {
       </div>`).join('');
   }
   const lines = n => `<div class="lst-skel-lines" aria-hidden="true">${'<span class="lst-skel-row"></span>'.repeat(n)}</div>`;
-  const fill = { 'chl-bento-status': lines(3), 'chl-bento-types': lines(2), 'chl-bento-pending': lines(3) };
+  const fill = { 'chl-bento-caravans': lines(3), 'chl-bento-status': lines(3), 'chl-bento-types': lines(2), 'chl-bento-pending': lines(3) };
   const empty = !window.cachedAdminChallenges.length && !(window.cachedAdminSubmissions || []).length;
   if (empty) Object.keys(fill).forEach(id => {
     const el = document.getElementById(id);
@@ -84,6 +84,7 @@ window.loadAdminChallengesData = async function() {
       const caravans = await caravansRes.json();
       window.cachedAdminCaravans = Array.isArray(caravans) ? caravans : [];
       populateCaravanDropdowns(window.cachedAdminCaravans);
+      window.chlRenderCaravanBoard();
     }
     
     // Update stats
@@ -112,7 +113,7 @@ function populateCaravanDropdowns(caravans) {
 
   if (filterSelect) {
     const currentVal = filterSelect.value;
-    filterSelect.innerHTML = `<option value="all">همه کاروان‌ها و راهبران</option>` + optionsHtml;
+    filterSelect.innerHTML = `<option value="all">همه کاروان‌ها و راهبران</option><option value="public">فقط چالش‌های عمومی (همه کاروان‌ها)</option>` + optionsHtml;
     filterSelect.value = currentVal || 'all';
   }
 
@@ -176,7 +177,7 @@ function renderAdminChallenges(challenges) {
     const id = String(c.id);
 
     return `
-      <article class="chl-card">
+      <article class="chl-card chl-card-open" role="button" tabindex="0" data-click="openChallengeDetail" data-click-args="${esc(JSON.stringify([id]))}" title="مشاهده جزئیات چالش">
         <div class="chl-card-top">
           <span class="chl-id">${esc(id)}</span>
           ${chlTypeChip(c)}
@@ -212,20 +213,19 @@ function renderAdminChallenges(challenges) {
   grid.innerHTML = cards.join('');
 }
 
-window.filterChallengesList = function() {
+// The challenges the toolbar filters let through
+function chlFilteredList() {
   const query = (document.getElementById('filter-challenges-search')?.value || '').trim().toLowerCase();
   const selectedCaravan = document.getElementById('filter-challenges-caravan')?.value || 'all';
   const selectedCreator = document.getElementById('filter-challenges-creator')?.value || 'all';
 
   let filtered = [...window.cachedAdminChallenges];
 
-  // Filter by Caravan
-  if (selectedCaravan !== 'all') {
-    filtered = filtered.filter(c => {
-      if (c.caravanInfo && c.caravanInfo.id === selectedCaravan) return true;
-      if (c.caravanId && c.caravanId === selectedCaravan) return true;
-      return false;
-    });
+  // Filter by audience: one caravan, or the public ones (no caravan)
+  if (selectedCaravan === 'public') {
+    filtered = filtered.filter(c => !chlCaravanIdOf(c));
+  } else if (selectedCaravan !== 'all') {
+    filtered = filtered.filter(c => chlCaravanIdOf(c) === selectedCaravan);
   }
 
   // Filter by Creator
@@ -246,7 +246,19 @@ window.filterChallengesList = function() {
     );
   }
 
-  renderAdminChallenges(filtered);
+  return filtered;
+}
+
+function chlCaravanIdOf(c) {
+  if (c.targetAudience && c.targetAudience.type === 'caravan' && c.targetAudience.id) return String(c.targetAudience.id);
+  if (c.caravanInfo && c.caravanInfo.id) return String(c.caravanInfo.id);
+  if (c.caravanId && c.caravanId !== 'inter_group') return String(c.caravanId);
+  return '';
+}
+
+window.filterChallengesList = function() {
+  renderAdminChallenges(chlFilteredList());
+  if (window.chlActiveId) chlRenderDetail(false);
 };
 
 // ==========================================
@@ -390,6 +402,10 @@ function chlCards(mode) {
   return Array.from(document.querySelectorAll(`#${mode}-chal-questions-list > .challenge-q-card`));
 }
 
+const CHL_OPT_MIN = 2;
+const CHL_OPT_MAX = 8;
+const CHL_OPT_NAMES = ['اول', 'دوم', 'سوم', 'چهارم', 'پنجم', 'ششم', 'هفتم', 'هشتم'];
+
 function chlCardInfo(card) {
   const title = card.querySelector('.chal-q-title')?.value.trim() || '';
   const opts = Array.from(card.querySelectorAll('.chal-q-opt')).map(i => i.value.trim());
@@ -397,6 +413,61 @@ function chlCardInfo(card) {
   const correct = Array.from(card.querySelectorAll('input[type="radio"]')).findIndex(r => r.checked);
   return { title, opts, filled, correct };
 }
+
+// The options a question is saved with: empty ones dropped, and the correct index counted among the kept ones
+function chlCardOptions(card) {
+  const rows = Array.from(card.querySelectorAll('.lse-option'));
+  const options = [];
+  let correct = 0;
+  rows.forEach(row => {
+    const text = row.querySelector('.chal-q-opt')?.value.trim() || '';
+    if (!text) return;
+    if (row.querySelector('input[type="radio"]')?.checked) correct = options.length;
+    options.push(text);
+  });
+  return { options, correct };
+}
+
+function chlOptionRow(name, i, text, checked) {
+  return `
+    <label class="lse-option">
+      <span class="chl-opt-grip lse-grip" title="برای جابجایی بکشید" aria-hidden="true"><i class="fa-solid fa-grip-vertical"></i></span>
+      <input type="radio" name="${name}" value="${i}" ${checked ? 'checked' : ''}>
+      <span class="chl-opt-num">${lmsFaDigits(i + 1)}</span>
+      <input type="text" class="chal-q-opt input-ctrl" value="${esc(text)}">
+      <button type="button" class="lsv-round lsv-round-sm lsv-round-danger chl-opt-del" title="حذف گزینه"><i class="fa-solid fa-xmark"></i></button>
+    </label>`;
+}
+
+// Numbers, labels, radio values and the add / remove buttons follow the current order of the rows
+function chlRenumberOptions(card) {
+  const rows = Array.from(card.querySelectorAll('.lse-option'));
+  rows.forEach((row, i) => {
+    const radio = row.querySelector('input[type="radio"]');
+    radio.value = String(i);
+    radio.setAttribute('aria-label', `گزینه‌ی ${i + 1} پاسخ درست است`);
+    row.querySelector('.chl-opt-num').textContent = lmsFaDigits(i + 1);
+    const input = row.querySelector('.chal-q-opt');
+    input.setAttribute('aria-label', `متن گزینه‌ی ${i + 1}`);
+    input.placeholder = `گزینه ${CHL_OPT_NAMES[i] || lmsFaDigits(i + 1)}`;
+    row.querySelector('.chl-opt-del').disabled = rows.length <= CHL_OPT_MIN;
+  });
+  if (rows.length && !rows.some(r => r.querySelector('input[type="radio"]').checked)) rows[0].querySelector('input[type="radio"]').checked = true;
+  const add = card.querySelector('.chl-opt-add');
+  if (add) add.disabled = rows.length >= CHL_OPT_MAX;
+}
+
+// Called by the shared drag engine (sortable "chl-option") after the rows were moved
+window.chlOptionsReorder = function(box) {
+  const card = box.closest('.challenge-q-card');
+  if (!card) return false;
+  chlRenumberOptions(card);
+  const mode = card.parentElement && String(card.parentElement.id).indexOf('new-') === 0 ? 'new' : 'edit';
+  chlMarkDirty(mode);
+  chlRenderQIndex(mode);
+  return true;
+};
+window.chlOptionsRedraw = box => { const card = box && box.closest('.challenge-q-card'); if (card) chlRenumberOptions(card); };
 
 function chlSelectQuestion(mode, qid) {
   chlSelected[mode] = qid;
@@ -444,6 +515,26 @@ function chlBindQuestions(mode) {
   });
 
   list.addEventListener('click', e => {
+    const optDel = e.target.closest('.chl-opt-del');
+    const optAdd = e.target.closest('.chl-opt-add');
+    if (optDel || optAdd) {
+      e.preventDefault();
+      const card = (optDel || optAdd).closest('.challenge-q-card');
+      const box = card.querySelector('.chl-opts');
+      const rows = box.querySelectorAll('.lse-option');
+      if (optDel && rows.length > CHL_OPT_MIN) {
+        optDel.closest('.lse-option').remove();
+      } else if (optAdd && rows.length < CHL_OPT_MAX) {
+        box.insertAdjacentHTML('beforeend', chlOptionRow(box.dataset.name, rows.length, '', false));
+        box.lastElementChild.querySelector('.chal-q-opt').focus();
+      } else {
+        return;
+      }
+      chlRenumberOptions(card);
+      chlMarkDirty(mode);
+      chlRenderQIndex(mode);
+      return;
+    }
     const del = e.target.closest('.chl-q-del');
     if (!del) return;
     del.closest('.challenge-q-card')?.remove();
@@ -461,6 +552,7 @@ window.addQuestionRow = function(mode, initialData = null) {
   const seq = ++chlQuestionSeq;
   const qText = initialData ? (initialData.q || initialData.question || '') : '';
   const opts = initialData && Array.isArray(initialData.options) ? initialData.options : ['', '', '', ''];
+  const optionTexts = opts.length >= CHL_OPT_MIN ? opts.slice(0, CHL_OPT_MAX) : opts.concat(Array(CHL_OPT_MIN - opts.length).fill(''));
   const correctIdx = initialData && initialData.correct !== undefined ? initialData.correct : 0;
 
   const card = document.createElement('div');
@@ -476,17 +568,15 @@ window.addQuestionRow = function(mode, initialData = null) {
       <textarea aria-label="صورت سوال" class="chal-q-title input-ctrl" rows="2" placeholder="متن سوال یا عنوان مرحله...">${esc(qText)}</textarea>
     </label>
     <fieldset class="lse-options">
-      <legend>گزینه‌ها <small>دایره‌ی کنار پاسخ درست را انتخاب کنید</small></legend>
-      ${[0, 1, 2, 3].map(i => `
-        <label class="lse-option">
-          <input type="radio" aria-label="گزینه‌ی ${i + 1} پاسخ درست است" name="${mode}-correct-q${seq}" value="${i}" ${i === Number(correctIdx) ? 'checked' : ''}>
-          <span>${['۱', '۲', '۳', '۴'][i]}</span>
-          <input type="text" aria-label="متن گزینه‌ی ${i + 1}" class="chal-q-opt input-ctrl" placeholder="گزینه ${['اول', 'دوم', 'سوم', 'چهارم'][i]}" value="${esc(opts[i] || '')}">
-        </label>
-      `).join('')}
+      <legend>گزینه‌ها <small>دایره‌ی کنار پاسخ درست را انتخاب کنید؛ برای جابجایی، گزینه را بکشید</small></legend>
+      <div class="chl-opts" data-name="${mode}-correct-q${seq}">
+        ${optionTexts.map((text, i) => chlOptionRow(`${mode}-correct-q${seq}`, i, text, i === Number(correctIdx))).join('')}
+      </div>
+      <button type="button" class="lse-add-row chl-opt-add"><i class="fa-solid fa-plus"></i> گزینه جدید</button>
     </fieldset>
   `;
   container.appendChild(card);
+  chlRenumberOptions(card);
   // a question added by hand opens for editing; the ones loaded with the challenge keep the current selection
   if (!initialData || !chlSelected[mode] || !chlCards(mode).some(c => c.dataset.qid === chlSelected[mode])) {
     chlSelected[mode] = card.dataset.qid;
@@ -620,15 +710,12 @@ window.submitCreateChallenge = async function(event) {
     const cards = document.querySelectorAll('#new-chal-questions-list .challenge-q-card');
     cards.forEach((card, idx) => {
       const qTitle = card.querySelector('.chal-q-title')?.value.trim() || `مرحله ${idx + 1}`;
-      const optInputs = card.querySelectorAll('.chal-q-opt');
-      const options = Array.from(optInputs).map(inp => inp.value.trim()).filter(Boolean);
-      const radio = card.querySelector('input[type="radio"]:checked');
-      const correctIndex = radio ? Number(radio.value) : 0;
+      const { options, correct: correctIndex } = chlCardOptions(card);
 
       questions.push({
         step: idx + 1,
         q: qTitle,
-        options: options.length > 0 ? options : ['گزینه ۱', 'گزینه ۲', 'گزینه ۳', 'گزینه ۴'],
+        options: options.length >= CHL_OPT_MIN ? options : ['گزینه ۱', 'گزینه ۲', 'گزینه ۳', 'گزینه ۴'],
         correct: correctIndex
       });
     });
@@ -772,15 +859,12 @@ window.submitEditChallenge = async function(event) {
     const cards = document.querySelectorAll('#edit-chal-questions-list .challenge-q-card');
     cards.forEach((card, idx) => {
       const qTitle = card.querySelector('.chal-q-title')?.value.trim() || `مرحله ${idx + 1}`;
-      const optInputs = card.querySelectorAll('.chal-q-opt');
-      const options = Array.from(optInputs).map(inp => inp.value.trim()).filter(Boolean);
-      const radio = card.querySelector('input[type="radio"]:checked');
-      const correctIndex = radio ? Number(radio.value) : 0;
+      const { options, correct: correctIndex } = chlCardOptions(card);
 
       questions.push({
         step: idx + 1,
         q: qTitle,
-        options: options.length > 0 ? options : ['گزینه ۱', 'گزینه ۲', 'گزینه ۳', 'گزینه ۴'],
+        options: options.length >= CHL_OPT_MIN ? options : ['گزینه ۱', 'گزینه ۲', 'گزینه ۳', 'گزینه ۴'],
         correct: correctIndex
       });
     });
@@ -1092,6 +1176,7 @@ window.filterAdminSubmissionsList = function() {
   }
 
   renderAdminSubmissions(filtered);
+  if (window.chlActiveId) chlRenderDetail(false);
 };
 
 window.resetAdminSubmissionsFilters = function() {
@@ -1122,7 +1207,10 @@ function renderAdminSubmissions(submissions) {
     return;
   }
 
-  list.innerHTML = submissions.map(s => {
+  list.innerHTML = submissions.map(chlSubRow).join('');
+}
+
+function chlSubRow(s) {
     const studentName = s.student?.name || 'دانش‌آموز نپا';
     const studentPhone = s.student?.phoneNumber || '';
     const caravanName = s.student?.caravan?.name || s.challenge?.caravan?.name || 'عمومی (فاقد کاروان)';
@@ -1166,7 +1254,6 @@ function renderAdminSubmissions(submissions) {
           ${isPending ? chlRoundBtn('fa-solid fa-xmark', 'رد سریع', 'reviewAdminSubmission', [sid, false, 0], 'lsv-round-danger') : ''}
         </span>
       </div>`;
-  }).join('');
 }
 
 // Side tiles of the bento: submission status, challenge mix and the challenges with the most pending answers
@@ -1783,3 +1870,466 @@ window.chlRefreshDraftChip();
 
 // The tab starts in its loading state until the first fetch finishes
 if (!window.cachedAdminChallenges.length) window.chlSetLoading(true);
+
+
+// ==========================================
+// CHALLENGE DETAIL (same layout idea as a station page: the open challenge on the right, the side column on the left
+// with its numbers and the list of all challenges)
+// ==========================================
+window.chlActiveId = null;
+let chlDetailSearch = '';
+let chlRank = null; // ranking panel of the open challenge: { id, data, order, editing, finalized }
+
+function chlDetailBox() {
+  const tab = document.getElementById('submissions-tab');
+  if (!tab) return null;
+  let box = document.getElementById('chl-detail-view');
+  if (!box) {
+    box = document.createElement('div');
+    box.id = 'chl-detail-view';
+    box.style.display = 'none';
+    tab.appendChild(box);
+  }
+  return box;
+}
+
+function chlOverviewParts() {
+  const tab = document.getElementById('submissions-tab');
+  return tab ? Array.from(tab.querySelectorAll(':scope > .lms-head-actions, :scope > .chl-bento')) : [];
+}
+
+function chlAudienceOf(c) {
+  return c.targetAudience && c.targetAudience.type === 'caravan'
+    ? { name: c.targetAudience.name, mentorName: c.targetAudience.mentorName }
+    : (c.caravanInfo || null);
+}
+
+function chlSubmissionsOf(c) {
+  return (window.cachedAdminSubmissions || []).filter(x => String(x.challengeId || (x.challenge && x.challenge.id) || '') === String(c.id));
+}
+
+// The steps as columns, like the categories of a station: a card of rows (one per option), the step under it
+function chlDetailStepsHtml(c) {
+  const qList = Array.isArray(c.questions) ? c.questions : [];
+  if (!qList.length) {
+    return `
+      <div class="chl-dv-open">
+        <span class="lsv-round lsv-round-lg"><i class="fa-solid fa-pen"></i></span>
+        <div>
+          <strong>پاسخ تشریحی</strong>
+          <p class="lse-hint">دانش‌آموز پاسخ را تایپ می‌کند و در صورت نیاز فایل (صدا، عکس یا طرح) ضمیمه می‌کند. راهبر یا مدیر آن را در بخش پاسخ‌ها بررسی و پاداش را ثبت می‌کند.</p>
+        </div>
+      </div>`;
+  }
+  return `<div class="chl-dv-cols">${qList.map((q, idx) => {
+    const qText = q.q || q.question || q.title || `مرحله ${idx + 1}`;
+    const opts = Array.isArray(q.options) ? q.options : (Array.isArray(q.opts) ? q.opts : []);
+    const correctIdx = q.correct !== undefined ? Number(q.correct) : -1;
+    const rows = opts.map((opt, oi) => `
+      <div class="lsv-row chl-dv-optrow${oi === correctIdx ? ' is-correct' : ''}">
+        <span class="lsv-row-avatar lsv-row-num">${lmsFaDigits(oi + 1)}</span>
+        <span class="lsv-row-text"><strong title="${esc(opt)}">${esc(opt)}</strong>${oi === correctIdx ? '<span>پاسخ درست</span>' : ''}</span>
+        <i class="lsv-row-state ${oi === correctIdx ? 'fa-solid fa-circle-check is-done' : 'fa-regular fa-circle'}"></i>
+      </div>`).join('');
+    return `
+      <div class="lsv-col chl-dv-col">
+        <div class="lsv-col-card">
+          <div class="chl-dv-q">${esc(qText)}</div>
+          ${rows || '<div class="lsv-col-empty">این مرحله گزینه ندارد (پاسخ تشریحی)</div>'}
+        </div>
+        <div class="lsv-col-label"><span class="lsv-col-dot" data-style="background:${window.lmsCategoryColor ? window.lmsCategoryColor(idx) : 'var(--primary)'}"></span> مرحله ${lmsFaDigits(idx + 1)} <span class="lsv-col-count">${lmsFaDigits(opts.length)} گزینه</span></div>
+      </div>`;
+  }).join('')}</div>`;
+}
+
+function chlDetailMainHtml(c) {
+  const id = String(c.id);
+  const interGroup = c.category === 'inter_group';
+  const isByAdmin = c.creatorInfo?.isByAdmin ?? (!c.createdByMentorId);
+  const creatorName = c.creatorInfo?.name || (isByAdmin ? 'مدیر سیستم' : 'راهبر کاروان');
+  const audience = chlAudienceOf(c);
+  const subs = chlSubmissionsOf(c);
+  const reward = interGroup ? 'درفش (بر اساس رتبه)' : window.formatChallengeReward(c);
+  const dateOf = v => (v ? new Date(v).toLocaleDateString('fa-IR') : '');
+  const when = [c.startDate && `شروع: ${dateOf(c.startDate)}`, c.dueDate && `مهلت: ${dateOf(c.dueDate)}`].filter(Boolean).join(' · ');
+  return `
+    <div class="lst-tile glass chl-dv-main">
+      <header class="chl-dv-head">
+        <div class="chl-card-top"><span class="chl-id">${esc(id)}</span>${chlTypeChip(c)}</div>
+        <h4 class="chl-dv-title">${esc(c.title)}</h4>
+        <span class="lsv-round-group">
+          ${chlRoundBtn('fa-solid fa-pen', 'ویرایش و اصلاح چالش', 'openEditChallengeModal', [id])}
+          ${chlRoundBtn('fa-solid fa-trash', 'حذف چالش', 'deleteChallengeAdmin', [id, String(escJs(c.title || ''))], 'lsv-round-danger')}
+        </span>
+      </header>
+      <p class="chl-dv-desc">${esc(c.description || 'برای این چالش توضیحی ثبت نشده است.')}</p>
+      <div class="chl-card-meta chl-dv-meta">
+        ${audience ? `<span><i class="fa-solid fa-users"></i> کاروان: ${esc(audience.name)} · راهبر: ${esc(audience.mentorName || 'نامشخص')}</span>` : '<span><i class="fa-solid fa-globe"></i> عمومی (همه کاروان‌ها)</span>'}
+        <span>${isByAdmin ? '<i class="fa-solid fa-shield-halved"></i> مدیر سیستم' : `<i class="fa-solid fa-user-tie"></i> راهبر: ${esc(creatorName)}`}</span>
+        <span class="chl-reward"><i class="fa-solid ${interGroup ? 'fa-flag' : 'fa-coins'}"></i> ${reward}</span>
+        ${when ? `<span><i class="fa-regular fa-calendar"></i> ${esc(when)}</span>` : ''}
+      </div>
+    </div>
+    <div class="lst-tile glass chl-dv-block">
+      <h4 class="lst-tile-title"><i class="fa-solid fa-list-check"></i> مراحل چالش <span class="lst-tile-sub">آنچه دانش‌آموز در اپلیکیشن می‌بیند</span></h4>
+      ${chlDetailStepsHtml(c)}
+    </div>
+    <div class="lst-tile glass chl-dv-block">
+      <h4 class="lst-tile-title"><i class="fa-solid fa-clipboard-check"></i> وضعیت پاسخ‌ها <span class="lst-tile-sub">${lmsFaDigits(subs.length)} پاسخ</span></h4>
+      ${interGroup ? '<div id="chl-dv-rank" class="chl-rank"></div>' : ''}
+      <div class="chl-subs">${subs.length ? subs.map(chlSubRow).join('') : '<div class="lst-empty"><i class="fa-regular fa-folder-open"></i> هنوز پاسخی برای این چالش ارسال نشده است.</div>'}</div>
+    </div>`;
+}
+
+// Numbers of the open challenge, in the left column and shaped like the overview's "آمار کلی" tile
+function chlDetailStatsHtml(c) {
+  const subs = chlSubmissionsOf(c);
+  const approved = c.approvedSubmissions ?? subs.filter(x => x.status === 'approved').length;
+  const pending = c.pendingSubmissions ?? subs.filter(x => x.status === 'pending' || x.status === 'PENDING_REVIEW').length;
+  const rejected = subs.filter(x => x.status === 'rejected').length;
+  const steps = Array.isArray(c.questions) ? c.questions.length : 0;
+  return `
+    <div class="lst-tile glass">
+      <h4 class="lst-tile-title"><i class="fa-solid fa-chart-simple"></i> آمار این چالش</h4>
+      <div class="lst-mini-stats">
+        <div class="lst-mini-stat"><span class="stat-label">مراحل</span><span class="stat-value u-c-primary-text">${lmsFaDigits(steps)}</span></div>
+        <div class="lst-mini-stat"><span class="stat-label">کل پاسخ‌ها</span><span class="stat-value">${lmsFaDigits(subs.length)}</span></div>
+        <div class="lst-mini-stat"><span class="stat-label">در انتظار ارزیابی</span><span class="stat-value u-c-accent-text">${lmsFaDigits(pending)}</span></div>
+        <div class="lst-mini-stat"><span class="stat-label">تایید شده</span><span class="stat-value u-c-success-text">${lmsFaDigits(approved)}</span></div>
+        ${rejected ? `<div class="lst-mini-stat"><span class="stat-label">رد شده</span><span class="stat-value u-c-danger-text">${lmsFaDigits(rejected)}</span></div>` : ''}
+      </div>
+    </div>`;
+}
+
+function chlDetailListHtml(list) {
+  const q = chlDetailSearch.trim().toLowerCase();
+  const shown = q ? list.filter(c => `${c.title || ''} ${c.id}`.toLowerCase().includes(q)) : list;
+  const items = shown.map(c => {
+    const active = String(c.id) === window.chlActiveId;
+    return `
+      <button type="button" class="chl-dv-item${active ? ' is-active' : ''}" data-click="openChallengeDetail" data-click-args="${esc(JSON.stringify([String(c.id)]))}"${active ? ' aria-current="true"' : ''}>
+        <span class="chl-card-top"><span class="chl-id">${esc(String(c.id))}</span>${chlTypeChip(c)}</span>
+        <strong>${esc(c.title)}</strong>
+      </button>`;
+  }).join('');
+  return `
+    <div class="lst-tile glass chl-dv-list">
+      <h4 class="lst-tile-title"><i class="fa-solid fa-trophy"></i> همه چالش‌ها <span class="lst-tile-sub">${lmsFaDigits(list.length)} چالش</span></h4>
+      <div class="search-box">
+        <i class="fa-solid fa-search"></i>
+        <input aria-label="جستجوی چالش‌ها" type="text" id="chl-dv-search" class="input-ctrl" placeholder="جستجو در چالش‌ها..." value="${esc(chlDetailSearch)}" data-input="chlDetailFilter">
+      </div>
+      <div class="chl-dv-items">${items || '<div class="lst-empty">چالشی یافت نشد</div>'}</div>
+    </div>`;
+}
+
+function chlDetailSkeleton() {
+  const line = (cls = '') => `<span class="lst-skel-line ${cls}"></span>`;
+  const rows = n => `<div class="lst-skel-lines">${'<span class="lst-skel-row"></span>'.repeat(n)}</div>`;
+  return `
+    <div class="chl-dv-body" aria-busy="true">
+      <div class="chl-dv-detail">
+        <div class="lst-tile glass is-loading chl-dv-main">
+          <span class="chl-card-top">${line('lst-skel-chip')}${line('lst-skel-chip')}</span>
+          ${line('chl-skel-title')}
+          <span class="lst-skel-lines">${line()}${line('lst-skel-short')}</span>
+        </div>
+        <div class="lst-tile glass is-loading chl-dv-block">${rows(3)}</div>
+        <div class="lst-tile glass is-loading chl-dv-block">${rows(2)}</div>
+      </div>
+      <div class="chl-dv-side">
+        <div class="lst-tile glass is-loading">${rows(2)}</div>
+        <div class="lst-tile glass is-loading chl-dv-list">${rows(4)}</div>
+      </div>
+    </div>`;
+}
+
+function chlRenderDetail(animate) {
+  const box = chlDetailBox();
+  if (!box || !window.chlActiveId) return;
+  const list = chlFilteredList();
+  const c = (window.cachedAdminChallenges || []).find(x => String(x.id) === window.chlActiveId);
+  if (!c) { window.closeChallengeDetail(); return; }
+  // a challenge hidden by the filters is still shown; it just is not in the list
+  const listed = list.some(x => String(x.id) === window.chlActiveId) ? list : [c, ...list];
+  const keepSearchFocus = document.activeElement && document.activeElement.id === 'chl-dv-search';
+  box.innerHTML = `
+    <div class="lsv-head">
+      ${chlRoundBtn('fa-solid fa-arrow-right', 'بازگشت به همه چالش‌ها', 'closeChallengeDetail', [], 'lsv-round')}
+      <h3>${esc(c.title)}</h3>
+    </div>
+    <div class="chl-dv-body">
+      <div class="chl-dv-detail">${chlDetailMainHtml(c)}</div>
+      <div class="chl-dv-side">${chlDetailStatsHtml(c)}${chlDetailListHtml(listed)}</div>
+    </div>`;
+  if (keepSearchFocus) {
+    const input = document.getElementById('chl-dv-search');
+    if (input) { input.focus(); input.setSelectionRange(input.value.length, input.value.length); }
+  }
+  if (c.category === 'inter_group') chlRankLoad(String(c.id), animate);
+  if (animate && window.NopaFlip) window.NopaFlip.enter(box.querySelectorAll('.lsv-head, .chl-dv-body .lst-tile'));
+}
+
+window.chlDetailFilter = function() {
+  chlDetailSearch = document.getElementById('chl-dv-search')?.value || '';
+  chlRenderDetail(false);
+};
+
+window.openChallengeDetail = async function(id) {
+  const box = chlDetailBox();
+  if (!box) return;
+  const first = !window.chlActiveId;
+  if (window.chlActiveId !== String(id)) chlRank = null;
+  window.chlActiveId = String(id);
+  if (!first) {
+    chlRenderDetail(false);
+    return;
+  }
+  chlDetailSearch = '';
+  const parts = chlOverviewParts();
+  const swap = () => {
+    parts.forEach(p => { p.style.display = 'none'; });
+    box.style.display = 'block';
+    // data still loading (or never loaded): skeleton with the light sweep, like the cards of the overview
+    if (!(window.cachedAdminChallenges || []).length) box.innerHTML = chlDetailSkeleton(); else chlRenderDetail(true);
+    document.getElementById('submissions-tab')?.scrollIntoView({ block: 'start', behavior: 'smooth' });
+  };
+  const visible = parts.find(p => p.style.display !== 'none');
+  lmsFadeOut(visible, swap);
+  // answers may have changed since the page was loaded: refresh them while the detail shimmers
+  box.classList.add('is-refreshing');
+  try {
+    await window.loadAdminSubmissionsData();
+    if (!(window.cachedAdminChallenges || []).length) await window.loadAdminChallengesData();
+  } finally {
+    box.classList.remove('is-refreshing');
+  }
+  if (window.chlActiveId) chlRenderDetail(false);
+};
+
+window.closeChallengeDetail = function() {
+  const box = document.getElementById('chl-detail-view');
+  window.chlActiveId = null;
+  chlRank = null;
+  lmsFadeOut(box, () => {
+    if (window.chlActiveId) return;
+    if (box) { box.style.display = 'none'; box.innerHTML = ''; }
+    const parts = chlOverviewParts();
+    parts.forEach(p => { p.style.display = ''; });
+    if (window.NopaFlip) window.NopaFlip.enter(parts.flatMap(p => Array.from(p.matches('.chl-bento') ? p.querySelectorAll('.lst-tile') : [p])));
+  });
+};
+
+// ==================== RANKING OF AN INTER-GROUP CHALLENGE ====================
+// Not confirmed yet: the panel proposes an order (most approved answers first) and the admin arranges it by dragging;
+// "تایید و اعمال" pays the prizes. Confirmed: the result is shown and "ویرایش رتبه‌بندی" opens it for correction.
+
+const chlRankTierNames = () => ({
+  gold: window.assetName('derafsh_gold'), silver: window.assetName('derafsh_silver'), bronze: window.assetName('derafsh_bronze'), cloth: window.assetName('derafsh_cloth')
+});
+
+function chlRankPlaces() {
+  return chlRank ? Math.min(3, chlRank.data.caravans.length) : 0;
+}
+
+async function chlRankLoad(id, animate) {
+  const box = document.getElementById('chl-dv-rank');
+  if (!box) return;
+  // keep what the admin has arranged while the panel redraws
+  if (!chlRank || chlRank.id !== id) {
+    box.innerHTML = '<div class="lst-tile-skel"><span class="lst-skel-line chl-skel-title"></span><div class="lst-skel-lines"><span class="lst-skel-row"></span><span class="lst-skel-row"></span></div></div>';
+    box.classList.add('is-loading');
+    try {
+      const res = await request(`/api/v1/admin/challenges/${id}/ranking`);
+      const data = await res.json();
+      if (!res.ok) { box.classList.remove('is-loading'); box.innerHTML = `<div class="lst-empty">${esc(data.error || 'خطا در دریافت رتبه‌بندی')}</div>`; return; }
+      const finalized = data.challenge.finalized;
+      const order = finalized
+        ? [...data.result].sort((a, b) => (a.rank || 99) - (b.rank || 99)).map(r => r.caravanId).concat(data.caravans.map(c => c.id).filter(cid => !data.result.some(r => r.caravanId === cid)))
+        : data.suggested.slice();
+      chlRank = { id, data, order, editing: false, finalized, suggestion: !finalized };
+    } catch (e) {
+      box.classList.remove('is-loading');
+      box.innerHTML = '<div class="lst-empty">خطا در ارتباط با سرور</div>';
+      return;
+    }
+  }
+  if (window.chlActiveId !== id) return;
+  const el = document.getElementById('chl-dv-rank');
+  if (!el) return;
+  el.classList.remove('is-loading');
+  chlRankRender(el);
+}
+
+function chlRankRender(el) {
+  const r = chlRank;
+  if (!r) return;
+  const { data } = r;
+  if (!data.caravans.length) {
+    el.innerHTML = '<div class="lst-empty"><i class="fa-regular fa-folder-open"></i> هنوز هیچ کاروانی در این چالش پاسخ نداده است، پس رتبه‌بندی ممکن نیست.</div>';
+    return;
+  }
+  const places = chlRankPlaces();
+  const tiers = chlRankTierNames();
+  const draggable = !r.finalized || r.editing;
+  const rows = r.order.map((cid, i) => {
+    const c = data.caravans.find(x => x.id === cid);
+    if (!c) return '';
+    const tier = i < places ? ['gold', 'silver', 'bronze'][i] : 'cloth';
+    const pic = c.coverImageUrl
+      ? `<img class="chl-rank-pic" src="${esc(c.coverImageUrl)}" alt="">`
+      : `<span class="chl-rank-pic chl-rank-pic-empty">${esc(String(c.name).trim().charAt(0) || '؟')}</span>`;
+    return `
+      <div class="chl-rank-item is-${tier}" data-cid="${esc(c.id)}">
+        ${draggable ? '<span class="chl-rank-grip lse-grip" title="برای جابجایی بکشید" aria-hidden="true"><i class="fa-solid fa-grip-vertical"></i></span>' : ''}
+        <span class="chl-rank-no">${i < places ? lmsFaDigits(i + 1) : '<i class="fa-solid fa-flag"></i>'}</span>
+        ${pic}
+        <span class="chl-rank-who"><strong>${esc(c.name)}</strong><small>${c.mentorName ? `راهبر: ${esc(c.mentorName)} · ` : ''}${lmsFaDigits(c.approved)} تایید شده از ${lmsFaDigits(c.answers)} پاسخ</small></span>
+        <span class="chl-rank-tier">${esc(tiers[tier])}</span>
+      </div>`;
+  }).join('');
+  let note;
+  let actions;
+  if (!r.finalized) {
+    note = `<i class="fa-solid fa-wand-magic-sparkles"></i> ترتیب پیشنهادی بر اساس بیشترین پاسخ تایید شده است. با کشیدن کاروان‌ها آن را تغییر دهید؛ ${places === 1 ? 'اولین' : `${lmsFaDigits(places)} کاروان اول`} درفش طلایی تا برنزی می‌گیرند و بقیه ${esc(tiers.cloth)}. رتبه‌بندی هنوز اعمال نشده است.`;
+    actions = `
+      <button type="button" class="lsv-pill" data-click="chlRankApply"><i class="fa-solid fa-flag"></i> تایید و اعمال رتبه‌بندی</button>
+      <button type="button" class="lse-btn" data-click="chlRankReset"><i class="fa-solid fa-rotate-left"></i> بازگشت به پیشنهاد خودکار</button>`;
+  } else if (r.editing) {
+    note = '<i class="fa-solid fa-pen"></i> در حال ویرایش رتبه‌بندی: کاروان‌ها را بکشید و ذخیره کنید؛ فقط تفاوت جایزه‌ها به اعضا افزوده یا از آن‌ها کسر می‌شود.';
+    actions = `
+      <button type="button" class="lsv-pill" data-click="chlRankSaveEdit"><i class="fa-solid fa-check"></i> ذخیره اصلاح رتبه‌بندی</button>
+      <button type="button" class="lse-btn" data-click="chlRankCancelEdit">انصراف</button>`;
+  } else {
+    note = '<i class="fa-solid fa-circle-check"></i> رتبه‌بندی اعمال شده و درفش‌ها و جایزه‌ها پرداخت شده است.';
+    actions = '<button type="button" class="lsv-pill" data-click="chlRankStartEdit"><i class="fa-solid fa-pen"></i> ویرایش رتبه‌بندی</button>';
+  }
+  el.innerHTML = `
+    <p class="lse-lead">${note}</p>
+    <div class="chl-rank-list${draggable ? ' is-editable' : ''}">${rows}</div>
+    <div class="chl-rank-actions">${actions}</div>`;
+}
+
+// the drag engine (station-dnd.js, sortable "chl-rank") calls this with the list after the rows were moved
+window.chlRankReorder = function(box) {
+  if (!chlRank) return false;
+  const order = Array.from(box.querySelectorAll(':scope > .chl-rank-item')).map(r => r.getAttribute('data-cid'));
+  if (order.join() === chlRank.order.join()) return false;
+  chlRank.order = order;
+  chlRankRenumber(box);
+  return true;
+};
+
+// numbers, tier labels and colours follow the rows' new positions without redrawing (the drag is still finishing)
+function chlRankRenumber(box) {
+  if (!chlRank) return;
+  const places = chlRankPlaces();
+  const tiers = chlRankTierNames();
+  Array.from(box.querySelectorAll(':scope > .chl-rank-item')).forEach((row, i) => {
+    const tier = i < places ? ['gold', 'silver', 'bronze'][i] : 'cloth';
+    row.className = row.className.replace(/\bis-(gold|silver|bronze|cloth)\b/g, '').trim() + ` is-${tier}`;
+    row.querySelector('.chl-rank-no').innerHTML = i < places ? lmsFaDigits(i + 1) : '<i class="fa-solid fa-flag"></i>';
+    row.querySelector('.chl-rank-tier').textContent = tiers[tier];
+  });
+}
+window.chlRankRedraw = function(box) { chlRankRenumber(box); };
+
+window.chlRankReset = function() {
+  if (!chlRank || chlRank.finalized) return;
+  chlRank.order = chlRank.data.suggested.slice();
+  chlRankRender(document.getElementById('chl-dv-rank'));
+};
+
+window.chlRankStartEdit = function() {
+  if (!chlRank) return;
+  chlRank.editing = true;
+  chlRank.before = chlRank.order.slice();
+  chlRankRender(document.getElementById('chl-dv-rank'));
+};
+
+window.chlRankCancelEdit = function() {
+  if (!chlRank) return;
+  chlRank.editing = false;
+  chlRank.order = chlRank.before || chlRank.order;
+  chlRankRender(document.getElementById('chl-dv-rank'));
+};
+
+async function chlRankRefreshAfter(id) {
+  chlRank = null;
+  await Promise.all([window.loadAdminChallengesData(), window.loadAdminSubmissionsData()]);
+  if (window.chlActiveId === id) chlRankLoad(id, false);
+}
+
+window.chlRankApply = async function() {
+  if (!chlRank || chlRank.finalized) return;
+  const id = chlRank.id;
+  const ranking = chlRank.order.slice(0, chlRankPlaces());
+  const body = JSON.stringify({ ranking, preview: true });
+  const preview = await NopaApi.json(`/api/v1/admin/challenges/${id}/ranking`, { method: 'POST', body }).catch(e => ({ error: e.message }));
+  if (preview.error) { showToast(preview.error, 'error'); return; }
+  const warning = preview.unconfirmed.length ? ` سطح اعضای این کاروان‌ها تأیید نشده و بدون جایزه می‌مانند: ${preview.unconfirmed.join('، ')}.` : '';
+  const question = `${Number(preview.total).toLocaleString('fa-IR')} زریک به ${Number(preview.paidMembers).toLocaleString('fa-IR')} نفر از ${Number(preview.members).toLocaleString('fa-IR')} عضو پرداخت می‌شود.${warning} ادامه می‌دهید؟ (بعداً با «ویرایش رتبه‌بندی» قابل اصلاح است.)`;
+  if (!(await NopaConfirm(question))) return;
+  const res = await request(`/api/v1/admin/challenges/${id}/ranking`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ ranking, acceptUnconfirmed: true })
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) { showToast(data.error || 'خطا در ثبت رتبه‌بندی', 'error'); return; }
+  showToast('رتبه‌بندی اعمال شد و جایزه‌ها پرداخت شدند.', 'success');
+  chlRankRefreshAfter(id);
+};
+
+window.chlRankSaveEdit = async function() {
+  if (!chlRank || !chlRank.finalized) return;
+  const id = chlRank.id;
+  const ranking = chlRank.order.slice(0, chlRankPlaces());
+  const preview = await NopaApi.json(`/api/v1/admin/challenges/${id}/ranking`, { method: 'PUT', body: JSON.stringify({ ranking, preview: true }) }).catch(e => ({ error: e.message }));
+  if (preview.error) { showToast(preview.error, 'error'); return; }
+  if (preview.unchanged) { showToast('ترتیب تغییری نکرده است.', 'info'); window.chlRankCancelEdit(); return; }
+  const fa = n => Number(n).toLocaleString('fa-IR');
+  const question = `با این اصلاح ${fa(preview.increase)} زریک به اعضا اضافه و ${fa(preview.decrease)} زریک از اعضا کسر می‌شود (${fa(preview.members)} نفر تغییر می‌کنند). ادامه می‌دهید؟`;
+  if (!(await NopaConfirm(question))) return;
+  const res = await request(`/api/v1/admin/challenges/${id}/ranking`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ ranking })
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) { showToast(data.error || 'خطا در اصلاح رتبه‌بندی', 'error'); return; }
+  showToast(data.unchanged ? 'ترتیب تغییری نکرده است.' : 'رتبه‌بندی اصلاح شد.', 'success');
+  chlRankRefreshAfter(id);
+};
+
+// ==================== CARAVAN STANDINGS (left column of the overview) ====================
+window.chlRenderCaravanBoard = function() {
+  const el = document.getElementById('chl-bento-caravans');
+  if (!el) return;
+  const caravans = (window.cachedAdminCaravans || []).slice()
+    .sort((a, b) => (Number(b.groupPoints) || 0) - (Number(a.groupPoints) || 0) || (Number(b.wealth?.zarik) || 0) - (Number(a.wealth?.zarik) || 0));
+  if (!caravans.length) {
+    el.innerHTML = '<div class="lst-empty">هنوز کاروانی ثبت نشده است.</div>';
+    return;
+  }
+  const chip = (icon, key, v) => `<span title="${esc(window.assetName(key))}"><i class="${icon}"></i> ${Number(v || 0).toLocaleString('fa-IR')}</span>`;
+  el.innerHTML = `<div class="chl-board">${caravans.map((c, i) => {
+    const pic = c.coverImageUrl
+      ? `<img class="chl-rank-pic" src="${esc(c.coverImageUrl)}" alt="">`
+      : `<span class="chl-rank-pic chl-rank-pic-empty">${esc(String(c.name).trim().charAt(0) || '؟')}</span>`;
+    const w = c.wealth || {};
+    return `
+      <div class="chl-board-row${i < 3 ? ` is-top is-top-${i + 1}` : ''}">
+        <span class="chl-board-no">${lmsFaDigits(i + 1)}</span>
+        ${pic}
+        <span class="chl-board-who">
+          <strong>${esc(c.name)}</strong>
+          <small><i class="fa-solid fa-user-tie"></i> ${esc(c.mentorName || 'بدون راهبر')} · ${lmsFaDigits(c.memberCount || 0)} عضو</small>
+          <span class="chl-board-assets">
+            ${chip('fa-solid fa-coins', 'zarik', w.zarik)}${chip('fa-solid fa-link', 'nakh', w.nakh)}${chip('fa-solid fa-border-all', 'farsh', w.farsh)}
+          </span>
+        </span>
+        <span class="chl-board-pts" title="امتیاز گروهی"><b>${lmsFaDigits(c.groupPoints || 0)}</b><small>امتیاز</small></span>
+      </div>`;
+  }).join('')}</div>`;
+};
