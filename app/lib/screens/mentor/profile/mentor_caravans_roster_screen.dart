@@ -1,4 +1,5 @@
 import 'package:nopa_app/widgets/tap_expander.dart';
+import 'package:nopa_app/core/theme/app_colors.dart';
 import 'package:nopa_app/widgets/bottom_nav_bar.dart';
 import '../../../widgets/nopa_modal_shell.dart';
 import 'package:nopa_app/core/station_numbering.dart';
@@ -604,7 +605,7 @@ class _MentorMembersScreenState extends State<MentorCaravansRosterScreen> {
                   decoration: BoxDecoration(
                     color: const Color(0xFF28274A),
                     borderRadius: BorderRadius.circular(10),
-                    border: Border.all(color: const Color(0xFFC09268), width: 1.0),
+                    border: Border.all(color: AppColors.buttonCamel, width: 1.0),
                   ),
                   child: const Row(
                     mainAxisSize: MainAxisSize.min,
@@ -889,7 +890,7 @@ class _MentorMembersScreenState extends State<MentorCaravansRosterScreen> {
                     // Chevron indicator
                     const Icon(
                       Icons.expand_less_rounded,
-                      color: Color(0xFF9E9CD6),
+                      color: AppColors.buttonCancelPurple,
                       size: 20,
                     ),
                   ],
@@ -1113,7 +1114,7 @@ class _StudentReportCardAndEvaluationScreenState extends State<StudentReportCard
                           Text(
                             'شماره تماس: ${member.phoneNumber}',
                             style: const TextStyle(
-                              color: Color(0xFF9E9CD6),
+                              color: AppColors.buttonCancelPurple,
                               fontSize: 10.5,
                               fontFamily: AppTheme.fontFamily,
                             ),
@@ -1323,7 +1324,7 @@ class _StudentReportCardAndEvaluationScreenState extends State<StudentReportCard
                     // Chevron Arrow
                     Icon(
                       isExpanded ? Icons.keyboard_arrow_up_rounded : Icons.keyboard_arrow_down_rounded,
-                      color: const Color(0xFF9E9CD6),
+                      color: AppColors.buttonCancelPurple,
                       size: 20,
                     ),
                   ],

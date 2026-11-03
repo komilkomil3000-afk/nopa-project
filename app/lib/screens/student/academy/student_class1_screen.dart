@@ -1,4 +1,5 @@
 import 'package:nopa_app/widgets/tap_expander.dart';
+import 'package:nopa_app/core/theme/app_colors.dart';
 import 'package:nopa_app/widgets/bottom_nav_bar.dart';
 import 'package:nopa_app/core/constants/app_routes.dart';
 import 'package:nopa_app/widgets/station_gallery_item.dart';
@@ -872,7 +873,7 @@ class _Class1ScreenState extends State<StudentClass1Screen> {
                               shape: BoxShape.circle,
                               border: Border.all(
                                 color: _currentClipIndex < _allClips.length - 1
-                                    ? const Color(0xFFC09268)
+                                    ? AppColors.buttonCamel
                                     : const Color(
                                         0xFFC09268,
                                       ).withValues(alpha: 0.3),
@@ -916,7 +917,7 @@ class _Class1ScreenState extends State<StudentClass1Screen> {
                               shape: BoxShape.circle,
                               border: Border.all(
                                 color: _currentClipIndex > 0
-                                    ? const Color(0xFFC09268)
+                                    ? AppColors.buttonCamel
                                     : const Color(
                                         0xFFC09268,
                                       ).withValues(alpha: 0.3),
@@ -982,7 +983,7 @@ class _Class1ScreenState extends State<StudentClass1Screen> {
     bool enabled = true,
     bool animatedStroke = false,
   }) {
-    const gold = Color(0xFFC09268);
+    const gold = AppColors.buttonCamel;
     final rotating = animatedStroke && enabled;
     final box = Container(
       padding: const EdgeInsets.symmetric(vertical: 9, horizontal: 2),

@@ -418,7 +418,7 @@ class _MentorChallengeDetailsScreenState extends State<MentorChallengeGradingScr
                   suffixText: asset,
                   suffixStyle: const TextStyle(color: Color(0xFFDFB690), fontFamily: AppTheme.fontFamily),
                   enabledBorder: const OutlineInputBorder(borderSide: BorderSide(color: Color(0xFF4C4578))),
-                  focusedBorder: const OutlineInputBorder(borderSide: BorderSide(color: Color(0xFFC09268))),
+                  focusedBorder: const OutlineInputBorder(borderSide: BorderSide(color: AppColors.buttonCamel)),
                 ),
               ),
             ],
@@ -665,7 +665,7 @@ class _MentorChallengeDetailsScreenState extends State<MentorChallengeGradingScr
                     width: 3,
                     height: 14,
                     decoration: BoxDecoration(
-                      color: const Color(0xFFC09268),
+                      color: AppColors.buttonCamel,
                       borderRadius: BorderRadius.circular(2),
                     ),
                   ),

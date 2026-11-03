@@ -888,7 +888,7 @@ class _MentorStationScreenState extends State<MentorStationClass1Screen> {
                                 shape: BoxShape.circle,
                                 border: Border.all(
                                   color: _currentClipIndex < clips.length - 1
-                                      ? const Color(0xFFC09268)
+                                      ? AppColors.buttonCamel
                                       : const Color(
                                           0xFFC09268,
                                         ).withValues(alpha: 0.3),
@@ -934,7 +934,7 @@ class _MentorStationScreenState extends State<MentorStationClass1Screen> {
                                 shape: BoxShape.circle,
                                 border: Border.all(
                                   color: _currentClipIndex > 0
-                                      ? const Color(0xFFC09268)
+                                      ? AppColors.buttonCamel
                                       : const Color(
                                           0xFFC09268,
                                         ).withValues(alpha: 0.3),
@@ -1009,7 +1009,7 @@ class _MentorStationScreenState extends State<MentorStationClass1Screen> {
                 color: const Color(0xFF2A2835),
                 borderRadius: BorderRadius.circular(8),
                 border: Border.all(
-                  color: const Color(0xFFC09268).withValues(alpha: 0.85),
+                  color: AppColors.buttonCamel.withValues(alpha: 0.85),
                   width: 1.0,
                 ),
               ),

@@ -875,14 +875,14 @@ class _ChallengesScreenState extends State<MentorChallengesScreen> {
           color: const Color(0xFF2A2835),
           borderRadius: BorderRadius.circular(10),
           border: Border.all(
-            color: const Color(0xFFC09268),
+            color: AppColors.buttonCamel,
             width: 1.0,
           ),
         ),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Icon(Icons.add, color: Color(0xFFE1BC96), size: 18),
+            const Icon(Icons.add, color: AppColors.accentGoldEnd, size: 18),
             const SizedBox(width: 6),
             Text(
               title,
@@ -890,7 +890,7 @@ class _ChallengesScreenState extends State<MentorChallengesScreen> {
                 fontFamily: AppTheme.fontFamily,
                 fontSize: 13,
                 fontWeight: FontWeight.bold,
-                color: Color(0xFFE1BC96),
+                color: AppColors.accentGoldEnd,
               ),
             ),
           ],
@@ -1315,7 +1315,7 @@ class _ChallengesScreenState extends State<MentorChallengesScreen> {
           child: Row(
             children: [
               Expanded(child: Text(text, style: const TextStyle(color: Colors.white, fontFamily: AppTheme.fontFamily, fontSize: 13))),
-              const Icon(Icons.calendar_month_rounded, color: Color(0xFF9E9CD6), size: 18),
+              const Icon(Icons.calendar_month_rounded, color: AppColors.buttonCancelPurple, size: 18),
             ],
           ),
         );
@@ -1381,7 +1381,7 @@ class _ChallengesScreenState extends State<MentorChallengesScreen> {
                               alignment: Alignment.centerRight,
                               child: Icon(
                                 Icons.local_fire_department_rounded,
-                                color: Color(0xFF9E9CD6),
+                                color: AppColors.buttonCancelPurple,
                                 size: 34,
                               ),
                             ),
@@ -1440,7 +1440,7 @@ class _ChallengesScreenState extends State<MentorChallengesScreen> {
                                         : '${recipientIds.length.toString().toPersianDigits()} نفر از ${memberTotal.toString().toPersianDigits()} عضو',
                                   ),
                                 ),
-                                const Icon(Icons.keyboard_arrow_down, color: Color(0xFF9E9CD6), size: 18),
+                                const Icon(Icons.keyboard_arrow_down, color: AppColors.buttonCancelPurple, size: 18),
                               ],
                             ),
                           )),
@@ -1516,7 +1516,7 @@ class _ChallengesScreenState extends State<MentorChallengesScreen> {
                                           fontFamily: AppTheme.fontFamily,
                                           fontSize: 12,
                                         ),
-                                        icon: const Icon(Icons.keyboard_arrow_down, color: Color(0xFF9E9CD6), size: 18),
+                                        icon: const Icon(Icons.keyboard_arrow_down, color: AppColors.buttonCancelPurple, size: 18),
                                         isExpanded: true,
                                         items: ['کلاف']
                                             .map((a) => DropdownMenuItem(value: a, child: Text(AssetNames.labelFor(a))))
@@ -1595,7 +1595,7 @@ class _ChallengesScreenState extends State<MentorChallengesScreen> {
                                 ),
                                 icon: const Icon(
                                   Icons.keyboard_arrow_down,
-                                  color: Color(0xFF9E9CD6),
+                                  color: AppColors.buttonCancelPurple,
                                   size: 18,
                                 ),
                                 isExpanded: true,
@@ -1695,7 +1695,7 @@ class _ChallengesScreenState extends State<MentorChallengesScreen> {
                                         color: invalid.contains('opt$i')
                                             ? const Color(0xFFEF4444)
                                             : selectedCorrectOptionIndex == i
-                                                ? const Color(0xFFC09268)
+                                                ? AppColors.buttonCamel
                                                 : const Color(0xFF7A709E),
                                         width: 1.1,
                                       ),
@@ -1751,12 +1751,12 @@ class _ChallengesScreenState extends State<MentorChallengesScreen> {
                                             decoration: BoxDecoration(
                                               shape: BoxShape.circle,
                                               color: selectedCorrectOptionIndex == i
-                                                  ? const Color(0xFFC09268).withValues(alpha: 0.2)
+                                                  ? AppColors.buttonCamel.withValues(alpha: 0.2)
                                                   : Colors.transparent,
                                               border: Border.all(
                                                 color: selectedCorrectOptionIndex == i
-                                                    ? const Color(0xFFC09268)
-                                                    : const Color(0xFF9E9CD6),
+                                                    ? AppColors.buttonCamel
+                                                    : AppColors.buttonCancelPurple,
                                                 width: selectedCorrectOptionIndex == i ? 2.0 : 1.4,
                                               ),
                                             ),
@@ -1767,7 +1767,7 @@ class _ChallengesScreenState extends State<MentorChallengesScreen> {
                                                       height: 10,
                                                       decoration: const BoxDecoration(
                                                         shape: BoxShape.circle,
-                                                        color: Color(0xFFC09268),
+                                                        color: AppColors.buttonCamel,
                                                       ),
                                                     ),
                                                   )
@@ -1794,14 +1794,14 @@ class _ChallengesScreenState extends State<MentorChallengesScreen> {
                                       color: Colors.transparent,
                                       borderRadius: BorderRadius.circular(10),
                                       border: Border.all(
-                                        color: const Color(0xFFC09268).withValues(alpha: 0.6),
+                                        color: AppColors.buttonCamel.withValues(alpha: 0.6),
                                         width: 1.0,
                                       ),
                                     ),
                                     child: const Center(
                                       child: Icon(
                                         Icons.add,
-                                        color: Color(0xFFC09268),
+                                        color: AppColors.buttonCamel,
                                         size: 20,
                                       ),
                                     ),
@@ -1957,7 +1957,7 @@ class _ChallengesScreenState extends State<MentorChallengesScreen> {
                               child: const Text(
                                 'لغو',
                                 style: TextStyle(
-                                  color: Color(0xFF9E9CD6),
+                                  color: AppColors.buttonCancelPurple,
                                   fontSize: 15,
                                   fontWeight: FontWeight.bold,
                                   fontFamily: AppTheme.fontFamily,
@@ -2025,7 +2025,7 @@ class _ChallengesScreenState extends State<MentorChallengesScreen> {
                           alignment: Alignment.centerRight,
                           child: Icon(
                             Icons.chat_bubble_outline_rounded,
-                            color: Color(0xFF9E9CD6),
+                            color: AppColors.buttonCancelPurple,
                             size: 32,
                           ),
                         ),
@@ -2073,7 +2073,7 @@ class _ChallengesScreenState extends State<MentorChallengesScreen> {
                             value: selectedUserId,
                             isExpanded: true,
                             dropdownColor: const Color(0xFF2A2550),
-                            iconEnabledColor: const Color(0xFF9E9CD6),
+                            iconEnabledColor: AppColors.buttonCancelPurple,
                             style: const TextStyle(color: Colors.white, fontFamily: AppTheme.fontFamily, fontSize: 13),
                             items: [
                               const DropdownMenuItem<String?>(value: null, child: Text('همه اعضا')),
@@ -2200,7 +2200,7 @@ class _ChallengesScreenState extends State<MentorChallengesScreen> {
                           child: const Text(
                             'ارسال',
                             style: TextStyle(
-                              color: Color(0xFF9E9CD6),
+                              color: AppColors.buttonCancelPurple,
                               fontSize: 15,
                               fontWeight: FontWeight.bold,
                               fontFamily: AppTheme.fontFamily,
@@ -2217,7 +2217,7 @@ class _ChallengesScreenState extends State<MentorChallengesScreen> {
                           child: const Text(
                             'لغو',
                             style: TextStyle(
-                              color: Color(0xFF9E9CD6),
+                              color: AppColors.buttonCancelPurple,
                               fontSize: 15,
                               fontWeight: FontWeight.bold,
                               fontFamily: AppTheme.fontFamily,
@@ -2242,7 +2242,7 @@ class _ChallengesScreenState extends State<MentorChallengesScreen> {
     required String label,
     required Widget child,
     bool isTopAligned = false,
-    Color labelBorderColor = const Color(0xFFC09268),
+    Color labelBorderColor = AppColors.buttonCamel,
   }) {
     return Row(
       crossAxisAlignment: isTopAligned ? CrossAxisAlignment.start : CrossAxisAlignment.center,
@@ -2385,7 +2385,7 @@ class _ChallengesScreenState extends State<MentorChallengesScreen> {
                       child: Text(
                         tab['title'] as String,
                         style: TextStyle(
-                          color: isSelected ? const Color(0xFFE1BC96) : const Color(0xFF9D99B8),
+                          color: isSelected ? AppColors.accentGoldEnd : const Color(0xFF9D99B8),
                           fontSize: isSelected ? 15.5 : 14,
                           fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
                           fontFamily: AppTheme.fontFamily,
@@ -2393,7 +2393,7 @@ class _ChallengesScreenState extends State<MentorChallengesScreen> {
                           shadows: isSelected
                               ? [
                                   Shadow(
-                                    color: const Color(0xFFC09268).withValues(alpha: 0.45),
+                                    color: AppColors.buttonCamel.withValues(alpha: 0.45),
                                     blurRadius: 8,
                                   ),
                                 ]
@@ -2729,7 +2729,7 @@ class _ChallengesScreenState extends State<MentorChallengesScreen> {
                             color: const Color(0xFF2A2835),
                             borderRadius: BorderRadius.circular(8),
                             border: Border.all(
-                              color: const Color(0xFFC09268).withValues(alpha: 0.85),
+                              color: AppColors.buttonCamel.withValues(alpha: 0.85),
                               width: 1.0,
                             ),
                             boxShadow: [

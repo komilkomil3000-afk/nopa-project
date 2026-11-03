@@ -1,4 +1,5 @@
 import 'package:nopa_app/widgets/app_toast.dart';
+import 'package:nopa_app/core/theme/app_colors.dart';
 import 'package:nopa_app/widgets/bottom_nav_bar.dart';
 import 'package:nopa_app/core/constants/app_routes.dart';
 import 'package:nopa_app/widgets/tap_expander.dart';
@@ -370,7 +371,7 @@ class _ProfileScreenState extends State<StudentProfileScreen> {
     bool enabled = true,
   }) {
     const Color disabledColor = Color(0xFF6B6985);
-    final Color iconColor = enabled ? const Color(0xFF9E9CD6) : disabledColor;
+    final Color iconColor = enabled ? AppColors.buttonCancelPurple : disabledColor;
     return Material(
       color: Colors.transparent,
       child: TapExpander(child: InkWell(
@@ -651,7 +652,7 @@ class _ReportCardAndAchievementsScreenState extends State<_ReportCardAndAchievem
                     if (_refreshing && stations.isEmpty)
                       const Padding(
                         padding: EdgeInsets.symmetric(vertical: 16),
-                        child: Center(child: CircularProgressIndicator(color: Color(0xFFC09268), strokeWidth: 2.5)),
+                        child: Center(child: CircularProgressIndicator(color: AppColors.buttonCamel, strokeWidth: 2.5)),
                       )
                     else if (stations.isEmpty)
                       const Padding(
@@ -772,7 +773,7 @@ class _ReportCardAndAchievementsScreenState extends State<_ReportCardAndAchievem
                     // Chevron Arrow
                     Icon(
                       isExpanded ? Icons.keyboard_arrow_up_rounded : Icons.keyboard_arrow_down_rounded,
-                      color: const Color(0xFF9E9CD6),
+                      color: AppColors.buttonCancelPurple,
                       size: 20,
                     ),
                   ],

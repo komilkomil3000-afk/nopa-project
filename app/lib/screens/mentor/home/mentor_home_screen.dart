@@ -1,4 +1,5 @@
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:nopa_app/core/theme/app_colors.dart';
 import 'package:nopa_app/widgets/bottom_nav_bar.dart';
 import 'package:nopa_app/core/constants/app_routes.dart';
 import '../../../widgets/nopa_modal_shell.dart';
@@ -286,7 +287,7 @@ class _MentorHomeScreenState extends State<MentorHomeScreen> {
                     decoration: BoxDecoration(
                       color: const Color(0xFF28274A),
                       borderRadius: BorderRadius.circular(10),
-                      border: Border.all(color: const Color(0xFFC09268), width: 1.0),
+                      border: Border.all(color: AppColors.buttonCamel, width: 1.0),
                     ),
                     child: const Row(
                       mainAxisSize: MainAxisSize.min,

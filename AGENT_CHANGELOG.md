@@ -3762,3 +3762,50 @@ When logging changes, append a new entry to the bottom of the "Change Entries" s
 - **Verification / Checkpoints Executed:**
   - flutter analyze run from app/ : 0 issues; grep shows no non-rounded Icons.* left in screens/chat and every chat sheet/AlertDialog uses the shared shape
 - **Status:** Completed
+
+### [2026-11-03 12:38] - Flutter UI Architect (Claude)
+- **Triggered By:** GitHub: komilkomil3000-afk | System: komeil
+- **Target Component(s):** app
+- **Files Modified / Created / Deleted:**
+  - `app/test/nopa_shared_widgets_test.dart` (Created)
+- **Description of Changes:**
+  - Added app/test/nopa_shared_widgets_test.dart: 6 widget tests covering NopaModalShell (title/child/actions, disabled action, loading action, showNopaModal returning the popped value) and NopaPillTabs (tap callback, expand width)
+  - Final verification run of the whole modal/route/tab cleanup
+- **Verification / Checkpoints Executed:**
+  - flutter analyze run from app/ : 0 issues; flutter test: all 25 tests passed (19 existing + 6 new)
+- **Status:** Completed
+
+### [2026-11-03 12:54] - Flutter UI Architect (Claude)
+- **Triggered By:** GitHub: komilkomil3000-afk | System: komeil
+- **Target Component(s):** app
+- **Files Modified / Created / Deleted:**
+  - `GENT_CHANGELOG.md` (Modified)
+  - `app/lib/screens/auth/login_screen.dart` (Modified)
+  - `app/lib/screens/market/market_screen.dart` (Modified)
+  - `app/lib/screens/mentor/academy/mentor_station_class1_screen.dart` (Modified)
+  - `app/lib/screens/mentor/challenges/mentor_challenge_grading_screen.dart` (Modified)
+  - `app/lib/screens/mentor/challenges/mentor_challenges_screen.dart` (Modified)
+  - `app/lib/screens/mentor/home/mentor_home_screen.dart` (Modified)
+  - `app/lib/screens/mentor/profile/mentor_caravans_roster_screen.dart` (Modified)
+  - `app/lib/screens/mentor/profile/mentor_edit_profile_screen.dart` (Modified)
+  - `app/lib/screens/mentor/profile/mentor_profile_screen.dart` (Modified)
+  - `app/lib/screens/student/academy/student_class1_screen.dart` (Modified)
+  - `app/lib/screens/student/academy/student_class2_screen.dart` (Modified)
+  - `app/lib/screens/student/challenges/student_challenges_screen.dart` (Modified)
+  - `app/lib/screens/student/messages/student_notifications_screen.dart` (Modified)
+  - `app/lib/screens/student/profile/student_certificate_detail_screen.dart` (Modified)
+  - `app/lib/screens/student/profile/student_certificates_screen.dart` (Modified)
+  - `app/lib/screens/student/profile/student_edit_profile_screen.dart` (Modified)
+  - `app/lib/screens/student/profile/student_profile_screen.dart` (Modified)
+  - `app/lib/widgets/app_top_bar.dart` (Modified)
+  - `app/lib/widgets/contact_us_dialog.dart` (Modified)
+  - `app/lib/widgets/custom_drawer.dart` (Modified)
+  - `app/lib/widgets/nopa_inline_video_player.dart` (Modified)
+  - `app/test/nopa_shared_widgets_test.dart` (Created)
+- **Description of Changes:**
+  - Token consistency: replaced 154 single-line raw colour literals that exactly equal existing tokens with AppColors.buttonCamel (0xFFC09268), AppColors.buttonCancelPurple (0xFF9E9CD6) and AppColors.accentGoldEnd (0xFFE1BC96) across 21 files in screens/ and widgets/
+  - values identical so no visual or runtime change
+  - core/theme/app_colors.dart and the few multi-line literals left untouched
+- **Verification / Checkpoints Executed:**
+  - flutter analyze run from app/ : 0 issues; flutter test: all 25 passed
+- **Status:** Completed

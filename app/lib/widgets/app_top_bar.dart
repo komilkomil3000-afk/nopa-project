@@ -1,4 +1,5 @@
 import 'package:nopa_app/widgets/tap_expander.dart';
+import 'package:nopa_app/core/theme/app_colors.dart';
 import 'package:nopa_app/core/constants/app_routes.dart';
 import 'package:flutter/material.dart' hide Text;
 import 'package:nopa_app/widgets/fa_text.dart';
@@ -50,7 +51,7 @@ class AppTopBar extends StatelessWidget {
                     child: ShaderMask(
                       shaderCallback: (bounds) => const LinearGradient(
                         colors: [
-                          Color(0xFFC09268),
+                          AppColors.buttonCamel,
                           Color(0xFFF4DCC5),
                         ],
                         begin: Alignment.bottomCenter,

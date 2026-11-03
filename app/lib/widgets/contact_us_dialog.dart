@@ -1,4 +1,5 @@
 import 'package:nopa_app/widgets/tap_expander.dart';
+import 'package:nopa_app/core/theme/app_colors.dart';
 import 'package:nopa_app/core/constants/app_routes.dart';
 import 'package:flutter/material.dart' hide Text;
 import 'package:nopa_app/widgets/fa_text.dart';
@@ -188,7 +189,7 @@ class ContactUsDialog extends StatelessWidget {
               value,
               textAlign: TextAlign.left,
               style: const TextStyle(
-                color: Color(0xFFE1BC96),
+                color: AppColors.accentGoldEnd,
                 fontSize: 13.5,
                 fontWeight: FontWeight.w500,
                 height: 1.4,
@@ -248,12 +249,12 @@ class ContactUsDialog extends StatelessWidget {
               child: const Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Icon(Icons.location_on_rounded, color: Color(0xFFE1BC96), size: 18),
+                  Icon(Icons.location_on_rounded, color: AppColors.accentGoldEnd, size: 18),
                   SizedBox(width: 6),
                   Text(
                     'مشاهده روی نقشه',
                     style: TextStyle(
-                      color: Color(0xFFE1BC96),
+                      color: AppColors.accentGoldEnd,
                       fontSize: 12,
                       fontWeight: FontWeight.w500,
                       fontFamily: AppTheme.fontFamily,

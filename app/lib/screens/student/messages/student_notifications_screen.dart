@@ -525,7 +525,7 @@ class _NotificationsScreenState extends State<StudentNotificationsScreen> {
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: const [
-                      Icon(Icons.done_all_rounded, size: 16, color: Color(0xFFC09268)),
+                      Icon(Icons.done_all_rounded, size: 16, color: AppColors.buttonCamel),
                       SizedBox(width: 4),
                       Text(
                         'خواندن همه',
@@ -579,7 +579,7 @@ class _NotificationsScreenState extends State<StudentNotificationsScreen> {
               color: const Color(0xFF2A2835),
               borderRadius: BorderRadius.circular(8),
               border: Border.all(
-                color: const Color(0xFFC09268).withValues(alpha: 0.85),
+                color: AppColors.buttonCamel.withValues(alpha: 0.85),
                 width: 1.0,
               ),
               boxShadow: [

@@ -386,7 +386,7 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
                       ),
                       focusedBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(10),
-                        borderSide: const BorderSide(color: Color(0xFFE1BC96)),
+                        borderSide: const BorderSide(color: AppColors.accentGoldEnd),
                       ),
                     );
 
@@ -676,7 +676,7 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
                     title: 'ورود به عنوان دانش‌آموز',
                     description: 'مشاهده جلسات آموزشی، ثبت تکالیف، نقشه پیشرفت و بازارچه',
                     icon: Icons.school_rounded,
-                    gradientColors: const [Color(0xFFCD8449), Color(0xFFE1BC96)],
+                    gradientColors: const [Color(0xFFCD8449), AppColors.accentGoldEnd],
                     onTap: () async {
                       Navigator.pop(ctx);
                       final appRepo = Provider.of<AppRepository>(context, listen: false);
@@ -1089,7 +1089,7 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
           color: const Color(0xFF2A2835),
           borderRadius: BorderRadius.circular(8),
           border: Border.all(
-            color: const Color(0xFFC09268),
+            color: AppColors.buttonCamel,
             width: 1.0,
           ),
         ),
@@ -1097,12 +1097,12 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
             ? const SizedBox(
                 width: 14,
                 height: 14,
-                child: CircularProgressIndicator(strokeWidth: 2, color: Color(0xFFC09268)),
+                child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.buttonCamel),
               )
             : Text(
                 buttonLabel,
                 style: TextStyle(
-                  color: isTimerActive ? const Color(0xFFC7B299) : const Color(0xFFE1BC96),
+                  color: isTimerActive ? const Color(0xFFC7B299) : AppColors.accentGoldEnd,
                   fontWeight: FontWeight.w600,
                   fontFamily: AppTheme.fontFamily,
                   fontSize: 11.5,
@@ -1221,7 +1221,7 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
             child: Text(
               isOtp ? 'بازگشت به ورود با رمز عبور' : 'رمز عبور را فراموش کرده‌ام (ورود با کد پیامکی)',
               style: const TextStyle(
-                color: Color(0xFFE1BC96),
+                color: AppColors.accentGoldEnd,
                 fontSize: 12,
                 fontWeight: FontWeight.w600,
                 fontFamily: AppTheme.fontFamily,

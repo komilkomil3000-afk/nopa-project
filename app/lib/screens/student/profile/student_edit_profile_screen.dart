@@ -186,14 +186,14 @@ class _EditProfileScreenState extends State<StudentEditProfileScreen> {
                         border: Border.all(
                           color: pickedFileName != null
                               ? const Color(0xFF10B981)
-                              : const Color(0xFFC09268).withValues(alpha: 0.5),
+                              : AppColors.buttonCamel.withValues(alpha: 0.5),
                         ),
                       ),
                       child: Column(
                         children: [
                           Icon(
                             pickedFileName != null ? Icons.check_circle_outline : Icons.cloud_upload_outlined,
-                            color: pickedFileName != null ? const Color(0xFF10B981) : const Color(0xFFC09268),
+                            color: pickedFileName != null ? const Color(0xFF10B981) : AppColors.buttonCamel,
                             size: 34,
                           ),
                           const SizedBox(height: 8),
@@ -456,7 +456,7 @@ class _EditProfileScreenState extends State<StudentEditProfileScreen> {
                                       gradient: AppColors.darkSurfaceGradient,
                                       borderRadius: BorderRadius.circular(9),
                                       border: Border.all(
-                                        color: const Color(0xFFC09268),
+                                        color: AppColors.buttonCamel,
                                         width: 1.1,
                                       ),
                                     ),
@@ -472,7 +472,7 @@ class _EditProfileScreenState extends State<StudentEditProfileScreen> {
                                         : const Text(
                                             'ثبت تغییرات',
                                             style: TextStyle(
-                                              color: Color(0xFFE1BC96),
+                                              color: AppColors.accentGoldEnd,
                                               fontSize: 14,
                                               fontWeight: FontWeight.bold,
                                               fontFamily: AppTheme.fontFamily,
@@ -758,14 +758,14 @@ class _EditProfileScreenState extends State<StudentEditProfileScreen> {
                     color: const Color(0xFF2A2835),
                     borderRadius: BorderRadius.circular(7),
                     border: Border.all(
-                      color: const Color(0xFFC09268),
+                      color: AppColors.buttonCamel,
                       width: 1.0,
                     ),
                   ),
                   child: Text(
                     buttonLabel,
                     style: const TextStyle(
-                      color: Color(0xFFE1BC96),
+                      color: AppColors.accentGoldEnd,
                       fontSize: 11,
                       fontWeight: FontWeight.bold,
                       fontFamily: AppTheme.fontFamily,
@@ -844,14 +844,14 @@ class _EditProfileScreenState extends State<StudentEditProfileScreen> {
                     color: const Color(0xFF2A2835),
                     borderRadius: BorderRadius.circular(7),
                     border: Border.all(
-                      color: const Color(0xFFC09268),
+                      color: AppColors.buttonCamel,
                       width: 1.0,
                     ),
                   ),
                   child: Text(
                     buttonLabel,
                     style: const TextStyle(
-                      color: Color(0xFFE1BC96),
+                      color: AppColors.accentGoldEnd,
                       fontSize: 11,
                       fontWeight: FontWeight.bold,
                       fontFamily: AppTheme.fontFamily,
@@ -928,7 +928,7 @@ class _EditProfileScreenState extends State<StudentEditProfileScreen> {
                 selectionOverlay: Container(
                   decoration: BoxDecoration(
                     border: Border.symmetric(
-                      horizontal: BorderSide(color: const Color(0xFFC09268).withValues(alpha: 0.6)),
+                      horizontal: BorderSide(color: AppColors.buttonCamel.withValues(alpha: 0.6)),
                     ),
                   ),
                 ),
@@ -956,7 +956,7 @@ class _EditProfileScreenState extends State<StudentEditProfileScreen> {
                   children: [
                     const Text(
                       'تاریخ تولد',
-                      style: TextStyle(color: Color(0xFFE1BC96), fontSize: 14, fontWeight: FontWeight.bold, fontFamily: AppTheme.fontFamily),
+                      style: TextStyle(color: AppColors.accentGoldEnd, fontSize: 14, fontWeight: FontWeight.bold, fontFamily: AppTheme.fontFamily),
                     ),
                     SizedBox(
                       height: 170,
@@ -1010,12 +1010,12 @@ class _EditProfileScreenState extends State<StudentEditProfileScreen> {
         decoration: BoxDecoration(
           color: const Color(0xFF1B192A),
           borderRadius: BorderRadius.circular(10),
-          border: Border.all(color: const Color(0xFFC09268), width: 1.0),
+          border: Border.all(color: AppColors.buttonCamel, width: 1.0),
         ),
         child: Text(
           label,
           style: const TextStyle(
-            color: Color(0xFFE1BC96),
+            color: AppColors.accentGoldEnd,
             fontSize: 13,
             fontWeight: FontWeight.bold,
             fontFamily: AppTheme.fontFamily,
@@ -1037,7 +1037,7 @@ class _EditProfileScreenState extends State<StudentEditProfileScreen> {
               const Text(
                 'ایجاد / تغییر رمز عبور ثابت',
                 style: TextStyle(
-                  color: Color(0xFFC09268),
+                  color: AppColors.buttonCamel,
                   fontSize: 13,
                   fontWeight: FontWeight.bold,
                   fontFamily: AppTheme.fontFamily,
@@ -1050,7 +1050,7 @@ class _EditProfileScreenState extends State<StudentEditProfileScreen> {
                   decoration: BoxDecoration(
                     gradient: LinearGradient(
                       colors: [
-                        const Color(0xFFC09268).withValues(alpha: 0.5),
+                        AppColors.buttonCamel.withValues(alpha: 0.5),
                         Colors.transparent,
                       ],
                     ),
@@ -1534,13 +1534,13 @@ class _PasswordChangeDialogState extends State<_PasswordChangeDialog> {
           decoration: BoxDecoration(
             color: const Color(0xFF1B192A),
             borderRadius: BorderRadius.circular(10),
-            border: Border.all(color: primary ? const Color(0xFFC09268) : const Color(0xFF5A4D80), width: 1.0),
+            border: Border.all(color: primary ? AppColors.buttonCamel : const Color(0xFF5A4D80), width: 1.0),
           ),
           child: _busy && primary
               ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2, color: Color(0xFFCD8449)))
               : Text(label,
                   style: TextStyle(
-                    color: primary ? const Color(0xFFE1BC96) : const Color(0xFFB5B0D8),
+                    color: primary ? AppColors.accentGoldEnd : const Color(0xFFB5B0D8),
                     fontSize: 13,
                     fontWeight: FontWeight.bold,
                     fontFamily: AppTheme.fontFamily,
@@ -1585,7 +1585,7 @@ class _PasswordChangeDialogState extends State<_PasswordChangeDialog> {
               child: const Padding(
                 padding: EdgeInsets.symmetric(vertical: 4, horizontal: 4),
                 child: Text('ارسال دوباره کد',
-                    style: TextStyle(color: Color(0xFFC09268), fontSize: 11.5, fontFamily: AppTheme.fontFamily)),
+                    style: TextStyle(color: AppColors.buttonCamel, fontSize: 11.5, fontFamily: AppTheme.fontFamily)),
               ),
             ),
           ),

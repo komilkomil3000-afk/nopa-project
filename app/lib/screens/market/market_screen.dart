@@ -1339,7 +1339,7 @@ class _MarketScreenState extends State<MarketScreen> {
                               color: const Color(0xFF4A382A),
                               borderRadius: BorderRadius.circular(7),
                               border: Border.all(
-                                color: const Color(0xFFC09268).withValues(alpha: 0.5),
+                                color: AppColors.buttonCamel.withValues(alpha: 0.5),
                                 width: 1,
                               ),
                             ),
@@ -1920,7 +1920,7 @@ class _MarketScreenState extends State<MarketScreen> {
                                 child: _buildInteractiveActionButton(
                                   text: 'ثبت درخواست',
                                   isActive: _activeActionButton == 1,
-                                  strokeBorderColor: const Color(0xFFC09268),
+                                  strokeBorderColor: AppColors.buttonCamel,
                                   onTap: _submitExchangeRequest,
                                 ),
                               ),
@@ -1971,7 +1971,7 @@ class _MarketScreenState extends State<MarketScreen> {
                                     child: _buildInteractiveActionButton(
                                       text: 'ثبت درخواست',
                                       isActive: _activeActionButton == 1,
-                                      strokeBorderColor: const Color(0xFFC09268),
+                                      strokeBorderColor: AppColors.buttonCamel,
                                       onTap: _submitExchangeRequest,
                                     ),
                                   ),

@@ -135,7 +135,7 @@ class _CertificateViewScreenState extends State<StudentCertificateDetailScreen> 
           child: Text(
             value,
             textAlign: TextAlign.left,
-            style: const TextStyle(color: Color(0xFFE1BC96), fontSize: 13, fontWeight: FontWeight.w500, fontFamily: AppTheme.fontFamily),
+            style: const TextStyle(color: AppColors.accentGoldEnd, fontSize: 13, fontWeight: FontWeight.w500, fontFamily: AppTheme.fontFamily),
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
           ),
@@ -173,7 +173,7 @@ class _CertificateViewScreenState extends State<StudentCertificateDetailScreen> 
               controller: controller,
               keyboardType: keyboardType,
               maxLines: maxLines,
-              style: const TextStyle(color: Color(0xFFE1BC96), fontSize: 12.5, fontFamily: AppTheme.fontFamily),
+              style: const TextStyle(color: AppColors.accentGoldEnd, fontSize: 12.5, fontFamily: AppTheme.fontFamily),
               decoration: InputDecoration(
                 isDense: true,
                 border: InputBorder.none,
@@ -267,7 +267,7 @@ class _CertificateViewScreenState extends State<StudentCertificateDetailScreen> 
                                 ],
                               ),
                               border: Border.all(
-                                color: const Color(0xFFC09268).withValues(alpha: 0.4),
+                                color: AppColors.buttonCamel.withValues(alpha: 0.4),
                                 width: 1.0,
                               ),
                             ),
@@ -277,7 +277,7 @@ class _CertificateViewScreenState extends State<StudentCertificateDetailScreen> 
                                 ShaderMask(
                                   shaderCallback: (bounds) => const LinearGradient(
                                     colors: [
-                                      Color(0xFFC09268),
+                                      AppColors.buttonCamel,
                                       Color(0xFFF4DCC5),
                                     ],
                                     begin: Alignment.bottomCenter,
@@ -300,7 +300,7 @@ class _CertificateViewScreenState extends State<StudentCertificateDetailScreen> 
                                   '«گواهی‌نامه رسمی آموزش و توانمندسازی کاروان»',
                                   textAlign: TextAlign.center,
                                   style: TextStyle(
-                                    color: Color(0xFFE1BC96),
+                                    color: AppColors.accentGoldEnd,
                                     fontSize: 13,
                                     fontWeight: FontWeight.bold,
                                     fontFamily: AppTheme.fontFamily,
@@ -312,7 +312,7 @@ class _CertificateViewScreenState extends State<StudentCertificateDetailScreen> 
                                 Container(
                                   height: 1,
                                   width: 140,
-                                  color: const Color(0xFFC09268).withValues(alpha: 0.5),
+                                  color: AppColors.buttonCamel.withValues(alpha: 0.5),
                                 ),
                                 const SizedBox(height: 18),
 
@@ -330,7 +330,7 @@ class _CertificateViewScreenState extends State<StudentCertificateDetailScreen> 
                                 Text(
                                   widget.userName,
                                   style: const TextStyle(
-                                    color: Color(0xFFE1BC96),
+                                    color: AppColors.accentGoldEnd,
                                     fontSize: 20,
                                     fontWeight: FontWeight.bold,
                                     fontFamily: AppTheme.fontFamily,
@@ -384,13 +384,13 @@ class _CertificateViewScreenState extends State<StudentCertificateDetailScreen> 
                                         Text(
                                           'مهر و امضای دبیرخانه:',
                                           style: TextStyle(
-                                            color: Color(0xFF9E9CD6),
+                                            color: AppColors.buttonCancelPurple,
                                             fontSize: 9.5,
                                             fontFamily: AppTheme.fontFamily,
                                           ),
                                         ),
                                         SizedBox(height: 4),
-                                        Icon(Icons.draw_rounded, color: Color(0xFFC09268), size: 22),
+                                        Icon(Icons.draw_rounded, color: AppColors.buttonCamel, size: 22),
                                       ],
                                     ),
 
@@ -402,12 +402,12 @@ class _CertificateViewScreenState extends State<StudentCertificateDetailScreen> 
                                         shape: BoxShape.circle,
                                         color: const Color(0xFF2A2835),
                                         border: Border.all(
-                                          color: const Color(0xFFC09268),
+                                          color: AppColors.buttonCamel,
                                           width: 1.5,
                                         ),
                                         boxShadow: [
                                           BoxShadow(
-                                            color: const Color(0xFFC09268).withValues(alpha: 0.25),
+                                            color: AppColors.buttonCamel.withValues(alpha: 0.25),
                                             blurRadius: 10,
                                           ),
                                         ],
@@ -415,7 +415,7 @@ class _CertificateViewScreenState extends State<StudentCertificateDetailScreen> 
                                       alignment: Alignment.center,
                                       child: const Icon(
                                         Icons.verified_user_rounded,
-                                        color: Color(0xFFE1BC96),
+                                        color: AppColors.accentGoldEnd,
                                         size: 22,
                                       ),
                                     ),
@@ -427,7 +427,7 @@ class _CertificateViewScreenState extends State<StudentCertificateDetailScreen> 
                                         const Text(
                                           'تاریخ صدور:',
                                           style: TextStyle(
-                                            color: Color(0xFF9E9CD6),
+                                            color: AppColors.buttonCancelPurple,
                                             fontSize: 9.5,
                                             fontFamily: AppTheme.fontFamily,
                                           ),
@@ -469,7 +469,7 @@ class _CertificateViewScreenState extends State<StudentCertificateDetailScreen> 
                                 gradient: AppColors.darkSurfaceGradient,
                                 borderRadius: BorderRadius.circular(9),
                                 border: Border.all(
-                                  color: const Color(0xFFC09268),
+                                  color: AppColors.buttonCamel,
                                   width: 1.1,
                                 ),
                               ),
@@ -479,18 +479,18 @@ class _CertificateViewScreenState extends State<StudentCertificateDetailScreen> 
                                       height: 20,
                                       child: CircularProgressIndicator(
                                         strokeWidth: 2,
-                                        color: Color(0xFFE1BC96),
+                                        color: AppColors.accentGoldEnd,
                                       ),
                                     )
                                   : const Row(
                                       mainAxisAlignment: MainAxisAlignment.center,
                                       children: [
-                                        Icon(Icons.download_rounded, color: Color(0xFFE1BC96), size: 18),
+                                        Icon(Icons.download_rounded, color: AppColors.accentGoldEnd, size: 18),
                                         SizedBox(width: 8),
                                         Text(
                                           'دانلود مستقیم گواهی (PDF / تصویر)',
                                           style: TextStyle(
-                                            color: Color(0xFFE1BC96),
+                                            color: AppColors.accentGoldEnd,
                                             fontSize: 14,
                                             fontWeight: FontWeight.bold,
                                             fontFamily: AppTheme.fontFamily,

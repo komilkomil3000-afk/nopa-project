@@ -633,7 +633,7 @@ class _Class2ScreenState extends State<StudentClass2Screen> {
       onBackTap: () => Navigator.of(context).pop(),
       body: _isLoadingClasses
           ? const Center(
-              child: CircularProgressIndicator(color: Color(0xFFC09268)),
+              child: CircularProgressIndicator(color: AppColors.buttonCamel),
             )
           : Column(
               children: [
@@ -1059,7 +1059,7 @@ class _Class2ScreenState extends State<StudentClass2Screen> {
                                       maxLines: 1,
                                       overflow: TextOverflow.ellipsis,
                                       style: TextStyle(
-                                        color: isPlaying ? const Color(0xFFE1BC96) : const Color(0xFFDDD9EE),
+                                        color: isPlaying ? AppColors.accentGoldEnd : const Color(0xFFDDD9EE),
                                         fontSize: 11,
                                         fontWeight: FontWeight.normal,
                                         fontFamily: AppTheme.fontFamily,
@@ -1098,7 +1098,7 @@ class _Class2ScreenState extends State<StudentClass2Screen> {
                                       borderRadius: BorderRadius.circular(10),
                                       border: Border.all(
                                         color: isQuizUnlocked
-                                            ? const Color(0xFFC09268)
+                                            ? AppColors.buttonCamel
                                             : const Color(0xFF6C6C63).withValues(alpha: 0.35),
                                         width: 0.85,
                                       ),
@@ -1107,7 +1107,7 @@ class _Class2ScreenState extends State<StudentClass2Screen> {
                                       'آزمون',
                                       style: TextStyle(
                                         color: isQuizUnlocked
-                                            ? const Color(0xFFE1BC96)
+                                            ? AppColors.accentGoldEnd
                                             : const Color(0xFF8E889D).withValues(alpha: 0.5),
                                         fontWeight: FontWeight.normal,
                                         fontFamily: AppTheme.fontFamily,
@@ -1296,7 +1296,7 @@ class _Class2ScreenState extends State<StudentClass2Screen> {
             decoration: BoxDecoration(
               color: const Color(0xFF241F3B),
               borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: const Color(0xFFC09268).withValues(alpha: 0.6)),
+              border: Border.all(color: AppColors.buttonCamel.withValues(alpha: 0.6)),
             ),
             child: ListTile(
               leading: const Icon(Icons.download_rounded, color: Color(0xFFE5B888), size: 20),
@@ -1321,7 +1321,7 @@ class _Class2ScreenState extends State<StudentClass2Screen> {
 
   /// 6. Bottom Action Bar (منزلگاه قبل در راست و منزلگاه بعد در چپ)
   Widget _buildBottomActionBar() {
-    const gold = Color(0xFFC09268);
+    const gold = AppColors.buttonCamel;
     final canNext = _stationCount == 0 || _currentStationIndex < _stationCount - 1;
     final canPrev = _currentStationIndex > 0;
     final dim = gold.withValues(alpha: 0.35);
@@ -1361,7 +1361,7 @@ class _Class2ScreenState extends State<StudentClass2Screen> {
             child: Text(
               contactMentorLabel(Provider.of<AppRepository>(context, listen: false).currentUser),
               style: const TextStyle(
-                color: Color(0xFFE1BC96),
+                color: AppColors.accentGoldEnd,
                 fontWeight: FontWeight.normal,
                 fontFamily: AppTheme.fontFamily,
                 fontFamilyFallback: AppTheme.fontFamilyFallback,
@@ -1528,7 +1528,7 @@ class _Class2ScreenState extends State<StudentClass2Screen> {
                               final bool isWrongSel = showAnswers && isSel && !isCorrectOpt;
                               final Color accent = isCorrectOpt
                                   ? AppToast.successColor
-                                  : (isWrongSel ? AppToast.errorColor : const Color(0xFFC09268));
+                                  : (isWrongSel ? AppToast.errorColor : AppColors.buttonCamel);
                               return TapExpander(child: GestureDetector(
                                 onTap: showAnswers
                                     ? null
@@ -1724,7 +1724,7 @@ class _Class2ScreenState extends State<StudentClass2Screen> {
                                       });
                                     },
                               style: ElevatedButton.styleFrom(
-                                backgroundColor: const Color(0xFFC09268),
+                                backgroundColor: AppColors.buttonCamel,
                                 foregroundColor: const Color(0xFF1E1A33),
                                 padding: const EdgeInsets.symmetric(vertical: 10),
                                 shape: RoundedRectangleBorder(

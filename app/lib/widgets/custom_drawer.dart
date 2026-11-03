@@ -1,4 +1,5 @@
 import 'package:nopa_app/main.dart' show navigatorKey;
+import 'package:nopa_app/core/theme/app_colors.dart';
 import 'package:nopa_app/widgets/bottom_nav_bar.dart';
 import 'nopa_modal_shell.dart';
 import 'package:nopa_app/screens/chat/channel_manager_profile_screen.dart';
@@ -408,7 +409,7 @@ class CustomDrawer extends StatelessWidget {
     double iconSize = 22.0,
   }) {
     final Color effectiveIconColor = customIconColor ??
-        (isSelected ? const Color(0xFFC09268) : const Color(0xFFA5A0C8));
+        (isSelected ? AppColors.buttonCamel : const Color(0xFFA5A0C8));
     final Color effectiveTextColor = customTextColor ??
         (isSelected ? const Color(0xFFF4DCC5) : const Color(0xFFD3D0E3));
 
@@ -418,7 +419,7 @@ class CustomDrawer extends StatelessWidget {
         onTap: onTap,
         borderRadius: BorderRadius.circular(12),
         hoverColor: Colors.white.withValues(alpha: 0.04),
-        splashColor: const Color(0xFFC09268).withValues(alpha: 0.12),
+        splashColor: AppColors.buttonCamel.withValues(alpha: 0.12),
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 11),
           child: Directionality(

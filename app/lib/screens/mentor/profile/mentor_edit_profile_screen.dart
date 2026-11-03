@@ -140,12 +140,12 @@ class _EditProfileScreenState extends State<MentorEditProfileScreen> {
                     color: const Color(0xFF1E1D36),
                     borderRadius: BorderRadius.circular(12),
                     border: Border.all(
-                      color: const Color(0xFFC09268).withValues(alpha: 0.5),
+                      color: AppColors.buttonCamel.withValues(alpha: 0.5),
                     ),
                   ),
                   child: Column(
                     children: const [
-                      Icon(Icons.cloud_upload_outlined, color: Color(0xFFC09268), size: 34),
+                      Icon(Icons.cloud_upload_outlined, color: AppColors.buttonCamel, size: 34),
                       SizedBox(height: 8),
                       Text(
                         'برای انتخاب فایل مدرک یا سند کلیک کنید (PDF / تصویر)',
@@ -411,7 +411,7 @@ class _EditProfileScreenState extends State<MentorEditProfileScreen> {
                                       gradient: AppColors.darkSurfaceGradient,
                                       borderRadius: BorderRadius.circular(9),
                                       border: Border.all(
-                                        color: const Color(0xFFC09268),
+                                        color: AppColors.buttonCamel,
                                         width: 1.1,
                                       ),
                                     ),
@@ -427,7 +427,7 @@ class _EditProfileScreenState extends State<MentorEditProfileScreen> {
                                         : const Text(
                                             'ثبت تغییرات',
                                             style: TextStyle(
-                                              color: Color(0xFFE1BC96),
+                                              color: AppColors.accentGoldEnd,
                                               fontSize: 14,
                                               fontWeight: FontWeight.bold,
                                               fontFamily: AppTheme.fontFamily,
@@ -708,14 +708,14 @@ class _EditProfileScreenState extends State<MentorEditProfileScreen> {
                     color: const Color(0xFF2A2835),
                     borderRadius: BorderRadius.circular(7),
                     border: Border.all(
-                      color: const Color(0xFFC09268),
+                      color: AppColors.buttonCamel,
                       width: 1.0,
                     ),
                   ),
                   child: Text(
                     buttonLabel,
                     style: const TextStyle(
-                      color: Color(0xFFE1BC96),
+                      color: AppColors.accentGoldEnd,
                       fontSize: 11,
                       fontWeight: FontWeight.bold,
                       fontFamily: AppTheme.fontFamily,
@@ -794,14 +794,14 @@ class _EditProfileScreenState extends State<MentorEditProfileScreen> {
                     color: const Color(0xFF2A2835),
                     borderRadius: BorderRadius.circular(7),
                     border: Border.all(
-                      color: const Color(0xFFC09268),
+                      color: AppColors.buttonCamel,
                       width: 1.0,
                     ),
                   ),
                   child: Text(
                     buttonLabel,
                     style: const TextStyle(
-                      color: Color(0xFFE1BC96),
+                      color: AppColors.accentGoldEnd,
                       fontSize: 11,
                       fontWeight: FontWeight.bold,
                       fontFamily: AppTheme.fontFamily,
@@ -829,7 +829,7 @@ class _EditProfileScreenState extends State<MentorEditProfileScreen> {
               const Text(
                 'ایجاد / تغییر رمز عبور ثابت',
                 style: TextStyle(
-                  color: Color(0xFFC09268),
+                  color: AppColors.buttonCamel,
                   fontSize: 13,
                   fontWeight: FontWeight.bold,
                   fontFamily: AppTheme.fontFamily,
@@ -842,7 +842,7 @@ class _EditProfileScreenState extends State<MentorEditProfileScreen> {
                   decoration: BoxDecoration(
                     gradient: LinearGradient(
                       colors: [
-                        const Color(0xFFC09268).withValues(alpha: 0.5),
+                        AppColors.buttonCamel.withValues(alpha: 0.5),
                         Colors.transparent,
                       ],
                     ),

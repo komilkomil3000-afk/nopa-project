@@ -1,4 +1,5 @@
 import 'package:nopa_app/widgets/tap_expander.dart';
+import 'package:nopa_app/core/theme/app_colors.dart';
 import 'package:nopa_app/widgets/bottom_nav_bar.dart';
 import 'package:flutter/material.dart' hide Text;
 import 'package:nopa_app/widgets/fa_text.dart';
@@ -174,14 +175,14 @@ class _CertificatesScreenState extends State<StudentCertificatesScreen> {
                       child: Text(
                         tab['title'] as String,
                         style: TextStyle(
-                          color: isSelected ? const Color(0xFFE1BC96) : const Color(0xFF9D99B8),
+                          color: isSelected ? AppColors.accentGoldEnd : const Color(0xFF9D99B8),
                           fontSize: isSelected ? 15.5 : 14,
                           fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
                           fontFamily: AppTheme.fontFamily,
                           shadows: isSelected
                               ? [
                                   Shadow(
-                                    color: const Color(0xFFC09268).withValues(alpha: 0.45),
+                                    color: AppColors.buttonCamel.withValues(alpha: 0.45),
                                     blurRadius: 8,
                                   ),
                                 ]
@@ -325,7 +326,7 @@ class _CertificatesScreenState extends State<StudentCertificatesScreen> {
                             width: 32,
                             height: 32,
                             colorFilter: const ColorFilter.mode(
-                              Color(0xFF9E9CD6),
+                              AppColors.buttonCancelPurple,
                               BlendMode.srcIn,
                             ),
                           ),
@@ -399,7 +400,7 @@ class _CertificatesScreenState extends State<StudentCertificatesScreen> {
                                     color: const Color(0xFF2A2835),
                                     borderRadius: BorderRadius.circular(7),
                                     border: Border.all(
-                                      color: const Color(0xFFC09268),
+                                      color: AppColors.buttonCamel,
                                       width: 1.0,
                                     ),
                                   ),
@@ -407,12 +408,12 @@ class _CertificatesScreenState extends State<StudentCertificatesScreen> {
                                     mainAxisAlignment: MainAxisAlignment.center,
                                     mainAxisSize: MainAxisSize.min,
                                     children: [
-                                      Icon(Icons.card_membership_rounded, color: Color(0xFFE1BC96), size: 14),
+                                      Icon(Icons.card_membership_rounded, color: AppColors.accentGoldEnd, size: 14),
                                       SizedBox(width: 5),
                                       Text(
                                         'دریافت',
                                         style: TextStyle(
-                                          color: Color(0xFFE1BC96),
+                                          color: AppColors.accentGoldEnd,
                                           fontSize: 10.5,
                                           fontWeight: FontWeight.bold,
                                           fontFamily: AppTheme.fontFamily,
@@ -441,7 +442,7 @@ class _CertificatesScreenState extends State<StudentCertificatesScreen> {
                                 Text(
                                   course['progressText']?.toString() ?? 'در حال گذراندن',
                                   style: const TextStyle(
-                                    color: Color(0xFF9E9CD6),
+                                    color: AppColors.buttonCancelPurple,
                                     fontSize: 10.5,
                                     fontFamily: AppTheme.fontFamily,
                                   ),
@@ -474,14 +475,14 @@ class _CertificatesScreenState extends State<StudentCertificatesScreen> {
                       color: const Color(0xFF242240),
                       shape: BoxShape.circle,
                       border: Border.all(
-                        color: const Color(0xFFC09268).withValues(alpha: 0.6),
+                        color: AppColors.buttonCamel.withValues(alpha: 0.6),
                         width: 1.0,
                       ),
                     ),
                     alignment: Alignment.center,
                     child: const Icon(
                       Icons.file_download_outlined,
-                      color: Color(0xFFE1BC96),
+                      color: AppColors.accentGoldEnd,
                       size: 16,
                     ),
                   ),

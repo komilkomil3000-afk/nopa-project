@@ -1,4 +1,5 @@
 import 'package:nopa_app/widgets/tap_expander.dart';
+import 'package:nopa_app/core/theme/app_colors.dart';
 import 'dart:async';
 import 'package:flutter/material.dart' hide Text;
 import 'package:nopa_app/widgets/fa_text.dart';
@@ -46,7 +47,7 @@ class _NextPartCountdownOverlay extends StatelessWidget {
                   Text(
                     _fa(value.seconds),
                     style: TextStyle(
-                      color: const Color(0xFFE1BC96),
+                      color: AppColors.accentGoldEnd,
                       fontSize: compact ? 30 : 40,
                       fontWeight: FontWeight.w300,
                       fontFamily: AppTheme.fontFamily,
@@ -429,7 +430,7 @@ class _NopaInlineVideoPlayerState extends State<NopaInlineVideoPlayer> {
                     child: const Center(
                       child: CircularProgressIndicator(
                         strokeWidth: 2.5,
-                        color: Color(0xFFC09268),
+                        color: AppColors.buttonCamel,
                       ),
                     ),
                   ),
@@ -459,7 +460,7 @@ class _NopaInlineVideoPlayerState extends State<NopaInlineVideoPlayer> {
                           icon: const Icon(Icons.refresh_rounded, size: 16, color: Colors.white),
                           label: const Text('تلاش مجدد', style: TextStyle(color: Colors.white, fontSize: 11, fontFamily: AppTheme.fontFamily)),
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: const Color(0xFFC09268),
+                            backgroundColor: AppColors.buttonCamel,
                             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
                           ),
                         ),
@@ -482,7 +483,7 @@ class _NopaInlineVideoPlayerState extends State<NopaInlineVideoPlayer> {
                             shape: BoxShape.circle,
                             color: const Color(0xFF1E1D34).withValues(alpha: 0.65),
                             border: Border.all(
-                              color: const Color(0xFFC09268),
+                              color: AppColors.buttonCamel,
                               width: 1.2,
                             ),
                           ),
@@ -633,7 +634,7 @@ class _NopaInlineVideoPlayerState extends State<NopaInlineVideoPlayer> {
                           decoration: BoxDecoration(
                             color: Colors.black54,
                             borderRadius: BorderRadius.circular(6),
-                            border: Border.all(color: const Color(0xFFC09268), width: 0.8),
+                            border: Border.all(color: AppColors.buttonCamel, width: 0.8),
                           ),
                           child: Text(
                             _selectedQuality ?? 'کیفیت',
@@ -651,7 +652,7 @@ class _NopaInlineVideoPlayerState extends State<NopaInlineVideoPlayer> {
                             child: Text(
                               e.key,
                               style: TextStyle(
-                                color: e.key == _selectedQuality ? const Color(0xFFC09268) : Colors.black87,
+                                color: e.key == _selectedQuality ? AppColors.buttonCamel : Colors.black87,
                                 fontWeight: e.key == _selectedQuality ? FontWeight.bold : FontWeight.normal,
                               ),
                             ),
@@ -700,7 +701,7 @@ class _NopaInlineVideoPlayerState extends State<NopaInlineVideoPlayer> {
                       shape: BoxShape.circle,
                       color: const Color(0xFF1E1D34).withValues(alpha: 0.75),
                       border: Border.all(
-                        color: const Color(0xFFC09268),
+                        color: AppColors.buttonCamel,
                         width: 1.2,
                       ),
                     ),
@@ -749,7 +750,7 @@ class _NopaInlineVideoPlayerState extends State<NopaInlineVideoPlayer> {
                         thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 5),
                         overlayShape: const RoundSliderOverlayShape(overlayRadius: 10),
                         trackHeight: 2.5,
-                        activeTrackColor: const Color(0xFFC09268),
+                        activeTrackColor: AppColors.buttonCamel,
                         inactiveTrackColor: Colors.white24,
                         thumbColor: const Color(0xFFF4DCC5),
                       ),
@@ -973,7 +974,7 @@ class _FullscreenVideoPageState extends State<_FullscreenVideoPage> {
                                     child: Container(
                                       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                                       decoration: BoxDecoration(
-                                        color: const Color(0xFFC09268),
+                                        color: AppColors.buttonCamel,
                                         borderRadius: BorderRadius.circular(6),
                                       ),
                                       child: Text(_quality ?? 'کیفیت', style: const TextStyle(color: Color(0xFF1E1D34), fontSize: 12, fontWeight: FontWeight.bold)),
@@ -1013,7 +1014,7 @@ class _FullscreenVideoPageState extends State<_FullscreenVideoPage> {
                               isEnded
                                   ? Icons.replay_rounded
                                   : (widget.controller.value.isPlaying ? Icons.pause_circle_filled_rounded : Icons.play_circle_filled_rounded),
-                              color: const Color(0xFFC09268),
+                              color: AppColors.buttonCamel,
                             ),
                             onPressed: () {
                               if (isEnded) {
@@ -1061,7 +1062,7 @@ class _FullscreenVideoPageState extends State<_FullscreenVideoPage> {
                                   thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 6),
                                   overlayShape: const RoundSliderOverlayShape(overlayRadius: 12),
                                   trackHeight: 3.5,
-                                  activeTrackColor: const Color(0xFFC09268),
+                                  activeTrackColor: AppColors.buttonCamel,
                                   inactiveTrackColor: Colors.white24,
                                   thumbColor: const Color(0xFFF4DCC5),
                                 ),
