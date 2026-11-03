@@ -83,20 +83,20 @@ class ChatTheme {
 
   /// Everyone else's bubble: camel, the family of the header's [AppColors.buttonCamel] but a touch
   /// brighter so it doesn't melt into it. Three text tones keep the hierarchy readable on it.
-  static const Color goldFill = Color(0xFFDDB48C);
-  static const Color goldFillDeep = Color(0xFFCE9F74);
-  /// Body text on the camel bubble.
-  static const Color goldInk = Color(0xFF2A1B10);
-  /// Sender name, titles, links and icons on the camel bubble.
-  static const Color goldTitle = Color(0xFF6A3B12);
-  /// Time, ticks and captions on the camel bubble.
-  static const Color goldMeta = Color(0xFF5A4430);
+  // (names kept from the earlier camel look; the colours are now the green of received messages)
+  static const Color goldFill = Color(0xFF3B6149);
+  static const Color goldFillDeep = Color(0xFF34573F);
+  /// Body text on the green bubble.
+  static const Color goldInk = Color(0xFFF1F6F2);
+  /// Sender name, titles, links and icons on the green bubble.
+  static const Color goldTitle = Color(0xFFA8E6C3);
+  /// Time, ticks and captions on the green bubble.
+  static const Color goldMeta = Color(0xFFB4CDBD);
 
   static const LinearGradient otherStroke = LinearGradient(
     begin: Alignment.centerLeft,
     end: Alignment.centerRight,
-    stops: [0.0, 0.5, 1.0],
-    colors: [Color(0xFF8A6038), Color(0xFFEBC9A0), Color(0xFF8A6038)],
+    colors: [Color(0xFF7FCBA3), Color(0xFF8AD3AE)],
   );
   static const LinearGradient otherFillGradient = LinearGradient(
     begin: Alignment.centerLeft,
@@ -106,7 +106,7 @@ class ChatTheme {
 
   /// Fill under the tail, where the bubble meets its sender's face.
   static Color bubbleFill({required bool mine}) => mine ? const Color(0xFF333359) : goldFill;
-  static Color tailStroke({required bool mine}) => mine ? const Color(0xFF5B5B9E) : const Color(0xFF9A7048);
+  static Color tailStroke({required bool mine}) => mine ? const Color(0xFF5B5B9E) : const Color(0xFF7FCBA3);
   static Color bubbleText({required bool mine}) => mine ? text : goldInk;
   static Color bubbleMuted({required bool mine}) => mine ? muted : goldMeta;
 
