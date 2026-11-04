@@ -1,264 +1,212 @@
-// Users: user drawer (360 view, class progress), user modal, levels, students.
+// Users: a person's full report (#urp-modal), user modal, levels, students.
 // Split out of the former app.js (Phase 7). Classic script: shares globals with the other modules;
 // load order is set in index.html.
 
 // The همسفران page itself (bento + one person's page) is js/features/audience.js; levels are js/features/levels.js.
 
-// Detailed Profile view in Drawer
+// ==========================================
+// Full report: the station editor's large dialog with four tabs (css/stations.css .lse-*, .urp-*).
+// Opens at once with skeletons; GET /admin/users/:id/analytics fills it. Helpers crvAvatar / crvFa come from
+// js/features/caravans.js (loads earlier).
+// ==========================================
+let urpUserId = null;
+
+function urpFact(icon, label, value, ltr) {
+  return `<div class="aud-fact"><span><i class="fa-solid ${icon}"></i> ${label}</span><strong${ltr ? ' dir="ltr"' : ''}>${esc(value == null || value === '' ? 'ثبت نشده' : String(value))}</strong></div>`;
+}
+function urpAgeGroup(dob) {
+  if (!dob) return 'نامشخص';
+  const y = parseInt(String(dob).split('/')[0], 10);
+  if (!y) return 'نامشخص';
+  const age = 1405 - y; // approximate current Shamsi year
+  if (age < 12) return 'کودک';
+  if (age < 18) return 'نوجوان';
+  if (age < 24) return 'جوان';
+  return 'بزرگسال';
+}
+function urpSkeleton() {
+  const lines = '<div class="lst-skel-lines" aria-hidden="true">' + '<span class="lst-skel-row"></span>'.repeat(4) + '</div>';
+  return `<section class="lse-card is-loading">${lines}</section><section class="lse-card is-loading">${lines}</section>`;
+}
+
 async function viewUserDetails(userId) {
+  const modal = document.getElementById('urp-modal');
+  if (!modal) return;
+  urpUserId = String(userId);
+  window.switchDrawerTab('identity');
+  document.querySelector('#urp-tabs [data-urp-tab="mentor"]').hidden = true;
+  document.getElementById('drawer-user-name').textContent = 'گزارش کامل';
+  document.getElementById('urp-head-sub').textContent = 'در حال دریافت اطلاعات...';
+  document.getElementById('urp-head-avatar').innerHTML = '<i class="fa-solid fa-user"></i>';
+  document.getElementById('urp-foot-actions').innerHTML = '';
+  document.getElementById('drawer-body-info').innerHTML = urpSkeleton();
+  modal.style.display = 'flex';
+  modal.style.zIndex = 'var(--z-modal)';
+
   try {
-    const res = await request(`/api/v1/admin/users/${userId}/analytics`);
-    const payload = await res.json();
-    if (!res.ok) return showToast('خطا در دریافت اطلاعات', 'error');
-
-    const user = payload.user;
-
-    const drawerHeader = document.querySelector('#user-detail-drawer .drawer-header');
-    drawerHeader.innerHTML = `
-      <h3 id="drawer-user-name">${esc(user.name)}</h3>
-      <div class="u-flex-1"></div>
-      ${(user.isDualRole || user.role === 'mentor') ? `
-        <button id="btn-role-switcher" class="btn-action u-bgc-success u-c-white u-ml-16" data-click="toggleDualRoleView">
-          <i class="fa-solid fa-exchange-alt"></i> تغییر نمای کاربر (راهبر / دانش‌آموز)
-        </button>
-      ` : ''}
-      <button aria-label="بستن" class="modal-close" id="btn-close-drawer" data-click="closeUserDetailDrawer">&times;</button>
-    `;
-
-    // Calculate age
-    let ageGroup = 'نامشخص';
-    if (user.dateOfBirth) {
-      const birthYear = parseInt(user.dateOfBirth.split('/')[0] || '1380');
-      const currentYear = 1405; // Approx current Shamsi year for simulation
-      const age = currentYear - birthYear;
-      if (age < 12) ageGroup = 'کودک';
-      else if (age < 18) ageGroup = 'نوجوان';
-      else if (age < 24) ageGroup = 'جوان';
-      else ageGroup = 'بزرگسال';
-    }
-
-    const regDate = new Date(user.createdAt).toLocaleDateString('fa-IR');
-
-    const body = document.getElementById('drawer-body-info');
-    body.innerHTML = `
-      <div id="student-view-container">
-        <div class="u-flex u-gap-20 u-items-start u-wrap">
-          <div class="glass u-flex-0-0-200 u-text-center u-p-20 u-r-12">
-            <div class="user-avatar u-w-100 u-h-100 u-fs-2xl u-m-0-auto-10-auto">${esc(user.name.substring(0,2))}</div>
-            <div class="u-mt-8"><span class="badge badge-${user.role}">${roleLabel(user.role)}</span></div>
-            <div class="u-mt-10 u-fs-sm u-c-text-secondary">${esc(user.phoneNumber)}</div>
-            <div class="u-mt-6 u-fs-xs u-c-text-muted">شناسه اختصاصی: ${user.userCode || 'فاقد شناسه'}</div>
-            <hr class="u-bdc-fg-10 u-m-16-0" />
-            <div class="u-text-right u-fs-sm">
-              <p><strong>زریک:</strong> <span class="u-c-color-neon-blue">${payload.balances.zarik.toLocaleString()}</span></p>
-              <p><strong>کلاف:</strong> ${payload.balances.nakh}</p>
-              <p><strong>درفش:</strong> ${payload.balances.beyragh}</p>
-              <p><strong>قالیچه:</strong> ${payload.balances.farsh}</p>
-            </div>
-            <div class="u-mt-16 u-flex u-gap-6 u-wrap u-justify-between">
-              <button class="btn-primary u-flex-1 u-fs-2xs" data-click="openPasswordOverride" data-click-args="${esc(JSON.stringify([String(user.id)]))}">تغییر رمز</button>
-              <button class="btn-action u-flex-1 u-bg-danger u-c-white u-fs-2xs u-p-6" data-click="setAccountStatus" data-click-args="${esc(JSON.stringify([String(user.id), "SUSPENDED"]))}">تعلیق</button>
-            </div>
-          </div>
-
-          <div class="u-flex-1 u-minw-300">
-            <div class="tabs-header u-flex u-gap-10 u-mb-16 u-bb-fg-10 u-pb-10">
-              <button class="btn-action active" data-click="switchDrawerTab" data-click-args="[&quot;tab-identity&quot;]" id="btn-tab-identity"><i class="fa-solid fa-id-card"></i> هویت و پروفایل</button>
-              <button class="btn-action" data-click="switchDrawerTab" data-click-args="[&quot;tab-class-progress&quot;]" id="btn-tab-class-progress"><i class="fa-solid fa-graduation-cap"></i> کلاس‌ها و آزمون</button>
-              <button class="btn-action" data-click="switchDrawerTab" data-click-args="[&quot;tab-support&quot;]" id="btn-tab-support"><i class="fa-solid fa-headset"></i> پشتیبانی و کاروان</button>
-            </div>
-            
-            <div id="tab-identity" class="drawer-tab-content active u-block">
-              <div class="panel-card glass u-mb-12 u-p-20">
-                <h4 class="u-mb-16 u-c-color-neon-blue">اطلاعات هویتی کامل</h4>
-                <div class="u-grid u-cols-2 u-gap-15">
-                  <p><strong>نام کامل:</strong> ${esc(user.name)}</p>
-                  <p><strong>کد ملی:</strong> ${esc(user.nationalId || 'ثبت نشده')}</p>
-                  <p><strong>شماره تماس:</strong> ${esc(user.phoneNumber)}</p>
-                  <p><strong>تاریخ تولد:</strong> ${esc(user.dateOfBirth || 'ثبت نشده')}</p>
-                  <p><strong>جنسیت:</strong> ${user.gender === 'male' ? 'مرد' : user.gender === 'female' ? 'زن' : 'ثبت نشده'}</p>
-                  <p><strong>شهر/استان:</strong> ${esc(user.city || 'ثبت نشده')}</p>
-                  <p><strong>رده سنی:</strong> ${ageGroup}</p>
-                  <p><strong>سطح فریم:</strong> ${user.levelFrame}</p>
-                  <p><strong>تاریخ عضویت:</strong> ${regDate}</p>
-                </div>
-              </div>
-            </div>
-
-            <div id="tab-class-progress" class="drawer-tab-content" data-style="display:none;">
-              <div class="panel-card glass u-p-14">
-                <!-- 5 Stats Summary Cards Bar -->
-                <div class="u-grid u-cols-fit-115 u-gap-8 u-mb-14">
-                  <div class="u-bg-primary-12 u-bd-primary-30 u-r-10 u-p-10 u-text-center">
-                    <div class="u-fs-2xs u-c-primary-text u-bold"><i class="fa-solid fa-map-location-dot"></i> منزلگاه‌ها</div>
-                    <div id="drawer-stat-stations" class="u-fs-md u-fw-800 u-c-text u-mt-4">۰ از ۵</div>
-                  </div>
-                  <div class="u-bg-primary-12 u-bd-primary-30 u-r-10 u-p-10 u-text-center">
-                    <div class="u-fs-2xs u-c-primary-text u-bold"><i class="fa-solid fa-chalkboard-user"></i> کلاس‌ها</div>
-                    <div id="drawer-stat-classes" class="u-fs-md u-fw-800 u-c-text u-mt-4">۰ از ۰</div>
-                  </div>
-                  <div class="u-bg-success-12 u-bd-success-30 u-r-10 u-p-10 u-text-center">
-                    <div class="u-fs-2xs u-c-success-text u-bold"><i class="fa-solid fa-circle-play"></i> پارت‌ها</div>
-                    <div id="drawer-stat-parts" class="u-fs-md u-fw-800 u-c-text u-mt-4">۰ از ۰</div>
-                  </div>
-                  <div class="u-bg-accent-12 u-bd-accent-30 u-r-10 u-p-10 u-text-center">
-                    <div class="u-fs-2xs u-c-accent-text u-bold"><i class="fa-solid fa-spell-check"></i> آزمون‌ها</div>
-                    <div id="drawer-stat-quizzes" class="u-fs-md u-fw-800 u-c-text u-mt-4">۰ از ۰</div>
-                  </div>
-                  <div class="u-r-10 u-p-10 u-text-center u-bg-pink-12 u-bd-pink-30">
-                    <div class="u-fs-2xs u-bold u-c-pink-text"><i class="fa-solid fa-trophy"></i> چالش‌ها</div>
-                    <div id="drawer-stat-challenges" class="u-fs-md u-fw-800 u-c-text u-mt-4">۰ از ۰</div>
-                  </div>
-                </div>
-
-                <!-- Filter Chips & Search Bar -->
-                <div class="u-flex u-justify-between u-items-center u-wrap u-gap-8 u-mb-12 u-bg-shade-25 u-p-8-10 u-r-8 u-bd-fg-6">
-                  <div class="u-flex u-gap-6 u-wrap" id="drawer-class-filter-chips">
-                    <button type="button" class="btn-action active u-p-4-8 u-fs-2xs u-r-6" data-click="filterDrawerClassProgress" data-click-args="[&quot;all&quot;]" id="btn-prog-filter-all">همه موارد</button>
-                    <button type="button" class="btn-action u-p-4-8 u-fs-2xs u-r-6" data-click="filterDrawerClassProgress" data-click-args="[&quot;classes&quot;]" id="btn-prog-filter-classes">کلاس‌ها</button>
-                    <button type="button" class="btn-action u-p-4-8 u-fs-2xs u-r-6" data-click="filterDrawerClassProgress" data-click-args="[&quot;parts&quot;]" id="btn-prog-filter-parts">پارت‌ها</button>
-                    <button type="button" class="btn-action u-p-4-8 u-fs-2xs u-r-6" data-click="filterDrawerClassProgress" data-click-args="[&quot;stations&quot;]" id="btn-prog-filter-stations">منزلگاه‌ها</button>
-                    <button type="button" class="btn-action u-p-4-8 u-fs-2xs u-r-6" data-click="filterDrawerClassProgress" data-click-args="[&quot;quizzes&quot;]" id="btn-prog-filter-quizzes">آزمون‌ها</button>
-                    <button type="button" class="btn-action u-p-4-8 u-fs-2xs u-r-6" data-click="filterDrawerClassProgress" data-click-args="[&quot;challenges&quot;]" id="btn-prog-filter-challenges">چالش‌ها</button>
-                  </div>
-                  <div class="u-relative u-flex-1-1-150 u-maxw-220">
-                    <input type="text" id="drawer-class-search-input" placeholder="جستجو در جدول..." data-input="filterDrawerClassProgress" class="u-w-full u-p-6-10 u-bg-surface-2 u-bd-border-strong u-r-6 u-c-text u-fs-xs u-border-box">
-                  </div>
-                </div>
-
-                <!-- 5-Column Table -->
-                <div class="table-container u-maxh-380 u-scroll-y u-bd-fg-8 u-r-8">
-                  <table class="data-table u-m-0 u-w-full" id="drawer-class-progress-table">
-                    <thead class="u-pos-sticky u-top-0 u-bg-surface u-z-2">
-                      <tr>
-                        <th class="u-w-130"><i class="fa-solid fa-map-location-dot u-c-primary-text"></i> منزلگاه</th>
-                        <th class="u-w-140"><i class="fa-solid fa-chalkboard-user u-c-primary-text"></i> کلاس</th>
-                        <th class="u-w-150"><i class="fa-solid fa-circle-play u-c-success-text"></i> پارت</th>
-                        <th class="u-w-130"><i class="fa-solid fa-spell-check u-c-accent-text"></i> آزمون</th>
-                        <th class="u-w-140"><i class="fa-solid fa-trophy u-c-pink-text"></i> چالش</th>
-                        <th class="u-w-110 u-text-center">وضعیت پیشرفت</th>
-                      </tr>
-                    </thead>
-                    <tbody id="drawer-class-progress-tbody">
-                      <!-- Automatically populated by JS -->
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-            </div>
-
-            <div id="tab-support" class="drawer-tab-content" data-style="display:none;">
-              <div class="panel-card glass u-p-12 u-mb-12">
-                <h5 class="u-c-color-neon-blue u-bb-fg-10 u-pb-6">اطلاعات کاروان</h5>
-                <p class="u-mt-10"><strong>نام کاروان:</strong> ${esc(user.caravanName || 'در هیچ کاروانی عضو نیست')}</p>
-              </div>
-              <div class="panel-card glass u-p-12">
-                <h5 class="u-c-color-neon-blue u-bb-fg-10 u-pb-6">تاریخچه تیکت‌ها</h5>
-                <div id="drawer-ticket-list" class="u-maxh-200 u-overflow-auto u-pl-12 u-mt-10"></div>
-              </div>
-            </div>
-            
-          </div>
-        </div>
-      </div>
-      
-      <div id="mentor-view-container" class="u-p-20" data-style="display:none">
-        <h3 class="u-c-color-warning u-text-center u-mb-20">داشبورد و آمار اختصاصی راهبر</h3>
-        <div class="grid-cards u-cols-2">
-           <div class="stat-card glass">
-             <i class="fa-solid fa-users u-c-info-text"></i>
-             <h4>کاروان‌های تحت مدیریت</h4>
-             <div class="stat-value" id="mentor-caravans-count">${payload.mentoredCaravans?.length || 0}</div>
-           </div>
-           <div class="stat-card glass">
-             <i class="fa-solid fa-star u-c-accent-text"></i>
-             <h4>سطح راهبری</h4>
-             <div class="stat-value">${user.mentorLevel || 1}</div>
-           </div>
-        </div>
-        <div class="panel-card glass u-mt-20 u-p-16">
-           <h4 class="u-mb-10">لیست کاروان‌ها</h4>
-           <ul class="u-list-none u-p-0">
-             ${payload.mentoredCaravans?.map(c => '<li class="u-p-10 u-bb-fg-10">' + esc(c.name) + ' (شناسه: ' + esc(c.id) + ')</li>').join('') || '<li>کاروانی یافت نشد</li>'}
-           </ul>
-        </div>
-      </div>
-    `;
-
-    // Automatically populate the 5 sections in #tab-class-progress (کلاس، پارت، منزلگاه، آزمون، چالش)
-    if (typeof window.populateDrawerClassProgress === 'function') {
-      window.populateDrawerClassProgress(payload);
-    }
-
-    const tList = document.getElementById('drawer-ticket-list');
-    tList.innerHTML = '';
-    if (payload.tickets && payload.tickets.length > 0) {
-      payload.tickets.forEach(t => {
-        tList.innerHTML += `<div class="u-p-8 u-bg-shade-20 u-r-8 u-mb-8">
-          <strong>${esc(t.subject)}</strong> <span class="badge u-float-left u-fs-2xs">${t.status}</span>
-          <p class="u-fs-xs u-mt-6 u-c-text-secondary">${esc(t.description)}</p>
-        </div>`;
-      });
-    } else {
-      tList.innerHTML = '<div>تیکتی ثبت نشده است.</div>';
-    }
-
-    const overlay = document.getElementById('user-drawer-overlay');
-    if (overlay) {
-      overlay.classList.add('active');
-      overlay.style.display = 'block';
-    }
-    const drawer = document.getElementById('user-detail-drawer');
-    if (drawer) {
-      drawer.classList.add('active');
-    }
-
-    setTimeout(() => {
-      const ctx = document.getElementById('drawer-radar-chart');
-      if (ctx) {
-        if (window.drawerRadarChart) window.drawerRadarChart.destroy();
-        window.drawerRadarChart = new Chart(ctx, {
-          type: 'radar',
-          data: {
-            labels: [window.assetName('zarik'), window.assetName('nakh'), window.assetName('derafsh'), window.assetName('farsh'), 'فعالیت کلاسی', 'نمره آزمون'],
-            datasets: [{
-              label: 'سطح پیشرفت',
-              data: [
-                Math.min(100, payload.balances.zarik / 100),
-                Math.min(100, payload.balances.nakh * 10),
-                Math.min(100, payload.balances.beyragh * 20),
-                Math.min(100, payload.balances.farsh * 25),
-                Math.min(100, (payload.watchRecords?.length || 0) * 10),
-                (payload.quizzes?.[0]?.score || 0)
-              ],
-              backgroundColor: NopaTheme.rgba('--primary-rgb', 0.4),
-              borderColor: NopaTheme.rgba('--primary-rgb', 1),
-              borderWidth: 2
-            }]
-          },
-          options: {
-            scales: {
-              // text / grid colours come from the theme (theme.js syncCharts)
-              r: {
-                angleLines: { color: NopaTheme.cssVar('--border') },
-                grid: { color: NopaTheme.cssVar('--border') },
-                pointLabels: { color: NopaTheme.cssVar('--text-muted') },
-                ticks: { display: false }
-              }
-            },
-            plugins: { legend: { display: false } }
-          }
-        });
-      }
-    }, 300);
-
+    const res = await request(`/api/v1/admin/users/${encodeURIComponent(userId)}/analytics`);
+    const payload = await res.json().catch(() => ({}));
+    if (urpUserId !== String(userId)) return; // another report was opened meanwhile
+    if (!res.ok) throw new Error(payload.error || 'خطا در دریافت اطلاعات');
+    urpPaint(payload);
   } catch (error) {
     console.error('Error fetching user details:', error);
+    if (urpUserId === String(userId)) {
+      document.getElementById('drawer-body-info').innerHTML = `<div class="lst-empty"><i class="fa-solid fa-triangle-exclamation lst-warn"></i> ${esc(error.message || 'خطا در دریافت اطلاعات')}</div>`;
+    }
   }
 }
 
+function urpPaint(payload) {
+  const user = payload.user || {};
+  const b = payload.balances || {};
+  const mentor = !!(user.isDualRole || String(user.role).toLowerCase() === 'mentor');
+  const name = user.name || 'کاربر';
+  const sp = payload.stationsProgress?.summary || {};
+  const minutes = payload.metrics?.approximateActiveMinutes;
+
+  document.getElementById('drawer-user-name').textContent = name;
+  document.getElementById('urp-head-sub').textContent = [roleLabel(user.role), user.phoneNumber, user.userCode ? `کد ${crvFa(user.userCode)}` : ''].filter(Boolean).join(' · ');
+  document.getElementById('urp-head-avatar').outerHTML = crvAvatar(user.avatarUrl, name, 'lse-id-icon is-accent urp-head-avatar').replace('<span class="', '<span id="urp-head-avatar" class="');
+  document.querySelector('#urp-tabs [data-urp-tab="mentor"]').hidden = !mentor;
+  document.getElementById('urp-foot-actions').innerHTML = `
+    <button type="button" class="lse-btn" data-click="openPasswordOverride" data-click-args="${crvArgs(user.id)}"><i class="fa-solid fa-key"></i> تغییر رمز</button>
+    <button type="button" class="lse-btn urp-danger" data-click="setAccountStatus" data-click-args="${crvArgs(user.id, 'SUSPENDED')}"><i class="fa-solid fa-user-slash"></i> تعلیق حساب</button>`;
+
+  const asset = (cls, icon, label, value) => `<div class="crv-asset ${cls}"><span class="crv-asset-icon"><i class="fa-solid ${icon}"></i></span><span class="crv-asset-text"><small>${esc(label)}</small><strong>${crvFa(value)}</strong></span></div>`;
+  const gender = user.gender === 'male' ? 'مرد' : user.gender === 'female' ? 'زن' : null;
+  const tickets = payload.tickets || [];
+  const caravans = payload.mentoredCaravans || [];
+  const ticketState = t => {
+    const s = String(t.status || '').toLowerCase();
+    if (s === 'resolved' || s === 'closed') return '<span class="chm-mini-chip is-resolved">حل‌شده</span>';
+    if (s === 'answered') return '<span class="chm-mini-chip is-reviewing">پاسخ‌داده</span>';
+    return '<span class="chm-mini-chip is-open">در انتظار پاسخ</span>';
+  };
+
+  document.getElementById('drawer-body-info').innerHTML = `
+    <div class="urp-pane is-active" data-urp-pane="identity">
+      <section class="lse-card urp-hero">
+        ${crvAvatar(user.avatarUrl, name, 'crv-mentor-photo urp-photo')}
+        <div class="urp-hero-text">
+          <strong>${esc(name)}</strong>
+          <span>${esc(roleLabel(user.role))}${user.caravanName ? ` · کاروان ${esc(user.caravanName)}` : ''}</span>
+          <div class="lsv-facts">
+            <span><i class="fa-solid fa-layer-group"></i> سطح ${crvFa(user.levelFrame || 1)}</span>
+            <span><i class="fa-regular fa-calendar"></i> عضو از ${esc(user.createdAt ? new Date(user.createdAt).toLocaleDateString('fa-IR') : '-')}</span>
+            ${minutes != null ? `<span><i class="fa-regular fa-clock"></i> حدود ${crvFa(minutes)} دقیقه فعالیت</span>` : ''}
+          </div>
+        </div>
+      </section>
+      <section class="lse-card">
+        <h4 class="lse-card-title"><i class="fa-solid fa-coins"></i> دارایی‌ها</h4>
+        <div class="crv-assets-card urp-assets">
+          ${asset('is-accent', 'fa-coins', window.assetName ? window.assetName('zarik') : 'زریک', b.zarik)}
+          ${asset('is-primary', 'fa-circle-nodes', window.assetName ? window.assetName('nakh') : 'کلاف', b.nakh)}
+          ${asset('is-success', 'fa-flag', window.assetName ? window.assetName('derafsh') : 'درفش', b.beyragh)}
+          ${asset('is-info', 'fa-rug', window.assetName ? window.assetName('farsh') : 'قالیچه', b.farsh)}
+        </div>
+      </section>
+      <section class="lse-card">
+        <h4 class="lse-card-title"><i class="fa-solid fa-address-card"></i> اطلاعات هویتی</h4>
+        <div class="aud-facts urp-facts">
+          ${urpFact('fa-signature', 'نام کامل', name)}
+          ${urpFact('fa-id-badge', 'کد ملی', user.nationalId, true)}
+          ${urpFact('fa-phone', 'شماره تماس', user.phoneNumber, true)}
+          ${urpFact('fa-hashtag', 'کد کاربری', user.userCode ? crvFa(user.userCode) : null)}
+          ${urpFact('fa-cake-candles', 'تاریخ تولد', user.dateOfBirth)}
+          ${urpFact('fa-children', 'رده سنی', urpAgeGroup(user.dateOfBirth))}
+          ${urpFact('fa-venus-mars', 'جنسیت', gender)}
+          ${urpFact('fa-location-dot', 'شهر / استان', user.city)}
+          ${urpFact('fa-graduation-cap', 'تحصیلات', user.academicDegree)}
+          ${urpFact('fa-compass', 'کاروان', user.caravanName || 'عضو هیچ کاروانی نیست')}
+        </div>
+      </section>
+    </div>
+
+    <div class="urp-pane" data-urp-pane="progress" hidden>
+      <section class="lse-card">
+        <div class="urp-stats">
+          <div class="urp-stat is-primary"><span><i class="fa-solid fa-map-location-dot"></i> منزلگاه‌ها</span><strong id="drawer-stat-stations">-</strong><span class="lst-bar"><span class="lst-bar-active" id="urp-bar-stations"></span></span></div>
+          <div class="urp-stat is-primary"><span><i class="fa-solid fa-chalkboard-user"></i> کلاس‌ها</span><strong id="drawer-stat-classes">-</strong><span class="lst-bar"><span class="lst-bar-active" id="urp-bar-classes"></span></span></div>
+          <div class="urp-stat is-success"><span><i class="fa-solid fa-circle-play"></i> پارت‌ها</span><strong id="drawer-stat-parts">-</strong><span class="lst-bar"><span class="lst-bar-active" id="urp-bar-parts"></span></span></div>
+          <div class="urp-stat is-accent"><span><i class="fa-solid fa-spell-check"></i> آزمون‌ها</span><strong id="drawer-stat-quizzes">-</strong><span class="lst-bar"><span class="lst-bar-active" id="urp-bar-quizzes"></span></span></div>
+          <div class="urp-stat is-info"><span><i class="fa-solid fa-trophy"></i> چالش‌ها</span><strong id="drawer-stat-challenges">-</strong><span class="lst-bar"><span class="lst-bar-active" id="urp-bar-challenges"></span></span></div>
+        </div>
+      </section>
+      <div class="urp-filters">
+        <div class="chm-chips" id="drawer-class-filter-chips" role="tablist">
+          ${[['all', 'همه'], ['classes', 'کلاس‌ها'], ['parts', 'پارت‌ها'], ['quizzes', 'آزمون‌ها'], ['challenges', 'چالش‌ها']].map((f, i) =>
+            `<button type="button" class="chm-chip${i ? '' : ' is-active'}" role="tab" id="btn-prog-filter-${f[0]}" data-click="filterDrawerClassProgress" data-click-args='["${f[0]}"]'>${f[1]}</button>`).join('')}
+        </div>
+        <label class="search-box"><i class="fa-solid fa-search"></i><input type="text" id="drawer-class-search-input" class="input-ctrl" placeholder="جستجوی منزلگاه، کلاس، آزمون..." data-input="filterDrawerClassProgress" aria-label="جستجو در پیشرفت"></label>
+      </div>
+      <div id="drawer-class-progress-list" class="urp-stations"></div>
+    </div>
+
+    <div class="urp-pane" data-urp-pane="support" hidden>
+      <section class="lse-card">
+        <h4 class="lse-card-title"><i class="fa-solid fa-compass"></i> کاروان</h4>
+        ${user.caravanName
+          ? `<div class="lsv-row crv-member"><span class="lsv-row-avatar lsv-row-num"><i class="fa-solid fa-compass"></i></span><span class="lsv-row-text"><strong>${esc(user.caravanName)}</strong><span>کاروان فعلی</span></span></div>`
+          : '<div class="lsv-col-empty">عضو هیچ کاروانی نیست.</div>'}
+      </section>
+      <section class="lse-card">
+        <h4 class="lse-card-title"><i class="fa-solid fa-ticket"></i> تیکت‌ها <span class="lsv-col-count">${crvFa(tickets.length)}</span></h4>
+        <div id="drawer-ticket-list" class="urp-tickets">${tickets.length ? tickets.map(t => `
+          <div class="urp-ticket">
+            <div class="urp-ticket-head"><strong>${esc(t.subject || 'تیکت')}</strong>${ticketState(t)}</div>
+            ${t.description ? `<p>${esc(t.description)}</p>` : ''}
+            <small>${esc(t.createdAt ? new Date(t.createdAt).toLocaleString('fa-IR') : '')}${(t.replies || []).length ? ` · ${crvFa(t.replies.length)} پاسخ` : ''}</small>
+          </div>`).join('') : '<div class="lsv-col-empty">تیکتی ثبت نشده است.</div>'}</div>
+      </section>
+    </div>
+
+    <div class="urp-pane" data-urp-pane="mentor" hidden>
+      <section class="lse-card">
+        <div class="crv-assets-card urp-assets">
+          ${asset('is-primary', 'fa-compass', 'کاروان‌های تحت مدیریت', caravans.length)}
+          ${asset('is-accent', 'fa-star', 'سطح راهبری', user.mentorLevel || 1)}
+        </div>
+      </section>
+      <section class="lse-card">
+        <h4 class="lse-card-title"><i class="fa-solid fa-list"></i> کاروان‌ها</h4>
+        ${caravans.length ? caravans.map(c => `
+          <div class="lsv-row crv-member"><span class="lsv-row-avatar lsv-row-num">${crvInitial(c.name)}</span>
+            <span class="lsv-row-text"><strong>${esc(c.name)}</strong><span>${c.memberCount != null ? `${crvFa(c.memberCount)} عضو` : ''}${c.status === 'suspended' ? ' · تعلیق‌شده' : ''}</span></span></div>`).join('')
+          : '<div class="lsv-col-empty">کاروانی ثبت نشده است.</div>'}
+      </section>
+    </div>`;
+
+  window.populateDrawerClassProgress(payload);
+  if (window.NopaFlip) window.NopaFlip.enter(document.querySelectorAll('#drawer-body-info .urp-pane.is-active > .lse-card'));
+}
+
+window.closeUserDetailDrawer = function() {
+  urpUserId = null;
+  const modal = document.getElementById('urp-modal');
+  if (modal && modal.style.display !== 'none') NopaActions.hide('urp-modal');
+};
+
+window.switchDrawerTab = function(tabId) {
+  const key = String(tabId || 'identity').replace(/^tab-/, '').replace('class-progress', 'progress');
+  document.querySelectorAll('#urp-tabs [data-urp-tab]').forEach(b => {
+    const on = b.dataset.urpTab === key;
+    b.classList.toggle('is-active', on);
+    b.setAttribute('aria-selected', String(on));
+  });
+  document.querySelectorAll('#drawer-body-info .urp-pane').forEach(p => {
+    const on = p.dataset.urpPane === key;
+    p.hidden = !on;
+    p.classList.toggle('is-active', on);
+  });
+  const body = document.getElementById('drawer-body-info');
+  if (body) body.scrollTop = 0;
+};
+window.toggleDualRoleView = function() { window.switchDrawerTab('mentor'); }; // old name
+
 // ==========================================
-// Class & Exam Progress Breakdown (#tab-class-progress)
+// Class & Exam Progress Breakdown (the report's second tab)
 // Separate sections for: منزلگاه، کلاس، پارت، آزمون، چالش
 // ==========================================
 window.cachedDrawerClassRows = [];
@@ -452,34 +400,63 @@ window.populateDrawerClassProgress = function(payload) {
   window.cachedDrawerClassRows = rows;
   window.activeDrawerClassFilter = 'all';
 
-  // Reset filter buttons UI
-  const container = document.getElementById('drawer-class-filter-chips');
-  if (container) {
-    container.querySelectorAll('button').forEach(btn => {
-      btn.style.background = 'rgb(var(--fg-rgb) / 0.06)';
-      btn.style.color = 'var(--text-soft)';
-      btn.style.borderColor = 'rgb(var(--fg-rgb) / 0.1)';
-      btn.classList.remove('active');
-    });
-    const defaultBtn = document.getElementById('btn-prog-filter-all');
-    if (defaultBtn) {
-      defaultBtn.style.background = 'var(--primary)';
-      defaultBtn.style.color = 'white';
-      defaultBtn.style.borderColor = 'var(--primary)';
-      defaultBtn.classList.add('active');
-    }
-  }
+  // Bars under the five counters
+  const bar = (id, done, total) => {
+    const el = document.getElementById(id);
+    if (el) el.style.width = (total ? Math.round((done / total) * 100) : 0) + '%';
+  };
+  bar('urp-bar-stations', passedStations, totalStations);
+  bar('urp-bar-classes', passedClasses, totalClasses);
+  bar('urp-bar-parts', passedParts, totalParts);
+  bar('urp-bar-quizzes', passedQuizzes, totalQuizzes);
+  bar('urp-bar-challenges', completedChallenges, totalChCount);
+  ['stations', 'classes', 'parts', 'quizzes', 'challenges'].forEach(k => {
+    const el = document.getElementById('drawer-stat-' + k);
+    if (el) el.textContent = el.textContent.replace(/\d+/g, d => Number(d).toLocaleString('fa-IR'));
+  });
 
-  window.renderDrawerClassProgressTable();
+  window.filterDrawerClassProgress('all');
 };
 
+// One state pill: ok (green), wait (amber), bad (red), none (grey)
+function urpPill(tone, icon, text, title) {
+  return `<span class="urp-pill is-${tone}"${title ? ` title="${esc(title)}"` : ''}><i class="fa-solid ${icon}"></i>${esc(text)}</span>`;
+}
+
+function urpRowPills(r) {
+  const pills = [];
+  // part(s)
+  if (r.sessionId) {
+    const n = (r.clips || []).length || 1;
+    pills.push(r.isWatched ? urpPill('ok', 'fa-circle-play', `${n.toLocaleString('fa-IR')} پارت دیده شده`)
+                           : urpPill('none', 'fa-circle-play', `${n.toLocaleString('fa-IR')} پارت — دیده نشده`));
+  }
+  // quiz
+  if (r.quizzes && r.quizzes.length) {
+    const q = r.quizzes[0];
+    const sub = (r.quizSubmissions && r.quizSubmissions[0]) || null;
+    if (r.quizPassed || (sub && sub.score >= 50)) pills.push(urpPill('ok', 'fa-check-double', `آزمون قبول${sub && sub.score != null ? ` (${Number(sub.score).toLocaleString('fa-IR')})` : ''}`, q.title));
+    else if (sub) pills.push(urpPill('bad', 'fa-xmark', `آزمون مردود (${Number(sub.score || 0).toLocaleString('fa-IR')})`, q.title));
+    else pills.push(urpPill('wait', 'fa-clock', 'آزمون: شرکت نکرده', q.title));
+  }
+  // challenge
+  if (r.challenge) {
+    const ch = r.challenge;
+    const s = r.challengeSubmission && r.challengeSubmission.status;
+    if (s === 'approved') pills.push(urpPill('ok', 'fa-trophy', `چالش تأیید (+${Number(ch.rewardZarik || 50).toLocaleString('fa-IR')})`, ch.title));
+    else if (s === 'pending') pills.push(urpPill('wait', 'fa-hourglass-half', 'چالش در انتظار ارزیابی', ch.title));
+    else if (s === 'rejected') pills.push(urpPill('bad', 'fa-rotate-left', 'چالش نیازمند اصلاح', ch.title));
+    else pills.push(urpPill('none', 'fa-trophy', `چالش انجام نشده (${ch.type === 'quiz' ? 'کوئیز' : ch.type === 'file' ? 'فایلی' : 'مهارتی'})`, ch.title));
+  }
+  return pills.join('');
+}
+
 window.renderDrawerClassProgressTable = function() {
-  const tbody = document.getElementById('drawer-class-progress-tbody');
-  if (!tbody) return;
+  const box = document.getElementById('drawer-class-progress-list');
+  if (!box) return;
   const rows = window.cachedDrawerClassRows || [];
   const filterType = window.activeDrawerClassFilter || 'all';
-  const searchInput = document.getElementById('drawer-class-search-input');
-  const searchVal = searchInput ? searchInput.value.trim().toLowerCase() : '';
+  const searchVal = (document.getElementById('drawer-class-search-input')?.value || '').trim().toLowerCase();
 
   const filtered = rows.filter(r => {
     if (filterType === 'classes' && (!r.sessionId || r.type === 'challenge_only')) return false;
@@ -487,227 +464,67 @@ window.renderDrawerClassProgressTable = function() {
     if (filterType === 'stations' && (!r.stationTitle || r.stationNumber === '-')) return false;
     if (filterType === 'quizzes' && (!r.quizzes || r.quizzes.length === 0)) return false;
     if (filterType === 'challenges' && !r.challenge) return false;
-
     if (searchVal) {
-      const matchSt = (r.stationTitle || '').toLowerCase().includes(searchVal);
-      const matchCat = (r.categoryTitle || '').toLowerCase().includes(searchVal);
-      const matchSess = (r.sessionTitle || '').toLowerCase().includes(searchVal);
-      const matchClips = (r.clips || []).some(c => (c.title || '').toLowerCase().includes(searchVal));
-      const matchQuiz = (r.quizzes || []).some(q => (q.title || '').toLowerCase().includes(searchVal));
-      const matchCh = r.challenge && (r.challenge.title || '').toLowerCase().includes(searchVal);
-      if (!matchSt && !matchCat && !matchSess && !matchClips && !matchQuiz && !matchCh) {
-        return false;
-      }
+      const hay = [r.stationTitle, r.categoryTitle, r.sessionTitle, r.challenge && r.challenge.title]
+        .concat((r.clips || []).map(c => c.title), (r.quizzes || []).map(q => q.title));
+      if (!hay.some(v => String(v || '').toLowerCase().includes(searchVal))) return false;
     }
     return true;
   });
 
-  if (filtered.length === 0) {
-    NopaTable.empty(tbody, 'اطلاعاتی متناسب با فیلتر یافت نشد.', 'fa-solid fa-inbox');
+  if (!filtered.length) {
+    box.innerHTML = '<div class="lst-empty">اطلاعاتی متناسب با فیلتر یافت نشد.</div>';
     return;
   }
 
-  tbody.innerHTML = filtered.map(r => {
-    // 1. منزلگاه
-    let stationCell = '';
-    if (r.stationNumber && r.stationNumber !== '-') {
-      stationCell = `
-        <div class="u-flex u-col u-gap-4">
-          <span class="badge u-bg-primary-22 u-c-primary-text u-fs-2xs u-w-fit-content u-bd-primary-30">
-            <i class="fa-solid fa-map-location-dot u-ml-4"></i>منزلگاه ${r.stationNumber}
-          </span>
-          <strong class="u-fs-xs u-c-text">${esc(r.stationTitle)}</strong>
-        </div>`;
-    } else {
-      stationCell = `<span class="badge u-bg-fg-8 u-c-text-muted u-fs-2xs"><i class="fa-solid fa-layer-group u-ml-4"></i>عمومی / کاروان</span>`;
-    }
-
-    // 2. کلاس
-    let classCell = '';
-    if (r.sessionTitle && r.sessionTitle !== '-' && r.sessionId) {
-      classCell = `
-        <div class="u-flex u-col u-gap-4">
-          <strong class="u-fs-xs u-c-primary-text">
-            <i class="fa-solid fa-chalkboard-user u-ml-4 u-o-0_85"></i>${esc(r.sessionTitle)}
-          </strong>
-          ${r.categoryTitle && r.categoryTitle !== '-' ? `<span class="u-fs-2xs u-c-text-secondary">${esc(r.categoryTitle)}</span>` : ''}
-        </div>`;
-    } else {
-      classCell = `<span class="u-c-text-secondary u-fs-2xs">-</span>`;
-    }
-
-    // 3. پارت
-    let partCell = '';
-    if (r.clips && r.clips.length > 0) {
-      partCell = `
-        <div class="u-flex u-col u-gap-4">
-          <span class="badge u-fs-2xs u-w-fit-content" data-style="background:${r.isWatched ? 'rgb(var(--success-rgb) / 0.2)' : 'rgb(var(--primary-rgb) / 0.15)'}; color:${r.isWatched ? 'var(--success-text)' : 'var(--primary)'}; border: 1px solid ${r.isWatched ? 'rgb(var(--success-rgb) / 0.3)' : 'rgb(var(--primary-rgb) / 0.3)'}">
-            <i class="fa-solid fa-circle-play u-ml-4"></i>${r.clips.length} پارت
-          </span>
-          <div class="u-fs-2xs" data-style="color:${r.isWatched ? 'var(--success-text)' : 'var(--text-muted)'}">
-            ${r.isWatched ? 'کامل مشاهده شده' : `${esc(r.clips[0]?.title || 'پارت ۱')} (مشاهده نشده)`}
-          </div>
-        </div>`;
-    } else if (r.sessionId) {
-      partCell = `
-        <div class="u-flex u-items-center u-gap-6">
-          <span class="badge u-fs-2xs" data-style="background:${r.isWatched ? 'rgb(var(--success-rgb) / 0.18)' : 'rgb(var(--fg-rgb) / 0.06)'}; color:${r.isWatched ? 'var(--success-text)' : 'var(--text-muted)'}; border: 1px solid ${r.isWatched ? 'rgb(var(--success-rgb) / 0.3)' : 'rgb(var(--fg-rgb) / 0.1)'}">
-            <i class="fa-solid ${r.isWatched ? 'fa-check' : 'fa-video'} u-ml-4"></i>${r.isWatched ? '۱ پارت (مشاهده شده)' : '۱ پارت اصلی'}
-          </span>
-        </div>`;
-    } else {
-      partCell = `<span class="u-c-text-secondary u-fs-2xs">-</span>`;
-    }
-
-    // 4. آزمون
-    let quizCell = '';
-    if (r.quizzes && r.quizzes.length > 0) {
-      const q = r.quizzes[0];
-      const qSub = (r.quizSubmissions && r.quizSubmissions[0]) || null;
-      if (r.quizPassed || (qSub && qSub.score >= 50)) {
-        quizCell = `
-          <div class="u-flex u-col u-gap-4">
-            <span class="badge u-bg-success-20 u-c-success-text u-fs-2xs u-w-fit-content u-bd-success-30">
-              <i class="fa-solid fa-check-double u-ml-4"></i>قبول شده ${qSub?.score ? `(${qSub.score})` : ''}
-            </span>
-            <span class="u-fs-2xs u-c-text-soft">${esc(q.title || 'آزمون پایان کلاس')}</span>
-          </div>`;
-      } else if (qSub) {
-        quizCell = `
-          <div class="u-flex u-col u-gap-4">
-            <span class="badge u-bg-danger-20 u-c-danger-text u-fs-2xs u-w-fit-content u-bd-danger-30">
-              <i class="fa-solid fa-xmark u-ml-4"></i>مردود (${qSub.score})
-            </span>
-            <span class="u-fs-2xs u-c-text-soft">${esc(q.title || 'آزمون')}</span>
-          </div>`;
-      } else {
-        quizCell = `
-          <div class="u-flex u-col u-gap-4">
-            <span class="badge u-bg-accent-15 u-c-accent-text u-fs-2xs u-w-fit-content u-bd-accent-30">
-              <i class="fa-regular fa-clock u-ml-4"></i>شرکت نکرده
-            </span>
-            <span class="u-fs-2xs u-c-text-secondary">${esc(q.title || 'آزمون پایان کلاس')}</span>
-          </div>`;
-      }
-    } else {
-      quizCell = `<span class="u-c-text-secondary u-fs-2xs">بدون آزمون</span>`;
-    }
-
-    // 5. چالش
-    let challengeCell = '';
-    if (r.challenge) {
-      const ch = r.challenge;
-      const sub = r.challengeSubmission;
-      const chTypeLabel = ch.type === 'quiz' ? 'کوئیز' : ch.type === 'file' ? 'فایلی' : 'مهارتی';
-      if (sub && sub.status === 'approved') {
-        challengeCell = `
-          <div class="u-flex u-col u-gap-4">
-            <span class="badge u-bg-success-20 u-c-success-text u-fs-2xs u-w-fit-content u-bd-success-30">
-              <i class="fa-solid fa-trophy u-ml-4"></i>تایید (+${ch.rewardZarik || 50} زریک)
-            </span>
-            <span class="u-fs-2xs u-c-text-soft" title="${esc(ch.title)}">${esc(ch.title)}</span>
-          </div>`;
-      } else if (sub && sub.status === 'pending') {
-        challengeCell = `
-          <div class="u-flex u-col u-gap-4">
-            <span class="badge u-bg-accent-20 u-c-accent-text u-fs-2xs u-w-fit-content u-bd-accent-30">
-              <i class="fa-solid fa-hourglass-start u-ml-4"></i>در انتظار ارزیابی
-            </span>
-            <span class="u-fs-2xs u-c-text-soft" title="${esc(ch.title)}">${esc(ch.title)}</span>
-          </div>`;
-      } else if (sub && sub.status === 'rejected') {
-        challengeCell = `
-          <div class="u-flex u-col u-gap-4">
-            <span class="badge u-bg-danger-20 u-c-danger-text u-fs-2xs u-w-fit-content u-bd-danger-30">
-              <i class="fa-solid fa-xmark u-ml-4"></i>نیازمند اصلاح
-            </span>
-            <span class="u-fs-2xs u-c-text-soft" title="${esc(ch.title)}">${esc(ch.title)}</span>
-          </div>`;
-      } else {
-        challengeCell = `
-          <div class="u-flex u-col u-gap-4">
-            <span class="badge u-fs-2xs u-w-fit-content u-bg-pink-12 u-c-pink-text u-bd-pink-25">
-              <i class="fa-regular fa-circle u-ml-4"></i>انجام نشده (${chTypeLabel})
-            </span>
-            <span class="u-fs-2xs u-c-text-secondary" title="${esc(ch.title)}">${esc(ch.title)}</span>
-          </div>`;
-      }
-    } else {
-      challengeCell = `<span class="u-c-text-secondary u-fs-2xs">-</span>`;
-    }
-
-    // 6. وضعیت پیشرفت
-    const pct = r.progressPct || 0;
-    const barColor = pct === 100 ? 'var(--success)' : pct >= 50 ? 'var(--primary)' : pct > 0 ? 'var(--accent)' : 'var(--text-faint)';
-    const statusText = pct === 100 ? 'تکمیل شده' : pct > 0 ? `${pct}% پیشرفت` : 'شروع نشده';
-
-    const progressCell = `
-      <div class="u-flex u-col u-items-center u-gap-4 u-minw-85">
-        <div class="u-w-full u-h-6 u-bg-fg-10 u-r-4 u-overflow-hidden">
-          <div class="u-h-full u-r-4 u-tr-width-0_3s-ease" data-style="width:${pct}%; background:${barColor}"></div>
-        </div>
-        <span class="u-fs-2xs u-bold" data-style="color:${barColor}">${statusText}</span>
-      </div>`;
-
+  // One card per station (general / caravan challenges last), rows inside
+  const groups = new Map();
+  filtered.forEach(r => {
+    const key = r.stationNumber && r.stationNumber !== '-' ? 'st:' + r.stationNumber : 'general';
+    if (!groups.has(key)) groups.set(key, { key, number: r.stationNumber, title: r.stationTitle, rows: [] });
+    groups.get(key).rows.push(r);
+  });
+  const fa = n => Number(n || 0).toLocaleString('fa-IR');
+  box.innerHTML = Array.from(groups.values()).map(g => {
+    const avg = Math.round(g.rows.reduce((s, r) => s + (r.progressPct || 0), 0) / g.rows.length);
+    const done = g.rows.filter(r => r.isCompleted).length;
+    const general = g.key === 'general';
     return `
-      <tr class="u-bb-fg-6 u-tr-background-0_2s-ease">
-        <td class="u-va-middle u-p-10-8">${stationCell}</td>
-        <td class="u-va-middle u-p-10-8">${classCell}</td>
-        <td class="u-va-middle u-p-10-8">${partCell}</td>
-        <td class="u-va-middle u-p-10-8">${quizCell}</td>
-        <td class="u-va-middle u-p-10-8">${challengeCell}</td>
-        <td class="u-va-middle u-p-10-8 u-text-center">${progressCell}</td>
-      </tr>`;
+      <section class="lse-card urp-station">
+        <header class="urp-station-head">
+          <span class="lsv-row-avatar lsv-row-num">${general ? '<i class="fa-solid fa-layer-group"></i>' : fa(g.number)}</span>
+          <span class="lsv-row-text"><strong>${esc(general ? 'چالش‌های کاروان / عمومی' : g.title)}</strong><span>${fa(done)} از ${fa(g.rows.length)} مورد کامل</span></span>
+          <span class="urp-pct ${avg === 100 ? 'is-done' : avg > 0 ? 'is-going' : ''}">${fa(avg)}٪</span>
+        </header>
+        <div class="urp-rows">${g.rows.map(r => {
+          const pct = r.progressPct || 0;
+          const tone = pct === 100 ? 'lst-bar-active' : pct >= 50 ? 'urp-bar-mid' : 'urp-bar-low';
+          const title = r.sessionId ? r.sessionTitle : (r.challenge ? r.challenge.title : r.sessionTitle);
+          return `
+          <div class="urp-row${r.isCompleted ? ' is-done' : ''}">
+            <div class="urp-row-main">
+              <i class="fa-solid ${r.isCompleted ? 'fa-circle-check' : r.sessionId ? 'fa-chalkboard-user' : 'fa-trophy'}"></i>
+              <span><strong>${esc(title || '-')}</strong>${r.categoryTitle && r.categoryTitle !== '-' ? `<small>${esc(r.categoryTitle)}</small>` : ''}</span>
+              <span class="urp-row-pct">${pct === 100 ? 'تکمیل شده' : pct > 0 ? fa(pct) + '٪' : 'شروع نشده'}</span>
+            </div>
+            <span class="lst-bar urp-row-bar"><span class="${tone}" data-style="width:${pct}%"></span></span>
+            <div class="urp-pills">${urpRowPills(r) || '<span class="urp-pill is-none">بدون جلسه ثبت‌شده</span>'}</div>
+          </div>`;
+        }).join('')}</div>
+      </section>`;
   }).join('');
 };
 
 window.filterDrawerClassProgress = function(filterType) {
   if (filterType) {
     window.activeDrawerClassFilter = filterType;
-    const container = document.getElementById('drawer-class-filter-chips');
-    if (container) {
-      container.querySelectorAll('button').forEach(btn => {
-        btn.style.background = 'rgb(var(--fg-rgb) / 0.06)';
-        btn.style.color = 'var(--text-soft)';
-        btn.style.borderColor = 'rgb(var(--fg-rgb) / 0.1)';
-        btn.classList.remove('active');
-      });
-      const activeBtn = document.getElementById(`btn-prog-filter-${filterType}`);
-      if (activeBtn) {
-        activeBtn.style.background = 'var(--primary)';
-        activeBtn.style.color = 'white';
-        activeBtn.style.borderColor = 'var(--primary)';
-        activeBtn.classList.add('active');
-      }
-    }
+    document.querySelectorAll('#drawer-class-filter-chips .chm-chip').forEach(btn => {
+      const on = btn.id === `btn-prog-filter-${filterType}`;
+      btn.classList.toggle('is-active', on);
+      btn.setAttribute('aria-selected', String(on));
+    });
   }
   window.renderDrawerClassProgressTable();
-};
-
-let isMentorView = false;
-window.toggleDualRoleView = function() {
-  isMentorView = !isMentorView;
-  const sView = document.getElementById('student-view-container');
-  const mView = document.getElementById('mentor-view-container');
-  if (isMentorView) {
-    sView.style.display = 'none';
-    mView.style.display = 'block';
-  } else {
-    sView.style.display = 'block';
-    mView.style.display = 'none';
-  }
-};
-
-window.switchDrawerTab = function(tabId) {
-  document.querySelectorAll('.drawer-tab-content').forEach(el => {
-    el.style.display = 'none';
-    el.classList.remove('active');
-  });
-  document.querySelectorAll('.tabs-header .btn-action').forEach(btn => btn.classList.remove('active'));
-  
-  document.getElementById(tabId).style.display = 'block';
-  document.getElementById(tabId).classList.add('active');
-  document.getElementById('btn-' + tabId).classList.add('active');
 };
 
 // Block / Unblock User

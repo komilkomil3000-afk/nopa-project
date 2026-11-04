@@ -165,7 +165,8 @@ export async function getPendingDocuments(req: AuthRequest, res: Response) {
   try {
     const docs = await prisma.mentorDocument.findMany({
       where: { status: 'pending' },
-      include: { user: true },
+      // only what the review queue shows (not the whole user row)
+      include: { user: { select: { id: true, name: true, phoneNumber: true, avatarUrl: true, userCode: true } } },
       orderBy: { createdAt: 'desc' }
     });
     res.json(docs);
@@ -192,7 +193,8 @@ export async function approveDocument(req: AuthRequest, res: Response) {
 export async function rejectDocument(req: AuthRequest, res: Response) {
   try {
     const { id } = req.params;
-    const { reason } = req.body;
+    // the panel has always sent the reason as `note`
+    const reason = req.body.reason ?? req.body.note;
     const doc = await prisma.mentorDocument.update({ where: { id }, data: { status: 'rejected', rejectReason: reason || null } });
     
     await sendSystemNotification(doc.userId, 'رد گواهینامه', `گواهینامه "${doc.filename}" شما رد شد. علت: ${reason || 'عدم رعایت قوانین'}`, 'alert');

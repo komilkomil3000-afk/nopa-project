@@ -1,244 +1,198 @@
-// Jarchi: banners and news.
+// Jarchi: the app's news board and banners.
+// One bento like the other tabs (#jch-overview-view): news cards with filters, stats and categories, and a
+// full-width strip of the banners; a card opens its lse dialog (#news-modal / #banner-modal).
 // Split out of the former app.js (Phase 7). Classic script: shares globals with the other modules;
-// load order is set in index.html.
+// load order is set in index.html. Styles: css/stations.css (.lst-*, .crv-*, .jch-*).
+// Data: GET/POST/PUT/DELETE /admin/news and /admin/banners (multipart, image in `image`).
+window.cachedBannerList = [];
+window.cachedNewsList = [];
+let jchNewsLoaded = false;
+let jchBannersLoaded = false;
 
-// --- BANNERS & NEWS MANAGEMENT ---
+const JCH_CATEGORY = {
+  'اطلاعیه مهم': ['fa-circle-exclamation', 'locked'],
+  'رویداد و مسابقه': ['fa-trophy', 'scheduled'],
+  'اخبار کاروان‌ها': ['fa-compass', 'active'],
+  'آموزشی': ['fa-graduation-cap', 'rest'],
+};
+const JCH_AUDIENCE = { ALL: ['عمومی', 'fa-users'], STUDENTS: ['نوجوانان', 'fa-user-graduate'], MENTORS: ['راهبران', 'fa-user-tie'] };
+const JCH_POSITION = {
+  home_top: ['بالای صفحه اصلی', 'fa-house'],
+  bazaar_top: ['بالای صفحه بازار', 'fa-store'],
+  lms_slider: ['آموزش و منزلگاه', 'fa-graduation-cap'],
+  general: ['عمومی', 'fa-globe'],
+};
+const jchFa = n => Number(n || 0).toLocaleString('fa-IR');
+const jchActive = b => b.isActive === true || b.isActive === 1 || b.isActive === 'true';
+function jchState(n) {
+  if (!n.isPublished) return 'draft';
+  return n.publishDate && new Date(n.publishDate) > new Date() ? 'scheduled' : 'published';
+}
+function jchStateChip(n) {
+  const s = jchState(n);
+  if (s === 'published') return '<span class="lst-chip lst-chip-active"><i class="fa-solid fa-check"></i> منتشرشده</span>';
+  if (s === 'scheduled') return '<span class="lst-chip lst-chip-scheduled"><i class="fa-solid fa-clock"></i> زمان‌بندی‌شده</span>';
+  return '<span class="lst-chip lst-chip-locked"><i class="fa-solid fa-file-pen"></i> پیش‌نویس</span>';
+}
+function jchLocalIso(d) {
+  return new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 16);
+}
+function jchShow(id) {
+  const m = document.getElementById(id);
+  if (!m) return;
+  m.style.display = 'flex';
+  m.style.zIndex = 'var(--z-modal)';
+}
+function jchPreview(previewId, src) {
+  const preview = document.getElementById(previewId);
+  if (!preview) return;
+  preview.src = src || '';
+  preview.style.display = src ? 'block' : 'none';
+  preview.closest('.jch-drop')?.classList.toggle('has-image', !!src);
+}
 
-window.switchJarchiSubTab = function(subtab) {
-  const bannersView = document.getElementById('jarchi-banners-view');
-  const newsView = document.getElementById('jarchi-news-view');
-  const btnBanners = document.getElementById('subtab-btn-banners');
-  const btnNews = document.getElementById('subtab-btn-news');
+// The tab's loader (router)
+window.loadNewsAndBanners = function() {
+  jchSetLoading(true);
+  return Promise.all([window.loadNewsTab(), window.loadBannersTab()]).finally(() => jchSetLoading(false));
+};
+window.switchJarchiSubTab = function() { window.loadNewsAndBanners(); }; // old name: there are no sub tabs any more
 
-  if (subtab === 'banners') {
-    if (bannersView) bannersView.style.display = 'block';
-    if (newsView) newsView.style.display = 'none';
-    if (btnBanners) {
-      btnBanners.style.background = 'linear-gradient(135deg, var(--accent), var(--accent-strong))';
-      btnBanners.style.color = 'white';
-      btnBanners.style.boxShadow = '0 4px 12px rgb(var(--accent-rgb) / 0.35)';
-      btnBanners.style.border = 'none';
+function jchSetLoading(on) {
+  document.querySelectorAll('#jch-overview-view .lst-bento > .lst-tile').forEach(t => t.classList.toggle('is-loading', on));
+  if (!on) return;
+  const skel = n => Array.from({ length: n }, () => `
+    <div class="crv-card jch-card lst-skel" aria-hidden="true"><span class="mdc-thumb"></span>
+      <span class="lst-skel-line"></span><span class="lst-skel-line lst-skel-short"></span></div>`).join('');
+  if (!jchNewsLoaded) { const g = document.getElementById('news-tbody'); if (g) g.innerHTML = skel(6); }
+  if (!jchBannersLoaded) { const g = document.getElementById('banners-tbody'); if (g) g.innerHTML = skel(4); }
+  const lines = '<div class="lst-skel-lines" aria-hidden="true">' + '<span class="lst-skel-row"></span>'.repeat(3) + '</div>';
+  ['jch-bento-categories', 'jch-bento-positions'].forEach(id => { const el = document.getElementById(id); if (el && !(jchNewsLoaded && jchBannersLoaded)) el.innerHTML = lines; });
+}
+
+// ==================== BANNERS ====================
+window.loadBannersTab = async function() {
+  const box = document.getElementById('banners-tbody');
+  try {
+    const res = await request('/api/v1/admin/banners');
+    if (!res.ok) throw new Error('خطا در دریافت بنرها از سرور');
+    const banners = await res.json();
+    window.cachedBannerList = Array.isArray(banners) ? banners : [];
+    jchBannersLoaded = true;
+    window.jchDrawBanners();
+  } catch (e) {
+    console.error('Error loading banners:', e);
+    if (box) box.innerHTML = `<div class="lst-empty"><i class="fa-solid fa-triangle-exclamation lst-warn"></i> ${esc(e.message || 'ارتباط با سرور برقرار نشد')}</div>`;
+  }
+};
+
+window.jchDrawBanners = function() {
+  const draw = () => {
+    const all = window.cachedBannerList || [];
+    const pos = document.getElementById('jch-banner-position')?.value || 'all';
+    const list = all.filter(b => pos === 'all' || b.position === pos)
+      .sort((a, b) => (jchActive(b) - jchActive(a)) || (a.position || '').localeCompare(b.position || '') || (a.orderIndex || 0) - (b.orderIndex || 0));
+
+    const el = document.getElementById('banners-stat-active');
+    if (el) el.textContent = `${jchFa(all.filter(jchActive).length)} از ${jchFa(all.length)}`;
+
+    const box = document.getElementById('banners-tbody');
+    if (box) {
+      const cards = list.map(b => {
+        const [pl, pi] = JCH_POSITION[b.position] || [b.position || '-', 'fa-map-pin'];
+        const on = jchActive(b);
+        return `
+          <button type="button" class="crv-card jch-banner${on ? '' : ' is-off'}" data-anim-key="jb:${esc(b.id)}" data-click="editBanner" data-click-args="${esc(JSON.stringify([String(b.id)]))}" title="ویرایش بنر">
+            <span class="jch-banner-img">${b.imageUrl
+              ? `<img src="${esc(b.imageUrl)}" alt="${esc(b.title || '')}" loading="lazy" data-error="NopaActions.fallbackSrc" data-error-args="[&quot;$this&quot;,&quot;/uploads/banner1.jpg&quot;]">`
+              : '<i class="fa-solid fa-image"></i>'}
+              <span class="jch-banner-order" title="ترتیب نمایش">${jchFa(b.orderIndex ?? 0)}</span></span>
+            <span class="crv-card-name"><strong>${esc(b.title || 'بدون عنوان')}</strong>${on
+              ? '<span class="lst-chip lst-chip-active"><i class="fa-solid fa-check"></i> فعال</span>'
+              : '<span class="lst-chip lst-chip-locked"><i class="fa-solid fa-pause"></i> غیرفعال</span>'}</span>
+            <span class="crv-card-mentor"><i class="fa-solid ${pi}"></i><span>${esc(pl)}${b.targetRoute ? ` · <bdi dir="ltr">${esc(b.targetRoute)}</bdi>` : ''}</span></span>
+          </button>`;
+      });
+      if (pos === 'all') cards.push(`
+        <button type="button" class="crv-card crv-card-add jch-banner" data-anim-key="jb-add" data-click="openCreateBannerModal" title="بنر جدید">
+          <span class="lsv-round lsv-round-lg"><i class="fa-solid fa-plus"></i></span><span>بنر جدید</span>
+        </button>`);
+      else if (!list.length) cards.push('<div class="lst-empty" data-anim-key="jb-empty">بنری در این جایگاه نیست.</div>');
+      box.innerHTML = cards.join('');
+      box.setAttribute('aria-busy', 'false');
     }
-    if (btnNews) {
-      btnNews.style.background = 'rgb(var(--fg-rgb) / 0.06)';
-      btnNews.style.color = 'var(--text-muted)';
-      btnNews.style.boxShadow = 'none';
-      btnNews.style.border = '1px solid rgb(var(--fg-rgb) / 0.1)';
+
+    const positions = document.getElementById('jch-bento-positions');
+    if (positions) {
+      positions.innerHTML = `<ul class="lst-list">${Object.keys(JCH_POSITION).map(k => {
+        const inPos = all.filter(b => b.position === k);
+        const on = inPos.filter(jchActive).length;
+        return `<li class="lst-list-item${inPos.length ? ' lst-clickable' : ''}"${inPos.length ? ` role="button" tabindex="0" data-click="jchFilterPosition" data-click-args="${esc(JSON.stringify([k]))}"` : ''} data-anim-key="jp:${k}">
+          <i class="fa-solid ${JCH_POSITION[k][1]} ${on ? 'u-c-primary-text' : 'u-c-text-muted'}"></i>
+          <span class="lst-grow">${esc(JCH_POSITION[k][0])}</span>
+          <span class="${on ? 'u-c-success-text' : 'u-c-text-muted'}">${jchFa(on)} فعال${inPos.length > on ? ` / ${jchFa(inPos.length)}` : ''}</span></li>`;
+      }).join('')}</ul>`;
     }
-    window.loadBannersTab();
-  } else {
-    if (bannersView) bannersView.style.display = 'none';
-    if (newsView) newsView.style.display = 'block';
-    if (btnNews) {
-      btnNews.style.background = 'linear-gradient(135deg, var(--primary), var(--primary-strong))';
-      btnNews.style.color = 'white';
-      btnNews.style.boxShadow = '0 4px 12px rgb(var(--primary-rgb) / 0.35)';
-      btnNews.style.border = 'none';
-    }
-    if (btnBanners) {
-      btnBanners.style.background = 'rgb(var(--fg-rgb) / 0.06)';
-      btnBanners.style.color = 'var(--text-muted)';
-      btnBanners.style.boxShadow = 'none';
-      btnBanners.style.border = '1px solid rgb(var(--fg-rgb) / 0.1)';
-    }
-    window.loadNewsTab();
+  };
+  const view = document.getElementById('jch-overview-view');
+  if (window.NopaFlip && view) window.NopaFlip.render(view, draw); else draw();
+};
+
+window.jchFilterPosition = function(pos) {
+  const sel = document.getElementById('jch-banner-position');
+  if (sel) sel.value = pos;
+  window.jchDrawBanners();
+  document.getElementById('banners-tbody')?.scrollIntoView({ block: 'center', behavior: NopaMotion.scrollBehavior() });
+};
+
+window.toggleBannerStatus = async function(id, currentActive) {
+  try {
+    const formData = new FormData();
+    formData.append('isActive', !currentActive);
+    const res = await request(`/api/v1/admin/banners/${encodeURIComponent(id)}`, { method: 'PUT', body: formData });
+    if (res.ok) { showToast(!currentActive ? 'بنر فعال شد' : 'بنر غیرفعال شد', 'success'); window.loadBannersTab(); }
+  } catch (e) {
+    console.error('Error toggling banner status:', e);
   }
 };
 
 window.previewBannerImage = function(e) {
   const file = e.target.files[0];
-  const preview = document.getElementById('banner-image-preview');
-  if (file && preview) {
-    const reader = new FileReader();
-    reader.onload = function(evt) {
-      preview.src = evt.target.result;
-      preview.style.display = 'block';
-    };
-    reader.readAsDataURL(file);
-  }
-};
-
-window.loadNewsAndBanners = function() {
-  window.loadBannersTab();
-  window.loadNewsTab();
-};
-
-window.cachedBannerList = [];
-
-window.loadBannersTab = async function() {
-  const tbody = document.querySelector('#banners-tbody') || document.querySelector('#banners-table tbody');
-  if (tbody) {
-    NopaTable.loading(tbody, 'در حال بارگذاری بنرها...');
-  }
-
-  try {
-    const res = await request('/api/v1/admin/banners');
-    
-    if (!res.ok) {
-      NopaTable.error(tbody, 'خطا در دریافت بنرها از سرور');
-      return;
-    }
-
-    const banners = await res.json();
-    const bannerList = Array.isArray(banners) ? banners : [];
-    window.cachedBannerList = bannerList;
-
-    // Update Stats
-    const totalCount = bannerList.length;
-    const homeCount = bannerList.filter(b => b.position === 'home_top').length;
-    const bazaarCount = bannerList.filter(b => b.position === 'bazaar_top').length;
-    const activeCount = bannerList.filter(b => (b.isActive === true || b.isActive === 1 || b.isActive === 'true')).length;
-
-    const elTotal = document.getElementById('banners-stat-total');
-    const elHome = document.getElementById('banners-stat-home');
-    const elBazaar = document.getElementById('banners-stat-bazaar');
-    const elActive = document.getElementById('banners-stat-active');
-
-    if (elTotal) elTotal.textContent = `${totalCount} بنر`;
-    if (elHome) elHome.textContent = `${homeCount} بنر`;
-    if (elBazaar) elBazaar.textContent = `${bazaarCount} بنر`;
-    if (elActive) elActive.textContent = `${activeCount} بنر فعال`;
-
-    if (!tbody) return;
-    if (bannerList.length === 0) {
-      NopaTable.empty(tbody, 'هنوز بنری ثبت نشده است. با زدن دکمه بالا بنر جدید اضافه کنید.', 'fa-solid fa-images');
-      return;
-    }
-
-    const positionLabels = {
-      'home_top': '<span class="badge u-bg-primary-15 u-c-primary-text u-bd-primary-30 u-fs-2xs u-p-4-8 u-r-6"><i class="fa-solid fa-house"></i> بالای صفحه اصلی</span>',
-      'bazaar_top': '<span class="badge u-bg-success-15 u-c-success-text u-bd-success-30 u-fs-2xs u-p-4-8 u-r-6"><i class="fa-solid fa-store"></i> بالای صفحه بازار</span>',
-      'lms_slider': '<span class="badge u-bg-accent-15 u-c-accent-text u-bd-accent-30 u-fs-2xs u-p-4-8 u-r-6"><i class="fa-solid fa-graduation-cap"></i> آموزش و منزلگاه</span>',
-      'general': '<span class="badge u-bg-primary-15 u-c-primary-text u-bd-primary-30 u-fs-2xs u-p-4-8 u-r-6"><i class="fa-solid fa-globe"></i> عمومی</span>'
-    };
-
-    tbody.innerHTML = bannerList.map(b => {
-      const posLabel = positionLabels[b.position] || `<span class="badge">${b.position}</span>`;
-      const isBannerActive = (b.isActive === true || b.isActive === 1 || b.isActive === 'true');
-      const statusBadge = isBannerActive
-        ? `<span role="button" tabindex="0" class="badge u-bg-success-15 u-c-success-text u-bd-success-30 u-fs-2xs u-p-4-8 u-r-6 u-pointer" data-click="toggleBannerStatus" data-click-args="${esc(JSON.stringify([String(b.id), true]))}" title="کلیک برای غیرفعال کردن"><i class="fa-solid fa-check"></i> فعال</span>`
-        : `<span role="button" tabindex="0" class="badge u-bg-danger-15 u-c-danger-text u-bd-danger-30 u-fs-2xs u-p-4-8 u-r-6 u-pointer" data-click="toggleBannerStatus" data-click-args="${esc(JSON.stringify([String(b.id), false]))}" title="کلیک برای فعال کردن"><i class="fa-solid fa-xmark"></i> غیرفعال</span>`;
-      
-      const imgMarkup = b.imageUrl
-        ? `<img src="${esc(b.imageUrl)}" alt="${esc(b.title || '')}" class="u-w-75 u-h-42 u-r-6 u-fit-cover u-bd-fg-10 u-shadow-0-2-6-shade-30" data-error="NopaActions.fallbackSrc" data-error-args="[&quot;$this&quot;,&quot;/uploads/banner1.jpg&quot;]" />`
-        : '<div class="u-w-75 u-h-42 u-r-6 u-bg-fg-5 u-flex u-items-center u-justify-center u-c-text-faint"><i class="fa-solid fa-image"></i></div>';
-
-      const targetText = b.targetRoute ? `<code class="u-bg-fg-6 u-p-2-6 u-r-4 u-fs-2xs u-c-text-soft" dir="ltr">${esc(b.targetRoute)}</code>` : '<span class="u-c-text-faint">-</span>';
-
-      return `
-        <tr>
-          <td class="u-text-center">${imgMarkup}</td>
-          <td class="u-bold u-c-text">${esc(b.title || 'بدون عنوان')}</td>
-          <td class="u-text-center">${posLabel}</td>
-          <td>${targetText}</td>
-          <td class="u-text-center u-c-accent-text u-bold">${b.orderIndex ?? 0}</td>
-          <td class="u-text-center">${statusBadge}</td>
-          <td class="u-text-center">
-            <div class="u-flex u-gap-6 u-justify-center">
-              <button type="button" class="btn-icon u-bg-accent-15 u-c-accent-text u-bd-accent-30 u-w-32 u-h-32 u-r-6 u-pointer" data-click="editBanner" data-click-args="${esc(JSON.stringify([String(b.id)]))}" title="ویرایش بنر">
-                <i class="fa-solid fa-pen"></i>
-              </button>
-              <button type="button" class="btn-icon u-bg-danger-15 u-c-danger-text u-bd-danger-30 u-w-32 u-h-32 u-r-6 u-pointer" data-click="deleteBanner" data-click-args="${esc(JSON.stringify([String(b.id)]))}" title="حذف بنر">
-                <i class="fa-solid fa-trash"></i>
-              </button>
-            </div>
-          </td>
-        </tr>
-      `;
-    }).join('');
-  } catch(e) {
-    console.error('Error loading banners:', e);
-    NopaTable.error(tbody, 'ارتباط با سرور برقرار نشد');
-  }
-};
-
-window.toggleBannerStatus = async function(id, currentActive) {
-  const newActive = !currentActive;
-  try {
-    const formData = new FormData();
-    formData.append('isActive', newActive);
-    const res = await request(`/api/v1/admin/banners/${id}`, {
-      method: 'PUT',
-      body: formData
-    });
-    if (res.ok) {
-      if (typeof showToastSuccess === 'function') {
-        showToastSuccess(newActive ? 'بنر فعال شد' : 'بنر غیرفعال شد');
-      }
-      loadBannersTab();
-    }
-  } catch(e) {
-    console.error('Error toggling banner status:', e);
-  }
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = evt => jchPreview('banner-image-preview', evt.target.result);
+  reader.readAsDataURL(file);
 };
 
 window.openCreateBannerModal = function() {
-  const form = document.getElementById('banner-form');
-  if (form) form.reset();
-  const idEl = document.getElementById('banner-id');
-  if (idEl) idEl.value = '';
-  const titleModalEl = document.getElementById('banner-modal-title');
-  if (titleModalEl) titleModalEl.innerHTML = '<i class="fa-solid fa-image u-c-accent-text"></i> بارگذاری و افزودن بنر جدید';
-  const preview = document.getElementById('banner-image-preview');
-  if (preview) {
-    preview.src = '';
-    preview.style.display = 'none';
-  }
-  
-  const m = document.getElementById('banner-modal');
-  if (m) {
-    m.style.display = 'flex';
-    m.classList.remove('hidden');
-  }
+  document.getElementById('banner-form')?.reset();
+  document.getElementById('banner-id').value = '';
+  document.getElementById('banner-modal-title').textContent = 'بنر جدید';
+  document.getElementById('banner-file').required = true;
+  document.getElementById('banner-delete-btn').hidden = true;
+  const pos = document.getElementById('jch-banner-position')?.value;
+  if (pos && pos !== 'all') document.getElementById('banner-position').value = pos;
+  jchPreview('banner-image-preview', '');
+  jchShow('banner-modal');
 };
 
-window.closeBannerModal = function() {
-  const m = document.getElementById('banner-modal');
-  if (m) {
-    m.style.display = 'none';
-    m.classList.add('hidden');
-  }
-};
+window.closeBannerModal = function() { NopaActions.hide('banner-modal'); };
 
-window.editBanner = async function(id) {
-  try {
-    let b = (window.cachedBannerList || []).find(x => x.id === id);
-    if (!b) {
-      const res = await request('/api/v1/admin/banners');
-      const banners = await res.json();
-      b = (Array.isArray(banners) ? banners : []).find(x => x.id === id);
-    }
-    if (!b) return;
-
-    document.getElementById('banner-id').value = b.id || '';
-    document.getElementById('banner-title').value = b.title || '';
-    document.getElementById('banner-target').value = b.targetRoute || '';
-    document.getElementById('banner-position').value = b.position || 'home_top';
-    document.getElementById('banner-order').value = b.orderIndex ?? 0;
-    document.getElementById('banner-active').checked = (b.isActive === true || b.isActive === 'true');
-
-    const preview = document.getElementById('banner-image-preview');
-    if (preview) {
-      if (b.imageUrl) {
-        preview.src = b.imageUrl;
-        preview.style.display = 'block';
-      } else {
-        preview.src = '';
-        preview.style.display = 'none';
-      }
-    }
-
-    const titleModalEl = document.getElementById('banner-modal-title');
-    if (titleModalEl) titleModalEl.innerHTML = '<i class="fa-solid fa-pen u-c-accent-text"></i> ویرایش و اصلاح بنر';
-
-    const m = document.getElementById('banner-modal');
-    if (m) {
-      m.style.display = 'flex';
-      m.classList.remove('hidden');
-    }
-  } catch (e) {
-    console.error('Error fetching banner for edit:', e);
-  }
+window.editBanner = function(id) {
+  const b = (window.cachedBannerList || []).find(x => String(x.id) === String(id));
+  if (!b) return;
+  document.getElementById('banner-form')?.reset();
+  document.getElementById('banner-id').value = b.id || '';
+  document.getElementById('banner-title').value = b.title || '';
+  document.getElementById('banner-target').value = b.targetRoute || '';
+  document.getElementById('banner-position').value = b.position || 'home_top';
+  document.getElementById('banner-order').value = b.orderIndex ?? 0;
+  document.getElementById('banner-active').checked = jchActive(b);
+  document.getElementById('banner-file').required = !b.imageUrl;
+  document.getElementById('banner-modal-title').textContent = `ویرایش بنر: ${b.title || ''}`;
+  document.getElementById('banner-delete-btn').hidden = false;
+  jchPreview('banner-image-preview', b.imageUrl || '');
+  jchShow('banner-modal');
 };
 
 window.saveBannerItem = async function(e) {
@@ -251,366 +205,224 @@ window.saveBannerItem = async function(e) {
   formData.append('orderIndex', document.getElementById('banner-order').value);
   formData.append('isActive', document.getElementById('banner-active').checked);
   const fileInput = document.getElementById('banner-file');
-  if (fileInput && fileInput.files[0]) {
-    formData.append('image', fileInput.files[0]);
-  }
-  
-  const url = id ? `/api/v1/admin/banners/${id}` : '/api/v1/admin/banners';
-  const method = id ? 'PUT' : 'POST';
-  
+  if (fileInput && fileInput.files[0]) formData.append('image', fileInput.files[0]);
+
   try {
-    const res = await request(url, {
-      method,
-      body: formData
-    });
+    const res = await request(id ? `/api/v1/admin/banners/${encodeURIComponent(id)}` : '/api/v1/admin/banners', { method: id ? 'PUT' : 'POST', body: formData });
     if (res.ok) {
-      if (typeof showToastSuccess === 'function') {
-        showToastSuccess(id ? 'بنر با موفقیت ویرایش شد' : 'بنر جدید با موفقیت بارگذاری شد');
-      } else {
-        showToast(id ? 'بنر با موفقیت ویرایش شد' : 'بنر جدید با موفقیت بارگذاری شد', 'success');
-      }
-      closeBannerModal();
-      loadBannersTab();
+      showToast(id ? 'بنر با موفقیت ویرایش شد' : 'بنر جدید با موفقیت بارگذاری شد', 'success');
+      window.closeBannerModal();
+      window.loadBannersTab();
     } else {
       const err = await res.json().catch(() => ({}));
       showToast(err.error || 'خطا در ثبت بنر', 'error');
     }
-  } catch(e) {
-    console.error('Network error saving banner:', e);
+  } catch (err) {
+    console.error('Network error saving banner:', err);
     showToast('خطا در برقراری ارتباط با سرور', 'error');
   }
 };
 
 window.deleteBanner = async function(id) {
-  if (!(await NopaConfirm('آیا از حذف این بنر اطمینان دارید؟'))) return;
+  if (!(await NopaConfirm('آیا از حذف این بنر اطمینان دارید؟'))) return false;
   try {
-    const res = await request(`/api/v1/admin/banners/${id}`, {
-      method: 'DELETE'
-    });
-    if (res.ok) {
-      if (typeof showToastSuccess === 'function') {
-        showToastSuccess('بنر با موفقیت حذف شد');
-      }
-      loadBannersTab();
-    } else {
-      showToast('خطا در حذف بنر', 'error');
-    }
-  } catch(e) {
+    const res = await request(`/api/v1/admin/banners/${encodeURIComponent(id)}`, { method: 'DELETE' });
+    if (!res.ok) { showToast('خطا در حذف بنر', 'error'); return false; }
+    showToast('بنر با موفقیت حذف شد', 'success');
+    window.loadBannersTab();
+    return true;
+  } catch (e) {
     console.error('Error deleting banner:', e);
+    return false;
   }
 };
+window.jchDeleteOpenBanner = async function() {
+  const id = document.getElementById('banner-id').value;
+  if (id && (await window.deleteBanner(id))) window.closeBannerModal();
+};
 
-window.cachedNewsList = [];
-
+// ==================== NEWS ====================
 window.loadNewsTab = async function() {
-  const tbody = document.querySelector('#news-tbody') || document.querySelector('#news-table tbody');
-  if (tbody) {
-    NopaTable.loading(tbody, 'در حال بارگذاری اخبار و اعلانات جارچی...');
-  }
-
+  const box = document.getElementById('news-tbody');
   try {
     const res = await request('/api/v1/admin/news');
-    
-    if (!res.ok) {
-      NopaTable.error(tbody, 'خطا در دریافت اطلاعات اخبار از سرور');
-      return;
-    }
-
+    if (!res.ok) throw new Error('خطا در دریافت اطلاعات اخبار از سرور');
     const news = await res.json();
     window.cachedNewsList = Array.isArray(news) ? news : [];
-
-    // Calculate stats
-    const totalCount = window.cachedNewsList.length;
-    const publishedCount = window.cachedNewsList.filter(n => n.isPublished).length;
-    const draftCount = totalCount - publishedCount;
-
-    const elTotal = document.getElementById('news-stat-total');
-    const elPub = document.getElementById('news-stat-published');
-    const elDraft = document.getElementById('news-stat-drafts');
-
-    if (elTotal) elTotal.textContent = `${totalCount} خبر`;
-    if (elPub) elPub.textContent = `${publishedCount} خبر فعال`;
-    if (elDraft) elDraft.textContent = `${draftCount} پیش‌نویس`;
-
+    jchNewsLoaded = true;
     window.filterNewsTable();
-  } catch(e) {
+  } catch (e) {
     console.error('Error loading news:', e);
-    NopaTable.error(tbody, 'ارتباط با سرور برقرار نشد');
+    if (box) box.innerHTML = `<div class="lst-empty"><i class="fa-solid fa-triangle-exclamation lst-warn"></i> ${esc(e.message || 'ارتباط با سرور برقرار نشد')}</div>`;
   }
 };
 
 window.filterNewsTable = function() {
-  const query = (document.getElementById('news-search-input')?.value || '').toLowerCase().trim();
-  const categoryFilter = document.getElementById('news-filter-category')?.value || 'all';
-  const audienceFilter = document.getElementById('news-filter-audience')?.value || 'all';
-
-  let filtered = window.cachedNewsList || [];
-
-  if (query) {
-    filtered = filtered.filter(n => 
-      (n.title && n.title.toLowerCase().includes(query)) ||
-      (n.subtitle && n.subtitle.toLowerCase().includes(query)) ||
-      (n.body && n.body.toLowerCase().includes(query)) ||
-      (n.reporter && n.reporter.toLowerCase().includes(query))
-    );
-  }
-
-  if (categoryFilter !== 'all') {
-    filtered = filtered.filter(n => (n.category || '') === categoryFilter);
-  }
-
-  if (audienceFilter !== 'all') {
-    filtered = filtered.filter(n => (n.targetAudience || 'ALL') === audienceFilter);
-  }
-
-  window.renderNewsTable(filtered);
+  const view = document.getElementById('jch-overview-view');
+  if (window.NopaFlip && view) window.NopaFlip.render(view, jchDrawNews); else jchDrawNews();
 };
 
-window.renderNewsTable = function(newsList) {
-  const tbody = document.querySelector('#news-tbody') || document.querySelector('#news-table tbody');
-  if (!tbody) return;
+function jchNewsCard(n) {
+  const [ci] = JCH_CATEGORY[n.category] || ['fa-tag'];
+  const [al, ai] = JCH_AUDIENCE[n.targetAudience] || JCH_AUDIENCE.ALL;
+  const date = n.publishDate ? new Date(n.publishDate).toLocaleDateString('fa-IR', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : '-';
+  return `
+    <button type="button" class="crv-card jch-card${jchState(n) === 'draft' ? ' is-draft' : ''}" data-anim-key="jn:${esc(n.id)}" data-click="editNews" data-click-args="${esc(JSON.stringify([String(n.id)]))}" title="ویرایش خبر">
+      ${n.imageUrl
+        ? `<span class="mdc-thumb"><img src="${esc(n.imageUrl)}" alt="" loading="lazy"></span>`
+        : `<span class="mdc-thumb is-icon"><i class="fa-solid ${ci}"></i></span>`}
+      <span class="crv-card-name"><strong>${esc(n.title || 'بدون عنوان')}</strong>${jchStateChip(n)}</span>
+      ${n.subtitle ? `<span class="jch-sub">${esc(n.subtitle)}</span>` : ''}
+      <span class="crv-card-mentor"><i class="fa-solid ${ci}"></i><span>${esc(n.category || 'عمومی')} · ${esc(n.reporter || 'ستاد نپا')}</span></span>
+      <span class="crv-card-foot">
+        <span class="crv-card-nums">
+          <span class="u-c-primary-text"><i class="fa-solid ${ai}"></i> ${esc(al)}</span>
+          <span class="u-c-text-muted"><i class="fa-regular fa-calendar"></i> ${esc(date)}</span>
+        </span>
+      </span>
+    </button>`;
+}
 
-  if (!newsList || newsList.length === 0) {
-    NopaTable.empty(tbody, 'هیچ خبر یا اطلاعیه‌ای یافت نشد.', 'fa-solid fa-inbox');
-    return;
+function jchDrawNews() {
+  const all = window.cachedNewsList || [];
+  const q = (document.getElementById('news-search-input')?.value || '').toLowerCase().trim();
+  const cat = document.getElementById('news-filter-category')?.value || 'all';
+  const aud = document.getElementById('news-filter-audience')?.value || 'all';
+  const st = document.getElementById('news-filter-status')?.value || 'all';
+  const list = all.filter(n =>
+    (!q || [n.title, n.subtitle, n.body, n.reporter].some(v => String(v || '').toLowerCase().includes(q))) &&
+    (cat === 'all' || (n.category || '') === cat) &&
+    (aud === 'all' || (n.targetAudience || 'ALL') === aud) &&
+    (st === 'all' || jchState(n) === st))
+    .sort((a, b) => new Date(b.publishDate || b.createdAt || 0) - new Date(a.publishDate || a.createdAt || 0));
+  const filtering = !!q || cat !== 'all' || aud !== 'all' || st !== 'all';
+
+  const badge = document.getElementById('jch-count-badge');
+  if (badge) badge.textContent = filtering ? `نمایش ${jchFa(list.length)} از ${jchFa(all.length)}` : 'برای ویرایش هر خبر بزنید';
+
+  const grid = document.getElementById('news-tbody');
+  if (grid) {
+    const cards = list.map(jchNewsCard);
+    if (!filtering) cards.push(`
+      <button type="button" class="crv-card crv-card-add" data-anim-key="jn-add" data-click="openCreateNewsModal" title="خبر جدید">
+        <span class="lsv-round lsv-round-lg"><i class="fa-solid fa-plus"></i></span><span>خبر / اطلاعیه جدید</span>
+      </button>`);
+    else if (!list.length) cards.push('<div class="lst-empty" data-anim-key="jn-empty">هیچ خبر یا اطلاعیه‌ای یافت نشد.</div>');
+    grid.innerHTML = cards.join('');
+    grid.setAttribute('aria-busy', 'false');
   }
 
-  const categoryColors = {
-    'اطلاعیه مهم': { bg: 'rgb(var(--danger-rgb) / 0.15)', text: 'var(--danger-text)', border: 'rgb(var(--danger-rgb) / 0.3)' },
-    'رویداد و مسابقه': { bg: 'rgb(var(--primary-rgb) / 0.15)', text: 'var(--primary-text)', border: 'rgb(var(--primary-rgb) / 0.3)' },
-    'اخبار کاروان‌ها': { bg: 'rgb(var(--success-rgb) / 0.15)', text: 'var(--success-text)', border: 'rgb(var(--success-rgb) / 0.3)' },
-    'آموزشی': { bg: 'rgb(var(--primary-rgb) / 0.15)', text: 'var(--primary-text)', border: 'rgb(var(--primary-rgb) / 0.3)' }
-  };
+  const set = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = v; };
+  const pub = all.filter(n => jchState(n) === 'published').length;
+  set('news-stat-total', jchFa(all.length));
+  set('news-stat-published', jchFa(pub));
+  set('news-stat-drafts', jchFa(all.filter(n => jchState(n) === 'draft').length));
 
-  const audienceLabels = {
-    'ALL': '<span class="badge u-bg-fg-8 u-c-text-soft u-bd-fg-10 u-fs-2xs u-p-4-8 u-r-6"><i class="fa-solid fa-users"></i> عمومی</span>',
-    'STUDENTS': '<span class="badge u-bg-primary-15 u-c-primary-text u-bd-primary-30 u-fs-2xs u-p-4-8 u-r-6"><i class="fa-solid fa-user-graduate"></i> دانش‌آموزان</span>',
-    'MENTORS': '<span class="badge u-bg-accent-15 u-c-accent-text u-bd-accent-30 u-fs-2xs u-p-4-8 u-r-6"><i class="fa-solid fa-user-tie"></i> راهبران</span>'
-  };
-
-  tbody.innerHTML = newsList.map(n => {
-    const catStyle = categoryColors[n.category] || { bg: 'rgb(var(--muted-rgb) / 0.15)', text: 'var(--text-soft)', border: 'rgb(var(--muted-rgb) / 0.3)' };
-    const audienceBadge = audienceLabels[n.targetAudience] || audienceLabels['ALL'];
-    const pDate = n.publishDate ? new Date(n.publishDate).toLocaleDateString('fa-IR', { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : '-';
-    
-    const imageMarkup = n.imageUrl 
-      ? `<img src="${esc(n.imageUrl)}" alt="${esc(n.title || '')}" class="u-w-50 u-h-50 u-r-8 u-fit-cover u-bd-fg-10 u-shadow-0-2-6-shade-30" />`
-      : `<div class="u-w-50 u-h-50 u-r-8 u-bg-fg-5 u-flex u-items-center u-justify-center u-c-text-faint u-bd-fg-8"><i class="fa-solid fa-image u-fs-lg"></i></div>`;
-
-    const statusBadge = n.isPublished
-      ? `<span class="badge u-bg-success-15 u-c-success-text u-bd-success-30 u-fs-2xs u-p-4-8 u-r-6"><i class="fa-solid fa-check"></i> منتشرشده</span>`
-      : `<span class="badge u-bg-accent-15 u-c-accent-text u-bd-accent-30 u-fs-2xs u-p-4-8 u-r-6"><i class="fa-solid fa-clock"></i> پیش‌نویس</span>`;
-
-    return `
-      <tr>
-        <td class="u-text-center">${imageMarkup}</td>
-        <td>
-          <div class="u-bold u-c-text u-fs-sm u-mb-4">${esc(n.title || 'بدون عنوان')}</div>
-          ${n.subtitle ? `<div class="u-fs-2xs u-c-text-muted u-lh-1_4">${esc(n.subtitle)}</div>` : ''}
-        </td>
-        <td class="u-text-center">
-          <span class="badge u-fs-2xs u-p-4-8 u-r-6 u-bold" data-style="background:${catStyle.bg}; color:${esc(catStyle.text)}; border:1px solid ${catStyle.border}">
-            ${esc(n.category || 'عمومی')}
-          </span>
-        </td>
-        <td>
-          <div class="u-fs-xs u-c-text-soft u-flex u-items-center u-gap-6">
-            <i class="fa-solid fa-user-pen u-c-primary-text u-fs-2xs"></i>
-            <span>${esc(n.reporter || 'ستاد نپا')}</span>
-          </div>
-        </td>
-        <td dir="ltr" class="u-text-right u-fs-2xs u-c-text-muted">${pDate}</td>
-        <td class="u-text-center">${audienceBadge}</td>
-        <td class="u-text-center">${statusBadge}</td>
-        <td class="u-text-center">
-          <div class="u-flex u-justify-center u-gap-6">
-            <button type="button" class="btn-action u-bg-primary-15 u-bd-primary-30 u-c-primary-text u-p-6-8 u-r-6 u-pointer" data-click="editNews" data-click-args="${esc(JSON.stringify([String(n.id)]))}" title="ویرایش خبر">
-              <i class="fa-solid fa-pen"></i>
-            </button>
-            <button type="button" class="btn-action u-bg-danger-15 u-bd-danger-30 u-c-danger-text u-p-6-8 u-r-6 u-pointer" data-click="deleteNews" data-click-args="${esc(JSON.stringify([String(n.id)]))}" title="حذف خبر">
-              <i class="fa-solid fa-trash"></i>
-            </button>
-          </div>
-        </td>
-      </tr>
-    `;
-  }).join('');
-};
+  const cats = document.getElementById('jch-bento-categories');
+  if (cats) {
+    const keys = Object.keys(JCH_CATEGORY);
+    const n = k => all.filter(x => x.category === k).length;
+    const other = all.length - keys.reduce((s, k) => s + n(k), 0);
+    const w = v => (all.length ? Math.round((v / all.length) * 100) : 0);
+    const bar = c => (c === 'rest' ? 'mdc-bar-rest' : 'lst-bar-' + c);
+    const dot = c => (c === 'rest' ? 'mdc-dot-rest' : 'lst-dot-' + c);
+    cats.innerHTML = all.length ? `
+      <div class="lst-bar">${keys.filter(n).map(k => `<span class="${bar(JCH_CATEGORY[k][1])}" data-style="width:${w(n(k))}%"></span>`).join('')}</div>
+      <div class="lst-legend">${keys.map(k => `<div class="lst-legend-row"><span><span class="lst-dot ${dot(JCH_CATEGORY[k][1])}"></span>${esc(k)}</span><strong>${jchFa(n(k))}</strong></div>`).join('')}
+        ${other ? `<div class="lst-legend-row"><span><span class="lst-dot mdc-dot-rest"></span>سایر</span><strong>${jchFa(other)}</strong></div>` : ''}</div>`
+      : '<div class="lst-empty">هنوز خبری ثبت نشده است.</div>';
+  }
+}
 
 window.openCreateNewsModal = function() {
-  const form = document.getElementById('news-form');
-  if (form) form.reset();
-
-  const idEl = document.getElementById('news-id');
-  if (idEl) idEl.value = '';
-
-  const subEl = document.getElementById('news-subtitle');
-  if (subEl) subEl.value = '';
-
-  const preview = document.getElementById('news-image-preview');
-  if (preview) {
-    preview.style.display = 'none';
-    preview.src = '';
-  }
-  
-  // Set default datetime to current time
-  const now = new Date();
-  const iso = new Date(now.getTime() - now.getTimezoneOffset() * 60000).toISOString().slice(0, 16);
-  const dateEl = document.getElementById('news-publish-date');
-  if (dateEl) dateEl.value = iso;
-  
-  const titleEl = document.getElementById('news-modal-title');
-  if (titleEl) {
-    titleEl.innerHTML = '<i class="fa-solid fa-newspaper u-c-primary-text"></i> افزودن خبر جدید جارچی';
-  }
-  
-  const m = document.getElementById('news-modal');
-  if (m) {
-    m.style.display = 'flex';
-    m.classList.remove('hidden');
-  }
+  document.getElementById('news-form')?.reset();
+  document.getElementById('news-id').value = '';
+  document.getElementById('news-modal-title').textContent = 'خبر جدید جارچی';
+  document.getElementById('news-delete-btn').hidden = true;
+  document.getElementById('news-publish-date').value = jchLocalIso(new Date());
+  jchPreview('news-image-preview', '');
+  jchShow('news-modal');
 };
 
-window.closeNewsModal = function() {
-  const m = document.getElementById('news-modal');
-  if (m) m.style.display = 'none';
-};
+window.closeNewsModal = function() { NopaActions.hide('news-modal'); };
 
-window.editNews = async function(id) {
-  try {
-    let n = (window.cachedNewsList || []).find(x => x.id === id);
-    if (!n) {
-      const res = await request('/api/v1/admin/news');
-      const news = await res.json();
-      n = news.find(x => x.id === id);
-    }
-    if (!n) return;
-
-    document.getElementById('news-id').value = n.id;
-    document.getElementById('news-title').value = n.title || '';
-    document.getElementById('news-subtitle').value = n.subtitle || '';
-    document.getElementById('news-body').value = n.body || '';
-    document.getElementById('news-category').value = n.category || 'اطلاعیه مهم';
-    document.getElementById('news-reporter').value = n.reporter || 'ستاد آموزش نپا';
-    document.getElementById('news-target').value = n.targetAudience || 'ALL';
-
-    if (n.publishDate) {
-      const d = new Date(n.publishDate);
-      const iso = new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 16);
-      document.getElementById('news-publish-date').value = iso;
-    }
-
-    const preview = document.getElementById('news-image-preview');
-    if (n.imageUrl && preview) {
-      preview.src = n.imageUrl;
-      preview.style.display = 'block';
-    } else if (preview) {
-      preview.style.display = 'none';
-    }
-
-    const activeEl = document.getElementById('news-active');
-    if (activeEl) activeEl.checked = n.isPublished !== false;
-
-    const pushEl = document.getElementById('news-push');
-    if (pushEl) pushEl.checked = false;
-
-    const titleEl = document.getElementById('news-modal-title');
-    if (titleEl) {
-      titleEl.innerHTML = '<i class="fa-solid fa-pen u-c-primary-text"></i> ویرایش خبر جارچی';
-    }
-
-    const m = document.getElementById('news-modal');
-    if (m) {
-      m.style.display = 'flex';
-      m.classList.remove('hidden');
-    }
-  } catch (e) {
-    console.error('Edit news error:', e);
-  }
+window.editNews = function(id) {
+  const n = (window.cachedNewsList || []).find(x => String(x.id) === String(id));
+  if (!n) return;
+  document.getElementById('news-form')?.reset();
+  document.getElementById('news-id').value = n.id;
+  document.getElementById('news-title').value = n.title || '';
+  document.getElementById('news-subtitle').value = n.subtitle || '';
+  document.getElementById('news-body').value = n.body || '';
+  document.getElementById('news-category').value = JCH_CATEGORY[n.category] ? n.category : 'اطلاعیه مهم';
+  document.getElementById('news-reporter').value = n.reporter || 'ستاد آموزش نپا';
+  document.getElementById('news-target').value = JCH_AUDIENCE[n.targetAudience] ? n.targetAudience : 'ALL';
+  document.getElementById('news-publish-date').value = n.publishDate ? jchLocalIso(new Date(n.publishDate)) : '';
+  document.getElementById('news-active').checked = n.isPublished !== false;
+  document.getElementById('news-modal-title').textContent = `ویرایش خبر: ${n.title || ''}`;
+  document.getElementById('news-delete-btn').hidden = false;
+  jchPreview('news-image-preview', n.imageUrl || '');
+  jchShow('news-modal');
 };
 
 window.saveNewsArticle = async function(e) {
   e.preventDefault();
   const id = document.getElementById('news-id')?.value;
-  const title = document.getElementById('news-title')?.value;
-  const audience = document.getElementById('news-target')?.value || 'ALL';
-  
   const formData = new FormData();
-  formData.append('title', title);
+  formData.append('title', document.getElementById('news-title')?.value || '');
   formData.append('subtitle', document.getElementById('news-subtitle')?.value || '');
   formData.append('body', document.getElementById('news-body')?.value || '');
   formData.append('category', document.getElementById('news-category')?.value || 'اطلاعیه مهم');
   formData.append('reporter', document.getElementById('news-reporter')?.value || 'ستاد نپا');
-  formData.append('targetAudience', audience);
-  
+  formData.append('targetAudience', document.getElementById('news-target')?.value || 'ALL');
   const pDate = document.getElementById('news-publish-date')?.value;
   if (pDate) formData.append('publishDate', new Date(pDate).toISOString());
-  formData.append('isPublished', document.getElementById('news-active')?.checked ? 'true' : 'false');
-  
+  const published = !!document.getElementById('news-active')?.checked;
+  formData.append('isPublished', published ? 'true' : 'false');
   const fileInput = document.getElementById('news-file');
-  if (fileInput && fileInput.files[0]) {
-    formData.append('image', fileInput.files[0]);
-  }
-  
-  const url = id ? `/api/v1/admin/news/${id}` : '/api/v1/admin/news';
-  const method = id ? 'PUT' : 'POST';
-  
+  if (fileInput && fileInput.files[0]) formData.append('image', fileInput.files[0]);
+
   try {
-    const res = await request(url, {
-      method,
-      body: formData
-    });
-    
+    const res = await request(id ? `/api/v1/admin/news/${encodeURIComponent(id)}` : '/api/v1/admin/news', { method: id ? 'PUT' : 'POST', body: formData });
     if (res.ok) {
       window.closeNewsModal();
       await window.loadNewsTab();
-      showToastSuccess('خبر با موفقیت در تابلوی اعلانات جارچی ذخیره و منتشر شد!');
-      
-      if (document.getElementById('news-push')?.checked) {
-        showToastSuccess('نوتیفیکیشن خبر برای مخاطبان هدف ارسال گردید.');
-      }
+      showToast(published ? 'خبر ذخیره و در جارچی منتشر شد' : 'خبر به‌صورت پیش‌نویس ذخیره شد', 'success');
     } else {
-      const err = await res.json();
+      const err = await res.json().catch(() => ({}));
       showToast('خطا در ثبت خبر: ' + (err.error || 'خطای سرور'), 'error');
     }
-  } catch(e) { 
-    console.error('Save news error:', e);
-    showToast('خطا در برقراری ارتباط با سرور', 'error'); 
+  } catch (err) {
+    console.error('Save news error:', err);
+    showToast('خطا در برقراری ارتباط با سرور', 'error');
   }
 };
 
 window.previewNewsImage = function(event) {
   const file = event.target.files[0];
-  const preview = document.getElementById('news-image-preview');
-  if (file && preview) {
-    const reader = new FileReader();
-    reader.onload = function(e) {
-      preview.src = e.target.result;
-      preview.style.display = 'block';
-    };
-    reader.readAsDataURL(file);
-  } else if (preview) {
-    preview.style.display = 'none';
-  }
+  if (!file) return jchPreview('news-image-preview', '');
+  const reader = new FileReader();
+  reader.onload = e => jchPreview('news-image-preview', e.target.result);
+  reader.readAsDataURL(file);
 };
-
-// showToastSuccess / showToastError / showToastInfo are defined in toast.js (shared bottom-left toast system)
 
 window.deleteNews = async function(id) {
   if (!(await NopaConfirm('آیا از حذف این خبر از تابلوی اعلانات جارچی اطمینان دارید؟'))) return;
   try {
-    const res = await request(`/api/v1/admin/news/${id}`, {
-      method: 'DELETE'
-    });
+    const res = await request(`/api/v1/admin/news/${encodeURIComponent(id)}`, { method: 'DELETE' });
     if (res.ok) {
-      showToastSuccess('خبر با موفقیت حذف شد.');
+      showToast('خبر با موفقیت حذف شد.', 'success');
+      window.closeNewsModal();
       await window.loadNewsTab();
     } else {
-      const d = await res.json();
+      const d = await res.json().catch(() => ({}));
       showToast('خطا در حذف خبر: ' + (d.error || 'خطای سرور'), 'error');
     }
-  } catch(e) { 
-    console.error('Delete news error:', e);
+  } catch (err) {
+    console.error('Delete news error:', err);
     showToast('خطا در ارتباط با سرور', 'error');
   }
 };
+window.jchDeleteOpenNews = function() { const id = document.getElementById('news-id').value; if (id) window.deleteNews(id); };
+
+if (!jchNewsLoaded) jchSetLoading(true);

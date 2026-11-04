@@ -835,3 +835,9 @@
 @media (max-width: 900px) {
   .mtk .chm-head-tools .chm-pill-btn { display: inline-flex; }
 }
+
+/* ---------- Support cases tab (#support-cases-tab, js/features/support-cases.js) ---------- */
+.spc .chm-head-tools { align-items: center; gap: 8px; }
+.spc-case { padding: 8px; }
+.spc .chm-pill-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+.spc-deleted { font-style: italic; color: var(--text-muted); }

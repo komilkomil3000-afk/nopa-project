@@ -88,7 +88,7 @@ export const listCases = staff(async (req, res) => {
     where: { status },
     orderBy: { createdAt: 'desc' },
     take: 100,
-    include: { user: { select: { name: true, phoneNumber: true } } },
+    include: { user: { select: { name: true, phoneNumber: true, avatarUrl: true } } },
   });
   const assigneeIds = cases.map(c => c.assigneeId).filter((v): v is string => !!v);
   const assignees = await prisma.user.findMany({ where: { id: { in: assigneeIds } }, select: { id: true, name: true } });

@@ -286,28 +286,7 @@ function setupEventListeners() {
     }
   });
 
-  // Modals & Drawer controls
-  window.closeUserDetailDrawer = function() {
-    const drawer = document.getElementById('user-detail-drawer');
-    const overlay = document.getElementById('user-drawer-overlay');
-    if (drawer) {
-      drawer.classList.remove('active');
-    }
-    if (overlay) {
-      overlay.classList.remove('active');
-      overlay.style.display = 'none';
-    }
-  };
-
-  const btnCloseDrawer = document.getElementById('btn-close-drawer');
-  if (btnCloseDrawer) {
-    btnCloseDrawer.addEventListener('click', window.closeUserDetailDrawer);
-  }
-
-  const userDrawerOverlay = document.getElementById('user-drawer-overlay');
-  if (userDrawerOverlay) {
-    userDrawerOverlay.addEventListener('click', window.closeUserDetailDrawer);
-  }
+  // The full report dialog (window.closeUserDetailDrawer, js/features/users.js) also closes with Escape
 
   document.addEventListener('keydown', (e) => {
     if (e.key === 'Escape') {
@@ -334,18 +313,7 @@ function setupEventListeners() {
   // Media Upload Form
   document.getElementById('media-upload-form').addEventListener('submit', handleMediaUpload);
 
-  // RBAC Permission toggles
-  document.querySelectorAll('.role-perm-toggle').forEach(el => {
-    el.addEventListener('change', handleRbacToggle);
-  });
-
-  // Security: Blacklist Form
-  const blacklistForm = document.getElementById('blacklist-form');
-  if (blacklistForm) blacklistForm.addEventListener('submit', handleBlacklistSubmit);
-
-  // Security: Revoke Sessions
-  const revokeBtn = document.getElementById('btn-revoke-sessions');
-  if (revokeBtn) revokeBtn.addEventListener('click', handleRevokeSessions);
+  // RBAC switches, blacklist and session revoke live in js/features/access.js (data-change / data-submit)
 
   // Rewards: Promo Zarik
   const promoForm = document.getElementById('zarik-promo-form');
@@ -365,42 +333,6 @@ function setupEventListeners() {
 }
 
 // ---- NEW HANDLERS ----
-async function handleBlacklistSubmit(e) {
-  e.preventDefault();
-  const type = document.getElementById('bl-type').value;
-  const value = document.getElementById('bl-value').value;
-  const reason = document.getElementById('bl-reason').value;
-
-  try {
-    const res = await request('/api/v1/admin/security/blacklist', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ type, value, reason })
-    });
-    const data = await res.json();
-    showToast(res.ok ? data.message : data.error, res.ok ? 'success' : 'error');
-    if (res.ok) {
-      document.getElementById('bl-value').value = '';
-      document.getElementById('bl-reason').value = '';
-    }
-  } catch (err) { console.error(err); }
-}
-
-async function handleRevokeSessions() {
-  const targetUserId = document.getElementById('revoke-target-user').value;
-  if (!(await NopaConfirm('آیا از ابطال نشست‌ها اطمینان دارید؟'))) return;
-  try {
-    const res = await request('/api/v1/admin/security/revoke', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ targetUserId })
-    });
-    const data = await res.json();
-    showToast(res.ok ? data.message : data.error, res.ok ? 'success' : 'error');
-    if (res.ok) document.getElementById('revoke-target-user').value = '';
-  } catch (err) { console.error(err); }
-}
-
 async function handlePromoZarik(e) {
   e.preventDefault();
   const targetUserId = document.getElementById('promo-target-user').value;
@@ -439,7 +371,7 @@ async function handleNotificationBroadcast(e) {
     });
     const data = await res.json();
     showToast(res.ok ? data.message : data.error, res.ok ? 'success' : 'error');
-    if (res.ok) e.target.reset();
+    if (res.ok) { e.target.reset(); if (typeof loadNotificationLogs === 'function') loadNotificationLogs(); }
   } catch (err) { console.error(err); }
 }
 

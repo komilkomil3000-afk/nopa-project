@@ -462,6 +462,8 @@ export async function getUserAnalytics(req: AuthRequest, res: Response) {
         levelFrame: user.levelFrame,
         mentorLevel: user.mentorLevel,
         academicDegree: user.academicDegree,
+        userCode: user.userCode,
+        avatarUrl: user.avatarUrl,
       },
       metrics: {
         approximateActiveMinutes: activeTimeMinutes,

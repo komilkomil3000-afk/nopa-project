@@ -8,7 +8,8 @@ export const getForms = async (req: Request, res: Response) => {
       include: {
         fields: {
           orderBy: { orderIndex: 'asc' }
-        }
+        },
+        _count: { select: { submissions: true } }
       },
       orderBy: { createdAt: 'desc' }
     });

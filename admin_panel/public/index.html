@@ -549,31 +549,114 @@
         </div>
       </section>
 
-      <!-- TAB: MENTOR DOCUMENTS -->
+      <!-- MENTOR DOCUMENTS: the review queue. Like the caravans tab: a bento of the pending documents, and one document's
+           page (circles of the queue in the notch, the mentor's card linked to the preview and the decision; a decision
+           moves on to the next document). Drawn by js/features/mentor-docs.js; styles in css/stations.css (.mdc-*). -->
       <section id="mentors-docs-tab" class="tab-panel" data-style="display: none;">
-        <div class="actions-header glass">
-          <div class="filters-group">
-            <h3 class="u-m-0">صف انتظار تایید مدارک مربیان</h3>
-          </div>
-          <div>
-            <button id="btn-refresh-mentor-docs" class="btn-action"><i class="fa-solid fa-sync"></i> بارگذاری مجدد</button>
+        <div id="mdc-overview-view">
+          <div class="lst-bento mdc-bento">
+            <div class="lst-tile lst-tile-stations glass">
+              <div class="lst-tile-head">
+                <h4 class="lst-tile-title"><i class="fa-solid fa-file-circle-check"></i> مدارک در انتظار بررسی <span class="lst-tile-sub" id="mdc-count-badge">برای بررسی هر مدرک بزنید</span></h4>
+                <div class="crv-filters">
+                  <div class="search-box">
+                    <i class="fa-solid fa-search"></i>
+                    <input aria-label="جستجو" type="text" id="mdc-search" class="input-ctrl" placeholder="نام راهبر، نام فایل..." data-input="filterMentorDocs">
+                  </div>
+                  <select aria-label="فیلتر نوع مدرک" id="mdc-category-filter" class="select-ctrl" data-change="filterMentorDocs">
+                    <option value="all">همه انواع مدرک</option>
+                    <option value="EDUCATION">مدرک تحصیلی</option>
+                    <option value="JOB">سابقه شغلی</option>
+                    <option value="RESUME">رزومه</option>
+                    <option value="other">سایر</option>
+                  </select>
+                  <select aria-label="مرتب‌سازی" id="mdc-sort" class="select-ctrl" data-change="filterMentorDocs">
+                    <option value="old">قدیمی‌ترین اول</option>
+                    <option value="new">جدیدترین اول</option>
+                    <option value="mentor">نام راهبر</option>
+                  </select>
+                </div>
+              </div>
+              <div id="mdc-bento-list" class="crv-card-grid" aria-busy="true"></div>
+            </div>
+
+            <div class="lst-tile glass">
+              <h4 class="lst-tile-title"><i class="fa-solid fa-chart-simple"></i> آمار کلی</h4>
+              <div class="lst-mini-stats">
+                <div class="lst-mini-stat"><span class="stat-label">در انتظار</span><span class="stat-value u-c-primary-text" id="mdc-stat-total">-</span></div>
+                <div class="lst-mini-stat"><span class="stat-label">راهبران</span><span class="stat-value u-c-success-text" id="mdc-stat-mentors">-</span></div>
+                <div class="lst-mini-stat"><span class="stat-label">امروز</span><span class="stat-value u-c-accent-text" id="mdc-stat-today">-</span></div>
+                <div class="lst-mini-stat"><span class="stat-label">بیش از ۳ روز</span><span class="stat-value u-c-info-text" id="mdc-stat-old">-</span></div>
+              </div>
+            </div>
+
+            <div class="lst-tile glass">
+              <h4 class="lst-tile-title"><i class="fa-solid fa-layer-group"></i> نوع مدارک</h4>
+              <div id="mdc-bento-types"></div>
+            </div>
+
+            <div class="lst-tile glass">
+              <h4 class="lst-tile-title"><i class="fa-solid fa-user-tie"></i> بیشترین مدرک در صف</h4>
+              <div id="mdc-bento-mentors"></div>
+            </div>
+
+            <div class="lst-tile glass">
+              <h4 class="lst-tile-title"><i class="fa-solid fa-bolt"></i> دسترسی سریع</h4>
+              <div class="lst-quick">
+                <button type="button" class="lst-quick-btn" data-click="mdcOpenFirst"><i class="fa-solid fa-play"></i> شروع بررسی</button>
+                <button type="button" class="lst-quick-btn" data-click="loadMentorDocs"><i class="fa-solid fa-sync"></i> بروزرسانی</button>
+                <button type="button" class="lst-quick-btn" data-click="usrGoTab" data-click-args="[&quot;mentors-profile-tab&quot;]"><i class="fa-solid fa-id-card"></i> پروفایل راهبران</button>
+              </div>
+            </div>
+
+            <div class="lst-tile lst-tile-wide glass">
+              <h4 class="lst-tile-title"><i class="fa-solid fa-list-check"></i> نیازمند توجه <span class="lst-tile-sub">مدارکی که بیش از ۳ روز منتظر مانده‌اند</span></h4>
+              <div id="mdc-bento-health"></div>
+            </div>
           </div>
         </div>
 
-        <div class="table-container glass">
-          <table class="data-table" id="mentor-docs-table">
-            <thead>
-              <tr>
-                <th>مربی</th>
-                <th>فایل</th>
-                <th>نوع</th>
-                <th>بارگذاری‌شده</th>
-                <th>وضعیت</th>
-                <th>عملیات</th>
-              </tr>
-            </thead>
-            <tbody></tbody>
-          </table>
+        <div id="mdc-detail-view" data-style="display: none;">
+          <div class="lsv-head">
+            <button type="button" class="lsv-round" data-click="closeMentorDocView" title="بازگشت" aria-label="بازگشت"><i class="fa-solid fa-arrow-right"></i></button>
+            <h3 id="mdc-title">بررسی مدرک</h3>
+            <span id="mdc-state"></span>
+          </div>
+          <section class="lsv-board mdc-board">
+            <header class="lsv-board-head">
+              <div class="lsv-board-title"><h4>صف بررسی</h4><span id="mdc-sub"></span></div>
+              <div class="lsv-notch-wrap"><nav class="lsv-notch" id="mdc-circles" aria-label="مدارک در صف"></nav></div>
+              <div class="lsv-round-group">
+                <a class="lsv-round" id="mdc-open-file" href="#" target="_blank" rel="noopener" title="باز کردن فایل در پنجره جدید" aria-label="باز کردن فایل"><i class="fa-solid fa-up-right-from-square"></i></a>
+                <button type="button" class="lsv-round" data-click="loadMentorDocs" title="بروزرسانی" aria-label="بروزرسانی"><i class="fa-solid fa-sync"></i></button>
+              </div>
+            </header>
+            <div class="lsv-flow crv-flow mdc-flow">
+              <div class="lsv-col crv-col-mentor">
+                <div class="lsv-col-card crv-mentor" id="mdc-info-card"></div>
+                <div class="lsv-col-label"><i class="fa-solid fa-id-card"></i> راهبر</div>
+              </div>
+              <div class="lsv-link" aria-hidden="true"></div>
+              <div class="lsv-col mnt-col-students">
+                <div class="lsv-col-card mdc-preview" id="mdc-preview"></div>
+                <div class="lsv-col-label"><i class="fa-solid fa-eye"></i> پیش‌نمایش مدرک</div>
+              </div>
+              <div class="lsv-link" aria-hidden="true"></div>
+              <div class="lsv-col crv-col-mentor mdc-col-decide">
+                <div class="lsv-col-card mdc-decide">
+                  <label class="lse-field"><span>یادداشت <small>برای رد، علت را بنویسید (حداقل ۳ حرف)</small></span>
+                    <textarea id="mentor-doc-admin-note" class="input-ctrl" rows="5" maxlength="500" placeholder="مثلاً: تصویر مدرک خوانا نیست"></textarea>
+                  </label>
+                  <p class="lse-hint">علت رد برای راهبر در اعلان ارسال می‌شود. با تأیید، احراز هویت راهبر هم تأیید می‌شود.</p>
+                  <div class="mdc-decide-actions">
+                    <button type="button" class="lsv-pill mdc-approve" data-click="mdcDecide" data-click-args="[&quot;approve&quot;]"><i class="fa-solid fa-check"></i> تأیید و ثبت در پروفایل</button>
+                    <button type="button" class="lse-btn mdc-reject" data-click="mdcDecide" data-click-args="[&quot;reject&quot;]"><i class="fa-solid fa-ban"></i> رد مدرک</button>
+                  </div>
+                </div>
+                <div class="lsv-col-label"><i class="fa-solid fa-gavel"></i> تصمیم</div>
+              </div>
+            </div>
+          </section>
         </div>
       </section>
 
@@ -1229,182 +1312,182 @@
         </div>
       </section>
 
-      <!-- TAB 3: RBAC MATRIX -->
+      <!-- SETTINGS: roles & security. Like the caravans tab: a bento of the roles with the blacklist, session revoke and
+           sub-admin grants, and one role's page (circles of the roles in the notch, the role's card linked to its
+           restrictions and its abilities). Drawn by js/features/access.js; styles in css/stations.css (.sec-*). -->
       <section id="roles-tab" class="tab-panel" data-style="display: none;">
-        <div class="panel-card glass">
-          <div class="panel-title">ماتریس سطوح دسترسی مدیران (RBAC Security)</div>
-          <div class="rbac-matrix">
-            <!-- Super Admin -->
-            <div class="role-card glass">
-              <div class="role-header">
-                <h3>مدیر کل (Super Admin)</h3>
-                <span class="badge badge-admin">مدیر سیستم</span>
+        <div id="sec-overview-view">
+          <div class="lms-head-actions u-flex u-justify-end u-items-center u-mb-20">
+            <div class="u-flex u-gap-10 u-wrap">
+              <button type="button" class="btn-action" data-click="secOpenRevoke" data-click-args="[&quot;user&quot;]"><i class="fa-solid fa-user-shield"></i> ابطال نشست‌ها</button>
+              <button type="button" class="btn-primary u-bgc-danger" data-click="secOpenBlacklist"><i class="fa-solid fa-ban"></i> افزودن به لیست سیاه</button>
+            </div>
+          </div>
+
+          <div class="lst-bento sec-bento">
+            <div class="lst-tile lst-tile-stations glass">
+              <div class="lst-tile-head">
+                <h4 class="lst-tile-title"><i class="fa-solid fa-user-lock"></i> نقش‌ها و سطوح دسترسی <span class="lst-tile-sub" id="sec-count-badge">برای دیدن و تغییر دسترسی‌های هر نقش بزنید</span></h4>
+                <div class="crv-filters">
+                  <div class="search-box">
+                    <i class="fa-solid fa-search"></i>
+                    <input aria-label="جستجوی نقش" type="text" id="sec-search" class="input-ctrl" placeholder="نام نقش..." data-input="filterSecRoles">
+                  </div>
+                </div>
               </div>
-              <div class="permission-list">
-                <div class="permission-item">
-                  <span>نمایش کامل شماره همراه</span>
-                  <label class="switch">
-                    <input type="checkbox" id="perm-super-phone" checked disabled>
-                    <span class="slider"></span>
-                  </label>
-                </div>
-                <div class="permission-item">
-                  <span>امکان تغییر تراکنش زریک</span>
-                  <label class="switch">
-                    <input type="checkbox" id="perm-super-zarik" checked disabled>
-                    <span class="slider"></span>
-                  </label>
-                </div>
-                <div class="permission-item">
-                  <span>حذف فیزیکی کاربران</span>
-                  <label class="switch">
-                    <input type="checkbox" id="perm-super-delete" checked disabled>
-                    <span class="slider"></span>
-                  </label>
-                </div>
+              <div id="sec-bento-list" class="crv-card-grid" aria-busy="true"></div>
+            </div>
+
+            <div class="lst-tile glass">
+              <h4 class="lst-tile-title"><i class="fa-solid fa-chart-simple"></i> آمار کلی</h4>
+              <div class="lst-mini-stats">
+                <div class="lst-mini-stat"><span class="stat-label">نقش‌ها</span><span class="stat-value u-c-primary-text" id="sec-stat-roles">-</span></div>
+                <div class="lst-mini-stat"><span class="stat-label">ورود به پنل</span><span class="stat-value u-c-success-text" id="sec-stat-panel">-</span></div>
+                <div class="lst-mini-stat"><span class="stat-label">آی‌پی مسدود</span><span class="stat-value u-c-accent-text" id="sec-stat-ip">-</span></div>
+                <div class="lst-mini-stat"><span class="stat-label">شماره مسدود</span><span class="stat-value u-c-info-text" id="sec-stat-phone">-</span></div>
               </div>
             </div>
 
-            <!-- Caravan Supervisor -->
-            <div class="role-card glass">
-              <div class="role-header">
-                <h3>راهبر کاروان (Supervisor)</h3>
-                <span class="badge badge-mentor">تعدیل شده</span>
-              </div>
-              <div class="permission-list">
-                <div class="permission-item">
-                  <span>نمایش کامل شماره همراه</span>
-                  <label class="switch">
-                    <input type="checkbox" class="role-perm-toggle" data-role="Caravan Supervisor" data-perm="maskPhoneNumbers">
-                    <span class="slider"></span>
-                  </label>
-                </div>
-                <div class="permission-item">
-                  <span>امکان تغییر تراکنش زریک</span>
-                  <label class="switch">
-                    <input type="checkbox" class="role-perm-toggle" data-role="Caravan Supervisor" data-perm="restrictZarik">
-                    <span class="slider"></span>
-                  </label>
-                </div>
-                <div class="permission-item">
-                  <span>حذف فیزیکی کاربران</span>
-                  <label class="switch">
-                    <input type="checkbox" class="role-perm-toggle" data-role="Caravan Supervisor" data-perm="lockUserDeletions">
-                    <span class="slider"></span>
-                  </label>
-                </div>
+            <div class="lst-tile glass">
+              <h4 class="lst-tile-title"><i class="fa-solid fa-user-shield"></i> ابطال نشست‌ها <span class="lst-tile-sub">در صورت سرقت حساب یا توکن</span></h4>
+              <div class="lst-quick">
+                <button type="button" class="lst-quick-btn" data-click="secOpenRevoke" data-click-args="[&quot;user&quot;]"><i class="fa-solid fa-user-xmark"></i> ابطال نشست یک کاربر</button>
+                <button type="button" class="lst-quick-btn sec-quick-danger" data-click="secOpenRevoke" data-click-args="[&quot;all&quot;]"><i class="fa-solid fa-users-slash"></i> ابطال همگانی</button>
               </div>
             </div>
 
-            <!-- Content Manager -->
-            <div class="role-card glass">
-              <div class="role-header">
-                <h3>مدیر محتوا (Content Manager)</h3>
-                <span class="badge badge-student">محدود شده</span>
+            <div class="lst-tile glass" id="sec-grants-tile">
+              <h4 class="lst-tile-title"><i class="fa-solid fa-sitemap"></i> دسترسی ادمین‌ها <span class="lst-tile-sub">بخش‌های پنل برای مدیر محتوایی</span></h4>
+              <div id="sec-bento-grants"></div>
+            </div>
+
+            <div class="lst-tile glass">
+              <h4 class="lst-tile-title"><i class="fa-solid fa-bolt"></i> دسترسی سریع</h4>
+              <div class="lst-quick">
+                <button type="button" class="lst-quick-btn" data-click="secOpenBlacklist"><i class="fa-solid fa-ban"></i> مسدودسازی جدید</button>
+                <button type="button" class="lst-quick-btn" data-click="loadRolePermissions"><i class="fa-solid fa-sync"></i> بروزرسانی</button>
+                <button type="button" class="lst-quick-btn" data-click="usrGoTab" data-click-args="[&quot;audit-tab&quot;]"><i class="fa-solid fa-clock-rotate-left"></i> لاگ‌های سیستمی</button>
               </div>
-              <div class="permission-list">
-                <div class="permission-item">
-                  <span>نمایش کامل شماره همراه</span>
-                  <label class="switch">
-                    <input type="checkbox" class="role-perm-toggle" data-role="Content Manager" data-perm="maskPhoneNumbers">
-                    <span class="slider"></span>
-                  </label>
-                </div>
-                <div class="permission-item">
-                  <span>امکان تغییر تراکنش زریک</span>
-                  <label class="switch">
-                    <input type="checkbox" class="role-perm-toggle" data-role="Content Manager" data-perm="restrictZarik">
-                    <span class="slider"></span>
-                  </label>
-                </div>
-                <div class="permission-item">
-                  <span>حذف فیزیکی کاربران</span>
-                  <label class="switch">
-                    <input type="checkbox" class="role-perm-toggle" data-role="Content Manager" data-perm="lockUserDeletions">
-                    <span class="slider"></span>
-                  </label>
-                </div>
-              </div>
+            </div>
+
+            <div class="lst-tile lst-tile-wide glass">
+              <h4 class="lst-tile-title"><i class="fa-solid fa-ban"></i> لیست سیاه <span class="lst-tile-sub" id="sec-blacklist-sub">آی‌پی‌ها و شماره‌هایی که اجازه ورود ندارند</span></h4>
+              <div id="sec-bento-blacklist"></div>
             </div>
           </div>
         </div>
 
-        <div class="panel-card glass u-mt-20" id="sub-admin-access-card">
-          <div class="panel-title">دسترسی ادمین (مدیر محتوایی) به بخش‌های پنل</div>
-          <p class="u-fs-xs u-c-text-muted u-mb-12">
-            هر بخشی که «بدون دسترسی» بماند برای ادمین‌ها پنهان و مسدود است. سوپر ادمین همیشه به همه‌چیز دسترسی دارد.
-            برای هر کاربر می‌توانید ورود به پنل را از فرم ویرایش کاربر جداگانه فعال یا غیرفعال کنید.
-          </p>
-          <label class="switch-row u-flex u-items-center u-gap-10 u-mb-14 u-fs-sm">
-            <input type="checkbox" id="sub-admin-can-login">
-            <span>ادمین‌ها به صورت پیش‌فرض اجازه ورود به پنل دارند</span>
-          </label>
-          <div id="sub-admin-sections" class="u-grid u-cols-fill-260 u-gap-10"></div>
-          <button type="button" class="btn-primary u-mt-14 u-maxw-220" data-click="saveSubAdminAccess">ذخیره دسترسی‌ها</button>
+        <div id="sec-detail-view" data-style="display: none;">
+          <div class="lsv-head">
+            <button type="button" class="lsv-round" data-click="closeSecRoleView" title="بازگشت" aria-label="بازگشت"><i class="fa-solid fa-arrow-right"></i></button>
+            <h3 id="sec-title">نقش</h3>
+            <span id="sec-state"></span>
+          </div>
+          <section class="lsv-board sec-board">
+            <header class="lsv-board-head">
+              <div class="lsv-board-title"><h4>دسترسی‌های نقش</h4><span id="sec-sub"></span></div>
+              <div class="lsv-notch-wrap"><nav class="lsv-notch" id="sec-circles" aria-label="نقش‌ها"></nav></div>
+              <div class="lsv-round-group">
+                <button type="button" class="lsv-round" data-click="loadRolePermissions" title="بروزرسانی" aria-label="بروزرسانی"><i class="fa-solid fa-sync"></i></button>
+              </div>
+            </header>
+            <div class="lsv-flow crv-flow sec-flow">
+              <div class="lsv-col crv-col-mentor">
+                <div class="lsv-col-card crv-mentor" id="sec-info-card"></div>
+                <div class="lsv-col-label"><i class="fa-solid fa-id-card"></i> شناسنامه نقش</div>
+              </div>
+              <div class="lsv-link" aria-hidden="true"></div>
+              <div class="lsv-col mnt-col-caravans">
+                <div class="lsv-col-card" id="sec-limits-card"><div class="chs-checks is-switches" id="sec-limits"></div></div>
+                <div class="lsv-col-label"><i class="fa-solid fa-lock"></i> محدودیت‌های داده <span class="lsv-col-count" id="sec-limits-count">0</span></div>
+              </div>
+              <div class="lsv-link" aria-hidden="true"></div>
+              <div class="lsv-col mnt-col-students">
+                <div class="lsv-col-card" id="sec-caps-card"><div class="chs-checks sec-caps" id="sec-caps"></div></div>
+                <div class="lsv-col-label"><i class="fa-solid fa-key"></i> توانایی‌ها <span class="lsv-col-count" id="sec-caps-count">0</span></div>
+              </div>
+            </div>
+          </section>
+
+          <!-- Section grants of the sub admin role (super admin only; shown on the sub_admin page) -->
+          <section class="lsv-panel sec-grants" id="sub-admin-access-card" data-style="display: none;">
+            <header class="lsv-panel-head">
+              <h4><i class="fa-solid fa-sitemap"></i> دسترسی ادمین (مدیر محتوایی) به بخش‌های پنل</h4>
+              <button type="button" class="lsv-pill" data-click="saveSubAdminAccess"><i class="fa-solid fa-check"></i> ذخیره دسترسی‌ها</button>
+            </header>
+            <p class="lse-hint">هر بخشی که «بدون دسترسی» بماند برای ادمین‌ها پنهان و مسدود است. سوپر ادمین همیشه به همه‌چیز دسترسی دارد. ورود هر کاربر به پنل را می‌توانید از فرم ویرایش همان کاربر جداگانه تعیین کنید.</p>
+            <label class="chs-check sec-login-switch"><span><strong>ورود به پنل به صورت پیش‌فرض</strong><small>ادمین‌ها بدون تنظیم جداگانه اجازه ورود دارند</small></span><input type="checkbox" class="chs-switch" id="sub-admin-can-login"></label>
+            <div id="sub-admin-sections" class="sec-grant-grid"></div>
+          </section>
         </div>
 
-        <div class="panel-card glass u-mt-20">
-          <div class="panel-title">اقدامات پیشگیرانه و مقابله با تهدید (Threat Response)</div>
-          <div class="u-flex u-gap-20 u-wrap">
-            
-            <div class="u-flex-1 u-minw-300 u-p-16 u-bd-fg-10 u-r-10">
-              <h4><i class="fa-solid fa-ban"></i> مدیریت لیست سیاه (Blacklist)</h4>
-              <p class="u-fs-xs u-c-text-muted u-mb-10">مسدودسازی بر اساس IP یا شماره تلفن</p>
-              <form id="blacklist-form">
-                <div class="form-group">
-                  <select aria-label="نوع مسدودسازی" id="bl-type" class="select-ctrl" required>
-                    <option value="ip">آدرس IP</option>
-                    <option value="phone">شماره تلفن</option>
-                  </select>
-                </div>
-                <div class="form-group">
-                  <input aria-label="مقدار مسدودسازی (IP یا شماره)" type="text" id="bl-value" class="input-ctrl" placeholder="مقدار (مثلا 192.168.1.1 یا 0912...)" required>
-                </div>
-                <div class="form-group">
-                  <input aria-label="دلیل مسدودسازی" type="text" id="bl-reason" class="input-ctrl" placeholder="دلیل مسدودسازی">
-                </div>
-                <button type="submit" class="btn-primary u-bgc-danger">افزودن به لیست سیاه</button>
-              </form>
-            </div>
-
-            <div class="u-flex-1 u-minw-300 u-p-16 u-bd-fg-10 u-r-10">
-              <h4><i class="fa-solid fa-user-shield"></i> ابطال نشست‌ها (Session Revocation)</h4>
-              <p class="u-fs-xs u-c-text-muted u-mb-10">ابطال توکن‌های فعال کاربران در صورت سرقت اطلاعات</p>
-              <div class="form-group">
-                <input aria-label="شناسه کاربر برای ابطال نشست" type="text" id="revoke-target-user" class="input-ctrl" placeholder="شناسه کاربر (خالی برای ابطال همگانی)">
+        <!-- Add to the blacklist -->
+        <div id="sec-blacklist-modal" class="modal-overlay lse-overlay u-z-z-modal" data-style="display:none">
+          <div class="lse lse-sm">
+            <header class="lse-head lse-head-plain">
+              <div class="lse-id">
+                <span class="lse-id-icon is-accent"><i class="fa-solid fa-ban"></i></span>
+                <div class="lse-id-text"><h3>افزودن به لیست سیاه</h3><span>ورود و درخواست‌های این آی‌پی یا شماره مسدود می‌شود</span></div>
               </div>
-              <button id="btn-revoke-sessions" class="btn-primary u-bgc-accent">ابطال نشست(ها)</button>
-            </div>
-
+              <button type="button" class="lsv-round" data-click="NopaActions.hide" data-click-args="[&quot;sec-blacklist-modal&quot;]" title="بستن" aria-label="بستن"><i class="fa-solid fa-xmark"></i></button>
+            </header>
+            <form class="lse-form" id="blacklist-form" data-submit="secSaveBlacklist" data-submit-args="[&quot;$event&quot;]">
+              <div class="lse-body">
+                <section class="lse-card">
+                  <h4 class="lse-card-title"><i class="fa-solid fa-shield-halved"></i> مورد مسدودشونده</h4>
+                  <div class="lse-grid lse-grid-2">
+                    <label class="lse-field"><span>نوع <b class="lse-req">*</b></span>
+                      <select id="bl-type" class="select-ctrl" required>
+                        <option value="ip">آدرس IP</option>
+                        <option value="phone">شماره تلفن</option>
+                      </select>
+                    </label>
+                    <label class="lse-field"><span>مقدار <b class="lse-req">*</b></span><input type="text" id="bl-value" class="input-ctrl" dir="ltr" placeholder="192.168.1.1 / 0912..." required></label>
+                  </div>
+                  <label class="lse-field"><span>دلیل <small>اختیاری</small></span><input type="text" id="bl-reason" class="input-ctrl" maxlength="200"></label>
+                  <p class="lse-hint">برای برداشتن مسدودیت، از کاشی «لیست سیاه» همان مورد را حذف کنید.</p>
+                </section>
+              </div>
+              <footer class="lse-foot">
+                <span class="lse-foot-note"><i class="fa-solid fa-circle-info"></i> در لاگ‌های سیستمی ثبت می‌شود</span>
+                <div class="lse-foot-actions">
+                  <button type="button" class="lse-btn" data-click="NopaActions.hide" data-click-args="[&quot;sec-blacklist-modal&quot;]">انصراف</button>
+                  <button type="submit" class="lsv-pill"><i class="fa-solid fa-ban"></i> مسدود کن</button>
+                </div>
+              </footer>
+            </form>
           </div>
         </div>
 
-        <!-- Full role matrix (was in a duplicate, unreachable roles-tab; filled by loadRoles) -->
-        <div class="panel-card glass u-mt-20">
-          <div class="panel-title">ماتریس کامل نقش‌ها و دسترسی‌ها (RBAC)</div>
-          <div class="table-container glass u-mt-16">
-            <table class="data-table" id="roles-table">
-              <thead>
-                <tr>
-                  <th>نقش</th>
-                  <th>مخفی‌سازی موبایل</th>
-                  <th>محدودیت زریک</th>
-                  <th>قفل حذف کاربر</th>
-                  <th>مدیریت محتوا</th>
-                  <th>پیام و چت</th>
-                  <th>شرکت در کلاس</th>
-                  <th>ارزیابی تکالیف</th>
-                  <th>تبدیل سرمایه</th>
-                  <th>ایجاد چالش</th>
-                  <th>آمار کلی</th>
-                  <th>مدیریت کاربران</th>
-                  <th>عملیات</th>
-                </tr>
-              </thead>
-              <tbody>
-                <!-- Populated by JS -->
-              </tbody>
-            </table>
+        <!-- Revoke sessions: one user or everyone -->
+        <div id="sec-revoke-modal" class="modal-overlay lse-overlay u-z-z-modal" data-style="display:none">
+          <div class="lse lse-sm">
+            <header class="lse-head lse-head-plain">
+              <div class="lse-id">
+                <span class="lse-id-icon is-accent"><i class="fa-solid fa-user-shield"></i></span>
+                <div class="lse-id-text"><h3>ابطال نشست‌ها</h3><span>توکن‌های فعال باطل می‌شوند و کاربر باید دوباره وارد شود</span></div>
+              </div>
+              <button type="button" class="lsv-round" data-click="NopaActions.hide" data-click-args="[&quot;sec-revoke-modal&quot;]" title="بستن" aria-label="بستن"><i class="fa-solid fa-xmark"></i></button>
+            </header>
+            <form class="lse-form" data-submit="secRevokeSessions" data-submit-args="[&quot;$event&quot;]">
+              <div class="lse-body">
+                <section class="lse-card">
+                  <h4 class="lse-card-title"><i class="fa-solid fa-users"></i> چه کسانی؟</h4>
+                  <div class="mnt-mod-options">
+                    <label class="lse-tree-row mnt-mod-option is-warn"><input type="radio" name="sec-revoke-mode" value="user" data-change="secRevokeMode" checked><span class="lse-tree-text"><strong>یک کاربر</strong><small>فقط نشست‌های همان کاربر</small></span></label>
+                    <label class="lse-tree-row mnt-mod-option is-danger"><input type="radio" name="sec-revoke-mode" value="all" data-change="secRevokeMode"><span class="lse-tree-text"><strong>همه کاربران</strong><small>همه، از جمله خود شما، خارج می‌شوند</small></span></label>
+                  </div>
+                  <label class="lse-field" id="sec-revoke-user-field"><span>شناسه کاربر <b class="lse-req">*</b></span><input type="text" id="revoke-target-user" class="input-ctrl" dir="ltr" placeholder="User ID"></label>
+                </section>
+              </div>
+              <footer class="lse-foot">
+                <span class="lse-foot-note"><i class="fa-solid fa-circle-info"></i> این کار قابل بازگشت نیست</span>
+                <div class="lse-foot-actions">
+                  <button type="button" class="lse-btn" data-click="NopaActions.hide" data-click-args="[&quot;sec-revoke-modal&quot;]">انصراف</button>
+                  <button type="submit" class="lsv-pill" id="btn-revoke-sessions"><i class="fa-solid fa-user-shield"></i> ابطال نشست‌ها</button>
+                </div>
+              </footer>
+            </form>
           </div>
         </div>
       </section>
@@ -1539,263 +1622,497 @@
         </div>
       </section>
 
-      <!-- TAB 6: AUDIT LOGS -->
+      <!-- SETTINGS: audit logs. A bento like the other tabs: the filterable event list (pages of 20, "more" appends)
+           with stats, the actions and actors of the loaded events and the sensitive ones; a row opens its details.
+           Drawn by js/features/audit.js; styles in css/stations.css (.aud-*). #audit-action-filter's options are also
+           the dashboard's Persian names for the action codes. -->
       <section id="audit-tab" class="tab-panel" data-style="display: none;">
-        <!-- Role filter + search (merged from a duplicate, unreachable audit-tab) -->
-        <div class="panel-card glass u-mb-20">
-          <div class="u-flex u-gap-10 u-wrap">
-            <button type="button" class="btn-primary" data-click="loadAuditLogs" data-click-args="[&quot;all&quot;]">همه نقش‌ها</button>
-            <button type="button" class="btn-primary" data-click="loadAuditLogs" data-click-args="[&quot;student&quot;]">فعالیت مخاطبان</button>
-            <button type="button" class="btn-primary" data-click="loadAuditLogs" data-click-args="[&quot;mentor&quot;]">فعالیت راهبران</button>
-            <button type="button" class="btn-primary" data-click="loadAuditLogs" data-click-args="[&quot;super_mentor&quot;]">فعالیت سوپر راهبران</button>
-            <button type="button" class="btn-primary" data-click="loadAuditLogs" data-click-args="[&quot;admin&quot;]">فعالیت مدیران</button>
-          </div>
-          <form id="audit-filter-form" class="u-flex u-gap-10 u-mt-16 u-items-grid-end u-wrap">
-            <div class="form-group">
-              <label for="audit-search">جستجو (نام/آی‌پی/توضیحات)</label>
-              <input type="text" id="audit-search" class="input-ctrl">
+        <div id="aud-overview-view">
+          <div class="lst-bento aud-bento">
+            <div class="lst-tile lst-tile-stations glass">
+              <div class="lst-tile-head">
+                <h4 class="lst-tile-title"><i class="fa-solid fa-clock-rotate-left"></i> رویدادهای ثبت‌شده <span class="lst-tile-sub" id="aud-count-badge">برای دیدن جزئیات هر رویداد بزنید</span></h4>
+                <form class="crv-filters" id="audit-filter-form" data-submit="audSubmitFilters" data-submit-args="[&quot;$event&quot;]">
+                  <div class="search-box">
+                    <i class="fa-solid fa-search"></i>
+                    <input aria-label="جستجو در نام و توضیحات" type="text" id="audit-search" class="input-ctrl" placeholder="نام، توضیحات..." data-input="audSearchInput">
+                  </div>
+                  <select aria-label="فیلتر نقش" id="audit-active-role" class="select-ctrl" data-change="loadAuditLogs">
+                    <option value="">همه نقش‌ها</option>
+                    <option value="student">مخاطبان</option>
+                    <option value="mentor">راهبران</option>
+                    <option value="super_mentor">سوپر راهبران</option>
+                    <option value="admin">مدیران</option>
+                    <option value="sub_admin">ادمین‌ها</option>
+                  </select>
+                  <select aria-label="فیلتر نوع رویداد" id="audit-action-filter" class="select-ctrl" data-change="loadAuditLogs">
+                    <option value="">تمام عملیات‌ها</option>
+                    <option value="CREATE_USER">ایجاد کاربر</option>
+                    <option value="UPDATE_USER">ویرایش کاربر</option>
+                    <option value="BLOCK_USER">مسدودسازی</option>
+                    <option value="DEPOSIT_ZARIK">واریز زریک</option>
+                    <option value="DEDUCT_ZARIK">کسر زریک</option>
+                    <option value="GRANT_ZARIK">اعطای زریک</option>
+                    <option value="BROADCAST_ANNOUNCEMENT">ارسال اطلاعیه</option>
+                    <option value="BROADCAST_CARAVAN">پیام به کاروان</option>
+                    <option value="REVOKE_SESSIONS">ابطال نشست‌ها</option>
+                    <option value="REVOKE_ALL_SESSIONS">ابطال همگانی نشست‌ها</option>
+                    <option value="ADD_BLACKLIST">افزودن به لیست سیاه</option>
+                    <option value="UPDATE_RBAC">تغییر دسترسی نقش</option>
+                    <option value="CREATE_CARAVAN">ساخت کاروان</option>
+                    <option value="DELETE_CARAVAN">حذف کاروان</option>
+                    <option value="TOGGLE_CARAVAN_STATUS">تغییر وضعیت کاروان</option>
+                    <option value="BLOCK_CARAVAN_MEMBERS">مسدودسازی اعضای کاروان</option>
+                    <option value="BULK_TRANSFER">انتقال گروهی</option>
+                    <option value="CANCEL_ASSET_CONVERSION">لغو تبدیل سرمایه</option>
+                    <option value="CREATE_MENTOR_RULE">ساخت قانون راهبر</option>
+                    <option value="DELETE_MENTOR_RULE">حذف قانون راهبر</option>
+                    <option value="DELETE_CHAT_MESSAGE">حذف پیام چت</option>
+                    <option value="DELETE_CHAT_GROUP">حذف گروه چت</option>
+                    <option value="EXPORT_CHAT">خروجی چت</option>
+                    <option value="EXPORT_EVALUATION">خروجی ارزیابی</option>
+                    <option value="SET_SYSTEM_SETTING">تغییر تنظیمات سیستم</option>
+                  </select>
+                </form>
+              </div>
+              <div id="aud-list" class="aud-list" aria-busy="true" aria-live="polite"></div>
+              <div class="aud-more" id="aud-more" hidden>
+                <button type="button" class="lse-btn" data-click="audLoadMore"><i class="fa-solid fa-angles-down"></i> رویدادهای قدیمی‌تر</button>
+              </div>
             </div>
-            <input type="hidden" id="audit-active-role" value="">
-            <button type="submit" class="btn-primary"><i class="fa-solid fa-filter"></i> فیلتر</button>
-          </form>
-        </div>
-        <div class="actions-header glass u-mb-20">
-          <div class="filters-group">
-            <select aria-label="فیلتر نوع رویداد" id="audit-action-filter" class="select-ctrl" data-change="loadAuditLogs">
-              <option value="">تمام عملیات‌ها</option>
-              <option value="CREATE_USER">ایجاد کاربر</option>
-              <option value="UPDATE_USER">ویرایش کاربر</option>
-              <option value="BLOCK_USER">مسدودسازی</option>
-              <option value="DEPOSIT_ZARIK">واریز زریک</option>
-              <option value="DEDUCT_ZARIK">کسر زریک</option>
-              <option value="BROADCAST_ANNOUNCEMENT">ارسال اطلاعیه</option>
-              <option value="REVOKE_SESSIONS">ابطال نشست‌ها</option>
-            </select>
-          </div>
-          <div class="dropdown-wrapper u-inline-block u-relative">
-            <button class="btn-action btn-export"><i class="fa-solid fa-file-export"></i>خروجی <i class="fa-solid fa-caret-down"></i></button>
-            <div class="dropdown-content">
-              <a href="#" data-click="exportData" data-click-args="[&quot;audit&quot;,&quot;pdf&quot;]"><i class="fa-solid fa-file-pdf"></i> PDF</a>
-              <a href="#" data-click="exportData" data-click-args="[&quot;audit&quot;,&quot;excel&quot;]"><i class="fa-solid fa-file-excel"></i> Excel</a>
-              <a href="#" data-click="exportData" data-click-args="[&quot;audit&quot;,&quot;csv&quot;]"><i class="fa-solid fa-file-csv"></i> CSV</a>
+
+            <div class="lst-tile glass">
+              <h4 class="lst-tile-title"><i class="fa-solid fa-chart-simple"></i> آمار کلی</h4>
+              <div class="lst-mini-stats">
+                <div class="lst-mini-stat"><span class="stat-label">کل رویدادها</span><span class="stat-value u-c-primary-text" id="aud-stat-total">-</span></div>
+                <div class="lst-mini-stat"><span class="stat-label">امروز</span><span class="stat-value u-c-success-text" id="aud-stat-today">-</span></div>
+                <div class="lst-mini-stat"><span class="stat-label">افراد</span><span class="stat-value u-c-accent-text" id="aud-stat-actors">-</span></div>
+                <div class="lst-mini-stat"><span class="stat-label">حساس</span><span class="stat-value u-c-info-text" id="aud-stat-sensitive">-</span></div>
+              </div>
+            </div>
+
+            <div class="lst-tile glass">
+              <h4 class="lst-tile-title"><i class="fa-solid fa-layer-group"></i> نوع عملیات <span class="lst-tile-sub">در رویدادهای نمایش‌داده‌شده</span></h4>
+              <div id="aud-bento-actions"></div>
+            </div>
+
+            <div class="lst-tile glass">
+              <h4 class="lst-tile-title"><i class="fa-solid fa-user-gear"></i> فعال‌ترین افراد</h4>
+              <div id="aud-bento-actors"></div>
+            </div>
+
+            <div class="lst-tile glass">
+              <h4 class="lst-tile-title"><i class="fa-solid fa-bolt"></i> دسترسی سریع</h4>
+              <div class="lst-quick">
+                <button type="button" class="lst-quick-btn" data-click="loadAuditLogs"><i class="fa-solid fa-sync"></i> بروزرسانی</button>
+                <button type="button" class="lst-quick-btn" data-click="exportData" data-click-args="[&quot;audit&quot;,&quot;excel&quot;]"><i class="fa-solid fa-file-excel"></i> خروجی اکسل</button>
+                <button type="button" class="lst-quick-btn" data-click="exportData" data-click-args="[&quot;audit&quot;,&quot;pdf&quot;]"><i class="fa-solid fa-file-pdf"></i> خروجی PDF</button>
+                <button type="button" class="lst-quick-btn" data-click="exportData" data-click-args="[&quot;audit&quot;,&quot;csv&quot;]"><i class="fa-solid fa-file-csv"></i> خروجی CSV</button>
+                <button type="button" class="lst-quick-btn" data-click="usrGoTab" data-click-args="[&quot;roles-tab&quot;]"><i class="fa-solid fa-user-lock"></i> نقش‌ها و امنیت</button>
+              </div>
+            </div>
+
+            <div class="lst-tile lst-tile-wide glass">
+              <h4 class="lst-tile-title"><i class="fa-solid fa-triangle-exclamation"></i> رویدادهای حساس <span class="lst-tile-sub">مسدودسازی، ابطال نشست، حذف، کسر زریک و تغییر دسترسی</span></h4>
+              <div id="aud-bento-sensitive"></div>
             </div>
           </div>
         </div>
-        <div class="table-container glass">
-          <table class="data-table" id="audit-logs-table">
-            <thead>
-              <tr>
-                <th>تاریخ و زمان</th>
-                <th>اکتور</th>
-                <th>نقش</th>
-                <th>عملیات</th>
-                <th>موجودیت هدف</th>
-                <th>جزئیات تغییرات</th>
-                <th>آدرس IP</th>
-              </tr>
-            </thead>
-            <tbody>
-              <!-- Audit logs rows -->
-            </tbody>
-          </table>
+
+        <!-- One event's details -->
+        <div id="aud-log-modal" class="modal-overlay lse-overlay u-z-z-modal" data-style="display:none">
+          <div class="lse lse-sm">
+            <header class="lse-head lse-head-plain">
+              <div class="lse-id">
+                <span class="lse-id-icon is-accent"><i class="fa-solid fa-clock-rotate-left"></i></span>
+                <div class="lse-id-text"><h3 id="aud-log-title">رویداد</h3><span id="aud-log-time"></span></div>
+              </div>
+              <button type="button" class="lsv-round" data-click="NopaActions.hide" data-click-args="[&quot;aud-log-modal&quot;]" title="بستن" aria-label="بستن"><i class="fa-solid fa-xmark"></i></button>
+            </header>
+            <div class="lse-body" id="aud-log-body"></div>
+            <footer class="lse-foot">
+              <span class="lse-foot-note"><i class="fa-solid fa-lock"></i> لاگ‌ها قابل ویرایش یا حذف نیستند</span>
+              <div class="lse-foot-actions">
+                <button type="button" class="lse-btn" data-click="NopaActions.hide" data-click-args="[&quot;aud-log-modal&quot;]">بستن</button>
+              </div>
+            </footer>
+          </div>
         </div>
       </section>
 
-      <!-- MESSAGING: one page for the two kinds of outgoing messages (Phase 7 merge of the former
-           content-tab and notifications-tab). Form ids and handlers are unchanged. -->
+      <!-- MESSAGING: one page for the two kinds of outgoing messages (a multi-channel campaign / a Jarchi announcement),
+           as a bento like the other tabs: the composer (with templates, variables and a live preview) in the big tile,
+           channel switches, delivery stats and history around it. Form ids and handlers are unchanged
+           (js/app/bootstrap.js submits them); drawn by js/features/messaging.js; styles in css/stations.css (.msg-*). -->
       <section id="notifications-tab" class="tab-panel" data-style="display: none;">
-        <div class="ledger-grid">
-        <div class="panel-card glass">
-          <div class="msg-modes" role="tablist" aria-label="نوع پیام">
-            <button type="button" role="tab" class="msg-mode is-active" data-msg-mode="campaign" aria-selected="true" aria-controls="msg-pane-campaign">
-              <i class="fa-solid fa-paper-plane"></i>
-              <span><strong>پیام چندکاناله</strong><small>اعلان اپ، پیامک یا ایمیل با متغیرهای شخصی</small></span>
-            </button>
-            <button type="button" role="tab" class="msg-mode" data-msg-mode="announcement" data-requires-section="content" aria-selected="false" aria-controls="msg-pane-announcement">
-              <i class="fa-solid fa-bullhorn"></i>
-              <span><strong>اطلاعیه جارچی</strong><small>اطلاعیه داخل اپ، سراسری یا برای یک کاروان</small></span>
-            </button>
-          </div>
-
-          <div class="msg-pane" id="msg-pane-campaign" role="tabpanel" data-msg-pane="campaign">
-          <p class="u-fs-sm u-c-text-soft u-mb-20">قابلیت ارسال اعلان درون‌برنامه‌ای، پیامک و ایمیل با پشتیبانی از متغیرهای داینامیک: {user_name} و {zarik_balance}</p>
-
-          <div class="u-flex u-justify-end u-mb-10">
-             <button id="btn-load-templates" class="btn-action"><i class="fa-solid fa-list"></i> بارگذاری الگوها</button>
-          </div>
-
-          <form id="notification-broadcast-form">
-            <div class="form-group">
-              <label for="notif-title">عنوان پیام (نوتیفیکیشن یا سابجکت ایمیل)</label>
-              <input type="text" id="notif-title" class="input-ctrl" placeholder="سلام {user_name}، جایزه جدید!" required>
-            </div>
-
-            <div class="u-flex u-gap-15">
-              <div class="form-group u-flex-1">
-                <label for="notif-audience">جامعه هدف (Audience)</label>
-                <select id="notif-audience" class="select-ctrl u-w-full">
-                  <option value="all">همه کاربران (۵۰۰+)</option>
-                  <option value="mentors">فقط مربیان</option>
-                  <option value="caravan">کاروان خاص</option>
-                </select>
+        <div id="msg-overview-view">
+          <div class="lst-bento msg-bento">
+            <div class="lst-tile lst-tile-stations glass">
+              <div class="msg-modes" role="tablist" aria-label="نوع پیام">
+                <button type="button" role="tab" class="msg-mode is-active" data-msg-mode="campaign" aria-selected="true" aria-controls="msg-pane-campaign">
+                  <i class="fa-solid fa-paper-plane"></i>
+                  <span><strong>پیام چندکاناله</strong><small>اعلان اپ، پیامک یا ایمیل با متغیرهای شخصی</small></span>
+                </button>
+                <button type="button" role="tab" class="msg-mode" data-msg-mode="announcement" data-requires-section="content" aria-selected="false" aria-controls="msg-pane-announcement">
+                  <i class="fa-solid fa-bullhorn"></i>
+                  <span><strong>اطلاعیه جارچی</strong><small>اطلاعیه داخل اپ، سراسری یا برای یک کاروان</small></span>
+                </button>
               </div>
-              <div class="form-group u-flex-1" data-style="display: none" id="notif-caravan-container">
-                <label for="notif-target-caravan">انتخاب کاروان</label>
-                <select id="notif-target-caravan" class="select-ctrl u-w-full">
-                  <!-- Dynamically populated -->
-                </select>
+
+              <div class="msg-pane" id="msg-pane-campaign" role="tabpanel" data-msg-pane="campaign">
+                <form id="notification-broadcast-form" class="msg-composer">
+                  <div class="msg-compose-main">
+                    <div class="msg-template-row">
+                      <label class="lse-field msg-template-pick"><span>الگو <small>اختیاری</small></span>
+                        <select id="msg-template-select" class="select-ctrl" data-change="msgApplyTemplate" aria-label="انتخاب الگو"><option value="">بدون الگو</option></select>
+                      </label>
+                      <button type="button" class="lse-btn" id="btn-load-templates" data-click="msgOpenTemplateSave"><i class="fa-solid fa-floppy-disk"></i> ذخیره به‌عنوان الگو</button>
+                    </div>
+                    <label class="lse-field"><span>عنوان <small>عنوان اعلان یا موضوع ایمیل</small> <b class="lse-req">*</b></span>
+                      <input type="text" id="notif-title" class="input-ctrl" placeholder="سلام {user_name}، جایزه جدید!" required data-input="msgPreview">
+                    </label>
+                    <label class="lse-field"><span>متن پیام <b class="lse-req">*</b></span>
+                      <textarea id="notif-message" class="input-ctrl" rows="6" placeholder="شما تا کنون {zarik_balance} زریک جمع آوری کرده‌اید..." required data-input="msgPreview"></textarea>
+                    </label>
+                    <div class="msg-vars" aria-label="متغیرها">
+                      <span>درج متغیر:</span>
+                      <button type="button" class="chm-chip" data-click="msgInsertVar" data-click-args="[&quot;{user_name}&quot;]"><i class="fa-solid fa-user"></i> نام کاربر</button>
+                      <button type="button" class="chm-chip" data-click="msgInsertVar" data-click-args="[&quot;{zarik_balance}&quot;]"><i class="fa-solid fa-coins"></i> موجودی زریک</button>
+                      <small id="msg-length"></small>
+                    </div>
+                    <div class="lse-grid lse-grid-2">
+                      <label class="lse-field"><span>مخاطب</span>
+                        <select id="notif-audience" class="select-ctrl">
+                          <option value="all">همه کاربران</option>
+                          <option value="mentors">فقط راهبران</option>
+                          <option value="caravan">یک کاروان خاص</option>
+                        </select>
+                      </label>
+                      <label class="lse-field"><span>کانال ارسال</span>
+                        <select id="notif-channel" class="select-ctrl" data-change="msgPreview">
+                          <option value="in_app">اعلان داخل اپ</option>
+                          <option value="sms">پیامک</option>
+                          <option value="email">ایمیل</option>
+                          <option value="all">همه‌ی کانال‌ها با هم</option>
+                        </select>
+                      </label>
+                    </div>
+                    <label class="lse-field" id="notif-caravan-container" data-style="display: none"><span>کاروان <b class="lse-req">*</b></span>
+                      <select id="notif-target-caravan" class="select-ctrl"></select>
+                    </label>
+                    <div class="msg-send-row">
+                      <span class="lse-hint" id="msg-channel-hint"></span>
+                      <button type="submit" class="lsv-pill"><i class="fa-solid fa-paper-plane"></i> اجرای کمپین ارسال</button>
+                    </div>
+                  </div>
+                  <aside class="msg-preview" aria-label="پیش‌نمایش">
+                    <span class="msg-preview-label"><i class="fa-solid fa-eye"></i> پیش‌نمایش برای یک همسفر نمونه</span>
+                    <div class="msg-phone">
+                      <div class="msg-notif">
+                        <span class="msg-notif-app"><i class="fa-solid fa-bell"></i> نپا · <span id="msg-preview-channel">اعلان اپ</span></span>
+                        <strong id="msg-preview-title">عنوان پیام</strong>
+                        <p id="msg-preview-text">متن پیام اینجا نمایش داده می‌شود.</p>
+                      </div>
+                    </div>
+                  </aside>
+                </form>
+              </div>
+
+              <div class="msg-pane" id="msg-pane-announcement" role="tabpanel" data-msg-pane="announcement" data-requires-section="content" hidden>
+                <form id="announcement-broadcast-form" class="msg-composer">
+                  <div class="msg-compose-main">
+                    <p class="lse-hint u-m-0">اطلاعیه در تابلوی جارچی اپلیکیشن منتشر و برای مخاطبان نوتیفیکیشن ارسال می‌شود.</p>
+                    <label class="lse-field"><span>عنوان اطلاعیه <b class="lse-req">*</b></span>
+                      <input type="text" id="announcement-title" class="input-ctrl" placeholder="مثال: شروع ایستگاه دوم مسابقه" required data-input="msgPreviewAnnouncement">
+                    </label>
+                    <label class="lse-field"><span>ارسال برای</span>
+                      <select id="announcement-caravan" class="select-ctrl">
+                        <option value="">همه کاربران (سراسری)</option>
+                      </select>
+                    </label>
+                    <label class="lse-field"><span>متن اطلاعیه <b class="lse-req">*</b></span>
+                      <textarea id="announcement-message" class="input-ctrl" rows="6" placeholder="متن پیام خود را بنویسید..." required data-input="msgPreviewAnnouncement"></textarea>
+                    </label>
+                    <div class="msg-send-row">
+                      <button type="button" class="lse-btn" data-click="usrGoTab" data-click-args="[&quot;news-tab&quot;]"><i class="fa-solid fa-newspaper"></i> تابلوی جارچی</button>
+                      <button type="submit" class="lsv-pill"><i class="fa-solid fa-bullhorn"></i> انتشار و ارسال نوتیفیکیشن</button>
+                    </div>
+                  </div>
+                  <aside class="msg-preview" aria-label="پیش‌نمایش">
+                    <span class="msg-preview-label"><i class="fa-solid fa-eye"></i> پیش‌نمایش در جارچی</span>
+                    <div class="msg-phone">
+                      <div class="msg-notif is-jarchi">
+                        <span class="msg-notif-app"><i class="fa-solid fa-bullhorn"></i> جارچی نپا</span>
+                        <strong id="msg-ann-preview-title">عنوان اطلاعیه</strong>
+                        <p id="msg-ann-preview-text">متن اطلاعیه اینجا نمایش داده می‌شود.</p>
+                      </div>
+                    </div>
+                  </aside>
+                </form>
               </div>
             </div>
 
-            <div class="form-group">
-              <label for="notif-channel">کانال ارتباطی (Channel)</label>
-              <select id="notif-channel" class="select-ctrl u-w-full">
-                <option value="in_app">درون برنامه‌ای (In-App Push)</option>
-                <option value="sms">پیامک (SMS)</option>
-                <option value="email">ایمیل (Email)</option>
-                <option value="all">تمامی کانال‌ها (همزمان)</option>
-              </select>
+            <div class="lst-tile glass">
+              <h4 class="lst-tile-title"><i class="fa-solid fa-chart-simple"></i> آمار ارسال <span class="lst-tile-sub">۵۰ ارسال آخر</span></h4>
+              <div class="lst-mini-stats">
+                <div class="lst-mini-stat"><span class="stat-label">ارسال‌ها</span><span class="stat-value u-c-primary-text" id="msg-stat-total">-</span></div>
+                <div class="lst-mini-stat"><span class="stat-label">موفق</span><span class="stat-value u-c-success-text" id="msg-stat-ok">-</span></div>
+                <div class="lst-mini-stat"><span class="stat-label">ناموفق</span><span class="stat-value u-c-accent-text" id="msg-stat-fail">-</span></div>
+                <div class="lst-mini-stat"><span class="stat-label">کانال فعال</span><span class="stat-value u-c-info-text" id="msg-stat-channels">-</span></div>
+              </div>
             </div>
 
-            <div class="form-group">
-              <label for="notif-message">متن قالب پیام (Message Template)</label>
-              <textarea id="notif-message" class="input-ctrl" rows="5" placeholder="شما تا کنون {zarik_balance} زریک جمع آوری کرده‌اید..." required></textarea>
+            <div class="lst-tile glass">
+              <h4 class="lst-tile-title"><i class="fa-solid fa-tower-broadcast"></i> وضعیت کانال‌ها <span class="lst-tile-sub">کانال خاموش ارسال نمی‌کند</span></h4>
+              <div class="chs-checks is-switches" id="channel-overrides-list"></div>
             </div>
 
-            <button type="submit" class="btn-primary">اجرای کمپین ارسال</button>
-          </form>
-          </div>
+            <div class="lst-tile glass">
+              <h4 class="lst-tile-title"><i class="fa-solid fa-layer-group"></i> ارسال به تفکیک کانال</h4>
+              <div id="msg-bento-channels"></div>
+            </div>
 
-          <div class="msg-pane" id="msg-pane-announcement" role="tabpanel" data-msg-pane="announcement" data-requires-section="content" hidden>
-          <p class="u-fs-sm u-c-text-soft u-mb-20">اطلاعیه در تابلوی جارچی اپلیکیشن منتشر و برای مخاطبان نوتیفیکیشن ارسال می‌شود.</p>
-          <form id="announcement-broadcast-form">
-            <div class="form-group">
-              <label for="announcement-title">عنوان اطلاعیه</label>
-              <input type="text" id="announcement-title" class="input-ctrl" placeholder="مثال: شروع ایستگاه دوم مسابقه" required>
+            <div class="lst-tile glass">
+              <h4 class="lst-tile-title"><i class="fa-solid fa-bolt"></i> دسترسی سریع</h4>
+              <div class="lst-quick">
+                <button type="button" class="lst-quick-btn" data-click="usrGoTab" data-click-args="[&quot;news-tab&quot;]"><i class="fa-solid fa-newspaper"></i> تابلوی جارچی</button>
+                <button type="button" class="lst-quick-btn" data-click="loadNotificationData"><i class="fa-solid fa-sync"></i> بروزرسانی</button>
+              </div>
             </div>
-            <div class="form-group">
-              <label for="announcement-caravan">ارسال برای کاروان</label>
-              <select id="announcement-caravan" class="select-ctrl u-w-full">
-                <option value="">کل ۵۰۰+ کاربر (سراسری)</option>
-              </select>
+
+            <div class="lst-tile lst-tile-wide glass">
+              <h4 class="lst-tile-title"><i class="fa-solid fa-clock-rotate-left"></i> تاریخچه ارسال</h4>
+              <div id="msg-bento-logs"></div>
             </div>
-            <div class="form-group">
-              <label for="announcement-message">متن پیام اطلاعیه</label>
-              <textarea id="announcement-message" class="input-ctrl" rows="5" placeholder="متن پیام خود را بنویسید..." required></textarea>
-            </div>
-            <button type="submit" class="btn-primary">ارسال پیام و نوتیفیکیشن</button>
-          </form>
           </div>
         </div>
 
-        <div>
-          <div class="panel-card glass u-mb-20">
-            <div class="panel-title">عملیات و وضعیت کانال‌ها (Channel Overrides)</div>
-            <div class="permission-list" id="channel-overrides-list">
-               <!-- Checkboxes generated dynamically via JS -->
-            </div>
-          </div>
-
-          <div class="panel-card glass">
-            <div class="panel-title">لاگ‌های ارسال (Delivery History)</div>
-            <div class="table-container u-maxh-250 u-scroll-y">
-              <table class="data-table" id="notification-logs-table">
-                <thead>
-                  <tr>
-                    <th>کانال</th>
-                    <th>هدف</th>
-                    <th>وضعیت</th>
-                    <th>زمان</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <!-- Delivery Logs -->
-                </tbody>
-              </table>
-            </div>
+        <!-- Save the campaign as a template -->
+        <div id="msg-template-modal" class="modal-overlay lse-overlay u-z-z-modal" data-style="display:none">
+          <div class="lse lse-sm">
+            <header class="lse-head lse-head-plain">
+              <div class="lse-id">
+                <span class="lse-id-icon is-accent"><i class="fa-solid fa-floppy-disk"></i></span>
+                <div class="lse-id-text"><h3>ذخیره به‌عنوان الگو</h3><span>عنوان، متن و کانال فعلی برای استفاده‌ی بعدی ذخیره می‌شود</span></div>
+              </div>
+              <button type="button" class="lsv-round" data-click="NopaActions.hide" data-click-args="[&quot;msg-template-modal&quot;]" title="بستن" aria-label="بستن"><i class="fa-solid fa-xmark"></i></button>
+            </header>
+            <form class="lse-form" data-submit="msgSaveTemplate" data-submit-args="[&quot;$event&quot;]">
+              <div class="lse-body">
+                <section class="lse-card">
+                  <label class="lse-field"><span>نام الگو <b class="lse-req">*</b></span><input type="text" id="msg-template-name" class="input-ctrl" maxlength="80" required placeholder="مثلاً یادآوری چالش هفته"></label>
+                  <p class="lse-hint">نام هر الگو باید یکتا باشد.</p>
+                </section>
+              </div>
+              <footer class="lse-foot">
+                <span class="lse-foot-note"></span>
+                <div class="lse-foot-actions">
+                  <button type="button" class="lse-btn" data-click="NopaActions.hide" data-click-args="[&quot;msg-template-modal&quot;]">انصراف</button>
+                  <button type="submit" class="lsv-pill"><i class="fa-solid fa-check"></i> ذخیره</button>
+                </div>
+              </footer>
+            </form>
           </div>
         </div>
-        </div> <!-- End of ledger-grid -->
       </section>
 
-      <!-- TAB 7: MEDIA & ASSETS -->
+      <!-- MEDIA: the files stored on the server (uploads folder) as a bento of file cards with storage stats; a card opens
+           the file's dialog (preview, link, delete); "select" mode picks several cards for one delete; upload is a dialog.
+           Drawn by js/features/media.js; styles in css/stations.css (.mdm-*). -->
       <section id="media-tab" class="tab-panel" data-style="display: none;">
-        <div class="panel-card glass u-mb-20">
-          <div class="panel-title">آپلود رسانه جدید (ویدیو، تصویر، بنر)</div>
-          <form id="media-upload-form" enctype="multipart/form-data">
-            <div class="form-group">
-              <label for="media-file-input">انتخاب فایل</label>
-              <input type="file" id="media-file-input" class="input-ctrl u-pt-10" required>
+        <div id="mdm-overview-view">
+          <div class="lms-head-actions u-flex u-justify-end u-items-center u-mb-20">
+            <div class="u-flex u-gap-10 u-wrap">
+              <button type="button" class="btn-action" id="mdm-select-toggle" data-click="mdmToggleSelect"><i class="fa-solid fa-check-double"></i> انتخاب چند فایل</button>
+              <button type="button" class="btn-primary u-bgc-primary" data-click="mdmOpenUpload"><i class="fa-solid fa-cloud-arrow-up"></i> آپلود فایل</button>
             </div>
-            <div class="form-group">
-              <label for="media-asset-type">نوع محتوا</label>
-              <select id="media-asset-type" class="select-ctrl u-w-full">
-                <option value="general">عمومی (General)</option>
-                <option value="course_video">ویدیوی آموزشی (Course Video)</option>
-                <option value="banner">بنر اپلیکیشن (Banner)</option>
-                <option value="avatar">آواتار (Avatar)</option>
-              </select>
-            </div>
-            <div class="form-group">
-              <label for="media-title">عنوان سرفصل یا بنر (اختیاری)</label>
-              <input type="text" id="media-title" class="input-ctrl">
-            </div>
-            <div class="form-group">
-              <label for="media-instructor">نام استاد / راهبر (اختیاری)</label>
-              <input type="text" id="media-instructor" class="input-ctrl">
-            </div>
-            <button type="submit" class="btn-primary" id="btn-upload-media">
-              <i class="fa-solid fa-cloud-arrow-up"></i> آپلود فایل و ثبت متادیتا
-            </button>
-            <div id="media-upload-progress" class="u-mt-10 u-fs-base u-c-pink-text" data-style="display:none">در حال آپلود... لطفا صبر کنید</div>
-          </form>
-        </div>
-
-        <div class="table-container glass">
-          <div class="panel-title u-p-16">فایل‌های ذخیره‌شده روی سرور (پوشه uploads)</div>
-          <div class="u-flex u-wrap u-gap-10 u-items-center u-p-0-16-16">
-            <input aria-label="جستجوی فایل‌ها" type="text" id="files-search" class="input-ctrl u-maxw-240" placeholder="جستجوی نام فایل...">
-            <select aria-label="فیلتر نوع فایل" id="files-type-filter" class="input-ctrl u-maxw-160">
-              <option value="">همه انواع</option>
-              <option value="image">تصویر</option>
-              <option value="video">ویدیو</option>
-              <option value="audio">صوت</option>
-              <option value="doc">سند</option>
-            </select>
-            <span id="files-summary" class="u-c-text-secondary u-fs-xs"></span>
-            <button type="button" class="page-btn" id="btn-files-refresh"><i class="fa-solid fa-rotate"></i> بازخوانی</button>
-            <button type="button" class="page-btn u-c-danger-text" id="btn-files-delete-selected"><i class="fa-solid fa-trash"></i> حذف انتخاب‌شده‌ها</button>
           </div>
-          <table class="data-table" id="media-gallery-table">
-            <thead>
-              <tr>
-                <th class="u-w-32"><input aria-label="انتخاب همه‌ی فایل‌ها" type="checkbox" id="files-select-all"></th>
-                <th>پیش‌نمایش</th>
-                <th>نام فایل</th>
-                <th>نوع</th>
-                <th>حجم</th>
-                <th>لینک مستقیم</th>
-                <th>تاریخ</th>
-                <th>عملیات</th>
-              </tr>
-            </thead>
-            <tbody></tbody>
-          </table>
-        </div>
-</section>
 
-      <!-- CHAT OVERSIGHT TAB -->
+          <div class="lst-bento mdm-bento">
+            <div class="lst-tile lst-tile-stations glass">
+              <div class="lst-tile-head">
+                <h4 class="lst-tile-title"><i class="fa-solid fa-folder-open"></i> فایل‌های روی سرور <span class="lst-tile-sub" id="mdm-count-badge">پوشه uploads — برای جزئیات هر فایل بزنید</span></h4>
+                <div class="crv-filters">
+                  <div class="search-box">
+                    <i class="fa-solid fa-search"></i>
+                    <input aria-label="جستجوی فایل‌ها" type="text" id="files-search" class="input-ctrl" placeholder="نام فایل، عنوان، پوشه..." data-input="filterMediaFiles">
+                  </div>
+                  <select aria-label="فیلتر نوع فایل" id="files-type-filter" class="select-ctrl" data-change="filterMediaFiles">
+                    <option value="">همه انواع</option>
+                    <option value="image">تصویر</option>
+                    <option value="video">ویدیو</option>
+                    <option value="audio">صوت</option>
+                    <option value="doc">سند</option>
+                  </select>
+                  <select aria-label="مرتب‌سازی" id="mdm-sort" class="select-ctrl" data-change="filterMediaFiles">
+                    <option value="new">جدیدترین</option>
+                    <option value="old">قدیمی‌ترین</option>
+                    <option value="big">بزرگ‌ترین</option>
+                    <option value="name">نام فایل</option>
+                  </select>
+                </div>
+              </div>
+              <div class="mdm-selbar" id="mdm-selbar" hidden>
+                <span id="mdm-sel-count">۰ فایل انتخاب شده</span>
+                <div class="u-flex u-gap-8">
+                  <button type="button" class="lse-btn" data-click="mdmSelectVisible"><i class="fa-solid fa-square-check"></i> انتخاب همه‌ی نمایش‌داده‌ها</button>
+                  <button type="button" class="lse-btn" data-click="mdmToggleSelect"><i class="fa-solid fa-xmark"></i> لغو</button>
+                  <button type="button" class="lsv-pill mdm-del-btn" data-click="mdmDeleteSelected"><i class="fa-solid fa-trash"></i> حذف انتخاب‌شده‌ها</button>
+                </div>
+              </div>
+              <div id="mdm-bento-list" class="crv-card-grid mdm-grid" aria-busy="true"></div>
+              <div class="mdm-more" id="mdm-more" hidden>
+                <button type="button" class="lse-btn" data-click="mdmShowMore"><i class="fa-solid fa-angles-down"></i> نمایش فایل‌های بیشتر</button>
+              </div>
+            </div>
+
+            <div class="lst-tile glass">
+              <h4 class="lst-tile-title"><i class="fa-solid fa-chart-simple"></i> آمار کلی</h4>
+              <div class="lst-mini-stats">
+                <div class="lst-mini-stat"><span class="stat-label">فایل‌ها</span><span class="stat-value u-c-primary-text" id="mdm-stat-count">-</span></div>
+                <div class="lst-mini-stat"><span class="stat-label">حجم کل</span><span class="stat-value u-c-success-text" id="files-summary">-</span></div>
+                <div class="lst-mini-stat"><span class="stat-label">تصویر</span><span class="stat-value u-c-accent-text" id="mdm-stat-images">-</span></div>
+                <div class="lst-mini-stat"><span class="stat-label">ویدیو</span><span class="stat-value u-c-info-text" id="mdm-stat-videos">-</span></div>
+              </div>
+            </div>
+
+            <div class="lst-tile glass">
+              <h4 class="lst-tile-title"><i class="fa-solid fa-hard-drive"></i> فضای اشغال‌شده <span class="lst-tile-sub">به تفکیک نوع</span></h4>
+              <div id="mdm-bento-storage"></div>
+            </div>
+
+            <div class="lst-tile glass">
+              <h4 class="lst-tile-title"><i class="fa-solid fa-weight-hanging"></i> بزرگ‌ترین فایل‌ها</h4>
+              <div id="mdm-bento-big"></div>
+            </div>
+
+            <div class="lst-tile glass">
+              <h4 class="lst-tile-title"><i class="fa-solid fa-bolt"></i> دسترسی سریع</h4>
+              <div class="lst-quick">
+                <button type="button" class="lst-quick-btn" data-click="mdmOpenUpload"><i class="fa-solid fa-cloud-arrow-up"></i> آپلود فایل</button>
+                <button type="button" class="lst-quick-btn" data-click="loadMediaAssets"><i class="fa-solid fa-sync"></i> بروزرسانی</button>
+                <button type="button" class="lst-quick-btn" data-click="mdmToggleSelect"><i class="fa-solid fa-check-double"></i> انتخاب چند فایل</button>
+              </div>
+            </div>
+
+            <div class="lst-tile lst-tile-wide glass">
+              <h4 class="lst-tile-title"><i class="fa-solid fa-list-check"></i> نیازمند توجه <span class="lst-tile-sub">فایل‌های بدون مشخصات (خارج از آپلود پنل) و فایل‌های خیلی بزرگ</span></h4>
+              <div id="mdm-bento-health"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Upload a file -->
+        <div id="mdm-upload-modal" class="modal-overlay lse-overlay u-z-z-modal" data-style="display:none">
+          <div class="lse lse-sm">
+            <header class="lse-head lse-head-plain">
+              <div class="lse-id">
+                <span class="lse-id-icon is-accent"><i class="fa-solid fa-cloud-arrow-up"></i></span>
+                <div class="lse-id-text"><h3>آپلود رسانه جدید</h3><span>ویدیو، تصویر، بنر یا آواتار؛ پس از آپلود لینک مستقیم آن را دارید</span></div>
+              </div>
+              <button type="button" class="lsv-round" data-click="NopaActions.hide" data-click-args="[&quot;mdm-upload-modal&quot;]" title="بستن" aria-label="بستن"><i class="fa-solid fa-xmark"></i></button>
+            </header>
+            <form class="lse-form" id="media-upload-form" enctype="multipart/form-data">
+              <div class="lse-body">
+                <section class="lse-card">
+                  <h4 class="lse-card-title"><i class="fa-solid fa-file-arrow-up"></i> فایل</h4>
+                  <label class="mdm-drop" id="mdm-drop">
+                    <input type="file" id="media-file-input" required data-change="mdmFilePicked">
+                    <i class="fa-solid fa-cloud-arrow-up"></i>
+                    <strong id="mdm-drop-name">فایل را انتخاب کنید یا اینجا رها کنید</strong>
+                    <small id="mdm-drop-size">تصویر، ویدیو، صوت یا سند</small>
+                  </label>
+                </section>
+                <section class="lse-card">
+                  <h4 class="lse-card-title"><i class="fa-solid fa-circle-info"></i> مشخصات</h4>
+                  <div class="lse-grid lse-grid-2">
+                    <label class="lse-field"><span>نوع محتوا</span>
+                      <select id="media-asset-type" class="select-ctrl">
+                        <option value="general">عمومی</option>
+                        <option value="course_video">ویدیوی آموزشی</option>
+                        <option value="banner">بنر اپلیکیشن</option>
+                        <option value="avatar">آواتار</option>
+                      </select>
+                    </label>
+                    <label class="lse-field"><span>عنوان <small>اختیاری</small></span><input type="text" id="media-title" class="input-ctrl" placeholder="عنوان سرفصل یا بنر"></label>
+                  </div>
+                  <label class="lse-field"><span>نام استاد / راهبر <small>اختیاری</small></span><input type="text" id="media-instructor" class="input-ctrl"></label>
+                </section>
+              </div>
+              <footer class="lse-foot">
+                <span class="lse-foot-note" id="media-upload-progress" data-style="display:none"><i class="fa-solid fa-spinner fa-spin"></i> در حال آپلود... لطفا صبر کنید</span>
+                <div class="lse-foot-actions">
+                  <button type="button" class="lse-btn" data-click="NopaActions.hide" data-click-args="[&quot;mdm-upload-modal&quot;]">انصراف</button>
+                  <button type="submit" class="lsv-pill" id="btn-upload-media"><i class="fa-solid fa-cloud-arrow-up"></i> آپلود</button>
+                </div>
+              </footer>
+            </form>
+          </div>
+        </div>
+
+        <!-- One file -->
+        <div id="mdm-file-modal" class="modal-overlay lse-overlay u-z-z-modal" data-style="display:none">
+          <div class="lse lse-sm mdm-file-dialog">
+            <header class="lse-head lse-head-plain">
+              <div class="lse-id">
+                <span class="lse-id-icon is-accent" id="mdm-file-icon"><i class="fa-solid fa-file"></i></span>
+                <div class="lse-id-text"><h3 id="mdm-file-title">فایل</h3><span id="mdm-file-sub"></span></div>
+              </div>
+              <button type="button" class="lsv-round" data-click="NopaActions.hide" data-click-args="[&quot;mdm-file-modal&quot;]" title="بستن" aria-label="بستن"><i class="fa-solid fa-xmark"></i></button>
+            </header>
+            <div class="lse-body" id="mdm-file-body"></div>
+            <footer class="lse-foot">
+              <button type="button" class="lse-btn mdm-del-btn" id="mdm-file-delete" data-click="mdmDeleteOpen"><i class="fa-solid fa-trash"></i> حذف از سرور</button>
+              <div class="lse-foot-actions">
+                <a class="lse-btn" id="mdm-file-open" href="#" target="_blank" rel="noopener"><i class="fa-solid fa-up-right-from-square"></i> باز کردن</a>
+                <button type="button" class="lsv-pill" data-click="mdmCopyOpen"><i class="fa-solid fa-copy"></i> کپی لینک</button>
+              </div>
+            </footer>
+          </div>
+        </div>
+      </section>
+
+      <!-- SUPPORT CASES: the chat tab's messenger (css/chat.css .chm-*) on its own: cases on the side (status chips,
+           search), the open case as a conversation with claim / resolve and the reply composer.
+           Drawn by js/features/support-cases.js. -->
       <section id="support-cases-tab" class="tab-panel" data-style="display: none;">
-        <div class="panel-card glass u-maxw-760">
-          <div class="panel-title"><i class="fa-solid fa-life-ring u-c-primary-text u-ml-8"></i>پرونده‌های پشتیبانی</div>
-          <select id="support-cases-filter" class="select-ctrl u-mb-14" data-change="loadSupportCases">
-            <option value="">همه</option>
-            <option value="open">باز</option>
-            <option value="reviewing">در بررسی</option>
-            <option value="resolved">حل‌شده</option>
-          </select>
-          <div id="support-cases-list"></div>
-          <div id="support-case-detail" class="u-mt-15"></div>
+        <div id="spc-messenger" class="chm spc" data-state="list">
+          <aside class="chm-side" aria-label="پرونده‌های پشتیبانی">
+            <div class="chm-side-head">
+              <div class="chm-side-title"><i class="fa-solid fa-life-ring"></i>پرونده‌های پشتیبانی</div>
+              <button type="button" class="chm-icon-btn" id="spc-refresh" title="بازخوانی" aria-label="بازخوانی"><i class="fa-solid fa-rotate"></i></button>
+            </div>
+            <label class="search-box chm-search"><i class="fa-solid fa-magnifying-glass"></i><input type="search" id="spc-filter-text" placeholder="جستجوی نام، شماره یا موضوع..." autocomplete="off"></label>
+            <div class="chm-chips" id="spc-chips" role="tablist"></div>
+            <div class="chm-list" id="spc-list" aria-live="polite"></div>
+          </aside>
+          <section class="chm-main" aria-label="پرونده">
+            <div class="chm-empty" id="spc-empty">
+              <span class="chm-empty-icon"><i class="fa-solid fa-life-ring"></i></span>
+              <strong>یک پرونده را انتخاب کنید</strong>
+              <span>پرونده‌های باز اول نمایش داده می‌شوند. با برداشتن پرونده، مسئول آن شما می‌شوید.</span>
+            </div>
+            <div class="chm-conv" id="spc-conv" hidden>
+              <header class="chm-head">
+                <button type="button" class="chm-icon-btn chm-back" id="spc-back" aria-label="بازگشت به فهرست"><i class="fa-solid fa-arrow-right"></i></button>
+                <span class="chm-avatar" id="spc-head-avatar"></span>
+                <div class="chm-head-text"><strong id="spc-head-title"></strong><span id="spc-head-sub"></span></div>
+                <div class="chm-head-tools">
+                  <span class="chm-mini-chip" id="spc-head-status"></span>
+                  <button type="button" class="chm-pill-btn" id="spc-claim"><i class="fa-solid fa-hand"></i>برداشتن</button>
+                  <button type="button" class="chm-pill-btn is-ok" id="spc-resolve"><i class="fa-solid fa-circle-check"></i>بستن پرونده</button>
+                </div>
+              </header>
+              <div class="chm-stream" id="spc-stream" tabindex="0" aria-live="polite"></div>
+              <div class="chm-compose-wrap">
+                <div class="chm-notice" id="spc-notice" hidden></div>
+                <form class="chm-composer" id="spc-composer" autocomplete="off">
+                  <textarea id="spc-input" rows="1" maxlength="4000" placeholder="پاسخ به کاربر..." aria-label="متن پاسخ"></textarea>
+                  <button type="submit" class="chm-send" id="spc-send" aria-label="ارسال پاسخ"><i class="fa-solid fa-paper-plane"></i></button>
+                </form>
+              </div>
+            </div>
+          </section>
         </div>
       </section>
 
@@ -2519,57 +2836,221 @@
         </div>
       </section>
 
-      <!-- DYNAMIC FORM BUILDER -->
+      <!-- DYNAMIC FORM BUILDER. Like the caravans tab: a bento of the forms, and one form's page (circles of the forms in
+           the notch, the form's card linked to its fields and its answers). Drawn by js/features/forms.js;
+           styles in css/stations.css (.dfm-*). -->
       <section id="form-builder-tab" class="tab-panel" data-style="display: none;">
-        <div class="panel-card glass u-mb-20">
-          <div class="panel-title">فرم‌ساز داینامیک و تعیین محل نمایش</div>
-          <form id="dyn-form-builder" class="u-flex u-gap-10 u-mt-16 u-items-grid-end u-wrap" data-submit="submitDynamicForm" data-submit-args="[&quot;$event&quot;]">
-            <input type="hidden" id="dyn-form-id">
-            <div class="form-group u-flex-1 u-minw-200">
-              <label for="dyn-form-title">عنوان فرم</label>
-              <input type="text" id="dyn-form-title" class="input-ctrl" required>
+        <div id="dfm-overview-view">
+          <div class="lms-head-actions u-flex u-justify-end u-items-center u-mb-20">
+            <div class="u-flex u-gap-10">
+              <button type="button" class="btn-primary u-bgc-primary" data-click="openDynFormModal"><i class="fa-solid fa-plus"></i> فرم جدید</button>
             </div>
-            <div class="form-group u-flex-1 u-minw-200">
-              <label for="dyn-form-purpose">کارکرد فرم (Purpose)</label>
-              <input type="text" id="dyn-form-purpose" class="input-ctrl" placeholder="نظرسنجی کیفیت کلاس...">
+          </div>
+
+          <div class="lst-bento dfm-bento">
+            <div class="lst-tile lst-tile-stations glass">
+              <div class="lst-tile-head">
+                <h4 class="lst-tile-title"><i class="fa-brands fa-wpforms"></i> همه فرم‌ها <span class="lst-tile-sub" id="dfm-count-badge">برای ساختن سؤال‌ها و دیدن پاسخ‌ها وارد هر فرم شوید</span></h4>
+                <div class="crv-filters">
+                  <div class="search-box">
+                    <i class="fa-solid fa-search"></i>
+                    <input aria-label="جستجوی فرم" type="text" id="dfm-search" class="input-ctrl" placeholder="عنوان یا کارکرد فرم..." data-input="filterDynForms">
+                  </div>
+                  <select aria-label="فیلتر محل نمایش" id="dfm-placement-filter" class="select-ctrl" data-change="filterDynForms">
+                    <option value="all">همه محل‌ها</option>
+                  </select>
+                  <select aria-label="فیلتر مخاطب" id="dfm-audience-filter" class="select-ctrl" data-change="filterDynForms">
+                    <option value="all">همه مخاطبان</option>
+                  </select>
+                </div>
+              </div>
+              <div id="dfm-bento-list" class="crv-card-grid" aria-busy="true"></div>
             </div>
-            <div class="form-group u-flex-1 u-minw-200">
-              <label for="dyn-form-placement">محل قرارگیری در اپ (Placement)</label>
-              <select id="dyn-form-placement" class="select-ctrl" required>
-                <option value="HOME_SCREEN_OVERLAY">HOME_SCREEN_OVERLAY (صفحه اصلی)</option>
-                <option value="AFTER_CLASS_SURVEY">AFTER_CLASS_SURVEY (پس از کلاس)</option>
-                <option value="MENTOR_EVALUATION">MENTOR_EVALUATION (ارزیابی مربی)</option>
-                <option value="PROFILE_TAB">PROFILE_TAB (پروفایل)</option>
-                <option value="DRAWER_MENU">DRAWER_MENU (منوی کناری)</option>
-              </select>
+
+            <div class="lst-tile glass">
+              <h4 class="lst-tile-title"><i class="fa-solid fa-chart-simple"></i> آمار کلی</h4>
+              <div class="lst-mini-stats">
+                <div class="lst-mini-stat"><span class="stat-label">فرم‌ها</span><span class="stat-value u-c-primary-text" id="dfm-stat-forms">-</span></div>
+                <div class="lst-mini-stat"><span class="stat-label">سؤال‌ها</span><span class="stat-value u-c-success-text" id="dfm-stat-fields">-</span></div>
+                <div class="lst-mini-stat"><span class="stat-label">پاسخ‌ها</span><span class="stat-value u-c-accent-text" id="dfm-stat-answers">-</span></div>
+                <div class="lst-mini-stat"><span class="stat-label">محل‌های فعال</span><span class="stat-value u-c-info-text" id="dfm-stat-places">-</span></div>
+              </div>
             </div>
-            <div class="form-group u-flex-1 u-minw-200">
-              <label for="dyn-form-audience">مخاطب هدف</label>
-              <select id="dyn-form-audience" class="select-ctrl" required>
-                <option value="ALL_USERS">همه کاربران</option>
-                <option value="STUDENTS_ONLY">فقط دانش‌آموزان</option>
-                <option value="MENTORS_ONLY">فقط مربیان</option>
-                <option value="SPECIFIC_CARAVAN">کاروان خاص</option>
-              </select>
+
+            <div class="lst-tile glass">
+              <h4 class="lst-tile-title"><i class="fa-solid fa-mobile-screen"></i> محل نمایش در اپ</h4>
+              <div id="dfm-bento-places"></div>
             </div>
-            <button type="submit" class="btn-primary"><i class="fa-solid fa-save"></i> ایجاد/ذخیره فرم</button>
-          </form>
+
+            <div class="lst-tile glass">
+              <h4 class="lst-tile-title"><i class="fa-solid fa-ranking-star"></i> بیشترین پاسخ</h4>
+              <div id="dfm-bento-top"></div>
+            </div>
+
+            <div class="lst-tile glass">
+              <h4 class="lst-tile-title"><i class="fa-solid fa-bolt"></i> دسترسی سریع</h4>
+              <div class="lst-quick">
+                <button type="button" class="lst-quick-btn" data-click="openDynFormModal"><i class="fa-solid fa-plus"></i> فرم جدید</button>
+                <button type="button" class="lst-quick-btn" data-click="loadDynForms"><i class="fa-solid fa-sync"></i> بروزرسانی</button>
+              </div>
+            </div>
+
+            <div class="lst-tile lst-tile-wide glass">
+              <h4 class="lst-tile-title"><i class="fa-solid fa-list-check"></i> نیازمند توجه <span class="lst-tile-sub">فرم‌هایی که در اپ خالی نمایش داده می‌شوند</span></h4>
+              <div id="dfm-bento-health"></div>
+            </div>
+          </div>
         </div>
 
-        <div class="table-container glass u-mb-20">
-          <table class="data-table" id="dyn-forms-table">
-            <thead>
-              <tr>
-                <th>عنوان فرم</th>
-                <th>محل قرارگیری</th>
-                <th>مخاطب</th>
-                <th>عملیات</th>
-              </tr>
-            </thead>
-            <tbody>
-              <!-- Populated by JS -->
-            </tbody>
-          </table>
+        <div id="dfm-detail-view" data-style="display: none;">
+          <div class="lsv-head">
+            <button type="button" class="lsv-round" data-click="closeDynFormView" title="بازگشت" aria-label="بازگشت"><i class="fa-solid fa-arrow-right"></i></button>
+            <h3 id="dfm-title">فرم</h3>
+            <span id="dfm-state"></span>
+          </div>
+          <section class="lsv-board dfm-board">
+            <header class="lsv-board-head">
+              <div class="lsv-board-title"><h4>ساختار فرم</h4><span id="dfm-sub"></span></div>
+              <div class="lsv-notch-wrap"><nav class="lsv-notch" id="dfm-circles" aria-label="فرم‌ها"></nav></div>
+              <div class="lsv-round-group">
+                <button type="button" class="lsv-round" data-click="editActiveDynForm" title="ویرایش فرم" aria-label="ویرایش فرم"><i class="fa-solid fa-pen"></i></button>
+                <button type="button" class="lsv-round lsv-round-danger" data-click="deleteActiveDynForm" title="حذف فرم" aria-label="حذف فرم"><i class="fa-solid fa-trash"></i></button>
+              </div>
+            </header>
+            <div class="lsv-flow crv-flow dfm-flow">
+              <div class="lsv-col crv-col-mentor">
+                <div class="lsv-col-card crv-mentor" id="dfm-info-card"></div>
+                <div class="lsv-col-label"><i class="fa-solid fa-id-card"></i> شناسنامه فرم</div>
+              </div>
+              <div class="lsv-link" aria-hidden="true"></div>
+              <div class="lsv-col mnt-col-caravans">
+                <div class="lsv-col-card" id="dfm-fields-card"><div class="crv-members-list" id="dfm-fields"></div></div>
+                <div class="lsv-col-label"><i class="fa-solid fa-list-ol"></i> سؤال‌ها <span class="lsv-col-count" id="dfm-fields-count">0</span></div>
+              </div>
+              <div class="lsv-link" aria-hidden="true"></div>
+              <div class="lsv-col mnt-col-students">
+                <div class="lsv-col-card" id="dfm-answers-card"><div class="crv-members-list" id="dfm-answers"></div></div>
+                <div class="lsv-col-label"><i class="fa-solid fa-inbox"></i> پاسخ‌ها <span class="lsv-col-count" id="dfm-answers-count">0</span></div>
+              </div>
+            </div>
+          </section>
+        </div>
+
+        <!-- New / edit form -->
+        <div id="dfm-form-modal" class="modal-overlay lse-overlay u-z-z-modal" data-style="display:none">
+          <div class="lse lse-sm">
+            <header class="lse-head lse-head-plain">
+              <div class="lse-id">
+                <span class="lse-id-icon is-accent"><i class="fa-brands fa-wpforms"></i></span>
+                <div class="lse-id-text"><h3 id="dfm-form-modal-title">فرم جدید</h3><span>عنوان، محل نمایش در اپ و مخاطب فرم</span></div>
+              </div>
+              <button type="button" class="lsv-round" data-click="NopaActions.hide" data-click-args="[&quot;dfm-form-modal&quot;]" title="بستن" aria-label="بستن"><i class="fa-solid fa-xmark"></i></button>
+            </header>
+            <form class="lse-form" id="dyn-form-builder" data-submit="submitDynamicForm" data-submit-args="[&quot;$event&quot;]">
+              <input type="hidden" id="dyn-form-id">
+              <div class="lse-body">
+                <section class="lse-card">
+                  <h4 class="lse-card-title"><i class="fa-solid fa-circle-info"></i> مشخصات</h4>
+                  <label class="lse-field"><span>عنوان فرم <b class="lse-req">*</b></span><input type="text" id="dyn-form-title" class="input-ctrl" maxlength="120" required></label>
+                  <label class="lse-field"><span>کارکرد <small>اختیاری</small></span><input type="text" id="dyn-form-purpose" class="input-ctrl" maxlength="200" placeholder="مثلاً نظرسنجی کیفیت کلاس"></label>
+                </section>
+                <section class="lse-card">
+                  <h4 class="lse-card-title"><i class="fa-solid fa-mobile-screen"></i> نمایش در اپ</h4>
+                  <div class="lse-grid lse-grid-2">
+                    <label class="lse-field"><span>محل نمایش <b class="lse-req">*</b></span>
+                      <select id="dyn-form-placement" class="select-ctrl" required>
+                        <option value="HOME_SCREEN_OVERLAY">صفحه اصلی (پنجره روی صفحه)</option>
+                        <option value="AFTER_CLASS_SURVEY">پس از کلاس</option>
+                        <option value="MENTOR_EVALUATION">ارزیابی راهبر</option>
+                        <option value="PROFILE_TAB">زبانه پروفایل</option>
+                        <option value="DRAWER_MENU">منوی کناری</option>
+                      </select>
+                    </label>
+                    <label class="lse-field"><span>مخاطب <b class="lse-req">*</b></span>
+                      <select id="dyn-form-audience" class="select-ctrl" required data-change="dfmAudienceChanged">
+                        <option value="ALL_USERS">همه کاربران</option>
+                        <option value="STUDENTS_ONLY">فقط نوجوانان</option>
+                        <option value="MENTORS_ONLY">فقط راهبران</option>
+                        <option value="SPECIFIC_CARAVAN">یک کاروان خاص</option>
+                      </select>
+                    </label>
+                  </div>
+                  <label class="lse-field" id="dfm-caravan-field" data-style="display:none"><span>کاروان <b class="lse-req">*</b></span>
+                    <select id="dyn-form-caravan" class="select-ctrl"><option value="">در حال دریافت کاروان‌ها...</option></select>
+                  </label>
+                </section>
+              </div>
+              <footer class="lse-foot">
+                <span class="lse-foot-note"><i class="fa-solid fa-circle-info"></i> سؤال‌ها را در صفحه‌ی فرم اضافه کنید</span>
+                <div class="lse-foot-actions">
+                  <button type="button" class="lse-btn" data-click="NopaActions.hide" data-click-args="[&quot;dfm-form-modal&quot;]">انصراف</button>
+                  <button type="submit" class="lsv-pill"><i class="fa-solid fa-check"></i> ذخیره</button>
+                </div>
+              </footer>
+            </form>
+          </div>
+        </div>
+
+        <!-- New / edit question -->
+        <div id="dfm-field-modal" class="modal-overlay lse-overlay u-z-z-modal" data-style="display:none">
+          <div class="lse lse-sm">
+            <header class="lse-head lse-head-plain">
+              <div class="lse-id">
+                <span class="lse-id-icon is-accent"><i class="fa-solid fa-list-ol"></i></span>
+                <div class="lse-id-text"><h3 id="dfm-field-modal-title">سؤال جدید</h3><span id="dfm-field-modal-sub"></span></div>
+              </div>
+              <button type="button" class="lsv-round" data-click="NopaActions.hide" data-click-args="[&quot;dfm-field-modal&quot;]" title="بستن" aria-label="بستن"><i class="fa-solid fa-xmark"></i></button>
+            </header>
+            <form class="lse-form" data-submit="saveDynField" data-submit-args="[&quot;$event&quot;]">
+              <input type="hidden" id="dfm-field-id">
+              <div class="lse-body">
+                <section class="lse-card">
+                  <h4 class="lse-card-title"><i class="fa-solid fa-circle-question"></i> سؤال</h4>
+                  <label class="lse-field"><span>متن سؤال <b class="lse-req">*</b></span><input type="text" id="dfm-field-label" class="input-ctrl" maxlength="300" required></label>
+                  <div class="lse-grid lse-grid-2">
+                    <label class="lse-field"><span>نوع پاسخ</span>
+                      <select id="dfm-field-type" class="select-ctrl" data-change="dfmFieldTypeChanged">
+                        <option value="text">متن کوتاه</option>
+                        <option value="textarea">متن بلند</option>
+                        <option value="radio">یک گزینه از چند</option>
+                        <option value="checkbox">چند گزینه</option>
+                        <option value="rating">امتیاز (ستاره)</option>
+                        <option value="date">تاریخ</option>
+                        <option value="file">فایل</option>
+                      </select>
+                    </label>
+                    <label class="chs-check dfm-required"><span><strong>پاسخ اجباری</strong><small>بدون پاسخ ارسال نمی‌شود</small></span><input type="checkbox" class="chs-switch" id="dfm-field-required"></label>
+                  </div>
+                  <label class="lse-field" id="dfm-options-field" data-style="display:none"><span>گزینه‌ها <small>هر گزینه در یک خط</small></span><textarea id="dfm-field-options" class="input-ctrl" rows="5"></textarea></label>
+                </section>
+              </div>
+              <footer class="lse-foot">
+                <span class="lse-foot-note"><i class="fa-solid fa-circle-info"></i> ترتیب را با فلش‌های کنار هر سؤال تغییر دهید</span>
+                <div class="lse-foot-actions">
+                  <button type="button" class="lse-btn" data-click="NopaActions.hide" data-click-args="[&quot;dfm-field-modal&quot;]">انصراف</button>
+                  <button type="submit" class="lsv-pill"><i class="fa-solid fa-check"></i> ذخیره</button>
+                </div>
+              </footer>
+            </form>
+          </div>
+        </div>
+
+        <!-- One submission -->
+        <div id="dfm-answer-modal" class="modal-overlay lse-overlay u-z-z-modal" data-style="display:none">
+          <div class="lse lse-sm">
+            <header class="lse-head lse-head-plain">
+              <div class="lse-id">
+                <span class="lse-id-icon is-accent"><i class="fa-solid fa-inbox"></i></span>
+                <div class="lse-id-text"><h3 id="dfm-answer-title">پاسخ</h3><span id="dfm-answer-sub"></span></div>
+              </div>
+              <button type="button" class="lsv-round" data-click="NopaActions.hide" data-click-args="[&quot;dfm-answer-modal&quot;]" title="بستن" aria-label="بستن"><i class="fa-solid fa-xmark"></i></button>
+            </header>
+            <div class="lse-body" id="dfm-answer-body"></div>
+            <footer class="lse-foot">
+              <span class="lse-foot-note"></span>
+              <div class="lse-foot-actions"><button type="button" class="lse-btn" data-click="NopaActions.hide" data-click-args="[&quot;dfm-answer-modal&quot;]">بستن</button></div>
+            </footer>
+          </div>
         </div>
       </section>
 
@@ -2689,180 +3170,96 @@
         </div>
       </section>
 
-      <!-- JARCHI NEWS & BANNERS TAB -->
+      <!-- JARCHI: the app's news board and banners in one bento like the other tabs: news cards (filters, stats,
+           categories) and a full-width strip of the banners; a card opens its lse dialog (#news-modal / #banner-modal,
+           same field ids). Drawn by js/features/jarchi.js; styles in css/stations.css (.jch-*). -->
       <section id="news-tab" class="tab-panel" data-style="display: none;">
-        <div class="u-flex u-justify-between u-items-center u-mb-16 u-wrap u-gap-12">
-          <div>
-            <h3 class="u-m-0 u-c-text u-fs-lg u-flex u-items-center u-gap-8">
-              <i class="fa-solid fa-bullhorn u-c-primary-text"></i> بخش جارچی (مدیریت بنرها، اعلانات و اخبار)
-            </h3>
-            <p class="u-m-4-0-0-0 u-c-text-muted u-fs-xs">مدیریت، بارگذاری، ویرایش و انتشار بنرهای تصویری و اطلاعیه‌های رسمی جارچی در اپلیکیشن نپا</p>
-          </div>
-          <div class="u-flex u-gap-10">
-            <button type="button" data-click="loadNewsAndBanners" class="btn-action u-bg-primary-15 u-c-primary-text u-bd-primary-30 u-r-8 u-p-8-16 u-bold u-pointer u-flex u-items-center u-gap-6">
-              <i class="fa-solid fa-sync"></i> بروزرسانی همه
-            </button>
-          </div>
-        </div>
-
-        <!-- Sub-Tabs Navigation for Jarchi -->
-        <div class="jarchi-subnav u-flex u-gap-10 u-mb-20 u-bb-fg-10 u-pb-12">
-          <button type="button" id="subtab-btn-banners" data-click="switchJarchiSubTab" data-click-args="[&quot;banners&quot;]" class="u-bg-grad-accent u-c-white u-bd-none u-r-8 u-p-10-20 u-bold u-pointer u-flex u-items-center u-gap-8 u-shadow-0-4-12-accent-35 u-transition">
-            <i class="fa-solid fa-images"></i> مدیریت و بارگذاری بنرها
-          </button>
-          <button type="button" id="subtab-btn-news" data-click="switchJarchiSubTab" data-click-args="[&quot;news&quot;]" class="u-bg-fg-6 u-c-text-muted u-bd-fg-10 u-r-8 u-p-10-20 u-bold u-pointer u-flex u-items-center u-gap-8 u-transition">
-            <i class="fa-solid fa-newspaper"></i> اطلاعیه‌ها و اخبار جارچی
-          </button>
-          <button type="button" id="subtab-btn-support" data-click="switchJarchiSubTab" data-click-args="[&quot;support&quot;]" class="u-bg-fg-6 u-c-text-muted u-bd-fg-10 u-r-8 u-p-10-20 u-bold u-pointer u-flex u-items-center u-gap-8 u-transition">
-            <i class="fa-solid fa-headset"></i> پیام‌های پشتیبانی <span id="support-open-count" class="u-bg-danger u-r-10 u-p-1-8 u-fs-2xs u-c-white" data-style="display:none"></span>
-          </button>
-        </div>
-
-        <!-- SUBVIEW 3: SUPPORT MESSAGES (sent from the app's "ارسال پیام به پشتیبانی") -->
-        <div id="jarchi-support-view" data-style="display: none;"></div>
-
-        <!-- SUBVIEW 1: BANNERS MANAGEMENT -->
-        <div id="jarchi-banners-view">
-          <div class="u-flex u-justify-between u-items-center u-mb-16 u-wrap u-gap-10">
-            <h4 class="u-m-0 u-c-text u-fs-md u-flex u-items-center u-gap-6">
-              <i class="fa-solid fa-layer-group u-c-accent-text"></i> لیست بنرهای فعال و تعریف‌شده
-            </h4>
-            <button type="button" data-click="openCreateBannerModal" class="btn-primary u-bg-grad-accent u-c-white u-bd-none u-r-8 u-p-8-20 u-bold u-pointer u-flex u-items-center u-gap-6 u-shadow-0-4-12-accent-35">
-              <i class="fa-solid fa-plus"></i> + بارگذاری و افزودن بنر جدید
-            </button>
-          </div>
-
-          <!-- 4 Stat Cards for Banners -->
-          <div class="stats-grid u-mb-20">
-            <div class="stat-card glass">
-              <div>
-                <div class="stat-label">کل بنرها</div>
-                <div class="stat-value u-c-accent-text" id="banners-stat-total">-</div>
-              </div>
-              <div class="stat-icon u-c-accent-text u-bg-accent-10"><i class="fa-solid fa-images"></i></div>
-            </div>
-            <div class="stat-card glass">
-              <div>
-                <div class="stat-label">بنرهای صفحه اصلی</div>
-                <div class="stat-value u-c-primary-text" id="banners-stat-home">-</div>
-              </div>
-              <div class="stat-icon u-c-primary-text u-bg-primary-10"><i class="fa-solid fa-house"></i></div>
-            </div>
-            <div class="stat-card glass">
-              <div>
-                <div class="stat-label">بنرهای بازار</div>
-                <div class="stat-value u-c-success-text" id="banners-stat-bazaar">-</div>
-              </div>
-              <div class="stat-icon u-c-success-text u-bg-success-10"><i class="fa-solid fa-store"></i></div>
-            </div>
-            <div class="stat-card glass">
-              <div>
-                <div class="stat-label">بنرهای فعال</div>
-                <div class="stat-value u-c-primary-text" id="banners-stat-active">-</div>
-              </div>
-              <div class="stat-icon u-c-primary-text u-bg-primary-10"><i class="fa-solid fa-check-double"></i></div>
+        <div id="jch-overview-view">
+          <div class="lms-head-actions u-flex u-justify-end u-items-center u-mb-20">
+            <div class="u-flex u-gap-10 u-wrap">
+              <button type="button" class="btn-action" data-click="openCreateBannerModal"><i class="fa-solid fa-image"></i> بنر جدید</button>
+              <button type="button" class="btn-primary u-bgc-primary" data-click="openCreateNewsModal"><i class="fa-solid fa-plus"></i> خبر / اطلاعیه جدید</button>
             </div>
           </div>
 
-          <!-- Banners Table -->
-          <div class="table-container glass">
-            <table class="data-table" id="banners-table">
-              <thead>
-                <tr>
-                  <th class="u-w-100 u-text-center">تصویر بنر</th>
-                  <th class="u-minw-180">عنوان بنر</th>
-                  <th class="u-w-140 u-text-center">موقعیت نمایش</th>
-                  <th class="u-w-160">مسیر / لینک مقصد</th>
-                  <th class="u-w-90 u-text-center">ترتیب</th>
-                  <th class="u-w-100 u-text-center">وضعیت</th>
-                  <th class="u-w-120 u-text-center">عملیات</th>
-                </tr>
-              </thead>
-              <tbody id="banners-tbody">
-                <!-- Populated by loadBannersTab -->
-              </tbody>
-            </table>
-          </div>
-        </div>
-
-        <!-- SUBVIEW 2: NEWS & ANNOUNCEMENTS -->
-        <div id="jarchi-news-view" data-style="display: none;">
-          <div class="u-flex u-justify-between u-items-center u-mb-16 u-wrap u-gap-10">
-            <h4 class="u-m-0 u-c-text u-fs-md u-flex u-items-center u-gap-6">
-              <i class="fa-solid fa-newspaper u-c-primary-text"></i> لیست اخبار و اطلاعیه‌های جارچی
-            </h4>
-            <button type="button" data-click="openCreateNewsModal" class="btn-primary u-bg-grad-primary u-c-white u-bd-none u-r-8 u-p-8-20 u-bold u-pointer u-flex u-items-center u-gap-6 u-shadow-0-4-12-primary-35">
-              <i class="fa-solid fa-plus"></i> + افزودن خبر / اعلان جدید
-            </button>
-          </div>
-
-          <!-- 3 Stat Cards for News -->
-          <div class="stats-grid u-mb-20">
-            <div class="stat-card glass">
-              <div>
-                <div class="stat-label">کل اخبار و اعلانات</div>
-                <div class="stat-value u-c-primary-text" id="news-stat-total">-</div>
+          <div class="lst-bento jch-bento">
+            <div class="lst-tile lst-tile-stations glass">
+              <div class="lst-tile-head">
+                <h4 class="lst-tile-title"><i class="fa-solid fa-newspaper"></i> اخبار و اطلاعیه‌های جارچی <span class="lst-tile-sub" id="jch-count-badge">برای ویرایش هر خبر بزنید</span></h4>
+                <div class="crv-filters">
+                  <div class="search-box">
+                    <i class="fa-solid fa-search"></i>
+                    <input aria-label="جستجوی خبر" type="text" id="news-search-input" class="input-ctrl" placeholder="عنوان، متن یا گزارشگر..." data-input="filterNewsTable">
+                  </div>
+                  <select aria-label="فیلتر دسته" id="news-filter-category" class="select-ctrl" data-change="filterNewsTable">
+                    <option value="all">همه دسته‌ها</option>
+                    <option value="اطلاعیه مهم">اطلاعیه مهم</option>
+                    <option value="رویداد و مسابقه">رویداد و مسابقه</option>
+                    <option value="اخبار کاروان‌ها">اخبار کاروان‌ها</option>
+                    <option value="آموزشی">آموزشی</option>
+                  </select>
+                  <select aria-label="فیلتر مخاطب" id="news-filter-audience" class="select-ctrl" data-change="filterNewsTable">
+                    <option value="all">همه مخاطبان</option>
+                    <option value="ALL">عمومی</option>
+                    <option value="STUDENTS">نوجوانان</option>
+                    <option value="MENTORS">راهبران</option>
+                  </select>
+                  <select aria-label="فیلتر وضعیت" id="news-filter-status" class="select-ctrl" data-change="filterNewsTable">
+                    <option value="all">همه وضعیت‌ها</option>
+                    <option value="published">منتشرشده</option>
+                    <option value="scheduled">زمان‌بندی‌شده</option>
+                    <option value="draft">پیش‌نویس</option>
+                  </select>
+                </div>
               </div>
-              <div class="stat-icon u-c-primary-text u-bg-primary-10"><i class="fa-solid fa-newspaper"></i></div>
+              <div id="news-tbody" class="crv-card-grid jch-grid" aria-busy="true"></div>
             </div>
-            <div class="stat-card glass">
-              <div>
-                <div class="stat-label">اخبار منتشرشده در اپ</div>
-                <div class="stat-value u-c-success-text" id="news-stat-published">-</div>
-              </div>
-              <div class="stat-icon u-c-success-text u-bg-success-10"><i class="fa-solid fa-check-circle"></i></div>
-            </div>
-            <div class="stat-card glass">
-              <div>
-                <div class="stat-label">پیش‌نویس‌ها و معلق</div>
-                <div class="stat-value u-c-accent-text" id="news-stat-drafts">-</div>
-              </div>
-              <div class="stat-icon u-c-accent-text u-bg-accent-10"><i class="fa-solid fa-file-pen"></i></div>
-            </div>
-          </div>
 
-          <!-- Filter & Search Toolbar -->
-          <div class="actions-header glass u-mb-20">
-            <div class="filters-group u-flex-1">
-              <div class="search-box u-flex-1 u-minw-250">
-                <i class="fa-solid fa-search"></i>
-                <input type="text" id="news-search-input" class="input-ctrl" placeholder="جستجو بر اساس عنوان خبر، متن یا گزارشگر..." data-input="filterNewsTable">
+            <div class="lst-tile glass">
+              <h4 class="lst-tile-title"><i class="fa-solid fa-chart-simple"></i> آمار کلی</h4>
+              <div class="lst-mini-stats">
+                <div class="lst-mini-stat"><span class="stat-label">اخبار</span><span class="stat-value u-c-primary-text" id="news-stat-total">-</span></div>
+                <div class="lst-mini-stat"><span class="stat-label">منتشرشده</span><span class="stat-value u-c-success-text" id="news-stat-published">-</span></div>
+                <div class="lst-mini-stat"><span class="stat-label">پیش‌نویس</span><span class="stat-value u-c-accent-text" id="news-stat-drafts">-</span></div>
+                <div class="lst-mini-stat"><span class="stat-label">بنر فعال</span><span class="stat-value u-c-info-text" id="banners-stat-active">-</span></div>
               </div>
-              <select id="news-filter-category" class="select-ctrl" data-change="filterNewsTable">
-                <option value="all">همه دسته‌بندی‌ها</option>
-                <option value="اطلاعیه مهم">اطلاعیه مهم</option>
-                <option value="رویداد و مسابقه">رویداد و مسابقه</option>
-                <option value="اخبار کاروان‌ها">اخبار کاروان‌ها</option>
-                <option value="آموزشی">آموزشی</option>
-              </select>
-              <select id="news-filter-audience" class="select-ctrl" data-change="filterNewsTable">
-                <option value="all">همه مخاطبان</option>
-                <option value="ALL">عمومی (همه)</option>
-                <option value="STUDENTS">فقط دانش‌آموزان</option>
-                <option value="MENTORS">فقط راهبران</option>
-              </select>
             </div>
-          </div>
 
-          <!-- News Data Table -->
-          <div class="table-container glass">
-            <table class="data-table" id="news-table">
-              <thead>
-                <tr>
-                  <th class="u-w-75 u-text-center">تصویر</th>
-                  <th class="u-minw-200">عنوان و خلاصه خبر</th>
-                  <th class="u-w-140 u-text-center">دسته‌بندی</th>
-                  <th class="u-w-130">منبع / گزارشگر</th>
-                  <th class="u-w-130">تاریخ انتشار</th>
-                  <th class="u-w-120 u-text-center">مخاطب</th>
-                  <th class="u-w-100 u-text-center">وضعیت</th>
-                  <th class="u-w-110 u-text-center">عملیات</th>
-                </tr>
-              </thead>
-              <tbody id="news-tbody">
-                <!-- Populated by JS -->
-              </tbody>
-            </table>
+            <div class="lst-tile glass">
+              <h4 class="lst-tile-title"><i class="fa-solid fa-tags"></i> دسته‌بندی اخبار</h4>
+              <div id="jch-bento-categories"></div>
+            </div>
+
+            <div class="lst-tile glass">
+              <h4 class="lst-tile-title"><i class="fa-solid fa-map-pin"></i> جایگاه بنرها</h4>
+              <div id="jch-bento-positions"></div>
+            </div>
+
+            <div class="lst-tile glass">
+              <h4 class="lst-tile-title"><i class="fa-solid fa-bolt"></i> دسترسی سریع</h4>
+              <div class="lst-quick">
+                <button type="button" class="lst-quick-btn" data-click="openCreateNewsModal"><i class="fa-solid fa-plus"></i> خبر جدید</button>
+                <button type="button" class="lst-quick-btn" data-click="openCreateBannerModal"><i class="fa-solid fa-image"></i> بنر جدید</button>
+                <button type="button" class="lst-quick-btn" data-click="usrGoTab" data-click-args="[&quot;notifications-tab&quot;]"><i class="fa-solid fa-paper-plane"></i> پیام‌رسانی</button>
+                <button type="button" class="lst-quick-btn" data-click="loadNewsAndBanners"><i class="fa-solid fa-sync"></i> بروزرسانی</button>
+              </div>
+            </div>
+
+            <div class="lst-tile glass jch-tile-full">
+              <div class="lst-tile-head">
+                <h4 class="lst-tile-title"><i class="fa-solid fa-images"></i> بنرهای اپ <span class="lst-tile-sub" id="jch-banner-sub">به ترتیب نمایش؛ برای ویرایش هر بنر بزنید</span></h4>
+                <div class="crv-filters">
+                  <select aria-label="فیلتر جایگاه بنر" id="jch-banner-position" class="select-ctrl" data-change="jchDrawBanners">
+                    <option value="all">همه جایگاه‌ها</option>
+                    <option value="home_top">بالای صفحه اصلی</option>
+                    <option value="bazaar_top">بالای صفحه بازار</option>
+                    <option value="lms_slider">آموزش و منزلگاه</option>
+                    <option value="general">عمومی</option>
+                  </select>
+                </div>
+              </div>
+              <div id="banners-tbody" class="jch-banners" aria-busy="true"></div>
+            </div>
           </div>
         </div>
       </section>
@@ -2870,15 +3267,28 @@
     </main>
   </div>
 
-  <!-- DETAILS DRAWER -->
-  <div class="drawer-overlay" id="user-drawer-overlay"></div>
-  <div class="drawer-content" id="user-detail-drawer">
-    <div class="drawer-header">
-      <h3 id="drawer-user-name">نام کاربر</h3>
-      <button aria-label="بستن" class="modal-close" id="btn-close-drawer">&times;</button>
-    </div>
-    <div id="drawer-body-info">
-      <!-- Drawer stats info -->
+  <!-- USER FULL REPORT: the station editor's large dialog (css/stations.css .lse-*, .urp-*; js/features/users.js
+       viewUserDetails). Tabs: identity, classes & quizzes (grouped per station), support & caravan, mentoring. -->
+  <div id="urp-modal" class="modal-overlay lse-overlay u-z-z-modal" data-style="display:none">
+    <div class="lse lse-editor urp">
+      <header class="lse-head">
+        <div class="lse-id">
+          <span class="lse-id-icon is-accent urp-head-avatar" id="urp-head-avatar"><i class="fa-solid fa-user"></i></span>
+          <div class="lse-id-text"><h3 id="drawer-user-name">گزارش کامل</h3><span id="urp-head-sub">در حال دریافت اطلاعات...</span></div>
+        </div>
+        <nav class="lse-tabs" id="urp-tabs" aria-label="بخش‌های گزارش">
+          <button type="button" class="lse-tab is-active" data-urp-tab="identity" data-click="switchDrawerTab" data-click-args="[&quot;identity&quot;]"><i class="fa-solid fa-id-card"></i> هویت و دارایی</button>
+          <button type="button" class="lse-tab" data-urp-tab="progress" data-click="switchDrawerTab" data-click-args="[&quot;progress&quot;]"><i class="fa-solid fa-graduation-cap"></i> کلاس‌ها و آزمون</button>
+          <button type="button" class="lse-tab" data-urp-tab="support" data-click="switchDrawerTab" data-click-args="[&quot;support&quot;]"><i class="fa-solid fa-headset"></i> پشتیبانی و کاروان</button>
+          <button type="button" class="lse-tab" data-urp-tab="mentor" data-click="switchDrawerTab" data-click-args="[&quot;mentor&quot;]" hidden><i class="fa-solid fa-user-tie"></i> راهبری</button>
+        </nav>
+        <button type="button" class="lsv-round" data-click="closeUserDetailDrawer" title="بستن" aria-label="بستن"><i class="fa-solid fa-xmark"></i></button>
+      </header>
+      <div class="lse-body urp-body" id="drawer-body-info"></div>
+      <footer class="lse-foot">
+        <span class="lse-foot-note" id="urp-foot-note"><i class="fa-solid fa-circle-info"></i> گزارش بر اساس آخرین اطلاعات ثبت‌شده</span>
+        <div class="lse-foot-actions" id="urp-foot-actions"></div>
+      </footer>
     </div>
   </div>
 
@@ -3136,26 +3546,6 @@
   </div>
 
     <!-- Mentor Document Approve/Reject Modal -->
-    <div id="mentor-doc-modal" class="modal-overlay" data-style="display:none;">
-      <div class="modal-content glass u-maxw-820">
-        <div class="modal-header">
-          <h3 id="mentor-doc-modal-title">بررسی مدرک مربی</h3>
-          <button aria-label="بستن" class="modal-close" id="btn-close-mentor-doc-modal">&times;</button>
-        </div>
-        <div class="u-p-16">
-          <div id="mentor-doc-preview" class="u-mb-12 u-maxh-420 u-overflow-auto"></div>
-          <div class="form-group">
-            <label for="mentor-doc-admin-note">یادداشت ادمین (در صورت رد، علت را بنویسید)</label>
-            <textarea id="mentor-doc-admin-note" class="input-ctrl" rows="4"></textarea>
-          </div>
-        </div>
-        <div class="modal-footer u-flex u-gap-8 u-justify-end u-p-12">
-          <button class="btn-primary" id="btn-approve-mentor-doc">تایید و ثبت در پروفایل</button>
-          <button class="btn-action u-bg-danger u-c-white" id="btn-reject-mentor-doc">رد مدرک</button>
-        </div>
-      </div>
-    </div>
-
     <!-- Caravan builder: steps like the station editor's create mode (css/stations.css .lse-*; js/features/caravans.js) -->
     <div id="caravan-wizard-modal" class="modal-overlay lse-overlay u-z-z-modal" data-style="display:none;">
       <div class="lse lse-editor crv-wizard">
@@ -3555,158 +3945,122 @@
     </div>
   </div>
 
-  <!-- Jarchi News Modal -->
-  <div id="news-modal" class="modal-overlay hidden u-z-z-modal u-p-20" data-style="display: none">
-    <div class="modal-content glass u-maxw-650 u-w-95p u-maxh-90vh u-scroll-y u-p-24 u-r-16 u-bg-surface u-bd-primary-30 u-shadow-modal-8 u-c-text">
-      <div class="u-flex u-justify-between u-items-center u-mb-20 u-bb-fg-10 u-pb-12">
-        <h3 id="news-modal-title" class="u-c-primary-text u-fs-lg u-m-0 u-flex u-items-center u-gap-8">
-          <i class="fa-solid fa-newspaper"></i> افزودن خبر جدید جارچی
-        </h3>
-        <button aria-label="بستن" type="button" class="modal-close" data-click="closeNewsModal">&times;</button>
-      </div>
-      
-      <form id="news-form" data-submit="saveNewsArticle" data-submit-args="[&quot;$event&quot;]" class="u-flex u-col u-gap-14">
+  <!-- Jarchi news dialog (js/features/jarchi.js; css/stations.css .lse-*) -->
+  <div id="news-modal" class="modal-overlay lse-overlay u-z-z-modal" data-style="display: none">
+    <div class="lse lse-editor jch-modal">
+      <header class="lse-head lse-head-plain">
+        <div class="lse-id">
+          <span class="lse-id-icon is-accent"><i class="fa-solid fa-newspaper"></i></span>
+          <div class="lse-id-text"><h3 id="news-modal-title">خبر جدید جارچی</h3><span>در تابلوی جارچی اپ نمایش داده می‌شود</span></div>
+        </div>
+        <button type="button" class="lsv-round" data-click="closeNewsModal" title="بستن" aria-label="بستن"><i class="fa-solid fa-xmark"></i></button>
+      </header>
+      <form id="news-form" class="lse-form" data-submit="saveNewsArticle" data-submit-args="[&quot;$event&quot;]">
         <input type="hidden" id="news-id" />
-        
-        <div>
-          <label for="news-title" class="u-c-text-soft u-fs-xs u-bold"><i class="fa-solid fa-heading u-c-primary-text"></i> عنوان خبر یا اطلاعیه *</label>
-          <input type="text" id="news-title" class="input-ctrl u-w-full u-mt-6 u-p-10-12 u-bg-surface-2 u-bd-border-strong u-r-8 u-c-text" required placeholder="مثال: اعلام برندگان چالش اول نپا...">
+        <div class="lse-body">
+          <section class="lse-card">
+            <h4 class="lse-card-title"><i class="fa-solid fa-heading"></i> متن خبر</h4>
+            <label class="lse-field"><span>عنوان <b class="lse-req">*</b></span><input type="text" id="news-title" class="input-ctrl" required maxlength="160" placeholder="مثال: اعلام برندگان چالش اول نپا..."></label>
+            <label class="lse-field"><span>سوتیتر <small>خلاصه‌ی کوتاه روی کارت خبر</small></span><input type="text" id="news-subtitle" class="input-ctrl" maxlength="240"></label>
+            <label class="lse-field"><span>متن کامل <b class="lse-req">*</b></span><textarea id="news-body" class="input-ctrl" rows="7" required placeholder="متن کامل خبر، جزئیات رویداد یا نحوه شرکت در مسابقه..."></textarea></label>
+          </section>
+          <section class="lse-card">
+            <h4 class="lse-card-title"><i class="fa-solid fa-sliders"></i> انتشار</h4>
+            <div class="lse-grid lse-grid-2">
+              <label class="lse-field"><span>دسته‌بندی <b class="lse-req">*</b></span>
+                <select id="news-category" class="select-ctrl" required>
+                  <option value="اطلاعیه مهم">اطلاعیه مهم</option>
+                  <option value="رویداد و مسابقه">رویداد و مسابقه</option>
+                  <option value="اخبار کاروان‌ها">اخبار کاروان‌ها</option>
+                  <option value="آموزشی">آموزشی</option>
+                </select>
+              </label>
+              <label class="lse-field"><span>منبع / گزارشگر <b class="lse-req">*</b></span><input type="text" id="news-reporter" class="input-ctrl" required value="ستاد آموزش نپا"></label>
+              <label class="lse-field"><span>مخاطب <b class="lse-req">*</b></span>
+                <select id="news-target" class="select-ctrl" required>
+                  <option value="ALL">عمومی (همه)</option>
+                  <option value="STUDENTS">فقط نوجوانان</option>
+                  <option value="MENTORS">فقط راهبران</option>
+                </select>
+              </label>
+              <label class="lse-field"><span>تاریخ و زمان انتشار <small>آینده = زمان‌بندی</small></span><input type="datetime-local" id="news-publish-date" class="input-ctrl" dir="ltr"></label>
+            </div>
+            <label class="chs-check"><span><strong>منتشر شود</strong><small>با انتشار، برای مخاطبان اعلان هم ارسال می‌شود؛ خاموش = پیش‌نویس</small></span><input type="checkbox" class="chs-switch" id="news-active" checked></label>
+          </section>
+          <section class="lse-card">
+            <h4 class="lse-card-title"><i class="fa-solid fa-image"></i> تصویر <small>اختیاری</small></h4>
+            <label class="mdm-drop jch-drop">
+              <input type="file" id="news-file" accept="image/*" data-change="previewNewsImage" data-change-args="[&quot;$event&quot;]" aria-label="فایل تصویر خبر">
+              <img id="news-image-preview" src="" alt="" data-style="display: none" />
+              <i class="fa-solid fa-cloud-arrow-up"></i>
+              <strong>تصویر را انتخاب کنید یا اینجا رها کنید</strong>
+              <small>JPG، PNG یا WEBP</small>
+            </label>
+          </section>
         </div>
-        
-        <div>
-          <label for="news-subtitle" class="u-c-text-soft u-fs-xs u-bold"><i class="fa-solid fa-align-right u-c-primary-text"></i> سوتیتر یا خلاصه خبر</label>
-          <input type="text" id="news-subtitle" class="input-ctrl u-w-full u-mt-6 u-p-10-12 u-bg-surface-2 u-bd-border-strong u-r-8 u-c-text" placeholder="خلاصه کوتاه جهت نمایش در پیش‌نمایش کارت خبر...">
-        </div>
-
-        <div>
-          <label for="news-body" class="u-c-text-soft u-fs-xs u-bold"><i class="fa-solid fa-file-lines u-c-primary-text"></i> متن کامل خبر / اطلاعیه *</label>
-          <textarea id="news-body" class="input-ctrl u-w-full u-mt-6 u-p-10-12 u-bg-surface-2 u-bd-border-strong u-r-8 u-c-text" rows="5" required placeholder="متن کامل خبر، جزئیات رویداد یا نحوه شرکت در مسابقه..."></textarea>
-        </div>
-        
-        <div class="u-grid u-cols-2 u-gap-12">
-          <div>
-            <label for="news-category" class="u-c-text-soft u-fs-xs u-bold"><i class="fa-solid fa-tag u-c-primary-text"></i> دسته‌بندی *</label>
-            <select id="news-category" class="input-ctrl u-w-full u-mt-6 u-p-10-12 u-bg-surface-2 u-bd-border-strong u-r-8 u-c-text" required>
-              <option value="اطلاعیه مهم">اطلاعیه مهم</option>
-              <option value="رویداد و مسابقه">رویداد و مسابقه</option>
-              <option value="اخبار کاروان‌ها">اخبار کاروان‌ها</option>
-              <option value="آموزشی">آموزشی</option>
-            </select>
+        <footer class="lse-foot">
+          <button type="button" class="lse-btn mdm-del-btn" id="news-delete-btn" data-click="jchDeleteOpenNews" hidden><i class="fa-solid fa-trash"></i> حذف خبر</button>
+          <div class="lse-foot-actions">
+            <button type="button" class="lse-btn" data-click="closeNewsModal">انصراف</button>
+            <button type="submit" class="lsv-pill"><i class="fa-solid fa-check"></i> ذخیره</button>
           </div>
-          <div>
-            <label for="news-reporter" class="u-c-text-soft u-fs-xs u-bold"><i class="fa-solid fa-user-pen u-c-primary-text"></i> منبع / گزارشگر *</label>
-            <input type="text" id="news-reporter" class="input-ctrl u-w-full u-mt-6 u-p-10-12 u-bg-surface-2 u-bd-border-strong u-r-8 u-c-text" required placeholder="مثال: ستاد آموزش نپا" value="ستاد آموزش نپا">
-          </div>
-        </div>
-
-        <div class="u-grid u-cols-2 u-gap-12">
-          <div>
-            <label for="news-target" class="u-c-text-soft u-fs-xs u-bold"><i class="fa-solid fa-users u-c-primary-text"></i> مخاطبان هدف *</label>
-            <select id="news-target" class="input-ctrl u-w-full u-mt-6 u-p-10-12 u-bg-surface-2 u-bd-border-strong u-r-8 u-c-text" required>
-              <option value="ALL">عمومی (همه مخاطبان)</option>
-              <option value="STUDENTS">فقط دانش‌آموزان</option>
-              <option value="MENTORS">فقط راهبران و مربیان</option>
-            </select>
-          </div>
-          <div>
-            <label for="news-publish-date" class="u-c-text-soft u-fs-xs u-bold"><i class="fa-solid fa-calendar-days u-c-primary-text"></i> تاریخ و زمان انتشار</label>
-            <input type="datetime-local" id="news-publish-date" class="input-ctrl u-w-full u-mt-6 u-p-10-12 u-bg-surface-2 u-bd-border-strong u-r-8 u-c-text u-text-left" dir="ltr">
-          </div>
-        </div>
-
-        <div class="u-bg-surface-2-50 u-p-12 u-r-8 u-bd-fg-6 u-flex u-gap-20 u-wrap">
-          <div class="u-flex u-items-center u-gap-8 u-pointer">
-            <input type="checkbox" id="news-active" checked class="u-w-18 u-h-18 u-accent-success u-pointer">
-            <label for="news-active" class="u-c-text u-fs-sm u-bold u-pointer">منتشر شود و در اپلیکیشن نمایش یابد</label>
-          </div>
-          <div class="u-flex u-items-center u-gap-8 u-pointer">
-            <input type="checkbox" id="news-push" class="u-w-18 u-h-18 u-accent-primary u-pointer">
-            <label for="news-push" class="u-c-primary-text u-fs-sm u-bold u-pointer">ارسال نوتیفیکیشن فوری به مخاطبان هدف</label>
-          </div>
-        </div>
-
-        <div>
-          <label class="u-c-text-soft u-fs-xs u-bold"><i class="fa-solid fa-image u-c-primary-text"></i> تصویر خبر (اختیاری)</label>
-          <div class="u-flex u-gap-12 u-items-center u-mt-6">
-            <input aria-label="فایل تصویر خبر" type="file" id="news-file" accept="image/*" class="input-ctrl u-flex-1 u-p-8 u-bg-surface-2 u-bd-border-strong u-r-8 u-c-text" data-change="previewNewsImage" data-change-args="[&quot;$event&quot;]">
-            <img id="news-image-preview" src="" class="u-w-60 u-h-60 u-r-8 u-fit-cover u-bd-primary" data-style="display: none" />
-          </div>
-        </div>
-        
-        <div class="u-flex u-justify-end u-gap-10 u-bt-fg-10 u-pt-16 u-mt-6">
-          <button type="button" class="btn-action u-p-8-20 u-r-8 u-bg-fg-10 u-c-text-soft u-bd-none u-pointer" data-click="closeNewsModal">انصراف</button>
-          <button type="submit" class="btn-primary u-p-8-24 u-r-8 u-bg-grad-success u-c-white u-bd-none u-bold u-pointer u-flex u-items-center u-gap-6 u-shadow-0-4-12-success-30">
-            <i class="fa-solid fa-check"></i> ثبت و انتشار خبر
-          </button>
-        </div>
+        </footer>
       </form>
     </div>
   </div>
 
-  <!-- BANNER CREATE / EDIT MODAL -->
-  <div id="banner-modal" class="modal-overlay hidden u-z-z-modal u-p-20" data-style="display: none">
-    <div class="modal-content glass u-maxw-600 u-w-95p u-maxh-90vh u-scroll-y u-p-24 u-r-16 u-bg-surface u-bd-accent-30 u-shadow-modal-8 u-c-text">
-      <div class="u-flex u-justify-between u-items-center u-mb-20 u-bb-fg-10 u-pb-12">
-        <h3 id="banner-modal-title" class="u-c-accent-text u-fs-lg u-m-0 u-flex u-items-center u-gap-8">
-          <i class="fa-solid fa-image"></i> بارگذاری و افزودن بنر جدید
-        </h3>
-        <button aria-label="بستن" type="button" class="modal-close" data-click="closeBannerModal">&times;</button>
-      </div>
-      
-      <form id="banner-form" data-submit="saveBannerItem" data-submit-args="[&quot;$event&quot;]" class="u-flex u-col u-gap-14">
+  <!-- Banner dialog -->
+  <div id="banner-modal" class="modal-overlay lse-overlay u-z-z-modal" data-style="display: none">
+    <div class="lse lse-sm jch-modal">
+      <header class="lse-head lse-head-plain">
+        <div class="lse-id">
+          <span class="lse-id-icon is-accent"><i class="fa-solid fa-image"></i></span>
+          <div class="lse-id-text"><h3 id="banner-modal-title">بنر جدید</h3><span>بنرهای فعال هر جایگاه به ترتیب نمایش در اپ می‌چرخند</span></div>
+        </div>
+        <button type="button" class="lsv-round" data-click="closeBannerModal" title="بستن" aria-label="بستن"><i class="fa-solid fa-xmark"></i></button>
+      </header>
+      <form id="banner-form" class="lse-form" data-submit="saveBannerItem" data-submit-args="[&quot;$event&quot;]">
         <input type="hidden" id="banner-id" />
-        
-        <div>
-          <label for="banner-title" class="u-c-text-soft u-fs-xs u-bold"><i class="fa-solid fa-heading u-c-accent-text"></i> عنوان بنر *</label>
-          <input type="text" id="banner-title" class="input-ctrl u-w-full u-mt-6 u-p-10-12 u-bg-surface-2 u-bd-border-strong u-r-8 u-c-text" required placeholder="مثال: جشنواره زمستانه نپا...">
+        <div class="lse-body">
+          <section class="lse-card">
+            <h4 class="lse-card-title"><i class="fa-solid fa-image"></i> تصویر بنر <b class="lse-req">*</b></h4>
+            <label class="mdm-drop jch-drop is-wide">
+              <input type="file" id="banner-file" accept="image/*" data-change="previewBannerImage" data-change-args="[&quot;$event&quot;]" aria-label="فایل تصویر بنر">
+              <img id="banner-image-preview" src="" alt="" data-style="display: none" />
+              <i class="fa-solid fa-cloud-arrow-up"></i>
+              <strong>تصویر بنر را انتخاب کنید</strong>
+              <small>JPG، PNG یا WEBP — حداکثر ۵ مگابایت</small>
+            </label>
+          </section>
+          <section class="lse-card">
+            <h4 class="lse-card-title"><i class="fa-solid fa-circle-info"></i> مشخصات</h4>
+            <label class="lse-field"><span>عنوان <b class="lse-req">*</b></span><input type="text" id="banner-title" class="input-ctrl" required placeholder="مثال: جشنواره زمستانه نپا..."></label>
+            <div class="lse-grid lse-grid-2">
+              <label class="lse-field"><span>جایگاه <b class="lse-req">*</b></span>
+                <select id="banner-position" class="select-ctrl" required>
+                  <option value="home_top">بالای صفحه اصلی</option>
+                  <option value="bazaar_top">بالای صفحه بازار</option>
+                  <option value="lms_slider">آموزش و منزلگاه</option>
+                  <option value="general">عمومی</option>
+                </select>
+              </label>
+              <label class="lse-field"><span>ترتیب نمایش</span><input type="number" id="banner-order" class="input-ctrl" value="0" min="0"></label>
+            </div>
+            <label class="lse-field"><span>مسیر یا لینک مقصد <small>اختیاری</small></span><input type="text" id="banner-target" class="input-ctrl" dir="ltr" placeholder="/market یا /challenges یا https://..."></label>
+            <label class="chs-check"><span><strong>فعال</strong><small>در اپ نمایش داده شود</small></span><input type="checkbox" class="chs-switch" id="banner-active" checked></label>
+          </section>
         </div>
-
-        <div class="u-grid u-cols-2 u-gap-12">
-          <div>
-            <label for="banner-position" class="u-c-text-soft u-fs-xs u-bold"><i class="fa-solid fa-map-pin u-c-accent-text"></i> موقعیت و جایگاه نمایش *</label>
-            <select id="banner-position" class="input-ctrl u-w-full u-mt-6 u-p-10-12 u-bg-surface-2 u-bd-border-strong u-r-8 u-c-text" required>
-              <option value="home_top">بالای صفحه اصلی (home_top)</option>
-              <option value="bazaar_top">بالای صفحه بازار (bazaar_top)</option>
-              <option value="general">عمومی (general)</option>
-            </select>
+        <footer class="lse-foot">
+          <button type="button" class="lse-btn mdm-del-btn" id="banner-delete-btn" data-click="jchDeleteOpenBanner" hidden><i class="fa-solid fa-trash"></i> حذف بنر</button>
+          <div class="lse-foot-actions">
+            <button type="button" class="lse-btn" data-click="closeBannerModal">انصراف</button>
+            <button type="submit" class="lsv-pill"><i class="fa-solid fa-check"></i> ذخیره</button>
           </div>
-          <div>
-            <label for="banner-order" class="u-c-text-soft u-fs-xs u-bold"><i class="fa-solid fa-arrow-up-1-9 u-c-accent-text"></i> ترتیب نمایش (اولویت)</label>
-            <input type="number" id="banner-order" class="input-ctrl u-w-full u-mt-6 u-p-10-12 u-bg-surface-2 u-bd-border-strong u-r-8 u-c-text" value="0" min="0">
-          </div>
-        </div>
-
-        <div>
-          <label for="banner-target" class="u-c-text-soft u-fs-xs u-bold"><i class="fa-solid fa-link u-c-accent-text"></i> مسیر یا لینک هدف (اختیاری)</label>
-          <input type="text" id="banner-target" class="input-ctrl u-w-full u-mt-6 u-p-10-12 u-bg-surface-2 u-bd-border-strong u-r-8 u-c-text u-text-left" placeholder="مثال: /market یا /challenges یا https://..." dir="ltr">
-        </div>
-
-        <div>
-          <label class="u-c-text-soft u-fs-xs u-bold"><i class="fa-solid fa-cloud-arrow-up u-c-accent-text"></i> فایل تصویر بنر *</label>
-          <div class="u-flex u-gap-12 u-items-center u-mt-6">
-            <input aria-label="فایل تصویر بنر" type="file" id="banner-file" accept="image/*" class="input-ctrl u-flex-1 u-p-8 u-bg-surface-2 u-bd-border-strong u-r-8 u-c-text" data-change="previewBannerImage" data-change-args="[&quot;$event&quot;]">
-            <img id="banner-image-preview" src="" class="u-w-80 u-h-50 u-r-6 u-fit-cover u-bd-accent" data-style="display: none" />
-          </div>
-          <small class="u-c-text-faint u-fs-2xs u-mt-4 u-block">فرمت‌های مجاز: JPG, PNG, WEBP (حداکثر ۵ مگابایت)</small>
-        </div>
-
-        <div class="u-bg-surface-2-50 u-p-12 u-r-8 u-bd-fg-6">
-          <div class="u-flex u-items-center u-gap-8 u-pointer">
-            <input type="checkbox" id="banner-active" checked class="u-w-18 u-h-18 u-accent-success u-pointer">
-            <label for="banner-active" class="u-c-text u-fs-sm u-bold u-pointer">بنر فعال باشد و در اپلیکیشن نمایش داده شود</label>
-          </div>
-        </div>
-        
-        <div class="u-flex u-justify-end u-gap-10 u-bt-fg-10 u-pt-16 u-mt-6">
-          <button type="button" class="btn-action u-p-8-20 u-r-8 u-bg-fg-10 u-c-text-soft u-bd-none u-pointer" data-click="closeBannerModal">انصراف</button>
-          <button type="submit" class="btn-primary u-p-8-24 u-r-8 u-bg-grad-accent u-c-white u-bd-none u-bold u-pointer u-flex u-items-center u-gap-6 u-shadow-0-4-12-accent-30">
-            <i class="fa-solid fa-check"></i> ذخیره و بارگذاری بنر
-          </button>
-        </div>
+        </footer>
       </form>
     </div>
   </div>
-  
+
     <!-- CHALLENGE STEPS MODAL -->
     <div class="modal-overlay lse-overlay u-z-z-modal" id="challenge-steps-modal" data-style="display: none">
       <div class="lse lse-md">
@@ -4289,10 +4643,12 @@
     <script src="js/features/rewards.js"></script>
     <script src="js/features/caravans.js"></script>
     <script src="js/features/mentors.js"></script>
+    <script src="js/features/mentor-docs.js"></script>
     <script src="js/features/audience.js"></script>
     <script src="js/features/levels.js"></script>
     <script src="js/features/challenges.js"></script>
     <script src="js/features/tickets-chat.js"></script>
+    <script src="js/features/support-cases.js"></script>
     <script src="js/features/messaging.js"></script>
     <script src="js/features/media.js"></script>
     <script src="js/features/forms.js"></script>

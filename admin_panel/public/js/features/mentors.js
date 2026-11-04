@@ -1247,127 +1247,7 @@ window.executeMentorModeration = async function(e) {
   }
 };
 
-// ===============================
-// MODULE A (CONT.) : MENTOR DOCUMENTS QUEUE
-// ===============================
-
-let _mentorDocsCache = [];
-let _currentMentorDocId = null;
-
-window.loadMentorDocs = async function() {
-  const tbody = document.querySelector('#mentor-docs-table tbody');
-  try {
-    const res = await request('/api/v1/admin/mentors/documents/pending');
-    if (!res.ok) { console.error('Failed to load mentor docs'); return NopaTable.error(tbody, 'خطا در دریافت مدارک'); }
-    const docs = await res.json();
-    _mentorDocsCache = Array.isArray(docs) ? docs : [];
-    if (!tbody) return;
-    if (!_mentorDocsCache.length) return NopaTable.empty(tbody, 'مدرکی در انتظار بررسی نیست', 'fa-solid fa-circle-check');
-    tbody.innerHTML = docs.map(d => `
-      <tr>
-        <td>${esc(d.user?.name || 'نامعلوم')}</td>
-        <td>${d.fileName ? `<a href="${esc(d.url || '/uploads/' + d.filePath)}" target="_blank">باز کردن</a>` : '-'}</td>
-        <td>${esc(d.documentType || '-')}</td>
-        <td>${new Date(d.createdAt).toLocaleString('fa-IR')}</td>
-        <td>${d.status || 'pending'}</td>
-        <td>
-          <button title="مشاهده‌ی مدرک" aria-label="مشاهده‌ی مدرک" class="btn-icon" data-click="openMentorDocModal" data-click-args="${esc(JSON.stringify([String(d.id)]))}"><i class="fa-solid fa-eye"></i></button>
-          <button title="تأیید مدرک" aria-label="تأیید مدرک" class="btn-icon u-c-green" data-click="quickApproveMentorDoc" data-click-args="${esc(JSON.stringify([String(d.id)]))}"><i class="fa-solid fa-check"></i></button>
-          <button title="رد مدرک" aria-label="رد مدرک" class="btn-icon u-c-red" data-click="openMentorDocModal" data-click-args="${esc(JSON.stringify([String(d.id), true]))}"><i class="fa-solid fa-ban"></i></button>
-        </td>
-      </tr>
-    `).join('');
-  } catch(e) {
-    console.error('Failed to load mentor docs', e);
-    NopaTable.error(tbody, 'خطا در دریافت مدارک');
-  }
-}
-
-window.openMentorDocModal = function(id, focusReject = false) {
-  const doc = _mentorDocsCache.find(x => x.id === id);
-  _currentMentorDocId = id;
-  const preview = document.getElementById('mentor-doc-preview');
-  if(!doc) {
-    preview.innerHTML = '<div>مدرک یافت نشد</div>';
-  } else {
-    let html = `<div class="u-flex u-gap-12 u-items-center">
-      <div class="u-flex-1">
-        <strong>مربی: </strong>${esc(doc.user?.name || '-')}<br>
-        <strong>نوع: </strong>${esc(doc.documentType || '-')}<br>
-        <strong>فایل: </strong>${esc(doc.fileName || '-')}
-      </div>
-      <div class="u-flex-1 u-text-left">
-        <a href="${esc(doc.url || ('/uploads/' + doc.filePath))}" target="_blank" class="btn-action">باز کردن در پنجره جدید</a>
-      </div>
-    </div>`;
-    // If image show inline preview
-    if(doc.mimeType && doc.mimeType.startsWith('image')) {
-      html += `<div class="u-mt-10"><img src="${esc(doc.url || ('/uploads/' + doc.filePath))}" class="u-maxw-100p u-maxh-360"/></div>`;
-    }
-    preview.innerHTML = html;
-  }
-  document.getElementById('mentor-doc-admin-note').value = '';
-  document.getElementById('mentor-doc-modal').style.display = 'flex';
-  if(focusReject) document.getElementById('mentor-doc-admin-note').focus();
-}
-
-window.quickApproveMentorDoc = async function(id) {
-  if(!(await NopaConfirm('آیا مطمئنید می‌خواهید این مدرک را بدون اضافه کردن یادداشت تایید کنید؟'))) return;
-  try {
-    const res = await request(`/api/v1/admin/mentors/documents/${id}/approve`, {
-      method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ note: 'تایید سریع توسط ادمین' })
-    });
-    if(res.ok) {
-      showToast('مدرک تایید شد', 'success');
-      loadMentorDocs();
-    } else {
-      const d = await res.json(); showToast(d.error || 'خطا در تایید', 'error');
-    }
-  } catch(e) { console.error(e); showToast('خطا', 'error'); }
-}
-
-document.getElementById('btn-close-mentor-doc-modal')?.addEventListener('click', () => {
-  document.getElementById('mentor-doc-modal').style.display = 'none';
-  _currentMentorDocId = null;
-});
-
-document.getElementById('btn-approve-mentor-doc')?.addEventListener('click', async () => {
-  if(!_currentMentorDocId) return showToast('مدرکی انتخاب نشده', 'error');
-  const note = document.getElementById('mentor-doc-admin-note').value || 'تایید شد';
-  try {
-    const res = await request(`/api/v1/admin/mentors/documents/${_currentMentorDocId}/approve`, {
-      method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ note })
-    });
-    if(res.ok) {
-      showToast('مدرک تایید شد', 'success');
-      document.getElementById('mentor-doc-modal').style.display = 'none';
-      loadMentorDocs();
-    } else {
-      const d = await res.json(); showToast(d.error || 'خطا', 'error');
-    }
-  } catch(e) { console.error(e); showToast('خطا', 'error'); }
-});
-
-document.getElementById('btn-reject-mentor-doc')?.addEventListener('click', async () => {
-  if(!_currentMentorDocId) return showToast('مدرکی انتخاب نشده', 'error');
-  const note = document.getElementById('mentor-doc-admin-note').value;
-  if(!note || note.trim().length < 3) return showToast('لطفا علت رد را وارد کنید (حداقل ۳ کاراکتر)', 'error');
-  try {
-    const res = await request(`/api/v1/admin/mentors/documents/${_currentMentorDocId}/reject`, {
-      method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ note })
-    });
-    if(res.ok) {
-      showToast('مدرک رد شد', 'info');
-      document.getElementById('mentor-doc-modal').style.display = 'none';
-      loadMentorDocs();
-    } else {
-      const d = await res.json(); showToast(d.error || 'خطا', 'error');
-    }
-  } catch(e) { console.error(e); showToast('خطا', 'error'); }
-});
+// The mentor documents queue (#mentors-docs-tab) lives in js/features/mentor-docs.js
 
 // Approve / reject a certificate from inside the mentor modal (buttons rendered by editMentor).
 // Only the row is updated so unsaved edits in the mentor form are kept.
@@ -1381,7 +1261,7 @@ async function decideMentorCertInline(docId, decision) {
     const res = await request(`/api/v1/admin/mentors/documents/${encodeURIComponent(docId)}/${decision}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ note })
+      body: JSON.stringify({ note, reason: note })
     });
     if (!res.ok) {
       const d = await res.json().catch(() => ({}));
@@ -1403,9 +1283,6 @@ async function decideMentorCertInline(docId, decision) {
 }
 window.inlineApproveCert = (docId) => decideMentorCertInline(docId, 'approve');
 window.inlineRejectCert = (docId) => decideMentorCertInline(docId, 'reject');
-
-// Hook refresh button
-document.getElementById('btn-refresh-mentor-docs')?.addEventListener('click', loadMentorDocs);
 
 // 3. Mentors Table Loader (#mentors-tbody)
 window.loadMentorsData = async function() {

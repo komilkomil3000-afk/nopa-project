@@ -1,55 +1,11 @@
-// Chat operations in the panel: support cases, the chat tab bento (reports, bots and templates, groups,
+// Chat operations in the panel: the chat tab bento (reports, bots and templates, groups,
 // analytics, scheduled posts) and the inter-group desk. Classic script: load order is set in index.html.
 
 const chatDate = v => (v ? new Date(v).toLocaleString('fa-IR') : '-');
 const chatRow = (html) => `<div class="u-flex u-gap-6 u-items-center u-mb-5 u-fs-12_5 u-c-text">${html}</div>`;
 const chatBtn = (fn, args, label) => `<button type="button" class="btn-action u-p-5-10 u-fs-11 u-pointer" data-click="${fn}" data-click-args="${esc(JSON.stringify(args))}">${esc(label)}</button>`;
 
-// ---- support cases ----
-const CASE_STATUS = { open: 'باز', reviewing: 'در بررسی', resolved: 'حل‌شده' };
-
-window.loadSupportCases = async function() {
-  const box = document.getElementById('support-cases-list');
-  const status = document.getElementById('support-cases-filter').value;
-  try {
-    const cases = await NopaApi.json(`/api/v1/admin/support-cases${status ? `?status=${status}` : ''}`);
-    box.innerHTML = cases.map(c => chatRow(`
-      <span class="u-flex-1">${esc(c.user.name)}: ${esc(c.subject)}</span>
-      <span class="u-fs-11 u-c-text-muted">${esc(c.category)} · ${esc(CASE_STATUS[c.status] || c.status)}${c.assigneeName ? ` · ${esc(c.assigneeName)}` : ''}${c.rating ? ` · امتیاز ${esc(String(c.rating))}` : ''}</span>
-      ${chatBtn('openSupportCase', [String(c.id)], 'باز کردن')}`)).join('') || '<div class="u-fs-12_5 u-c-text-muted">پرونده‌ای وجود ندارد.</div>';
-  } catch (e) {
-    box.textContent = e.message || 'خطا در دریافت پرونده‌ها';
-  }
-};
-
-window.openSupportCase = async function(id) {
-  const box = document.getElementById('support-case-detail');
-  try {
-    const messages = await NopaApi.json(`/api/v1/admin/support-cases/${id}/messages`);
-    box.innerHTML = messages.map(m => chatRow(`<span class="u-flex-1">${esc(m.sender ? m.sender.name : 'ربات')}: ${esc(m.body || 'فایل')}</span><span class="u-fs-11 u-c-text-muted">${esc(chatDate(m.createdAt))}</span>`)).join('') + `
-      <input type="text" id="support-case-reply" maxlength="4000" placeholder="پاسخ..." class="u-w-full u-p-6-10 u-bg-surface-2 u-bd-border-strong u-r-6 u-c-text u-fs-12_5 u-mb-5">
-      <div class="u-flex u-gap-6">
-        ${chatBtn('replySupportCase', [String(id)], 'ارسال پاسخ')}
-        ${chatBtn('claimSupportCase', [String(id)], 'برداشتن پرونده')}
-        ${chatBtn('resolveSupportCase', [String(id)], 'بستن پرونده')}
-      </div>`;
-  } catch (e) {
-    showToast(e.message || 'خطا در دریافت پرونده', 'error');
-  }
-};
-
-async function supportAction(id, action, body) {
-  try {
-    await NopaApi.json(`/api/v1/admin/support-cases/${id}/${action}`, { method: 'POST', body: JSON.stringify(body || {}) });
-    window.openSupportCase(id);
-    window.loadSupportCases();
-  } catch (e) {
-    showToast(e.message || 'خطا در ثبت', 'error');
-  }
-}
-window.replySupportCase = id => supportAction(id, 'reply', { body: document.getElementById('support-case-reply').value });
-window.claimSupportCase = id => supportAction(id, 'claim');
-window.resolveSupportCase = id => supportAction(id, 'resolve');
+// Support cases have their own tab: js/features/support-cases.js
 
 // ---- chat tab bento: stats, reports, analytics, scheduled posts (js/features/chat-settings.js has the switch) ----
 const opsEl = id => document.getElementById(id);
