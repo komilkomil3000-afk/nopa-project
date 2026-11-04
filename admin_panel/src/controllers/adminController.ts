@@ -808,6 +808,10 @@ export async function getZarikLedger(req: AuthRequest, res: Response) {
     if (category) {
       whereClause.category = category;
     }
+    // optional: one person's transactions (wallet page of the panel)
+    if (typeof req.query.userId === 'string' && req.query.userId) {
+      whereClause.userId = req.query.userId;
+    }
 
     const [transactions, totalCount] = await prisma.$transaction([
       prisma.zarikTransaction.findMany({

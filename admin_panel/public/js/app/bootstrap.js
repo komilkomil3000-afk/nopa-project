@@ -417,8 +417,8 @@ async function handlePromoZarik(e) {
     showToast(res.ok ? data.message : data.error, res.ok ? 'success' : 'error');
     if (res.ok) {
       e.target.reset();
-      loadLedger();
-      loadZarikAnalytics();
+      if (window.NopaActions) NopaActions.hide('wlt-promo-modal');
+      if (typeof window.wltAfterBalanceChange === 'function') window.wltAfterBalanceChange();
     }
   } catch (err) { console.error(err); }
 }

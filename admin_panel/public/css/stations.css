@@ -2412,3 +2412,42 @@ button.crv-asset.usr-asset-link:hover { background: rgb(var(--tone) / 0.14); bor
 @media (max-width: 900px) {
   .lsv-col.usr-col-assets { flex: 0 0 auto; min-width: 0; }
 }
+
+/* ===== Wallet & league tab (#rewards-tab, js/features/rewards.js) ===== */
+.wlt-seg { display: inline-flex; gap: 2px; padding: 3px; border-radius: 999px; background: var(--surface-2); border: 1px solid var(--border); }
+.wlt-seg-btn {
+  display: inline-flex; align-items: center; gap: 6px; padding: 6px 14px; border: 0; border-radius: 999px;
+  background: transparent; color: var(--text-muted); font: inherit; font-size: var(--text-xs, 0.78rem); font-weight: 700; cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+.wlt-seg-btn:hover { color: var(--text); }
+.wlt-seg-btn.is-active { background: rgb(var(--primary-rgb) / 0.18); color: var(--primary-text); }
+.lst-bar .wlt-c0, .lst-dot.wlt-c0 { background: var(--accent); }
+.lst-bar .wlt-c1, .lst-dot.wlt-c1 { background: var(--primary); }
+.lst-bar .wlt-c2, .lst-dot.wlt-c2 { background: var(--success); }
+.lst-bar .wlt-c3, .lst-dot.wlt-c3 { background: var(--info); }
+.wlt-rank-cover { font-weight: 800; }
+.wlt-rank-cover.is-rank-1 { background: rgb(var(--accent-rgb) / 0.22); color: var(--accent-text); }
+.wlt-rank-cover.is-rank-2 { background: rgb(var(--fg-rgb) / 0.12); color: var(--text-soft); }
+.wlt-rank-cover.is-rank-3 { background: rgb(var(--danger-rgb) / 0.14); color: var(--danger-text); }
+.wlt-amount-icon.is-plus { background: rgb(var(--success-rgb) / 0.15); color: var(--success-text); }
+.wlt-amount-icon.is-minus { background: rgb(var(--danger-rgb) / 0.14); color: var(--danger-text); }
+.wlt-key { font-family: var(--font-mono, monospace); font-size: var(--text-2xs, 0.7rem); }
+.wlt-rule-add { margin-top: 10px; }
+.wlt-ledger .lst-grow small { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.wlt-ledger .lst-grow { min-width: 0; }
+.crv-asset.wlt-asset-danger { --tone: var(--danger-rgb); }
+#wlt-state:empty { display: none; }
+
+/* ===== سرمایه‌ها tab (#assets-tab, js/features/economy.js + asset-names.js) ===== */
+.eco-groups { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 12px; align-content: start; }
+.eco-group.is-legacy { opacity: 0.7; }
+.eco-group .lse-card-title .eco-sum, .eco-group .lse-card-title .lst-chip { margin-inline-start: auto; }
+.eco-check { margin: 0; }
+.eco-foot { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px; margin-top: 14px; }
+.eco-foot .eco-note { flex: 1; min-width: 220px; max-width: 460px; }
+.eco-rank-current { background: rgb(var(--success-rgb) / 0.18); color: var(--success-text); }
+@media (max-width: 640px) {
+  .eco-groups { grid-template-columns: minmax(0, 1fr); }
+  .eco-foot > div { width: 100%; justify-content: flex-end; }
+}

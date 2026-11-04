@@ -1,4 +1,5 @@
-// Editable asset names (زریک / کلاف / قالیچه / درفش) and the text replacement across the panel.
+// Editable asset names (زریک / کلاف / قالیچه / درفش), their tile and rename dialog on the سرمایه‌ها tab, and the
+// text replacement across the panel.
 // Split out of the former app.js (Phase 7). Classic script: shares globals with the other modules;
 // load order is set in index.html.
 
@@ -76,38 +77,72 @@ window.assetName = key => (window.assetNamesMap && window.assetNamesMap[key]) ||
   };
 })();
 
+const ASSET_ICONS = {
+  zarik: 'fa-coins', nakh: 'fa-circle-nodes', farsh: 'fa-rug', derafsh: 'fa-flag',
+  derafsh_gold: 'fa-medal', derafsh_silver: 'fa-medal', derafsh_bronze: 'fa-medal', derafsh_cloth: 'fa-flag'
+};
+const ASSET_TONES = { zarik: 'u-c-accent-text', nakh: 'u-c-primary-text', farsh: 'u-c-danger-text', derafsh: 'u-c-info-text', derafsh_gold: 'u-c-accent-text' };
+let assetNameRows = [];
+
+// Runs on every panel start (bootstrap.js) and on each visit of the سرمایه‌ها tab, where the names are a tile of rows
 window.loadAssetNames = async function() {
   const box = document.getElementById('asset-names-list');
   try {
     const res = await request('/api/v1/admin/assets');
     const rows = await res.json();
-    if (!res.ok || !Array.isArray(rows)) return NopaState.error(box, 'خطا در دریافت نام دارایی‌ها');
+    if (!res.ok || !Array.isArray(rows)) throw new Error();
+    assetNameRows = rows;
     window.assetNamesMap = Object.fromEntries(rows.map(r => [r.key, r.nameFa]));
     window.applyAssetNames();
     if (!box) return;
-    if (!rows.length) return NopaState.empty(box, 'دارایی‌ای تعریف نشده است');
-    box.innerHTML = rows.map(r => `
-      <div class="u-flex u-gap-6 u-items-center">
-        <span class="u-fs-2xs u-c-text-muted u-minw-78">${esc(r.key)}</span>
-        <input type="text" id="asset-name-${esc(r.key)}" aria-label="نام فارسی ${esc(r.key)}" value="${esc(r.nameFa)}" maxlength="30" class="u-flex-1 u-p-6-10 u-bg-surface-2 u-bd-border-strong u-r-6 u-c-text u-fs-sm">
-        <button type="button" data-click="saveAssetName" data-click-args="${esc(JSON.stringify([String(r.key)]))}" class="btn-action u-p-6-10 u-fs-2xs u-pointer">ذخیره</button>
-      </div>`).join('');
+    box.innerHTML = rows.length
+      ? `<ul class="lst-list">${rows.map(r => `
+          <li class="lst-list-item lst-clickable" role="button" tabindex="0" data-anim-key="an:${esc(r.key)}" data-click="openAssetNameModal" data-click-args="${esc(JSON.stringify([String(r.key)]))}" title="تغییر نام">
+            <i class="fa-solid ${ASSET_ICONS[r.key] || 'fa-tag'} ${ASSET_TONES[r.key] || 'u-c-text-muted'}"></i>
+            <span class="lst-grow"><strong>${esc(r.nameFa)}</strong> <small class="u-c-text-muted" dir="ltr">${esc(r.key)}</small></span>
+            <i class="fa-solid fa-pen u-c-text-muted"></i>
+          </li>`).join('')}</ul>`
+      : '<div class="lst-empty">دارایی‌ای تعریف نشده است.</div>';
   } catch (e) {
     console.error('loadAssetNames error', e);
-    NopaState.error(box, 'خطا در دریافت نام دارایی‌ها');
+    if (box) box.innerHTML = '<div class="lst-empty"><i class="fa-solid fa-triangle-exclamation lst-warn"></i> خطا در دریافت نام دارایی‌ها</div>';
   }
 };
 
-window.saveAssetName = async function(key) {
-  const nameFa = document.getElementById(`asset-name-${key}`)?.value.trim();
-  if (!nameFa) { showToast('نام دارایی نمی‌تواند خالی باشد.', 'info'); return; }
-  const res = await request(`/api/v1/admin/assets/${key}`, {
+window.openAssetNameModal = function(key) {
+  const row = assetNameRows.find(r => r.key === key);
+  const modal = document.getElementById('eco-asset-modal');
+  if (!row || !modal) return;
+  document.getElementById('eco-asset-key').value = key;
+  document.getElementById('eco-asset-key-label').textContent = key;
+  document.getElementById('eco-asset-name').value = row.nameFa;
+  document.getElementById('eco-asset-modal-title').textContent = `نام «${DEFAULT_ASSET_NAMES[key] || key}»`;
+  modal.style.display = 'flex';
+  modal.style.zIndex = 'var(--z-modal)';
+  document.getElementById('eco-asset-name').focus();
+};
+
+window.saveAssetNameForm = async function(e) {
+  if (e) e.preventDefault();
+  const key = document.getElementById('eco-asset-key').value;
+  const nameFa = document.getElementById('eco-asset-name').value.trim();
+  if (await window.saveAssetName(key, nameFa)) NopaActions.hide('eco-asset-modal');
+};
+
+window.saveAssetName = async function(key, nameFa) {
+  if (!nameFa) { showToast('نام دارایی نمی‌تواند خالی باشد.', 'info'); return false; }
+  const res = await request(`/api/v1/admin/assets/${encodeURIComponent(key)}`, {
     method: 'PUT',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ nameFa })
   });
   const data = await res.json().catch(() => ({}));
-  if (!res.ok) { showToast(data.error || 'خطا در ذخیره', 'error'); return; }
+  if (!res.ok) { showToast(data.error || 'خطا در ذخیره', 'error'); return false; }
   window.assetNamesMap = { ...(window.assetNamesMap || {}), [key]: nameFa };
   showToast('نام دارایی ذخیره شد. اپ در اجرای بعدی نام جدید را نشان می‌دهد؛ برای اعمال کامل در این پنل صفحه را رفرش کنید.', 'success');
+  const row = assetNameRows.find(r => r.key === key);
+  if (row) row.nameFa = nameFa;
+  const strong = document.querySelector(`#asset-names-list [data-anim-key="an:${CSS.escape(key)}"] strong`);
+  if (strong) strong.textContent = nameFa;
+  return true;
 };
