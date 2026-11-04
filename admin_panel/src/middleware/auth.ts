@@ -29,8 +29,11 @@ export type TokenCheck =
 const AUTH_CACHE_TTL_MS = 10_000;
 const AUTH_CACHE_MAX = 5000;
 const authVerdicts = new Map<string, { at: number; ip: string; result: TokenCheck }>();
+// Role permission rows change rarely (admin writes clear this cache too).
+const permissionCache = new Map<string, { at: number; row: import('@prisma/client').RolePermission | null }>();
 export function clearAuthCache() {
   authVerdicts.clear();
+  permissionCache.clear();
 }
 
 export async function verifyAccessToken(token: string, clientIp: string): Promise<TokenCheck> {
@@ -148,10 +151,14 @@ export function checkPermission(scope: keyof import('@prisma/client').RolePermis
     }
 
     try {
-      const permission = await prisma.rolePermission.findUnique({
-        where: { roleName: req.user.role }
-      });
-      
+      const roleName = req.user.role;
+      let entry = permissionCache.get(roleName);
+      if (!entry || Date.now() - entry.at >= AUTH_CACHE_TTL_MS) {
+        entry = { at: Date.now(), row: await prisma.rolePermission.findUnique({ where: { roleName } }) };
+        permissionCache.set(roleName, entry);
+      }
+      const permission = entry.row;
+
       if (!permission) {
          return res.status(403).json({ error: 'نقش کاربری شما نامعتبر است یا هیچ دسترسی تعریف نشده است' });
       }

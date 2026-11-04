@@ -75,8 +75,8 @@ class AppRepository extends ChangeNotifier with WidgetsBindingObserver {
 
   /// Live-sync interval: profile, challenges and notifications are re-requested this often while the app is open.
   static const Duration pollInterval = Duration(seconds: 3);
-  /// While the chat socket is live, polling runs on every 5th tick (about 15 seconds).
-  static const int slowPollEvery = 5;
+  /// While the chat socket is live, polling runs on every 10th tick (about 30 seconds).
+  static const int slowPollEvery = 10;
   int _socketTicks = 0;
   bool _pollInFlight = false;
   bool _appInForeground = true;
