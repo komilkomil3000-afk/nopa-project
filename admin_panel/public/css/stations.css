@@ -2381,3 +2381,34 @@ body.lms-dragging:not(:has(.lms-drag-ghost-clip)) .lse-tree-clips { display: non
 @media (max-width: 900px) {
   .lsv-col.mnt-col-caravans, .lsv-col.mnt-col-students { flex: 0 0 auto; min-width: 0; }
 }
+
+/* ---------- همسفران (js/features/audience.js) and levels & certificates (js/features/levels.js): the caravans tab's
+   bento overview and page. Users are paged on the server, so the big tile ends with a pager; a level is one station,
+   its card is linked to the level's students and to their printed-certificate requests. ---------- */
+.usr-pager { display: flex; align-items: center; justify-content: center; gap: 12px; margin-top: 14px; flex-wrap: wrap; }
+.usr-pager .lse-btn:disabled { opacity: 0.45; cursor: default; }
+.usr-pager-info { font-size: var(--text-xs, 0.78rem); color: var(--text-muted); }
+.usr-card .crv-card-mentor i { color: var(--primary-text); }
+.usr-card .crv-card-mentor em { font-style: normal; }
+.usr-card .crv-card-cap strong { max-width: 60%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.usr-card-phone { font-size: var(--text-2xs, 0.7rem); color: var(--text-muted); }
+.usr-bento .date-filter-box { flex: 0 0 auto; }
+/* activity rows: a tinted round icon instead of a picture */
+.usr-act-icon { --tone: var(--primary-rgb); background: rgb(var(--tone) / 0.15); color: rgb(var(--tone)); }
+.usr-act-icon.is-pink { --tone: var(--pink-rgb, 236 72 153); }
+.usr-act-icon.is-info { --tone: var(--info-rgb); }
+.usr-act-icon.is-success { --tone: var(--success-rgb); }
+.usr-act-icon.is-accent { --tone: var(--accent-rgb); }
+/* the level tile on a person's page opens that level */
+button.crv-asset.usr-asset-link { font: inherit; color: inherit; text-align: right; cursor: pointer; transition: border-color 0.15s ease, background 0.15s ease; }
+button.crv-asset.usr-asset-link:hover { background: rgb(var(--tone) / 0.14); border-color: rgb(var(--tone) / 0.45); }
+.usr-col-assets .crv-asset-text strong { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.lse.usr-modal { width: min(820px, 100%); }
+#usr-state:empty, #lvl-state:empty { display: none; }
+.lvl-cover, .lvl-photo { font-weight: 800; }
+.lvl-level-options { max-height: 360px; overflow-y: auto; scrollbar-width: thin; }
+.lvl-address { display: flex; flex-direction: column; gap: 8px; }
+.lvl-address-text { margin: 0; font-size: var(--text-xs, 0.78rem); line-height: 1.9; color: var(--text-soft); }
+@media (max-width: 900px) {
+  .lsv-col.usr-col-assets { flex: 0 0 auto; min-width: 0; }
+}

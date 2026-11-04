@@ -2068,7 +2068,7 @@ window.editMember = async function(userId) {
   }
 };
 
-window.loadUsersData = loadUsers;
+// window.loadUsersData is set by js/features/audience.js (loads after this file)
 
 // --- CARAVAN EDIT MODAL LOGIC ---
 // --- STATUS / DELETE MODAL LOGIC ---

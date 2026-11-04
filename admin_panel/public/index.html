@@ -281,8 +281,8 @@
     <!-- Main Content Area -->
     <main class="main-wrapper" id="main-content">
       <div class="page-header">
-        <h2 id="tab-title-text">دایرکتوری کاربران</h2>
-        <p id="tab-desc-text">مشاهده، فیلتر، ویرایش و مدیریت اطلاعات کاربران نپا</p>
+        <h2 id="tab-title-text">همسفران نپا</h2>
+        <p id="tab-desc-text">همه همسفران نپا (نوجوانان، راهبران و مدیران) در یک نگاه</p>
       </div>
 
       <!-- DASHBOARD (Bento). Filled by js/features/dashboard.js; tiles appear only for granted sections -->
@@ -387,124 +387,165 @@
       </section>
 
       <!-- TAB 1: USERS DIRECTORY -->
+      <!-- TAB: همسفران (everyone in Nopa: students, mentors, admins). Drawn by js/features/audience.js;
+           styles in css/stations.css (.lst-*, .lsv-*, .crv-*, .usr-*). Filters and paging run on the server. -->
       <section id="users-tab" class="tab-panel active-panel">
-        <div class="stats-grid">
-          <div class="stat-card glass">
-            <div>
-              <div class="stat-label">کل کاربران فعال</div>
-              <div class="stat-value" id="stats-total-users">-</div>
+        <div id="usr-overview-view">
+          <div class="lms-head-actions u-flex u-justify-end u-items-center u-mb-20">
+            <div class="u-flex u-gap-10">
+              <button type="button" id="btn-add-user-modal" class="btn-primary u-bgc-primary"><i class="fa-solid fa-plus"></i> همسفر جدید</button>
             </div>
-            <div class="stat-icon"><i class="fa-solid fa-users"></i></div>
           </div>
-          <div class="stat-card glass">
-            <div>
-              <div class="stat-label">تعداد مربیان</div>
-              <div class="stat-value" id="stats-total-mentors">-</div>
-            </div>
-            <div class="stat-icon"><i class="fa-solid fa-graduation-cap"></i></div>
-          </div>
-          <div class="stat-card glass">
-            <div>
-              <div class="stat-label">زریک در گردش</div>
-              <div class="stat-value" id="stats-total-zarik">-</div>
-            </div>
-            <div class="stat-icon"><i class="fa-solid fa-coins"></i></div>
-          </div>
-        </div>
 
-        <div class="actions-header glass">
-          <div class="filters-group">
-            <div class="search-box">
-              <i class="fa-solid fa-search"></i>
-              <input aria-label="جستجوی کاربران" type="text" id="user-search-input" class="input-ctrl" placeholder="جستجو بر اساس نام یا شماره...">
-            </div>
-            <select aria-label="فیلتر نقش" id="filter-role-ctrl" class="select-ctrl">
-              <option value="">نقش (همه)</option>
-              <option value="student">دانش‌آموز</option>
-              <option value="mentor">مربی</option>
-              <option value="sub_admin">ادمین (مدیر محتوایی)</option>
-              <option value="channel_manager">مسئول کانال و گروه‌ها</option>
-              <option value="admin">سوپر ادمین</option>
-            </select>
-            <select aria-label="فیلتر کاروان" id="filter-caravan-ctrl" class="select-ctrl">
-              <option value="">کاروان (همه)</option>
-            </select>
-            <select aria-label="فیلتر سطح" id="filter-level-ctrl" class="select-ctrl">
-              <option value="">سطح (همه)</option>
-              <option value="1">سطح ۱</option>
-              <option value="2">سطح ۲</option>
-              <option value="3">سطح ۳</option>
-              <option value="4">سطح ۴</option>
-              <option value="5">سطح ۵</option>
-            </select>
-            <div class="date-filter-box date-filter-dropdown" id="users-date-filter-box">
-              <button type="button" class="date-filter-trigger" id="users-date-filter-trigger" title="فیلتر تاریخ عضویت">
-                <i class="fa-solid fa-calendar-days"></i>
-                <span id="users-date-filter-summary">تاریخ عضویت</span>
-                <span class="date-filter-badge" id="users-date-filter-badge" data-style="display:none;"></span>
-                <i class="fa-solid fa-chevron-down date-filter-caret"></i>
-              </button>
-              <div class="date-filter-panel glass" id="users-date-filter-panel">
-                <div class="date-filter-panel-header">
-                  <span><i class="fa-solid fa-calendar-week"></i> بازه تاریخ عضویت</span>
-                  <button type="button" id="btn-clear-user-date-filter" class="btn-clear-date-mini" title="پاک کردن فیلتر">
-                    <i class="fa-solid fa-rotate-left"></i> ریست
-                  </button>
-                </div>
-                <div class="date-filter-panel-body">
-                  <div class="date-field-group">
-                    <label for="filter-user-start-date">از تاریخ:</label>
-                    <input type="date" id="filter-user-start-date" class="input-ctrl date-ctrl" title="از تاریخ">
+          <div class="lst-bento usr-bento">
+            <div class="lst-tile lst-tile-stations glass">
+              <div class="lst-tile-head">
+                <h4 class="lst-tile-title"><i class="fa-solid fa-people-group"></i> همه همسفران <span class="lst-tile-sub" id="usr-count-badge">برای ورود به شناسنامه هر نفر بزنید</span></h4>
+                <div class="crv-filters">
+                  <div class="search-box">
+                    <i class="fa-solid fa-search"></i>
+                    <input aria-label="جستجوی همسفران" type="text" id="user-search-input" class="input-ctrl" placeholder="نام، موبایل یا کد NP...">
                   </div>
-                  <div class="date-field-group">
-                    <label for="filter-user-end-date">تا تاریخ:</label>
-                    <input type="date" id="filter-user-end-date" class="input-ctrl date-ctrl" title="تا تاریخ">
+                  <select aria-label="فیلتر نقش" id="filter-role-ctrl" class="select-ctrl">
+                    <option value="">همه نقش‌ها</option>
+                    <option value="student">نوجوان (دانش‌آموز)</option>
+                    <option value="mentor">راهبر</option>
+                    <option value="sub_admin">ادمین محتوا</option>
+                    <option value="channel_manager">مسئول کانال‌ها</option>
+                    <option value="admin">سوپر ادمین</option>
+                  </select>
+                  <select aria-label="فیلتر کاروان" id="filter-caravan-ctrl" class="select-ctrl">
+                    <option value="">همه کاروان‌ها</option>
+                  </select>
+                  <select aria-label="فیلتر سطح" id="filter-level-ctrl" class="select-ctrl">
+                    <option value="">همه سطح‌ها</option>
+                    <option value="1">سطح ۱</option>
+                    <option value="2">سطح ۲</option>
+                    <option value="3">سطح ۳</option>
+                    <option value="4">سطح ۴</option>
+                    <option value="5">سطح ۵</option>
+                  </select>
+                  <div class="date-filter-box date-filter-dropdown" id="users-date-filter-box">
+                    <button type="button" class="date-filter-trigger" id="users-date-filter-trigger" title="فیلتر تاریخ عضویت">
+                      <i class="fa-solid fa-calendar-days"></i>
+                      <span id="users-date-filter-summary">تاریخ عضویت</span>
+                      <span class="date-filter-badge" id="users-date-filter-badge" data-style="display:none;"></span>
+                      <i class="fa-solid fa-chevron-down date-filter-caret"></i>
+                    </button>
+                    <div class="date-filter-panel glass" id="users-date-filter-panel">
+                      <div class="date-filter-panel-header">
+                        <span><i class="fa-solid fa-calendar-week"></i> بازه تاریخ عضویت</span>
+                        <button type="button" id="btn-clear-user-date-filter" class="btn-clear-date-mini" title="پاک کردن فیلتر">
+                          <i class="fa-solid fa-rotate-left"></i> ریست
+                        </button>
+                      </div>
+                      <div class="date-filter-panel-body">
+                        <div class="date-field-group">
+                          <label for="filter-user-start-date">از تاریخ:</label>
+                          <input type="date" id="filter-user-start-date" class="input-ctrl date-ctrl" title="از تاریخ">
+                        </div>
+                        <div class="date-field-group">
+                          <label for="filter-user-end-date">تا تاریخ:</label>
+                          <input type="date" id="filter-user-end-date" class="input-ctrl date-ctrl" title="تا تاریخ">
+                        </div>
+                      </div>
+                    </div>
                   </div>
                 </div>
               </div>
-            </div>
-          </div>
-          <div>
-            <button id="btn-add-user-modal" class="btn-action btn-add"><i class="fa-solid fa-plus"></i>ایجاد کاربر</button>
-            <!-- Removed broken User Analytics button per request -->
-            <div class="dropdown-wrapper u-inline-block u-relative">
-              <button class="btn-action btn-export"><i class="fa-solid fa-file-export"></i>خروجی <i class="fa-solid fa-caret-down"></i></button>
-              <div class="dropdown-content">
-                <a href="#" data-click="exportData" data-click-args="[&quot;users&quot;,&quot;pdf&quot;]"><i class="fa-solid fa-file-pdf"></i> PDF</a>
-                <a href="#" data-click="exportData" data-click-args="[&quot;users&quot;,&quot;excel&quot;]"><i class="fa-solid fa-file-excel"></i> Excel</a>
-                <a href="#" data-click="exportData" data-click-args="[&quot;users&quot;,&quot;csv&quot;]"><i class="fa-solid fa-file-csv"></i> CSV</a>
+              <div id="usr-bento-list" class="crv-card-grid" aria-busy="true"></div>
+              <div class="usr-pager">
+                <button type="button" id="btn-prev-users" class="lse-btn"><i class="fa-solid fa-chevron-right"></i> قبلی</button>
+                <span class="usr-pager-info" id="users-page-info">در حال بارگذاری...</span>
+                <button type="button" id="btn-next-users" class="lse-btn">بعدی <i class="fa-solid fa-chevron-left"></i></button>
               </div>
             </div>
+
+            <div class="lst-tile glass">
+              <h4 class="lst-tile-title"><i class="fa-solid fa-chart-simple"></i> آمار کلی</h4>
+              <div class="lst-mini-stats">
+                <div class="lst-mini-stat"><span class="stat-label">همسفران</span><span class="stat-value u-c-primary-text" id="usr-stat-total">-</span></div>
+                <div class="lst-mini-stat"><span class="stat-label">نوجوانان</span><span class="stat-value u-c-success-text" id="usr-stat-students">-</span></div>
+                <div class="lst-mini-stat"><span class="stat-label">راهبران</span><span class="stat-value u-c-info-text" id="usr-stat-mentors">-</span></div>
+                <div class="lst-mini-stat"><span class="stat-label">زریک در گردش</span><span class="stat-value u-c-accent-text" id="usr-stat-zarik">-</span></div>
+              </div>
+            </div>
+
+            <div class="lst-tile glass">
+              <h4 class="lst-tile-title"><i class="fa-solid fa-user-shield"></i> ترکیب همسفران</h4>
+              <div id="usr-bento-roles"></div>
+            </div>
+
+            <div class="lst-tile glass">
+              <h4 class="lst-tile-title"><i class="fa-solid fa-bolt"></i> دسترسی سریع</h4>
+              <div class="lst-quick">
+                <button type="button" class="lst-quick-btn" data-click="openUserModal"><i class="fa-solid fa-plus"></i> همسفر جدید</button>
+                <button type="button" class="lst-quick-btn" data-click="loadUsers"><i class="fa-solid fa-sync"></i> بروزرسانی</button>
+                <button type="button" class="lst-quick-btn" data-click="usrGoTab" data-click-args="[&quot;levels-tab&quot;]"><i class="fa-solid fa-layer-group"></i> سطوح و گواهینامه‌ها</button>
+                <button type="button" class="lst-quick-btn" data-click="exportData" data-click-args="[&quot;users&quot;,&quot;excel&quot;]"><i class="fa-solid fa-file-excel"></i> خروجی اکسل</button>
+                <button type="button" class="lst-quick-btn" data-click="exportData" data-click-args="[&quot;users&quot;,&quot;pdf&quot;]"><i class="fa-solid fa-file-pdf"></i> خروجی پی‌دی‌اف</button>
+                <button type="button" class="lst-quick-btn" data-click="exportData" data-click-args="[&quot;users&quot;,&quot;csv&quot;]"><i class="fa-solid fa-file-csv"></i> خروجی CSV</button>
+              </div>
+            </div>
+
+            <div class="lst-tile glass">
+              <h4 class="lst-tile-title"><i class="fa-solid fa-calendar-week"></i> این هفته</h4>
+              <div id="usr-bento-week"></div>
+            </div>
+
+            <div class="lst-tile glass">
+              <h4 class="lst-tile-title"><i class="fa-solid fa-coins"></i> پیشتازان زریک <span class="lst-tile-sub">در همین صفحه</span></h4>
+              <div id="usr-bento-top"></div>
+            </div>
+
+            <div class="lst-tile lst-tile-wide glass">
+              <h4 class="lst-tile-title"><i class="fa-solid fa-list-check"></i> نیازمند توجه <span class="lst-tile-sub">در همین صفحه</span></h4>
+              <div id="usr-bento-health"></div>
+            </div>
           </div>
         </div>
 
-        <div class="table-container glass">
-          <table class="data-table" id="users-data-table">
-            <thead>
-              <tr>
-                <th>شناسه</th>
-                <th>نام کاربر</th>
-                <th>شماره همراه</th>
-                <th>نقش</th>
-                <th>کاروان</th>
-                <th>موجودی زریک</th>
-                <th>تاریخ عضویت</th>
-                <th>پیشرفت</th>
-                <th>عملیات</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr class="nopa-table-state is-loading"><td colspan="9"><i class="fa-solid fa-circle-notch fa-spin"></i> در حال بارگذاری کاربران...</td></tr>
-            </tbody>
-          </table>
-        </div>
-
-        <div class="pagination-wrapper">
-          <div class="page-info" id="users-page-info">در حال بارگذاری...</div>
-          <div class="page-buttons">
-            <button id="btn-prev-users" class="page-btn"><i class="fa-solid fa-chevron-right"></i> قبلی</button>
-            <button id="btn-next-users" class="page-btn">بعدی <i class="fa-solid fa-chevron-left"></i></button>
+        <!-- One person's page: circles are the people of the current page -->
+        <div id="usr-detail-view" data-style="display: none;">
+          <div class="lsv-head">
+            <button type="button" class="lsv-round" data-click="closeUserView" title="بازگشت به همه همسفران" aria-label="بازگشت به همه همسفران"><i class="fa-solid fa-arrow-right"></i></button>
+            <h3 id="usr-title">همسفر</h3>
+            <span id="usr-state"></span>
           </div>
+          <section class="lsv-board usr-board">
+            <header class="lsv-board-head">
+              <div class="lsv-board-title">
+                <h4>شناسنامه همسفر</h4>
+                <span id="usr-sub"></span>
+              </div>
+              <div class="lsv-notch-wrap"><nav class="lsv-notch" id="usr-circles" aria-label="همسفران این صفحه"></nav></div>
+              <div class="lsv-round-group">
+                <button type="button" class="lsv-round" data-click="editActiveUser" title="ویرایش مشخصات" aria-label="ویرایش مشخصات"><i class="fa-solid fa-pen"></i></button>
+                <button type="button" class="lsv-round" data-click="reportActiveUser" title="گزارش کامل کلاس‌ها و آزمون‌ها" aria-label="گزارش کامل کلاس‌ها و آزمون‌ها"><i class="fa-solid fa-chart-line"></i></button>
+                <button type="button" class="lsv-round" data-click="passwordActiveUser" title="تغییر گذرواژه" aria-label="تغییر گذرواژه"><i class="fa-solid fa-key"></i></button>
+                <button type="button" class="lsv-round" id="usr-block-btn" data-click="blockActiveUser" title="مسدود کردن" aria-label="مسدود کردن"><i class="fa-solid fa-ban"></i></button>
+                <button type="button" class="lsv-round lsv-round-danger" data-click="deleteActiveUser" title="حذف همسفر" aria-label="حذف همسفر"><i class="fa-solid fa-trash"></i></button>
+              </div>
+            </header>
+            <div class="lsv-flow crv-flow usr-flow">
+              <div class="lsv-col crv-col-mentor">
+                <div class="lsv-col-card crv-mentor" id="usr-info-card"></div>
+                <div class="lsv-col-label"><i class="fa-solid fa-id-card"></i> شناسنامه</div>
+              </div>
+              <div class="lsv-link" aria-hidden="true"></div>
+              <div class="lsv-col crv-col-assets usr-col-assets">
+                <div class="lsv-col-card crv-assets-card" id="usr-assets-card"></div>
+                <div class="lsv-col-label"><i class="fa-solid fa-route"></i> دارایی‌ها و مسیر</div>
+              </div>
+              <div class="lsv-link" aria-hidden="true"></div>
+              <div class="lsv-col mnt-col-students">
+                <div class="lsv-col-card" id="usr-activity-card">
+                  <div class="crv-members-list" id="usr-activity-list"></div>
+                </div>
+                <div class="lsv-col-label"><i class="fa-solid fa-clock-rotate-left"></i> فعالیت‌ها <span class="lsv-col-count" id="usr-activity-count">0</span></div>
+              </div>
+            </div>
+          </section>
         </div>
       </section>
 
@@ -931,31 +972,186 @@
       </section>
 
       <!-- TAB: LEVELS AND CERTIFICATES -->
+      <!-- TAB: سطوح و گواهینامه‌ها. A student's level (levelFrame) is the station they reached, so each level is one
+           station. Drawn by js/features/levels.js; styles in css/stations.css (.lst-*, .lsv-*, .crv-*, .lvl-*). -->
       <section id="levels-tab" class="tab-panel" data-style="display: none;">
-        <div class="actions-header glass u-mb-20">
-          <div class="filters-group">
-            <h3 class="u-m-0">دایرکتوری سطوح و گواهینامه‌ها</h3>
+        <div id="lvl-overview-view">
+          <div class="lms-head-actions u-flex u-justify-end u-items-center u-mb-20">
+            <div class="u-flex u-gap-10">
+              <button type="button" class="btn-primary u-bgc-primary" data-click="openLevelPrintQueue"><i class="fa-solid fa-print"></i> صف چاپ گواهینامه</button>
+            </div>
           </div>
-          <button id="btn-refresh-levels" class="btn-action"><i class="fa-solid fa-sync"></i> بروزرسانی جدول</button>
+
+          <div class="lst-bento lvl-bento">
+            <div class="lst-tile lst-tile-stations glass">
+              <div class="lst-tile-head">
+                <h4 class="lst-tile-title"><i class="fa-solid fa-layer-group"></i> سطوح مسیر <span class="lst-tile-sub" id="lvl-count-badge">هر سطح یک منزلگاه است؛ برای دیدن نوجوانانش بزنید</span></h4>
+                <div class="crv-filters">
+                  <div class="search-box">
+                    <i class="fa-solid fa-search"></i>
+                    <input aria-label="جستجوی نوجوان یا سطح" type="search" id="lvl-search" class="input-ctrl" placeholder="نام نوجوان، موبایل، کد یا منزلگاه..." data-input="filterLevelsList">
+                  </div>
+                  <select aria-label="فیلتر گواهینامه" id="lvl-filter" class="select-ctrl" data-change="filterLevelsList">
+                    <option value="all">همه سطوح</option>
+                    <option value="pending">دارای درخواست چاپ</option>
+                    <option value="incomplete">دارای پروفایل ناقص</option>
+                  </select>
+                  <select aria-label="مرتب‌سازی سطوح" id="lvl-sort" class="select-ctrl" data-change="filterLevelsList">
+                    <option value="order">ترتیب مسیر</option>
+                    <option value="students_desc">بیشترین نوجوان</option>
+                    <option value="certs_desc">بیشترین گواهینامه</option>
+                  </select>
+                </div>
+              </div>
+              <div id="lvl-bento-list" class="crv-card-grid" aria-busy="true"></div>
+            </div>
+
+            <div class="lst-tile glass">
+              <h4 class="lst-tile-title"><i class="fa-solid fa-chart-simple"></i> آمار کلی</h4>
+              <div class="lst-mini-stats">
+                <div class="lst-mini-stat"><span class="stat-label">نوجوانان</span><span class="stat-value u-c-primary-text" id="lvl-stat-students">-</span></div>
+                <div class="lst-mini-stat"><span class="stat-label">گواهینامه‌دار</span><span class="stat-value u-c-success-text" id="lvl-stat-certified">-</span></div>
+                <div class="lst-mini-stat"><span class="stat-label">در انتظار چاپ</span><span class="stat-value u-c-accent-text" id="lvl-stat-pending">-</span></div>
+                <div class="lst-mini-stat"><span class="stat-label">ارسال‌شده</span><span class="stat-value u-c-info-text" id="lvl-stat-sent">-</span></div>
+              </div>
+            </div>
+
+            <div class="lst-tile glass">
+              <h4 class="lst-tile-title"><i class="fa-solid fa-certificate"></i> درخواست‌های چاپی</h4>
+              <div id="lvl-bento-orders"></div>
+            </div>
+
+            <div class="lst-tile glass">
+              <h4 class="lst-tile-title"><i class="fa-solid fa-bolt"></i> دسترسی سریع</h4>
+              <div class="lst-quick">
+                <button type="button" class="lst-quick-btn" data-click="openLevelPrintQueue"><i class="fa-solid fa-print"></i> صف چاپ</button>
+                <button type="button" class="lst-quick-btn" data-click="loadLevelsAndCertificatesTab"><i class="fa-solid fa-sync"></i> بروزرسانی</button>
+                <button type="button" class="lst-quick-btn" data-click="usrGoTab" data-click-args="[&quot;lms-tab&quot;]"><i class="fa-solid fa-graduation-cap"></i> منزلگاه‌ها</button>
+                <button type="button" class="lst-quick-btn" data-click="usrGoTab" data-click-args="[&quot;users-tab&quot;]"><i class="fa-solid fa-people-group"></i> همسفران</button>
+              </div>
+            </div>
+
+            <div class="lst-tile glass">
+              <h4 class="lst-tile-title"><i class="fa-solid fa-print"></i> صف چاپ <span class="lst-tile-sub">قدیمی‌ترین اول</span></h4>
+              <div id="lvl-bento-queue"></div>
+            </div>
+
+            <div class="lst-tile glass">
+              <h4 class="lst-tile-title"><i class="fa-solid fa-flag-checkered"></i> جلوداران مسیر</h4>
+              <div id="lvl-bento-top"></div>
+            </div>
+
+            <div class="lst-tile lst-tile-wide glass">
+              <h4 class="lst-tile-title"><i class="fa-solid fa-list-check"></i> نیازمند توجه</h4>
+              <div id="lvl-bento-health"></div>
+            </div>
+          </div>
         </div>
 
-        <div class="table-container glass">
-          <table class="data-table" id="levels-data-table">
-            <thead>
-              <tr>
-                <th>دانش‌آموز</th>
-                <th>شماره همراه</th>
-                <th>سطح فعلی</th>
-                <th>آخرین گواهینامه</th>
-                <th>وضعیت پروفایل</th>
-                <th>درخواست‌های فیزیکی</th>
-                <th>عملیات (ویرایش سطح)</th>
-              </tr>
-            </thead>
-            <tbody>
-              <!-- Dynamic Rows -->
-            </tbody>
-          </table>
+        <!-- One level's page: circles are all levels; the level's card, its students and their certificate requests -->
+        <div id="lvl-detail-view" data-style="display: none;">
+          <div class="lsv-head">
+            <button type="button" class="lsv-round" data-click="closeLevelView" title="بازگشت به همه سطوح" aria-label="بازگشت به همه سطوح"><i class="fa-solid fa-arrow-right"></i></button>
+            <h3 id="lvl-title">سطح</h3>
+            <span id="lvl-state"></span>
+          </div>
+          <section class="lsv-board lvl-board">
+            <header class="lsv-board-head">
+              <div class="lsv-board-title">
+                <h4>نوجوانان و گواهینامه‌های سطح</h4>
+                <span id="lvl-sub"></span>
+              </div>
+              <div class="lsv-notch-wrap"><nav class="lsv-notch" id="lvl-circles" aria-label="سطوح مسیر"></nav></div>
+              <div class="lsv-round-group">
+                <button type="button" class="lsv-round" data-click="openActiveLevelStation" title="صفحه منزلگاه این سطح" aria-label="صفحه منزلگاه این سطح"><i class="fa-solid fa-map-location-dot"></i></button>
+                <button type="button" class="lsv-round" data-click="openActiveLevelUsers" title="این سطح در همسفران" aria-label="این سطح در همسفران"><i class="fa-solid fa-people-group"></i></button>
+                <button type="button" class="lsv-round" data-click="loadLevelsAndCertificatesTab" title="بروزرسانی" aria-label="بروزرسانی"><i class="fa-solid fa-sync"></i></button>
+              </div>
+            </header>
+            <div class="lsv-flow crv-flow lvl-flow">
+              <div class="lsv-col crv-col-mentor">
+                <div class="lsv-col-card crv-mentor" id="lvl-info-card"></div>
+                <div class="lsv-col-label"><i class="fa-solid fa-map-location-dot"></i> منزلگاه این سطح</div>
+              </div>
+              <div class="lsv-link" aria-hidden="true"></div>
+              <div class="lsv-col mnt-col-caravans">
+                <div class="lsv-col-card" id="lvl-students-card">
+                  <label class="search-box mnt-students-search"><i class="fa-solid fa-magnifying-glass"></i><input type="search" id="lvl-students-filter" class="input-ctrl" placeholder="جستجوی نام، موبایل یا کد..." autocomplete="off" aria-label="جستجوی نوجوان" data-input="renderLevelStudents"></label>
+                  <div class="crv-members-list" id="lvl-students-list"></div>
+                </div>
+                <div class="lsv-col-label"><i class="fa-solid fa-user-graduate"></i> نوجوانان این سطح <span class="lsv-col-count" id="lvl-students-count">0</span></div>
+              </div>
+              <div class="lsv-link" aria-hidden="true"></div>
+              <div class="lsv-col mnt-col-students">
+                <div class="lsv-col-card" id="lvl-orders-card">
+                  <div class="crv-members-list" id="lvl-orders-list"></div>
+                </div>
+                <div class="lsv-col-label"><i class="fa-solid fa-certificate"></i> گواهینامه‌ها و درخواست‌های چاپی <span class="lsv-col-count" id="lvl-orders-count">0</span></div>
+              </div>
+            </div>
+          </section>
+        </div>
+
+        <!-- Change a student's level (replaces the old prompt) -->
+        <div id="lvl-level-modal" class="modal-overlay lse-overlay u-z-z-modal" data-style="display:none">
+          <div class="lse lse-sm">
+            <header class="lse-head lse-head-plain">
+              <div class="lse-id">
+                <span class="lse-id-icon is-accent"><i class="fa-solid fa-layer-group"></i></span>
+                <div class="lse-id-text"><h3 id="lvl-level-modal-title">تغییر سطح</h3><span>نوجوان به منزلگاهی که انتخاب کنید می‌رسد و اعلانش را می‌گیرد</span></div>
+              </div>
+              <button type="button" class="lsv-round" data-click="NopaActions.hide" data-click-args="[&quot;lvl-level-modal&quot;]" title="بستن" aria-label="بستن"><i class="fa-solid fa-xmark"></i></button>
+            </header>
+            <form class="lse-form" data-submit="saveLevelOverride" data-submit-args="[&quot;$event&quot;]">
+              <input type="hidden" id="lvl-level-user-id">
+              <div class="lse-body">
+                <section class="lse-card">
+                  <h4 class="lse-card-title"><i class="fa-solid fa-route"></i> سطح جدید</h4>
+                  <div class="mnt-mod-options lvl-level-options" id="lvl-level-options"></div>
+                </section>
+              </div>
+              <footer class="lse-foot">
+                <span class="lse-foot-note"><i class="fa-solid fa-circle-info"></i> تغییر دستی، پیشرفت کلاس‌ها را تغییر نمی‌دهد</span>
+                <div class="lse-foot-actions">
+                  <button type="button" class="lse-btn" data-click="NopaActions.hide" data-click-args="[&quot;lvl-level-modal&quot;]">انصراف</button>
+                  <button type="submit" class="lsv-pill"><i class="fa-solid fa-check"></i> ثبت سطح</button>
+                </div>
+              </footer>
+            </form>
+          </div>
+        </div>
+
+        <!-- Mark a printed certificate as posted -->
+        <div id="lvl-order-modal" class="modal-overlay lse-overlay u-z-z-modal" data-style="display:none">
+          <div class="lse lse-sm">
+            <header class="lse-head lse-head-plain">
+              <div class="lse-id">
+                <span class="lse-id-icon is-accent"><i class="fa-solid fa-truck-fast"></i></span>
+                <div class="lse-id-text"><h3 id="lvl-order-modal-title">ثبت ارسال گواهینامه</h3><span>نوجوان پس از ثبت، اعلان ارسال و کد رهگیری را می‌گیرد</span></div>
+              </div>
+              <button type="button" class="lsv-round" data-click="NopaActions.hide" data-click-args="[&quot;lvl-order-modal&quot;]" title="بستن" aria-label="بستن"><i class="fa-solid fa-xmark"></i></button>
+            </header>
+            <form class="lse-form" data-submit="saveLevelOrderDispatch" data-submit-args="[&quot;$event&quot;]">
+              <input type="hidden" id="lvl-order-id">
+              <div class="lse-body">
+                <section class="lse-card">
+                  <h4 class="lse-card-title"><i class="fa-solid fa-location-dot"></i> نشانی گیرنده</h4>
+                  <div class="lvl-address" id="lvl-order-address"></div>
+                </section>
+                <section class="lse-card">
+                  <h4 class="lse-card-title"><i class="fa-solid fa-barcode"></i> رهگیری</h4>
+                  <label class="lse-field"><span>کد رهگیری پست <small>اختیاری</small></span><input type="text" id="lvl-order-tracking" class="input-ctrl" dir="ltr" maxlength="64" placeholder="مثال: 1234567890"></label>
+                </section>
+              </div>
+              <footer class="lse-foot">
+                <span class="lse-foot-note"><i class="fa-solid fa-circle-info"></i> وضعیت سفارش «ارسال شده» می‌شود</span>
+                <div class="lse-foot-actions">
+                  <button type="button" class="lse-btn" data-click="NopaActions.hide" data-click-args="[&quot;lvl-order-modal&quot;]">انصراف</button>
+                  <button type="submit" class="lsv-pill"><i class="fa-solid fa-paper-plane"></i> ثبت ارسال</button>
+                </div>
+              </footer>
+            </form>
+          </div>
         </div>
       </section>
 
@@ -2612,62 +2808,105 @@
     </div>
   </div>
 
-  <!-- ADD/EDIT USER MODAL -->
-  <div class="modal-overlay" id="user-modal-overlay">
-    <div class="modal-content glass">
-      <div class="modal-header">
-        <h3 id="modal-user-title">ایجاد کاربر جدید</h3>
-        <button aria-label="بستن" class="modal-close" id="btn-close-user-modal">&times;</button>
-      </div>
-      <form id="user-modal-form">
-        <input type="hidden" id="edit-user-id">
-        <!-- name / phone / national id / birth date / gender: js/ui/person-fields.js -->
-        <div data-person-fields="modal-user" data-phone-group-id="phone-field-group"></div>
-        <div class="form-group" id="password-field-group">
-          <label for="modal-user-password">رمز عبور</label>
-          <input type="password" id="modal-user-password" class="input-ctrl" required>
+  <!-- ADD/EDIT USER MODAL: the station editor's look (css/stations.css .lse-*; js/features/users.js openUserModal) -->
+  <div class="modal-overlay lse-overlay u-z-z-modal" id="user-modal-overlay" data-style="display: none">
+    <div class="lse lse-editor usr-modal">
+      <header class="lse-head lse-head-plain">
+        <div class="lse-id">
+          <span class="lse-id-icon is-accent"><i class="fa-solid fa-user-plus"></i></span>
+          <div class="lse-id-text">
+            <h3 id="modal-user-title">همسفر جدید</h3>
+            <span>مشخصات هویتی، نقش، کاروان و سطح در مسیر</span>
+          </div>
         </div>
-        <div class="form-group">
-          <label for="modal-user-role">نقش کاربری</label>
-          <select id="modal-user-role" class="select-ctrl u-w-full" required>
-            <option value="student">دانش‌آموز</option>
-            <option value="mentor">مربی</option>
-            <option value="sub_admin">ادمین (مدیر محتوایی)</option>
-              <option value="channel_manager">مسئول کانال و گروه‌ها</option>
-            <option value="admin">سوپر ادمین</option>
-          </select>
+        <button type="button" class="lsv-round" id="btn-close-user-modal" title="بستن" aria-label="بستن"><i class="fa-solid fa-xmark"></i></button>
+      </header>
+      <form id="user-modal-form" class="lse-form">
+        <div class="lse-body">
+          <input type="hidden" id="edit-user-id">
+          <section class="lse-card">
+            <h4 class="lse-card-title"><i class="fa-solid fa-address-card"></i> اطلاعات هویتی</h4>
+            <div class="lse-grid lse-grid-2">
+              <!-- name / phone / national id / birth date / gender: js/ui/person-fields.js -->
+              <div data-person-fields="modal-user" data-phone-group-id="phone-field-group"></div>
+              <label class="lse-field" id="password-field-group">
+                <span>گذرواژه <b class="lse-req">*</b></span>
+                <input type="password" id="modal-user-password" class="input-ctrl" autocomplete="new-password" required>
+              </label>
+            </div>
+          </section>
+
+          <section class="lse-card">
+            <h4 class="lse-card-title"><i class="fa-solid fa-user-shield"></i> نقش و دسترسی</h4>
+            <div class="lse-grid lse-grid-2">
+              <label class="lse-field">
+                <span>نقش در نپا <b class="lse-req">*</b></span>
+                <select id="modal-user-role" class="select-ctrl" required>
+                  <option value="student">نوجوان (دانش‌آموز)</option>
+                  <option value="mentor">راهبر</option>
+                  <option value="sub_admin">ادمین محتوا</option>
+                  <option value="channel_manager">مسئول کانال و گروه‌ها</option>
+                  <option value="admin">سوپر ادمین</option>
+                </select>
+              </label>
+              <label class="lse-field" id="panel-access-group" data-style="display:none;">
+                <span>دسترسی به پنل مدیریت <small>فقط سوپر ادمین</small></span>
+                <select id="modal-user-panel-access" class="select-ctrl">
+                  <option value="default">طبق تنظیمات نقش</option>
+                  <option value="true">مجاز</option>
+                  <option value="false">غیرمجاز</option>
+                </select>
+              </label>
+            </div>
+          </section>
+
+          <section class="lse-card" id="mentor-level-group" data-style="display:none;">
+            <h4 class="lse-card-title"><i class="fa-solid fa-medal"></i> ویژه راهبران</h4>
+            <div class="lse-grid lse-grid-2">
+              <label class="lse-field">
+                <span>سطح راهبری</span>
+                <select id="modal-user-mentor-level" class="select-ctrl">
+                  <option value="1">سطح ۱: راهبر مقدماتی</option>
+                  <option value="2">سطح ۲: راهبر پیشرفته</option>
+                  <option value="3">سطح ۳: راهبر ارشد</option>
+                </select>
+              </label>
+              <label class="lse-field">
+                <span>مدرک تحصیلی</span>
+                <input type="text" id="modal-user-degree" class="input-ctrl" placeholder="کارشناسی ارشد علوم تربیتی">
+              </label>
+              <label class="lse-field">
+                <span>مدارک و گواهی‌نامه‌ها</span>
+                <input type="text" id="modal-user-certificates" class="input-ctrl" placeholder="مدرک PMP، آیلتس ۷">
+              </label>
+            </div>
+          </section>
+
+          <section class="lse-card">
+            <h4 class="lse-card-title"><i class="fa-solid fa-route"></i> کاروان و سطح</h4>
+            <div class="lse-grid lse-grid-2">
+              <label class="lse-field">
+                <span>کاروان</span>
+                <select id="modal-user-caravan" class="select-ctrl">
+                  <option value="">فاقد کاروان</option>
+                </select>
+              </label>
+              <label class="lse-field">
+                <span>سطح (منزلگاهی که رسیده)</span>
+                <select id="modal-user-level" class="select-ctrl" required>
+                  <option value="1">سطح ۱</option>
+                </select>
+              </label>
+            </div>
+          </section>
         </div>
-        <div class="form-group" id="panel-access-group" data-style="display:none;">
-          <label for="modal-user-panel-access">دسترسی به پنل مدیریت (فقط سوپر ادمین)</label>
-          <select id="modal-user-panel-access" class="select-ctrl u-w-full">
-            <option value="default">طبق تنظیمات نقش</option>
-            <option value="true">مجاز</option>
-            <option value="false">غیرمجاز</option>
-          </select>
-        </div>
-        <div class="form-group" id="mentor-level-group" data-style="display:none;">
-          <label for="modal-user-mentor-level">سطح مربی (ویژه مربیان)</label>
-          <select id="modal-user-mentor-level" class="select-ctrl u-w-full u-mb-16">
-            <option value="1">سطح ۱: یاور (Junior)</option>
-            <option value="2">سطح ۲: استاد (Senior)</option>
-            <option value="3">سطح ۳: راهنمای کل (Master)</option>
-          </select>
-          <label for="modal-user-degree">مدرک تحصیلی (Academic Degree)</label>
-          <input type="text" id="modal-user-degree" class="input-ctrl u-mb-16" placeholder="لیسانس مهندسی نرم‌افزار">
-          <label for="modal-user-certificates">مدارک و گواهی‌نامه‌ها</label>
-          <input type="text" id="modal-user-certificates" class="input-ctrl" placeholder="مدرک PMP, آیلتس 7">
-        </div>
-        <div class="form-group">
-          <label for="modal-user-caravan">کاروان</label>
-          <select id="modal-user-caravan" class="select-ctrl u-w-full">
-            <option value="">فاقد کاروان</option>
-          </select>
-        </div>
-        <div class="form-group">
-          <label for="modal-user-level">سطح فریم (۱ تا ۵)</label>
-          <input type="number" id="modal-user-level" class="input-ctrl" min="1" max="5" value="1" required>
-        </div>
-        <button type="submit" class="btn-primary u-mt-16">ذخیره اطلاعات کاربر</button>
+        <footer class="lse-foot">
+          <span class="lse-foot-note"><i class="fa-solid fa-circle-info"></i> شماره همراه، نام کاربری ورود به اپ است</span>
+          <div class="lse-foot-actions">
+            <button type="button" class="lse-btn" data-click="NopaActions.hide" data-click-args="[&quot;user-modal-overlay&quot;]">انصراف</button>
+            <button type="submit" class="lsv-pill"><i class="fa-solid fa-check"></i> ذخیره همسفر</button>
+          </div>
+        </footer>
       </form>
     </div>
   </div>
@@ -3099,7 +3338,7 @@
         <h1>سامانه اختصاصی نپا</h1>
       </div>
       <h2 id="login-title">ورود به پنل مدیریت</h2>
-      <p>جهت دسترسی به دایرکتوری، مالی و تنظیمات امنیتی وارد شوید</p>
+      <p>جهت دسترسی به همسفران، مالی و تنظیمات امنیتی وارد شوید</p>
 
       <form id="admin-login-form">
         <div class="form-group">
@@ -3976,6 +4215,8 @@
     <script src="js/features/rewards.js"></script>
     <script src="js/features/caravans.js"></script>
     <script src="js/features/mentors.js"></script>
+    <script src="js/features/audience.js"></script>
+    <script src="js/features/levels.js"></script>
     <script src="js/features/challenges.js"></script>
     <script src="js/features/tickets-chat.js"></script>
     <script src="js/features/messaging.js"></script>

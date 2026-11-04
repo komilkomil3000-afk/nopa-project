@@ -1,154 +1,8 @@
-// Users: directory + filters, user drawer (360 view, class progress), user modal, levels, students.
+// Users: user drawer (360 view, class progress), user modal, levels, students.
 // Split out of the former app.js (Phase 7). Classic script: shares globals with the other modules;
 // load order is set in index.html.
 
-// 8. Toggle Dark/Light Mode
-async function loadLevelsAndCertificatesTab() {
-  const tbody = document.querySelector('#levels-data-table tbody');
-  try {
-    const res = await request('/api/v1/admin/levels-and-certificates');
-    const data = await res.json();
-    if (!res.ok) throw new Error(data.error);
-
-    if (!tbody) return;
-    if (!data.data || !data.data.length) return NopaTable.empty(tbody, 'کاربری برای نمایش وجود ندارد');
-    tbody.innerHTML = '';
-
-    data.data.forEach(user => {
-      const levelNames = { 1: 'تازه وارد', 2: 'نقره‌ای', 3: 'طلایی' };
-      const levelBadge = `<span class="badge u-bg-primary u-c-white u-fs-2xs">${levelNames[user.levelFrame] || 'نامشخص'}</span>`;
-      
-      const lastCert = user.certificates && user.certificates.length > 0 ? user.certificates[0].title : 'بدون گواهینامه';
-      
-      let physicalReqs = 'ندارد';
-      if (user.physicalOrders && user.physicalOrders.length > 0) {
-        physicalReqs = user.physicalOrders.map(o => `<span class="badge u-c-black" data-style="background:${o.status === 'PENDING_PRINT' ? 'var(--accent)' : 'var(--success)'}">${o.status === 'PENDING_PRINT' ? 'در انتظار چاپ' : 'ارسال شده'}</span>`).join(' ');
-      }
-
-      const tr = document.createElement('tr');
-      tr.innerHTML = `
-        <td><strong>${esc(user.name || 'کاربر بدون نام')}</strong></td>
-        <td class="u-mono">${esc(user.phoneNumber)}</td>
-        <td>${levelBadge}</td>
-        <td>${esc(lastCert)}</td>
-        <td>${user.registrationCompleted ? '<span class="u-c-color-success">تکمیل شده</span>' : '<span class="u-c-color-danger">ناقص</span>'}</td>
-        <td>${physicalReqs}</td>
-        <td>
-          <button class="page-btn btn-edit u-p-4-8 u-fs-2xs" data-click="promptLevelOverride" data-click-args="${esc(JSON.stringify([String(user.id), (user.levelFrame)]))}" title="تغییر سطح دستی"><i class="fa-solid fa-edit"></i></button>
-        </td>
-      `;
-      tbody.appendChild(tr);
-    });
-  } catch (err) {
-    console.error('Failed to load levels and certificates:', err);
-    NopaTable.error(tbody, 'خطا در دریافت سطوح و گواهینامه‌ها');
-  }
-}
-
-window.promptLevelOverride = async function(userId, currentLevel) {
-  const newLevel = prompt('سطح جدید را وارد کنید (1=برنزی، 2=نقره‌ای، 3=طلایی):', currentLevel);
-  if (!newLevel) return;
-  try {
-    const res = await request('/api/v1/admin/students/' + userId + '/level-frame', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ levelFrame: parseInt(newLevel) })
-    });
-    const data = await res.json();
-    if (res.ok) {
-      showToast('سطح با موفقیت تغییر یافت', 'success');
-      loadLevelsAndCertificatesTab();
-    } else {
-      showToast(data.error || 'خطا در تغییر سطح', 'error');
-    }
-  } catch (err) {
-    showToast('خطای شبکه', 'error');
-  }
-};
-
-// Load Caravans
-// Load users (paginated)
-async function loadUsers() {
-  const usersTbody = document.querySelector('#users-data-table tbody');
-  NopaTable.loading(usersTbody);
-  try {
-    const url = `/api/v1/admin/users?page=${usersPage}&limit=20&search=${encodeURIComponent(userSearchVal)}&role=${filterRoleVal}&caravanId=${filterCaravanVal}&levelFrame=${filterLevelVal}&startDate=${encodeURIComponent(filterStartDateVal)}&endDate=${encodeURIComponent(filterEndDateVal)}`;
-    const res = await request(url);
-    const data = await res.json();
-
-    usersTotal = data.total || 0;
-    const totalUsersEl = document.getElementById('stats-total-users');
-    if (totalUsersEl) totalUsersEl.textContent = `${data.total || 0}`;
-    
-    // Update stats counts
-    const mentorsCount = (data.users || []).filter(u => u.role === 'mentor').length;
-    const mentorsEl = document.getElementById('stats-total-mentors');
-    if (mentorsEl) mentorsEl.textContent = `${mentorsCount}`;
-
-    const totalZarik = (data.users || []).reduce((acc, u) => acc + (u.zarikBalance || 0), 0);
-    const zarikEl = document.getElementById('stats-total-zarik');
-    if (zarikEl) zarikEl.textContent = totalZarik.toLocaleString('fa-IR');
-
-    // Update pagination footer
-    const totalPages = Math.ceil((data.total || 0) / 20) || 1;
-    const pageInfoEl = document.getElementById('users-page-info');
-    if (pageInfoEl) pageInfoEl.textContent = `صفحه ${usersPage} از ${totalPages} (کل ${data.total || 0} کاربر)`;
-    
-    const prevBtn = document.getElementById('btn-prev-users');
-    if (prevBtn) prevBtn.disabled = usersPage <= 1;
-    const nextBtn = document.getElementById('btn-next-users');
-    if (nextBtn) nextBtn.disabled = usersPage >= totalPages;
-
-    const tbody = document.querySelector('#users-data-table tbody');
-    if (!tbody) return;
-    tbody.innerHTML = '';
-
-    if (!Array.isArray(data.users) || data.users.length === 0) {
-      NopaTable.empty(tbody, 'هیچ کاربری با این فیلترها یافت نشد', 'fa-solid fa-user-slash');
-      return;
-    }
-
-    data.users.forEach(u => {
-      let roleBadge = `<span class="badge badge-${u.role}">${roleLabel(u.role)}</span>`;
-      if (u.role === 'mentor' && u.mentorLevel) {
-        const levelName = u.mentorLevel === 3 ? 'راهنمای کل' : u.mentorLevel === 2 ? 'استاد' : 'یاور';
-        roleBadge += ` <span class="badge u-bg-primary u-c-white u-fs-2xs">${levelName}</span>`;
-      }
-      
-      const blockBadge = u.blocked ? `<span class="badge badge-blocked">مسدود شده</span>` : '';
-      const regDate = u.createdAt ? new Date(u.createdAt).toLocaleDateString('fa-IR') : '-';
-      
-      const tr = document.createElement('tr');
-      tr.innerHTML = `
-        <td>${u.userCode || '-'}</td>
-        <td><strong>${esc(u.name)}</strong> ${u.gender === 'male' ? '<span class="badge u-bg-info-strong u-c-white u-fs-2xs">مرد</span>' : u.gender === 'female' ? '<span class="badge u-c-white u-fs-2xs u-bg-pink-strong">زن</span>' : ''} ${blockBadge}</td>
-        <td class="u-mono">${esc(u.phoneNumber)}</td>
-        <td>${roleBadge}</td>
-        <td>${esc(u.caravanName || '-')}</td>
-        <td><strong class="u-c-color-neon-blue">${(u.zarikBalance || 0).toLocaleString()}</strong></td>
-        <td class="u-fs-xs u-c-text-secondary u-nowrap">${regDate}</td>
-        <td>
-          <div class="u-flex u-items-center u-gap-8">
-            <div class="progress-bar-container u-flex-1 u-m-0 u-w-60">
-              <div class="progress-bar-fill" data-style="width: ${Number(u.completionRate) || 0}%"></div>
-            </div>
-            <span class="u-fs-2xs">${Number(u.completionRate) || 0}%</span>
-          </div>
-        </td>
-        <td>
-          <button title="مشاهده‌ی جزئیات کاربر" aria-label="مشاهده‌ی جزئیات کاربر" class="page-btn btn-view u-p-4-8 u-fs-2xs" data-click="viewUserDetails" data-click-args="${esc(JSON.stringify([String(u.id)]))}"><i class="fa-solid fa-eye"></i></button>
-          <button title="ویرایش کاربر" aria-label="ویرایش کاربر" class="page-btn btn-edit u-p-4-8 u-fs-2xs" data-click="openUserModal" data-click-args="${esc(JSON.stringify([String(u.id), String(u.name), String(u.role), String(u.caravanId || ''), (u.levelFrame), (u.mentorLevel || 1), String(u.nationalId || ''), String(u.dateOfBirth || '')]))}"><i class="fa-solid fa-edit"></i></button>
-          <button title="${u.blocked ? 'رفع مسدودیت' : 'مسدود کردن'}" aria-label="${u.blocked ? 'رفع مسدودیت' : 'مسدود کردن'}" class="page-btn btn-block u-p-4-8 u-fs-2xs" data-style="color: ${u.blocked ? 'var(--color-success)' : 'var(--color-warning)'}" data-click="toggleBlockUser" data-click-args="${esc(JSON.stringify([String(u.id), (!u.blocked)]))}"><i class="fa-solid ${u.blocked ? 'fa-unlock' : 'fa-ban'}"></i></button>
-          <button title="حذف کاربر" aria-label="حذف کاربر" class="page-btn btn-delete u-p-4-8 u-fs-2xs u-c-color-danger" data-click="deleteUser" data-click-args="${esc(JSON.stringify([String(u.id)]))}"><i class="fa-solid fa-trash"></i></button>
-        </td>
-      `;
-      tbody.appendChild(tr);
-    });
-  } catch (err) {
-    console.error('Failed to load users:', err);
-    if (err.message !== 'Unauthorized') NopaTable.error(usersTbody, 'خطا در دریافت فهرست کاربران');
-  }
-}
+// The همسفران page itself (bento + one person's page) is js/features/audience.js; levels are js/features/levels.js.
 
 // Detailed Profile view in Drawer
 async function viewUserDetails(userId) {
@@ -939,7 +793,14 @@ window.openUserModal = async function(id = '', name = '', role = 'student', cara
   });
   document.getElementById('modal-user-role').value = userRole;
   setupUserModalAccessControls(userRole, user?.panelAccess ?? null);
-  document.getElementById('modal-user-level').value = userLevel;
+  // levels are the stations in path order (js/features/levels.js)
+  const levelSelect = document.getElementById('modal-user-level');
+  if (levelSelect) {
+    levelSelect.innerHTML = typeof window.lvlLevelOptionsHtml === 'function'
+      ? window.lvlLevelOptionsHtml(userLevel)
+      : `<option value="${Number(userLevel) || 1}">سطح ${Number(userLevel) || 1}</option>`;
+    levelSelect.value = String(userLevel);
+  }
   document.getElementById('modal-user-mentor-level').value = userMentorLevel;
   if (document.getElementById('modal-user-degree')) {
     document.getElementById('modal-user-degree').value = user?.academicDegree || '';
@@ -966,14 +827,14 @@ window.openUserModal = async function(id = '', name = '', role = 'student', cara
   const title = document.getElementById('modal-user-title');
 
   // Toggle mentor level dropdown based on role
-  if (mentorLevelGroup) mentorLevelGroup.style.display = userRole === 'mentor' ? 'block' : 'none';
+  if (mentorLevelGroup) mentorLevelGroup.style.display = userRole === 'mentor' ? '' : 'none';
   document.getElementById('modal-user-role').onchange = (e) => {
-    if (mentorLevelGroup) mentorLevelGroup.style.display = e.target.value === 'mentor' ? 'block' : 'none';
+    if (mentorLevelGroup) mentorLevelGroup.style.display = e.target.value === 'mentor' ? '' : 'none';
   };
 
   if (userId) {
-    if (title) title.textContent = `ویرایش کاربر: ${userName}`;
-    if (phoneGroup) phoneGroup.style.display = 'block';
+    if (title) title.textContent = `ویرایش همسفر: ${userName}`;
+    if (phoneGroup) phoneGroup.style.display = '';
     if (passGroup) passGroup.style.display = 'none';
     const phoneInput = document.getElementById('modal-user-phone');
     if (phoneInput) {
@@ -982,9 +843,9 @@ window.openUserModal = async function(id = '', name = '', role = 'student', cara
     }
     document.getElementById('modal-user-password')?.removeAttribute('required');
   } else {
-    if (title) title.textContent = 'ایجاد کاربر جدید';
-    if (phoneGroup) phoneGroup.style.display = 'block';
-    if (passGroup) passGroup.style.display = 'block';
+    if (title) title.textContent = 'همسفر جدید';
+    if (phoneGroup) phoneGroup.style.display = '';
+    if (passGroup) passGroup.style.display = '';
     const phoneInput = document.getElementById('modal-user-phone');
     if (phoneInput) {
       phoneInput.setAttribute('required', 'true');
@@ -1000,6 +861,8 @@ window.openUserModal = async function(id = '', name = '', role = 'student', cara
   const modal = document.getElementById('user-modal-overlay');
   if (modal) {
     modal.style.display = 'flex';
+    const icon = modal.querySelector('.lse-id-icon i');
+    if (icon) icon.className = userId ? 'fa-solid fa-user-pen' : 'fa-solid fa-user-plus';
     modal.style.zIndex = 'var(--z-modal)';
   }
 };
@@ -1041,6 +904,7 @@ async function handleUserFormSubmit(e) {
     showToast(data.message || 'مشخصات کاربر با موفقیت ذخیره شد', 'success');
     document.getElementById('user-modal-overlay').style.display = 'none';
     if (typeof loadUsers === 'function') loadUsers();
+    if (typeof window.lvlInvalidate === 'function') window.lvlInvalidate();
     if (typeof loadAllUsersDropdown === 'function') loadAllUsersDropdown();
     if (typeof loadCaravansTab === 'function') await loadCaravansTab();
     if (typeof window.loadSelectedCaravanDetails === 'function') window.loadSelectedCaravanDetails();

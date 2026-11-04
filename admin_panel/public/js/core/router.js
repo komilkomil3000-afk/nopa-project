@@ -29,13 +29,13 @@
       load: () => call('loadDashboard'),
     },
     'users-tab': {
-      hashes: ['users'], group: 'audience', label: 'دایرکتوری مخاطبان', icon: 'fa-solid fa-users', section: 'users',
-      title: 'دایرکتوری کاربران', desc: 'مشاهده، فیلتر، ویرایش و مدیریت اطلاعات کاربران نپا',
+      hashes: ['users'], group: 'audience', label: 'همسفران', icon: 'fa-solid fa-people-group', section: 'users',
+      title: 'همسفران نپا', desc: 'همه همسفران نپا (نوجوانان، راهبران و مدیران) در یک نگاه',
       load: () => call('loadUsersData'),
     },
     'levels-tab': {
       hashes: ['levels'], group: 'audience', label: 'سطوح و گواهینامه‌ها', icon: 'fa-solid fa-layer-group', section: 'users',
-      title: 'سطوح و گواهینامه‌ها', desc: 'دایرکتوری دستاوردهای مخاطبان و درخواست‌های فیزیکی گواهینامه',
+      title: 'سطوح و گواهینامه‌ها', desc: 'سطح هر نوجوان در مسیر منزلگاه‌ها، گواهینامه‌ها و درخواست‌های چاپی',
       load: () => call('loadLevelsAndCertificatesTab'),
     },
     'rewards-tab': {

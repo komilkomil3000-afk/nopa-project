@@ -31,6 +31,7 @@ import {
   updateMentor,
   moderateMentor,
   getLevelsAndCertificates,
+  updatePhysicalCertificateOrder,
   replyTicketAdmin,
   resolveTicketAdmin,
   setUserRole,
@@ -106,6 +107,7 @@ router.post('/students', createOrUpdateStudent as any);
 router.post('/students/:id/adjust-balance', adjustBalance as any);
 router.post('/students/:id/level-frame', adjustLevelFrame as any);
 router.get('/levels-and-certificates', getLevelsAndCertificates as any);
+router.patch('/levels/orders/:id', updatePhysicalCertificateOrder as any);
 
 // 2. Zarik Ledger & Categorized Rewards
 router.get('/rewards/ledger', getZarikLedger as any);

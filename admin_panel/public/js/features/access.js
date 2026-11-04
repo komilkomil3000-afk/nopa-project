@@ -125,7 +125,7 @@ function isChannelManagerUser() {
 window.isChannelManagerUser = isChannelManagerUser;
 
 const PANEL_SECTION_LABELS = {
-  users: 'کاربران، مخاطبان و سطوح',
+  users: 'همسفران، سطوح و گواهینامه‌ها',
   rewards: 'کیف پول، زریک و دارایی‌ها',
   mentors: 'راهبران و مدارک',
   instructors: 'بانک اساتید',
@@ -183,7 +183,7 @@ function setupUserModalAccessControls(role, panelAccess) {
     const refresh = () => {
       const group = document.getElementById('panel-access-group');
       const r = roleSelect.value;
-      if (group) group.style.display = (superAdmin && (r === 'sub_admin' || r === 'channel_manager' || r === 'mentor')) ? 'block' : 'none';
+      if (group) group.style.display = (superAdmin && (r === 'sub_admin' || r === 'channel_manager' || r === 'mentor')) ? '' : 'none';
     };
     roleSelect.addEventListener('change', refresh);
     refresh();

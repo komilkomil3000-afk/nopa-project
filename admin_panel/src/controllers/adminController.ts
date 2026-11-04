@@ -187,14 +187,43 @@ export async function getUsers(req: AuthRequest, res: Response) {
         blocked: u.blocked,
         createdAt: u.createdAt,
         completionRate,
+        userCode: u.userCode,
+        avatarUrl: u.avatarUrl,
+        mentorLevel: u.mentorLevel,
+        accountStatus: u.accountStatus,
+        registrationCompleted: u.registrationCompleted,
+        isDualRole: u.isDualRole,
+        city: u.city,
+        nationalId: u.nationalId,
+        dateOfBirth: u.dateOfBirth,
       };
     });
+
+    // Totals over all users (not the filtered page) for the overview tiles of the panel
+    const weekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+    const [byRole, zarikSum, blockedCount, newThisWeek, incompleteCount] = await Promise.all([
+      prisma.user.groupBy({ by: ['role'], _count: { _all: true } }),
+      prisma.user.aggregate({ _sum: { zarikBalance: true } }),
+      prisma.user.count({ where: { blocked: true } }),
+      prisma.user.count({ where: { createdAt: { gte: weekAgo } } }),
+      prisma.user.count({ where: { registrationCompleted: false } }),
+    ]);
+    const roles: Record<string, number> = {};
+    byRole.forEach((r) => { roles[r.role] = r._count._all; });
 
     res.json({
       users: sanitizedUsers,
       total: totalCount,
       page,
       pages: Math.ceil(totalCount / limit),
+      stats: {
+        total: Object.values(roles).reduce((n, c) => n + c, 0),
+        roles,
+        zarik: zarikSum._sum.zarikBalance || 0,
+        blocked: blockedCount,
+        newThisWeek,
+        incomplete: incompleteCount,
+      },
     });
   } catch (error: any) {
     res.status(500).json({ error: error.message });
@@ -1851,26 +1880,82 @@ export async function setAccountStatus(req: AuthRequest, res: Response) {
 
 export const getLevelsAndCertificates = async (req: Request, res: Response) => {
   try {
-    const users = await prisma.user.findMany({
-      where: { role: 'student' },
-      select: {
-        id: true,
-        name: true,
-        phoneNumber: true,
-        levelFrame: true,
-        registrationCompleted: true,
-        certificates: {
-          orderBy: { issuedAt: 'desc' },
-          take: 1
-        },
-        physicalOrders: {
-          include: { certificate: true }
+    const [users, stations] = await Promise.all([
+      prisma.user.findMany({
+        where: { role: 'student' },
+        select: {
+          id: true,
+          name: true,
+          phoneNumber: true,
+          levelFrame: true,
+          registrationCompleted: true,
+          userCode: true,
+          avatarUrl: true,
+          createdAt: true,
+          caravan: { select: { id: true, name: true } },
+          _count: { select: { certificates: true } },
+          certificates: {
+            orderBy: { issuedAt: 'desc' },
+            take: 1
+          },
+          physicalOrders: {
+            orderBy: { createdAt: 'desc' },
+            include: { certificate: true }
+          }
         }
-      }
+      }),
+      // levelFrame is the 1-based position in this ordered list (app/lib/core/station_state.dart)
+      prisma.station.findMany({
+        orderBy: { orderIndex: 'asc' },
+        select: { id: true, title: true, subtitle: true, iconUrl: true, orderIndex: true, status: true },
+      }),
+    ]);
+
+    res.json({ success: true, data: users, stations });
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
+// PATCH /admin/levels/orders/:id { status: 'PENDING_PRINT' | 'DISPATCHED', trackingCode? }
+// A printed certificate was posted (or sent back to the print queue); the student gets a notification.
+export const updatePhysicalCertificateOrder = async (req: AuthRequest, res: Response) => {
+  try {
+    const { id } = req.params;
+    const status = String(req.body?.status || '');
+    if (!['PENDING_PRINT', 'DISPATCHED'].includes(status)) {
+      return res.status(400).json({ error: 'وضعیت نامعتبر است' });
+    }
+    const trackingCode = typeof req.body?.trackingCode === 'string' ? req.body.trackingCode.trim().slice(0, 64) : undefined;
+    const order = await prisma.physicalCertificateOrder.update({
+      where: { id },
+      data: { status, ...(trackingCode !== undefined ? { trackingCode: trackingCode || null } : {}) },
+      include: { certificate: true },
     });
 
-    res.json({ success: true, data: users });
+    if (status === 'DISPATCHED') {
+      await prisma.notification.create({
+        data: {
+          userId: order.userId,
+          title: 'ارسال گواهینامه',
+          message: `نسخه چاپی گواهینامه «${order.certificate.title}» برای شما ارسال شد${order.trackingCode ? `؛ کد رهگیری: ${order.trackingCode}` : ''}.`,
+          type: 'alert',
+        },
+      });
+    }
+    await logAdminAction(
+      req.user?.id || 'system',
+      req.user?.phoneNumber || 'Admin',
+      'UPDATE_CERTIFICATE_ORDER',
+      'PhysicalCertificateOrder',
+      order.id,
+      `وضعیت سفارش چاپی گواهینامه «${order.certificate.title}» به ${status} تغییر کرد`,
+      req.ip || '127.0.0.1',
+      req.user?.role
+    );
+    res.json({ success: true, order });
   } catch (error: any) {
+    if (error?.code === 'P2025') return res.status(404).json({ error: 'سفارش یافت نشد' });
     res.status(500).json({ error: error.message });
   }
 };
