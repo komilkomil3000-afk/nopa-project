@@ -58,18 +58,19 @@ async function viewUserDetails(userId) {
 }
 
 function urpPaint(payload) {
+  urpLastPayload = payload;
   const user = payload.user || {};
   const b = payload.balances || {};
   const mentor = !!(user.isDualRole || String(user.role).toLowerCase() === 'mentor');
   const name = user.name || 'کاربر';
   const sp = payload.stationsProgress?.summary || {};
-  const minutes = payload.metrics?.approximateActiveMinutes;
 
   document.getElementById('drawer-user-name').textContent = name;
   document.getElementById('urp-head-sub').textContent = [roleLabel(user.role), user.phoneNumber, user.userCode ? `کد ${crvFa(user.userCode)}` : ''].filter(Boolean).join(' · ');
   document.getElementById('urp-head-avatar').outerHTML = crvAvatar(user.avatarUrl, name, 'lse-id-icon is-accent urp-head-avatar').replace('<span class="', '<span id="urp-head-avatar" class="');
   document.querySelector('#urp-tabs [data-urp-tab="mentor"]').hidden = !mentor;
   document.getElementById('urp-foot-actions').innerHTML = `
+    <button type="button" class="lse-btn" data-click="openPersonSitePhoto" data-click-args="${crvArgs(user.id, 'urp')}"><i class="fa-solid fa-image"></i> عکس سایت</button>
     <button type="button" class="lse-btn" data-click="openPasswordOverride" data-click-args="${crvArgs(user.id)}"><i class="fa-solid fa-key"></i> تغییر رمز</button>
     <button type="button" class="lse-btn urp-danger" data-click="setAccountStatus" data-click-args="${crvArgs(user.id, 'SUSPENDED')}"><i class="fa-solid fa-user-slash"></i> تعلیق حساب</button>`;
 
@@ -87,17 +88,18 @@ function urpPaint(payload) {
   document.getElementById('drawer-body-info').innerHTML = `
     <div class="urp-pane is-active" data-urp-pane="identity">
       <section class="lse-card urp-hero">
-        ${crvAvatar(user.avatarUrl, name, 'crv-mentor-photo urp-photo')}
+        ${nopaPersonPhoto(user, 'urp', 'crv-mentor-photo urp-photo')}
         <div class="urp-hero-text">
           <strong>${esc(name)}</strong>
           <span>${esc(roleLabel(user.role))}${user.caravanName ? ` · کاروان ${esc(user.caravanName)}` : ''}</span>
           <div class="lsv-facts">
             <span><i class="fa-solid fa-layer-group"></i> سطح ${crvFa(user.levelFrame || 1)}</span>
             <span><i class="fa-regular fa-calendar"></i> عضو از ${esc(user.createdAt ? new Date(user.createdAt).toLocaleDateString('fa-IR') : '-')}</span>
-            ${minutes != null ? `<span><i class="fa-regular fa-clock"></i> حدود ${crvFa(minutes)} دقیقه فعالیت</span>` : ''}
           </div>
+          ${payload.presence ? window.nopaPresenceChip(payload.presence) : ''}
         </div>
       </section>
+      <div id="urp-activity-chart"></div>
       <section class="lse-card">
         <h4 class="lse-card-title"><i class="fa-solid fa-coins"></i> دارایی‌ها</h4>
         <div class="crv-assets-card urp-assets">
@@ -179,6 +181,8 @@ function urpPaint(payload) {
     </div>`;
 
   window.populateDrawerClassProgress(payload);
+  nopaPersonChart(document.getElementById('urp-activity-chart'), 'urp', user.id);
+  NopaPhoto.remount();
   if (window.NopaFlip) window.NopaFlip.enter(document.querySelectorAll('#drawer-body-info .urp-pane.is-active > .lse-card'));
 }
 
@@ -729,3 +733,114 @@ async function handleUserFormSubmit(e) {
     showToast(data.error || 'خطا در ثبت اطلاعات', 'error');
   }
 }
+
+// ==========================================
+// Online / last seen (GET /admin/users/:id/presence, also inside the analytics payload), the activity chart
+// (js/ui/activity-chart.js) and the person's two pictures: the app one (picked by the person in the app) and the
+// site one (set here, in place, with NopaPhoto). Shared by the همسفران page (audience.js), the mentor page
+// (mentors.js) and the full report above.
+// ==========================================
+const nopaPresenceCache = new Map(); // userId -> { at, data: { presence, usage } }
+
+function nopaAgo(at) {
+  if (!at) return 'نامشخص';
+  const t = new Date(at).getTime();
+  if (!t) return 'نامشخص';
+  const min = Math.round((Date.now() - t) / 60000);
+  if (min < 1) return 'همین الان';
+  if (min < 60) return `${crvFa(min)} دقیقه پیش`;
+  const h = Math.round(min / 60);
+  if (h < 24) return `${crvFa(h)} ساعت پیش`;
+  const d = Math.round(h / 24);
+  if (d < 30) return `${crvFa(d)} روز پیش`;
+  return new Date(t).toLocaleDateString('fa-IR');
+}
+window.nopaPresenceChip = function(p) {
+  if (!p) return '<span class="nop-presence-chip"><i class="fa-solid fa-circle"></i> …</span>';
+  return p.online
+    ? '<span class="nop-presence-chip is-online"><i class="fa-solid fa-circle"></i> آنلاین</span>'
+    : `<span class="nop-presence-chip"><i class="fa-solid fa-circle"></i> آفلاین · آخرین حضور ${esc(nopaAgo(p.lastSeenAt))}</span>`;
+};
+
+/** Fills every [data-presence-for="<id>"] on the page with the online chip; cached for a minute. */
+window.nopaFillPresence = async function(userId, seed) {
+  const id = String(userId || '');
+  if (!id) return;
+  if (seed && seed.presence) nopaPresenceCache.set(id, { at: Date.now(), data: { presence: seed.presence, usage: seed.usage } });
+  const slots = () => document.querySelectorAll(`[data-presence-for="${CSS.escape(id)}"]`);
+  const paint = data => slots().forEach(el => { el.innerHTML = window.nopaPresenceChip(data && data.presence); });
+  const hit = nopaPresenceCache.get(id);
+  if (hit && Date.now() - hit.at < 60000) return paint(hit.data);
+  paint(hit ? hit.data : null);
+  try {
+    const data = await NopaApi.json(`/api/v1/admin/users/${encodeURIComponent(id)}/presence`, { silent: true });
+    nopaPresenceCache.set(id, { at: Date.now(), data });
+    paint(data);
+  } catch (_) {
+    slots().forEach(el => { el.innerHTML = ''; });
+  }
+};
+window.nopaPresenceSlot = function(userId) {
+  return `<div class="nop-presence" data-presence-for="${esc(userId)}">${window.nopaPresenceChip(null)}</div>`;
+};
+
+/** The activity chart of one person, drawn into host (kept as it is when drawn again for the same person). */
+window.nopaPersonChart = function(host, where, userId) {
+  if (!host || !window.NopaActivity) return;
+  NopaActivity.render(host, `${where}:chart`, { params: { userId: String(userId) }, title: 'نمودار فعالیت' });
+};
+
+// ---- the site picture ----
+let urpLastPayload = null;
+function nopaPersonLists() {
+  const lists = [window.usrList, window.mentorsMasterList, window.caravansData, urpLastPayload];
+  if (typeof usrAnalyticsCache !== 'undefined') lists.push(Array.from(usrAnalyticsCache.values()));
+  if (typeof mntDossierCache !== 'undefined') lists.push(Array.from(mntDossierCache.values()));
+  return lists;
+}
+function nopaWalk(value, fn, depth = 0) {
+  if (!value || typeof value !== 'object' || depth > 8) return;
+  if (Array.isArray(value)) { value.forEach(v => nopaWalk(v, fn, depth + 1)); return; }
+  fn(value);
+  Object.keys(value).forEach(k => { if (value[k] && typeof value[k] === 'object') nopaWalk(value[k], fn, depth + 1); });
+}
+function nopaFindPerson(id) {
+  let found = null;
+  nopaWalk(nopaPersonLists(), o => { if (!found && String(o.id) === String(id) && 'avatarUrl' in o && o.name) found = o; });
+  return found;
+}
+
+/** The person's picture as a button that opens the picture editor right under it (where = usr | mnt | urp). */
+window.nopaPersonPhoto = function(person, where, cls) {
+  const name = person.name || '';
+  return `<button type="button" class="nph-trigger" data-click="openPersonSitePhoto" data-click-args="${crvArgs(person.id, where)}" title="تغییر عکس سایت" aria-label="تغییر عکس سایت">
+      ${crvAvatar(person.avatarUrl, name, cls)}
+      <span class="nph-trigger-badge"><i class="fa-solid fa-camera"></i></span>
+    </button>
+    ${NopaPhoto.slot(`${where}:${person.id}`)}`;
+};
+
+window.openPersonSitePhoto = function(userId, where) {
+  const p = nopaFindPerson(userId);
+  if (!p) return showToast('اطلاعات این شخص پیدا نشد؛ صفحه را دوباره باز کنید.', 'error');
+  NopaPhoto.toggle(`${where || 'usr'}:${userId}`, {
+    name: p.name,
+    current: p.siteAvatarUrl || '',
+    app: p.appAvatarUrl !== undefined ? (p.appAvatarUrl || '') : (p.siteAvatarUrl ? '' : (p.avatarUrl || '')),
+    hint: 'عکس سایت فقط در پنل دیده می‌شود؛ اپ همان عکسی را نشان می‌دهد که خود کاربر انتخاب کرده.',
+    onSave: async url => {
+      await NopaApi.json(`/api/v1/admin/users/${encodeURIComponent(userId)}/site-avatar`, { method: 'PUT', body: JSON.stringify({ url }) });
+      nopaWalk(nopaPersonLists(), o => {
+        if (String(o.id) !== String(userId) || !('avatarUrl' in o)) return;
+        if (o.appAvatarUrl === undefined) o.appAvatarUrl = o.siteAvatarUrl ? null : o.avatarUrl;
+        o.siteAvatarUrl = url;
+        o.avatarUrl = url || o.appAvatarUrl || null;
+      });
+      NopaPhoto.close();
+      // redraw whatever shows this person
+      if (urpUserId === String(userId) && urpLastPayload) urpPaint(urpLastPayload);
+      if (String(window.usrActiveId) === String(userId) && typeof window.loadUserPage === 'function') window.loadUserPage();
+      if (String(window.mntActiveMentorId) === String(userId) && typeof window.loadMentorPage === 'function') window.loadMentorPage();
+    },
+  });
+};

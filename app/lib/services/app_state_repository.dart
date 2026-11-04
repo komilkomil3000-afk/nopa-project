@@ -83,21 +83,39 @@ class AppRepository extends ChangeNotifier with WidgetsBindingObserver {
 
   // Foreground time not yet reported to the server (shown to mentors as the member's time in the app).
   int _usagePendingSeconds = 0;
+  // Times the app was opened (or brought back after [_reopenAfter] in the background) not yet reported:
+  // the panel charts "تعداد ورود به اپ" from them.
+  int _usagePendingOpens = 0;
   bool _usageFlushing = false;
+  DateTime? _backgroundSince;
+  static const Duration _reopenAfter = Duration(minutes: 1);
 
   Future<void> _flushUsage() async {
-    if (_usageFlushing || _usagePendingSeconds < 5 || !_apiService.isAuthenticated) return;
+    if (_usageFlushing || !_apiService.isAuthenticated) return;
+    if (_usagePendingSeconds < 5 && _usagePendingOpens == 0) return;
     _usageFlushing = true;
-    final sending = _usagePendingSeconds;
+    final sending = _usagePendingSeconds < 5 ? 0 : _usagePendingSeconds;
+    final opens = _usagePendingOpens;
     try {
-      if (await _apiService.pingAppUsage(sending)) _usagePendingSeconds -= sending;
+      if (await _apiService.pingAppUsage(sending, opens: opens)) {
+        _usagePendingSeconds -= sending;
+        _usagePendingOpens -= opens;
+      }
     } catch (_) {
     } finally {
       _usageFlushing = false;
     }
   }
 
+  /// Counts one opening of the app and reports it right away (with the time gathered so far).
+  void _noteAppOpened() {
+    _usagePendingOpens++;
+    _flushUsage();
+  }
+
   void _startPeriodicNotificationSync() {
+    // A new sync loop = the app was started or someone signed in: one opening
+    if (_notificationPollTimer == null) _noteAppOpened();
     _notificationPollTimer?.cancel();
     var tick = 0;
     _notificationPollTimer = Timer.periodic(pollInterval, (_) async {
@@ -168,6 +186,9 @@ class AppRepository extends ChangeNotifier with WidgetsBindingObserver {
       _appInForeground = state == AppLifecycleState.resumed;
       ChatRepository.instance.setForeground(_appInForeground);
       if (state == AppLifecycleState.resumed) {
+        final away = _backgroundSince;
+        _backgroundSince = null;
+        if (away != null && DateTime.now().difference(away) >= _reopenAfter && _apiService.isAuthenticated) _noteAppOpened();
         recordActivity();
         if (_apiService.isAuthenticated) {
           fetchNotifications().catchError((e) {
@@ -178,6 +199,7 @@ class AppRepository extends ChangeNotifier with WidgetsBindingObserver {
           });
         }
       } else if (state == AppLifecycleState.paused || state == AppLifecycleState.inactive || state == AppLifecycleState.detached) {
+        if (state != AppLifecycleState.inactive) _backgroundSince ??= DateTime.now();
         recordActivity();
         _flushUsage();
       }

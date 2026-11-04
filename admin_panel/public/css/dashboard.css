@@ -361,3 +361,14 @@
   .dash-chart-wrap { height: 260px; }
   .tile { padding: 16px; }
 }
+
+/* ---------- App usage tile (summary of the «آمار» tab) ---------- */
+.tile--usage { grid-column: span 12; }
+.dash-usage { display: grid; grid-template-columns: minmax(0, 2fr) minmax(0, 3fr); gap: 18px; align-items: end; }
+.dash-usage-kpis { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+.dash-usage-kpi { display: grid; grid-template-columns: auto 1fr; grid-template-rows: auto auto; column-gap: 10px; align-items: center; padding: 10px 12px; border-radius: var(--radius-md); background: var(--surface-inset); }
+.dash-usage-kpi i { grid-row: span 2; width: 34px; height: 34px; border-radius: 10px; display: inline-flex; align-items: center; justify-content: center; background: rgb(var(--primary-rgb) / 0.14); color: var(--primary-text); }
+.dash-usage-kpi span { font-size: var(--text-xs); color: var(--text-muted); }
+.dash-usage-kpi strong { font-size: var(--text-md); }
+.dash-usage-kpis .dash-empty { grid-column: 1 / -1; list-style: none; }
+@media (max-width: 860px) { .dash-usage { grid-template-columns: minmax(0, 1fr); } }

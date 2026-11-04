@@ -14,7 +14,8 @@ model User {
   passwordHash                 String
   role                         String         // "student" | "mentor" | "admin"
   name                         String
-  avatarUrl                    String?
+  avatarUrl                    String?        // picked in the app (bundled "asset:<key>" or an upload)
+  siteAvatarUrl                String?        // set by the admin panel; shown on the site instead of avatarUrl
   gender                       String?        // "male" | "female"
   panelAccess                  Boolean?       // null = follow role default; true/false = per-user override
   zarikBalance                 Int            @default(0)
@@ -67,6 +68,7 @@ model User {
   mentorDocuments              MentorDocument[]
   submissions                  Submission[]
   usageDays                    UserUsageDay[]
+  activityHours                UserActivityHour[]
   quizSubmissions              QuizSubmission[] @relation("StudentQuizSubmissions")
   quizReviews                  QuizSubmission[] @relation("MentorQuizReviews")
   formSubmissions              FormSubmission[]
@@ -623,6 +625,26 @@ model UserUsageDay {
 
   @@unique([userId, day])
   @@index([day])
+}
+
+// Activity per user per hour (Asia/Tehran), for the panel's charts (person page, آمار tab):
+//   kind "app"   value = seconds the app was in the foreground
+//   kind "open"  value = times the app was opened / brought back after a while
+//   kind "video" value = seconds of class video played; refId = ClassSession id
+model UserActivityHour {
+  id        String   @id @default(uuid())
+  userId    String
+  day       String   // "YYYY-MM-DD"
+  hour      Int      // 0..23
+  kind      String
+  refId     String   @default("")
+  value     Int      @default(0)
+  updatedAt DateTime @updatedAt
+
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, day, hour, kind, refId])
+  @@index([day, kind])
 }
 
 model SessionWatchRecord {

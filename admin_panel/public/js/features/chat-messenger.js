@@ -71,7 +71,7 @@
 
   function avatar(person, fallbackIcon, cls) {
     const gold = person && /mentor|admin|channel/i.test(person.role || '') ? ' is-gold' : '';
-    if (person && person.avatarUrl) return `<span class="chm-avatar${gold}${cls || ''}"><img src="${esc(person.avatarUrl)}" alt="" loading="lazy"></span>`;
+    if (person && window.nopaImgSrc(person.avatarUrl)) return `<span class="chm-avatar${gold}${cls || ''}"><img src="${esc(window.nopaImgSrc(person.avatarUrl))}" alt="" loading="lazy"></span>`;
     if (!person && fallbackIcon) return `<span class="chm-avatar is-gold${cls || ''}"><i class="fa-solid ${fallbackIcon}"></i></span>`;
     return `<span class="chm-avatar${gold}${cls || ''}">${esc(initial(person && person.name))}</span>`;
   }

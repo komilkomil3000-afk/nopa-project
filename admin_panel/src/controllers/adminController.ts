@@ -12,6 +12,9 @@ import bcrypt from 'bcryptjs';
 import { AuthRequest } from '../middleware/auth';
 import { ASSIGNABLE_ROLES, ROLE_ADMIN, ROLE_STUDENT, parseSectionGrants } from '../utils/roles';
 import { avatarFor, normalizeGender } from '../utils/avatar';
+import { presenceOf, usageSummary } from '../services/presence';
+import { setCachedSiteAvatar } from '../services/siteAvatars';
+import { isOnline } from '../modules/chat/realtime';
 
 
 // Memory Cache for Zarik Analytics (invalidated upon adjustments)
@@ -189,6 +192,9 @@ export async function getUsers(req: AuthRequest, res: Response) {
         completionRate,
         userCode: u.userCode,
         avatarUrl: u.avatarUrl,
+        siteAvatarUrl: u.siteAvatarUrl,
+        online: isOnline(u.id),
+        lastSeenAt: u.lastActiveTimestamp,
         mentorLevel: u.mentorLevel,
         accountStatus: u.accountStatus,
         registrationCompleted: u.registrationCompleted,
@@ -318,6 +324,7 @@ export async function getUserAnalytics(req: AuthRequest, res: Response) {
     });
 
     const activeTimeMinutes = Math.max(0, quizzes.length * 12 + assignments.length * 8 + watchRecords.length * 20);
+    const [presence, usage] = await Promise.all([presenceOf([id]), usageSummary(id)]);
 
     const caravanName = user.caravanId ? (await prisma.caravan.findUnique({ where: { id: user.caravanId } }))?.name || null : null;
     
@@ -464,10 +471,13 @@ export async function getUserAnalytics(req: AuthRequest, res: Response) {
         academicDegree: user.academicDegree,
         userCode: user.userCode,
         avatarUrl: user.avatarUrl,
+        siteAvatarUrl: user.siteAvatarUrl,
       },
       metrics: {
         approximateActiveMinutes: activeTimeMinutes,
       },
+      presence: presence.get(user.id) || { online: false, lastSeenAt: user.lastActiveTimestamp },
+      usage,
       stationsProgress: {
         summary: {
           passedStations: passedStationsCount,
@@ -1966,3 +1976,32 @@ export const updatePhysicalCertificateOrder = async (req: AuthRequest, res: Resp
   }
 };
 
+
+
+/** PUT /admin/users/:id/site-avatar { url } — the picture the site shows for a person (null/'' removes it; the app keeps its own). */
+export async function setUserSiteAvatar(req: AuthRequest, res: Response) {
+  try {
+    const raw = req.body?.url;
+    const url = typeof raw === 'string' && raw.trim() ? raw.trim() : null;
+    if (url && !/^(\/uploads\/|https?:\/\/)/i.test(url)) return res.status(400).json({ error: 'آدرس عکس معتبر نیست' });
+    const user = await prisma.user.update({ where: { id: req.params.id }, data: { siteAvatarUrl: url }, select: { id: true, avatarUrl: true, siteAvatarUrl: true } });
+    setCachedSiteAvatar(user.id, url);
+    res.json({ user });
+  } catch (error: any) {
+    if (error?.code === 'P2025') return res.status(404).json({ error: 'کاربر یافت نشد' });
+    res.status(500).json({ error: error.message });
+  }
+}
+
+/** GET /admin/users/:id/presence — online now, last seen, and the time spent in the app (light; for person pages). */
+export async function getUserPresence(req: AuthRequest, res: Response) {
+  try {
+    const id = req.params.id;
+    const [presence, usage] = await Promise.all([presenceOf([id]), usageSummary(id)]);
+    const p = presence.get(id);
+    if (!p) return res.status(404).json({ error: 'کاربر یافت نشد' });
+    res.json({ presence: p, usage });
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
+  }
+}

@@ -12,6 +12,7 @@
   }
 
   const GROUPS = [
+    { id: 'stats', label: 'آمار', icon: 'fa-solid fa-chart-column' },
     { id: 'audience', label: 'مخاطبان', icon: 'fa-solid fa-users' },
     { id: 'economy', label: 'اقتصاد و لیگ', icon: 'fa-solid fa-coins' },
     { id: 'mentors', label: 'راهبران', icon: 'fa-solid fa-user-tie' },
@@ -27,6 +28,11 @@
       hashes: ['dashboard', 'analytics'], group: null, label: 'داشبورد', icon: 'fa-solid fa-chart-pie', section: '*',
       title: 'داشبورد', desc: 'نمای کلی وضعیت نپا در یک نگاه',
       load: () => call('loadDashboard'),
+    },
+    'stats-tab': {
+      hashes: ['stats'], group: 'stats', label: 'آمار', icon: 'fa-solid fa-chart-column', section: 'analytics',
+      title: 'آمار', desc: 'زمان حضور در اپ، تماشای فیلم‌ها، ورود به اپ و فعالیت افراد، کاروان‌ها و منزلگاه‌ها',
+      load: () => call('loadStatsPage'),
     },
     'users-tab': {
       hashes: ['users'], group: 'audience', label: 'همسفران', icon: 'fa-solid fa-people-group', section: 'users',

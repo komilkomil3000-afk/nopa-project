@@ -8,6 +8,8 @@
     const currentToken = NopaAuth.getToken();
     const headers = Object.assign({}, options.headers);
     if (currentToken) headers['Authorization'] = `Bearer ${currentToken}`;
+    // the server then sends each person's site picture and the app's bundled pictures as files (services/siteAvatars.ts)
+    headers['X-Nopa-Client'] = 'panel';
     const hasType = Object.keys(headers).some(h => h.toLowerCase() === 'content-type');
     if (typeof options.body === 'string' && !hasType) headers['Content-Type'] = 'application/json';
     const fetchOptions = Object.assign({}, options, { headers });

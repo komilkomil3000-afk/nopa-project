@@ -96,7 +96,7 @@ function crvInitial(name) {
 }
 // A round picture (avatar / cover); without one, or when it fails to load, the name's first letter
 function crvAvatar(url, name, cls) {
-  const src = String(url || '').trim();
+  const src = window.nopaImgSrc ? window.nopaImgSrc(url) : String(url || '').trim();
   return src
     ? `<span class="${cls}"><img src="${esc(src)}" alt="" loading="lazy" data-error="lmsImageFallback" data-error-args='["$this", "${crvInitial(name)}"]'></span>`
     : `<span class="${cls}">${crvInitial(name)}</span>`;
@@ -775,12 +775,35 @@ window.openRenameActiveCaravan = function() {
   if (c) window.openRenameCaravanModal(String(c.id), String(c.name || ''));
 };
 
+// The caravan's picture: the same one the mentor sets in the app (chat group profile), shown in the app and here
+window.openActiveCaravanPhoto = function() {
+  const c = (window.caravansData || []).find(x => String(x.id) === String(window.crvActiveCaravanId));
+  const host = document.getElementById('crv-photo-slot');
+  if (!c || !host) return;
+  host.dataset.nphSlot = `crv:${c.id}`;
+  NopaPhoto.toggle(`crv:${c.id}`, {
+    name: c.name,
+    current: c.coverImageUrl || '',
+    hint: 'عکس کاروان در اپ (گروه کاروان، پروفایل و رتبه‌بندی) و در سایت نمایش داده می‌شود.',
+    onSave: async url => {
+      await NopaApi.json(`/api/v1/admin/caravans/${encodeURIComponent(c.id)}`, { method: 'PATCH', body: JSON.stringify({ coverImageUrl: url || '' }) });
+      c.coverImageUrl = url || null;
+      NopaPhoto.close();
+      if (typeof window.renderCaravansTable === 'function') window.renderCaravansTable();
+      if (String(window.crvActiveCaravanId) === String(c.id) && typeof window.openCaravanView === 'function') window.openCaravanView(c.id);
+    },
+  });
+};
+
 window.deleteActiveCaravan = function() {
   const c = (window.caravansData || []).find(x => String(x.id) === String(window.crvActiveCaravanId));
   if (c) window.deleteCaravanRecord(String(c.id), String(c.name || ''));
 };
 
 function crvCaravanCircles(selectedId) {
+  // the picture editor belongs to one caravan: switching caravans closes it
+  const photo = document.getElementById('crv-photo-slot');
+  if (photo && photo.dataset.nphSlot && photo.dataset.nphSlot !== `crv:${selectedId}` && !photo.hidden) NopaPhoto.close();
   return (window.caravansData || []).map(c => {
     const active = String(c.id) === String(selectedId);
     return `

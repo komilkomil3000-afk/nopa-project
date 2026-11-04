@@ -32,6 +32,7 @@ const MENTOR_ALLOWED: Rule[] = [
   { methods: GET, path: /^\/users\/metrics$/i },
   { methods: GET, path: /^\/users\/(?!export$)[^/]+$/i },
   { methods: GET, path: /^\/users\/[^/]+\/analytics$/i },
+  { methods: GET, path: /^\/users\/[^/]+\/presence$/i },
   { methods: GET, path: /^\/caravans(\/[^/]+)?$/i },
   { methods: GET, path: /^\/asset-conversions$/i },
   { methods: GET, path: /^\/tickets$/i },

@@ -235,6 +235,26 @@
     } catch (e) { fail('audit', e, 'dash-audit'); }
   });
 
+  // App usage this week (details: the «آمار» tab, js/features/stats.js)
+  const loadUsage = () => run('usage', async () => {
+    try {
+      const [o, s] = await Promise.all([
+        get('/api/v1/admin/analytics/stats/overview?range=week'),
+        get('/api/v1/admin/analytics/stats/series?metric=app&range=week'),
+      ]);
+      const t = o.totals || {};
+      const cell = (icon, label, value) => `<div class="dash-usage-kpi"><i class="fa-solid ${icon}"></i><span>${label}</span><strong>${esc(value)}</strong></div>`;
+      $('dash-usage-kpis').innerHTML = [
+        cell('fa-mobile-screen', 'زمان حضور در اپ', nopaDuration(t.appSeconds)),
+        cell('fa-circle-play', 'تماشای فیلم‌ها', nopaDuration(t.videoSeconds)),
+        cell('fa-right-to-bracket', 'ورود به اپ', fa(t.opens)),
+        cell('fa-users', 'کاربران فعال', `${fa(t.activeUsers)} نفر`),
+        cell('fa-signal', 'آنلاین همین الان', `${fa(t.onlineNow)} نفر`),
+      ].join('');
+      $('dash-usage-chart').innerHTML = NopaBars.columns(s.buckets, { unit: s.unit, label: 'زمان حضور در اپ در هفته جاری' });
+    } catch (e) { fail('usage', e, 'dash-usage-kpis'); }
+  });
+
   // ---- public -------------------------------------------------------------------------------
   function header() {
     const user = window.NopaAuth ? NopaAuth.getUser() : {};
@@ -247,7 +267,7 @@
   async function loadDashboard() {
     header();
     applyVisibility();
-    await Promise.all([loadUsers(), loadRewards(), loadPerformance(), loadAttention(), loadLeague(), loadAudit()]);
+    await Promise.all([loadUsers(), loadUsage(), loadRewards(), loadPerformance(), loadAttention(), loadLeague(), loadAudit()]);
   }
 
   function init() {

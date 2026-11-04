@@ -608,6 +608,13 @@ export async function updateCaravan(req: AuthRequest, res: Response) {
     if (name !== undefined) dataToUpdate.name = name;
     if (capacityLimit !== undefined) dataToUpdate.capacityLimit = Number(capacityLimit);
     if (description !== undefined) dataToUpdate.description = description;
+    // The caravan's picture (the same one the mentor sets in the app); '' / null removes it
+    const cover = req.body.coverImageUrl;
+    if (cover !== undefined) {
+      const url = typeof cover === 'string' && cover.trim() ? cover.trim() : null;
+      if (url && !/^(\/uploads\/|https?:\/\/)/i.test(url)) return res.status(400).json({ error: 'آدرس عکس معتبر نیست' });
+      dataToUpdate.coverImageUrl = url;
+    }
 
     const updated = await prisma.caravan.update({
       where: { id },

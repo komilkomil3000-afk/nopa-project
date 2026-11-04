@@ -317,7 +317,7 @@ function usrCircles(activeId) {
     return `
       <button type="button" class="lsv-circle${active ? ' is-active' : ''}" data-anim-key="uc:${esc(u.id)}" data-click="selectUserCircle" data-click-args="${crvArgs(u.id)}" title="${esc(u.name || '')}"${active ? ' aria-current="true"' : ''}>
         <span class="lsv-circle-main">
-          <span class="lsv-circle-img">${u.avatarUrl ? `<img src="${esc(u.avatarUrl)}" alt="" loading="lazy" data-error="lmsImageFallback" data-error-args='["$this", "${crvInitial(u.name)}"]'>` : `<span>${crvInitial(u.name)}</span>`}</span>
+          <span class="lsv-circle-img">${nopaImgSrc(u.avatarUrl) ? `<img src="${esc(nopaImgSrc(u.avatarUrl))}" alt="" loading="lazy" data-error="lmsImageFallback" data-error-args='["$this", "${crvInitial(u.name)}"]'>` : `<span>${crvInitial(u.name)}</span>`}</span>
           <span class="lsv-circle-badge ${state}"><i class="fa-solid ${usrRole(u).icon}"></i></span>
         </span>
         <span class="lsv-circle-name"><span>${esc(u.name || '')}</span></span>
@@ -351,7 +351,7 @@ function usrInfoCard(u, a) {
   ].filter(Boolean).join('');
   const tickets = a ? (a.tickets || []).filter(t => String(t.status || '').toLowerCase() !== 'resolved' && String(t.status || '').toLowerCase() !== 'closed').length : null;
   return `
-    ${crvAvatar(u.avatarUrl, u.name, 'crv-mentor-photo')}
+    ${nopaPersonPhoto(u, 'usr', 'crv-mentor-photo')}
     <strong class="crv-mentor-name">${esc(u.name || 'بدون نام')}</strong>
     ${u.phoneNumber ? `<span class="crv-mentor-phone" dir="ltr">${esc(u.phoneNumber)}</span>` : ''}
     <div class="mnt-mini">
@@ -360,8 +360,10 @@ function usrInfoCard(u, a) {
       <span class="${tickets ? 'is-warn' : ''}"><strong>${tickets === null ? '…' : crvFa(tickets)}</strong><small>تیکت باز</small></span>
     </div>
     <div class="lsv-facts crv-mentor-facts">${facts}</div>
+    ${window.nopaPresenceSlot(u.id)}
     <div class="mnt-info-actions">
       <button type="button" class="lsv-pill" data-click="openUserModal" data-click-args="${crvArgs(u.id)}"><i class="fa-solid fa-pen"></i> ویرایش</button>
+      <button type="button" class="lse-btn" data-click="openPersonSitePhoto" data-click-args="${crvArgs(u.id, 'usr')}"><i class="fa-solid fa-image"></i> عکس سایت</button>
       <button type="button" class="lse-btn" data-click="viewUserDetails" data-click-args="${crvArgs(u.id)}"><i class="fa-solid fa-chart-line"></i> گزارش کامل</button>
       ${usrHasCaravan(u) ? `<button type="button" class="lse-btn" data-click="openUserCaravanPage" data-click-args="${crvArgs(u.caravanId)}"><i class="fa-solid fa-compass"></i> کاروان</button>` : ''}
     </div>`;
@@ -460,6 +462,9 @@ function usrPaint(u, a) {
     el.innerHTML = `<i class="fa-solid ${u.blocked ? 'fa-unlock' : 'fa-ban'}"></i>`;
   });
   set('usr-info-card', el => { el.innerHTML = usrInfoCard(u, a); });
+  window.nopaFillPresence(u.id, a);
+  NopaPhoto.remount();
+  nopaPersonChart(document.getElementById('usr-activity-chart'), 'usr', u.id);
   set('usr-assets-card', el => { el.classList.toggle('is-loading', !a); el.innerHTML = usrAssets(u, a); });
 
   const rows = a ? usrActivityRows(u, a) : null;

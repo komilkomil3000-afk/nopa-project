@@ -1,4 +1,5 @@
 import { Request, Response, NextFunction } from 'express';
+import { applyPanelAvatars, isPanelRequest, loadSiteAvatars } from '../services/siteAvatars';
 
 // Safety net: no API response may ever contain credential material, whatever a controller
 // forgets to `select`. Controllers should still use explicit `select` lists.
@@ -42,8 +43,13 @@ function hideInternalError(req: Request, res: Response, body: any): any {
 
 export function scrubResponses(req: Request, res: Response, next: NextFunction) {
   const originalJson = res.json.bind(res);
-  res.json = ((body?: any) => originalJson(hideInternalError(req, res, scrub(body)))) as any;
-  next();
+  // The admin panel sees each person's site picture (and the app's bundled pictures as files): services/siteAvatars.ts
+  const panel = isPanelRequest(req.headers);
+  res.json = ((body?: any) => {
+    const clean = scrub(body);
+    return originalJson(hideInternalError(req, res, panel ? applyPanelAvatars(clean) : clean));
+  }) as any;
+  if (panel) loadSiteAvatars().then(() => next(), () => next()); else next();
 }
 
 export const __scrubForTests = scrub;

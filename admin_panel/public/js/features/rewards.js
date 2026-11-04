@@ -433,7 +433,7 @@ function wltCircles(activeId) {
     return `
       <button type="button" class="lsv-circle${active ? ' is-active' : ''}" data-anim-key="wcc:${esc(p.id)}" data-click="selectWalletCircle" data-click-args="${crvArgs(p.id)}" title="${esc(p.name)}"${active ? ' aria-current="true"' : ''}>
         <span class="lsv-circle-main">
-          <span class="lsv-circle-img">${p.avatarUrl ? `<img src="${esc(p.avatarUrl)}" alt="" loading="lazy" data-error="lmsImageFallback" data-error-args='["$this", "${crvInitial(p.name)}"]'>` : `<span>${crvInitial(p.name)}</span>`}</span>
+          <span class="lsv-circle-img">${nopaImgSrc(p.avatarUrl) ? `<img src="${esc(nopaImgSrc(p.avatarUrl))}" alt="" loading="lazy" data-error="lmsImageFallback" data-error-args='["$this", "${crvInitial(p.name)}"]'>` : `<span>${crvInitial(p.name)}</span>`}</span>
           <span class="lsv-circle-badge ${p.role === 'mentor' ? 'lsv-state-scheduled' : 'lsv-state-active'}"><i class="fa-solid fa-coins"></i></span>
         </span>
         <span class="lsv-circle-name"><span>${esc(p.name)}</span></span>

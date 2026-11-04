@@ -389,7 +389,7 @@ function mntInfoCard(m, dossier) {
   const openTickets = dossier ? (dossier.supervisedStudents || []).reduce((n, s) => n + (s.stats?.openTickets || 0), 0) : null;
   const docs = mntPendingDocs(m);
   return `
-    ${crvAvatar(m.avatarUrl, m.name, 'crv-mentor-photo')}
+    ${nopaPersonPhoto(m, 'mnt', 'crv-mentor-photo')}
     <strong class="crv-mentor-name">${esc(m.name || 'راهبر بدون نام')}</strong>
     ${m.phoneNumber ? `<span class="crv-mentor-phone" dir="ltr">${esc(m.phoneNumber)}</span>` : ''}
     <span class="mnt-stars" title="${esc(stars.text)}">${[1, 2, 3, 4, 5].map(i => `<i class="fa-${stars.avgNumeric >= i - 0.25 ? 'solid' : 'regular'} fa-star"></i>`).join('')}<small>${stars.score !== null ? `${crvFa(stars.score)} · ${crvFa(stars.count)} نظر` : 'بدون ارزیابی'}</small></span>
@@ -400,8 +400,10 @@ function mntInfoCard(m, dossier) {
     </div>
     <div class="lsv-facts crv-mentor-facts">${facts}</div>
     ${m.bio ? `<p class="crv-mentor-bio">${esc(m.bio)}</p>` : ''}
+    ${window.nopaPresenceSlot(m.id)}
     <div class="mnt-info-actions">
       <button type="button" class="lsv-pill" data-click="editMentor" data-click-args="${crvArgs(m.id)}"><i class="fa-solid fa-pen"></i> ویرایش</button>
+      <button type="button" class="lse-btn" data-click="openPersonSitePhoto" data-click-args="${crvArgs(m.id, 'mnt')}"><i class="fa-solid fa-image"></i> عکس سایت</button>
       <button type="button" class="lse-btn" data-click="openMentorModerationModal" data-click-args="${crvArgs(m.id)}"><i class="fa-solid fa-user-shield"></i> وضعیت حساب</button>
       ${docs ? `<button type="button" class="lse-btn mnt-docs-btn" data-click="mntGoTab" data-click-args="${crvArgs('mentors-docs-tab')}"><i class="fa-solid fa-file-circle-exclamation"></i> ${crvFa(docs)} مدرک</button>` : ''}
     </div>`;
@@ -498,6 +500,9 @@ function mntPaint(m, dossier) {
   set('mnt-sub', el => { el.textContent = `${crvFa(caravans.length)} کاروان · ${crvFa(mntStudentsOf(m))} دانش‌آموز`; });
   set('mnt-circles', el => { el.innerHTML = mntCircles(m, activeId); });
   set('mnt-info-card', el => { el.innerHTML = mntInfoCard(m, dossier); });
+  window.nopaFillPresence(m.id);
+  NopaPhoto.remount();
+  nopaPersonChart(document.getElementById('mnt-activity-chart'), 'mnt', m.id);
   set('mnt-caravans-count', el => { el.textContent = crvFa(caravans.length); });
   set('mnt-caravans-list', el => {
     const addRow = `

@@ -1,4 +1,5 @@
 import { Request, Response } from 'express';
+import { addActivity } from '../services/activity';
 import prisma from '../config/db';
 import { changeBalance } from '../services/ledger';
 import { stripAnswerKeys, stripStationAnswerKeys, isAdminRole } from '../utils/answerKeys';
@@ -1007,6 +1008,9 @@ export const heartbeatSessionWatch = async (req: any, res: Response) => {
     } else {
       const elapsedRealSeconds = Math.max(0, Math.floor((now.getTime() - record.lastWatchedAt.getTime()) / 1000));
       const delta = currentPositionSeconds - record.lastPositionSeconds;
+
+      // Time spent watching (wall clock, for the panel's charts): only while the position moves, at most 2 minutes per beat
+      if (delta > 0 && elapsedRealSeconds > 0) void addActivity(userId, 'video', Math.min(elapsedRealSeconds, delta, 120), sessionId);
 
       if (delta > 0 && elapsedRealSeconds > 0) {
         const maxAllowedDelta = Math.max(5, elapsedRealSeconds * 2.5); // Support up to 2.5x speed

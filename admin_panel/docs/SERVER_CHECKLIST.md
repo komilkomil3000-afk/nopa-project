@@ -114,3 +114,15 @@
 - migration جدید `20261063_slogans`: ستون `slogan` به جدول‌های `User` و `Caravan` اضافه می‌شود (ستون null، بی‌خطر و سریع). قبل از استقرار بکاپ بگیرید؛ hook خودش `prisma migrate deploy` را می‌زند؛ سپس `npx prisma generate` و `pm2 restart`.
 - endpoint جدید `PUT /api/v1/chat/spaces/:id/slogan`. `POST /chat/topics/:id/pay` حالا `userIds` اختیاری می‌پذیرد و برای چالشِ باز هم کار می‌کند. env/فولدر جدید لازم نیست.
 - بدون استقرار بک‌اند، اپ جدید ذخیره‌ی شعار را با خطا نشان می‌دهد و دکمه‌ی «تأیید و پرداخت» هر نفر روی چالش باز خطای «اول چالش را ببندید» می‌دهد.
+
+## تغییر: عکس سایت، عکس‌های اپ در پنل، و حضور/آنلاین بودن کاربر (۱۴۰۵/۰۸/۱۴)
+- migration جدید `20261064_site_avatar`: ستون `siteAvatarUrl` (null) به جدول `User` اضافه می‌شود؛ بی‌خطر و سریع. قبل از استقرار بکاپ بگیرید؛ hook خودش `prisma migrate deploy` را می‌زند؛ سپس `npx prisma generate` و `pm2 restart`.
+- عکس‌های سایت با `POST /api/v1/media/upload` در همان `~/nopa/uploads` ذخیره می‌شوند (از قبل در بکاپ است). فولدر، env، پورت یا cron جدیدی لازم نیست.
+- عکس‌های آماده‌ی اپ در `public/images/avatars/` (کپی `app/assets/avatars/`) همراه کد مستقر می‌شوند؛ اگر عکسی به اپ اضافه شد، آن را اینجا و در `src/services/siteAvatars.ts` و `public/js/ui/photo-picker.js` هم اضافه کنید.
+- «آنلاین» = اتصال زنده‌ی چت (socket) یا گزارش زمان حضور اپ در ۳ دقیقه‌ی اخیر؛ «آخرین حضور» هنگام قطع آخرین اتصال چت در `User.lastActiveTimestamp` ثبت می‌شود.
+
+## تغییر: نمودار فعالیت، صفحه «آمار» و ثبت ساعتی فعالیت (۱۴۰۵/۰۸/۱۴)
+- migration جدید `20261065_activity_hours`: جدول `UserActivityHour` (هر کاربر، هر ساعت به وقت تهران: ثانیه‌های حضور در اپ `app`، دفعات ورود `open`، ثانیه‌های تماشای فیلم `video` با شناسه کلاس). قبل از استقرار بکاپ بگیرید؛ hook خودش `prisma migrate deploy` را می‌زند؛ سپس `npx prisma generate` و `pm2 restart`.
+- endpointهای جدید (فقط خواندن): `GET /api/v1/admin/analytics/stats/series` و `GET /api/v1/admin/analytics/stats/overview` (بخش دسترسی «analytics»). env، فولدر، پورت یا cron جدیدی لازم نیست.
+- `POST /api/v1/usage/ping` حالا `opens` را هم می‌پذیرد و هر ضربان فیلم (`/lms/sessions/:id/heartbeat`) زمان تماشا را ثبت می‌کند. «تعداد ورود به اپ» فقط با نسخهٔ جدید اپ ثبت می‌شود؛ تفکیک ساعتی/روزانهٔ فیلم‌ها از زمان استقرار شروع می‌شود (برای «تمام مدت» از مجموع قبلی `SessionWatchRecord` هم استفاده می‌شود).
+- رشد جدول: حداکثر یک ردیف برای هر کاربر در هر ساعت فعال (و برای فیلم، به ازای هر کلاس). اگر روزی بزرگ شد، ردیف‌های قدیمی‌تر از یک سال را می‌توان پاک کرد (نمودار روزانهٔ حضور از `UserUsageDay` می‌آید و آسیب نمی‌بیند).

@@ -2,6 +2,8 @@ import { Router } from 'express';
 import { authenticateJWT, authorizeRoles } from '../middleware/auth';
 import {
   getUsers,
+  setUserSiteAvatar,
+  getUserPresence,
   getUserById,
   createUser,
   updateUser,
@@ -69,6 +71,7 @@ import {
   getLogs 
 } from '../controllers/notificationController';
 import { getDashboardAnalytics } from '../controllers/analyticsController';
+import { getStatsOverview, getStatsSeries } from '../controllers/statsController';
 import { getMentors, createOrUpdateMentor, grantFiveStars } from '../controllers/mentorController';
 import { getPendingDocuments, approveDocument, rejectDocument, getMentorHistory, assignCaravans } from '../controllers/mentorController';
 import { createOrUpdateStudent, adjustBalance, adjustLevelFrame } from '../controllers/studentController';
@@ -181,6 +184,8 @@ router.get('/mentors/:id/dossier', getMentorDossier as any);
 router.put('/mentors/:id', updateMentor as any);
 router.post('/mentors/:id/moderate', moderateMentor as any);
 router.get('/users/:id/analytics', getUserAnalytics as any);
+router.put('/users/:id/site-avatar', setUserSiteAvatar as any);
+router.get('/users/:id/presence', getUserPresence as any);
 
 import { getAdminNews, createNews, updateNews, deleteNews } from '../controllers/newsController';
 import { getAdminBanners, createBanner, updateBanner, deleteBanner } from '../controllers/bannerController';
@@ -210,6 +215,8 @@ router.get('/notifications/logs', getLogs as any);
 
 // 6. Analytics Dashboard
 router.get('/analytics', getDashboardAnalytics as any);
+router.get('/analytics/stats/series', getStatsSeries as any);
+router.get('/analytics/stats/overview', getStatsOverview as any);
 
 // 7. System Audit Logs & Export Center
 router.get('/audit/logs', getAuditLogs as any);

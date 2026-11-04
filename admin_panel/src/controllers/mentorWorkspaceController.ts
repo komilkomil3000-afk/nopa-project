@@ -1,6 +1,7 @@
 import { Response } from 'express';
 import { AuthRequest } from '../middleware/auth';
 import prisma from '../config/db';
+import { addActivity } from '../services/activity';
 import { CATEGORY_ORDER_BY, trackTypeFor } from '../utils/stationCategories';
 
 export async function createMentorChallenge(req: AuthRequest, res: Response) {
@@ -166,8 +167,12 @@ export function tehranDay(d: Date): string {
 export async function recordAppUsage(req: AuthRequest, res: Response) {
   try {
     const seconds = Math.max(0, Math.min(300, Math.round(Number(req.body?.seconds) || 0)));
-    if (seconds === 0) return res.json({ ok: true });
+    // times the app was opened (or came back after a while) since the last report; sent by newer app versions
+    const opens = Math.max(0, Math.min(20, Math.round(Number(req.body?.opens) || 0)));
     const userId = req.user!.id;
+    if (opens > 0) await addActivity(userId, 'open', opens);
+    if (seconds === 0) return res.json({ ok: true });
+    await addActivity(userId, 'app', seconds);
     const day = tehranDay(new Date());
     await prisma.userUsageDay.upsert({
       where: { userId_day: { userId, day } },

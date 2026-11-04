@@ -1681,13 +1681,14 @@ class HttpApiService {
     }
   }
 
-  /// Reports [seconds] the app was open in the foreground (added to today's usage on the server).
-  Future<bool> pingAppUsage(int seconds) async {
+  /// Reports [seconds] the app was open in the foreground (added to today's usage on the server) and how many
+  /// times it was [opens]ed since the last report.
+  Future<bool> pingAppUsage(int seconds, {int opens = 0}) async {
     try {
       final res = await _post(
         Uri.parse('$baseUrl/usage/ping'),
         headers: _getHeaders(),
-        body: jsonEncode({'seconds': seconds}),
+        body: jsonEncode({'seconds': seconds, if (opens > 0) 'opens': opens}),
       );
       return res.statusCode == 200;
     } catch (e) {

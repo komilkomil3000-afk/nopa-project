@@ -1,0 +1,96 @@
+/* Shamsi date picker (js/ui/jalali-datepicker.js) */
+/* doubled class: beats page rules such as `.date-field-group .date-ctrl { background: … !important }` */
+input.jdp-display.jdp-display {
+  cursor: pointer;
+  text-align: right;
+  caret-color: transparent;
+  padding-left: 32px !important;
+  /* calendar icon on the field's left edge */
+  background-repeat: no-repeat !important;
+  background-position: left 10px center !important;
+  background-size: 15px 15px !important;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%239aa0b4' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='3' y='4.5' width='18' height='16.5' rx='2.5'/%3E%3Cpath d='M3 9.5h18M8 2.5v4M16 2.5v4'/%3E%3C/svg%3E") !important;
+}
+.jdp-display:disabled { cursor: not-allowed; opacity: 0.6; }
+.jdp-display::placeholder { color: var(--text-faint); }
+
+.jdp-pop {
+  position: fixed;
+  z-index: calc(var(--z-toast, 9000) + 10);
+  width: 280px;
+  max-width: calc(100vw - 16px);
+  padding: 12px;
+  border-radius: var(--radius-lg, 14px);
+  background: var(--surface);
+  border: 1px solid var(--border-strong);
+  box-shadow: var(--shadow-lg, 0 16px 40px rgb(0 0 0 / 0.35));
+  color: var(--text);
+  font-family: inherit;
+  font-size: var(--text-sm, 13px);
+  user-select: none;
+  animation: jdp-in 0.14s ease-out;
+}
+@keyframes jdp-in { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: none; } }
+@media (prefers-reduced-motion: reduce) { .jdp-pop { animation: none; } }
+
+.jdp-head { display: flex; align-items: center; justify-content: space-between; gap: 6px; margin-bottom: 10px; }
+.jdp-title { display: flex; gap: 6px; flex: 1; justify-content: center; }
+.jdp-nav {
+  width: 30px; height: 30px; flex: none;
+  display: inline-flex; align-items: center; justify-content: center;
+  border: 0; border-radius: 8px; background: transparent; color: var(--text-muted);
+  cursor: pointer; font-size: 12px;
+}
+.jdp-nav:hover { background: var(--surface-2); color: var(--text); }
+
+.jdp-sel {
+  appearance: none; -webkit-appearance: none;
+  padding: 5px 10px; border-radius: 8px;
+  border: 1px solid var(--border); background: var(--surface-2); color: var(--text);
+  font: inherit; font-size: var(--text-sm, 13px); font-weight: 600; cursor: pointer; text-align: center;
+}
+.jdp-sel:focus-visible { outline: 2px solid var(--primary); outline-offset: 1px; }
+.jdp-sel option { background: var(--surface); color: var(--text); }
+
+.jdp-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 2px; }
+.jdp-wd { text-align: center; font-size: var(--text-2xs, 11px); color: var(--text-muted); padding: 4px 0 6px; font-weight: 600; }
+.jdp-wd.is-friday { color: var(--danger-text, var(--danger)); }
+.jdp-day {
+  aspect-ratio: 1; min-height: 32px;
+  border: 0; border-radius: 8px; background: transparent; color: var(--text);
+  font: inherit; font-size: var(--text-sm, 13px); cursor: pointer;
+}
+.jdp-day:hover:not([disabled]) { background: var(--surface-2); }
+.jdp-day:focus-visible { outline: 2px solid var(--primary); outline-offset: -2px; }
+.jdp-day.is-friday { color: var(--danger-text, var(--danger)); }
+.jdp-day.is-today { box-shadow: inset 0 0 0 1.5px var(--primary); font-weight: 700; }
+.jdp-day.is-selected { background: var(--primary); color: var(--on-fill, #fff); font-weight: 700; }
+.jdp-day.is-selected:hover { background: var(--primary-strong, var(--primary)); }
+.jdp-day[disabled] { opacity: 0.3; cursor: not-allowed; }
+
+.jdp-time {
+  display: flex; align-items: center; justify-content: space-between; gap: 8px;
+  margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--border);
+}
+.jdp-time-label { color: var(--text-muted); font-size: var(--text-xs, 12px); }
+.jdp-clock { display: flex; align-items: center; gap: 4px; }
+.jdp-colon { font-weight: 700; color: var(--text-muted); }
+
+.jdp-foot {
+  display: flex; align-items: center; gap: 8px;
+  margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--border);
+}
+.jdp-link {
+  border: 0; background: transparent; color: var(--primary-text, var(--primary));
+  font: inherit; font-size: var(--text-xs, 12px); font-weight: 600; cursor: pointer; padding: 4px 6px; border-radius: 6px;
+}
+.jdp-link:hover:not([disabled]) { background: var(--surface-2); }
+.jdp-link[disabled] { opacity: 0.4; cursor: not-allowed; }
+.jdp-link--muted { color: var(--text-muted); }
+.jdp-ok {
+  margin-inline-start: auto;
+  border: 0; border-radius: 8px; padding: 6px 16px;
+  background: var(--primary); color: var(--on-fill, #fff);
+  font: inherit; font-size: var(--text-xs, 12px); font-weight: 700; cursor: pointer;
+}
+.jdp-ok:hover { background: var(--primary-strong, var(--primary)); }

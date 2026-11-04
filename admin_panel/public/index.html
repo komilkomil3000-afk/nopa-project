@@ -25,6 +25,7 @@
   <link rel="stylesheet" href="/admin/css/components.css">
   <link rel="stylesheet" href="/admin/css/chat.css">
   <link rel="stylesheet" href="/admin/css/stations.css">
+  <link rel="stylesheet" href="/admin/css/datepicker.css">
   <link rel="stylesheet" href="/admin/css/utilities.css">
   <!-- Chart.js (Local) -->
   <script src="/admin/libs/chartjs/chart.umd.js"></script>
@@ -340,6 +341,18 @@
             <div class="kpi-sub" id="kpi-rating-sub">&nbsp;</div>
           </article>
 
+          <!-- App usage: summary of the «آمار» tab -->
+          <article class="tile tile--usage" data-tile="usage" data-section="analytics" hidden>
+            <div class="tile-head">
+              <h3><i class="fa-solid fa-mobile-screen"></i> مصرف اپ در هفته جاری</h3>
+              <a href="#stats" class="tile-link" data-go="stats-tab">نمایش جزئیات <i class="fa-solid fa-arrow-left"></i></a>
+            </div>
+            <div class="dash-usage">
+              <div class="dash-usage-kpis" id="dash-usage-kpis"></div>
+              <div class="dash-usage-chart" id="dash-usage-chart"></div>
+            </div>
+          </article>
+
           <!-- Needs attention -->
           <article class="tile tile--attention" data-tile="attention" hidden>
             <div class="tile-head">
@@ -392,6 +405,60 @@
               <a href="#audit" class="tile-link" data-go="audit-tab">گزارش کامل <i class="fa-solid fa-arrow-left"></i></a>
             </div>
             <ul class="dash-audit" id="dash-audit"></ul>
+          </article>
+        </div>
+      </section>
+
+      <!-- TAB: آمار — usage of the app (js/features/stats.js; styles: css/stations.css «Stats tab», tiles from css/dashboard.css) -->
+      <section id="stats-tab" class="tab-panel" data-style="display: none;">
+        <div class="sts-toolbar">
+          <div class="chm-chips sts-ranges" id="sts-ranges" role="tablist" aria-label="بازه آمار">
+            <button type="button" class="chm-chip" role="tab" data-sts-range="today">امروز</button>
+            <button type="button" class="chm-chip is-active" role="tab" data-sts-range="week">هفته جاری</button>
+            <button type="button" class="chm-chip" role="tab" data-sts-range="month">ماه جاری</button>
+            <label class="nac-month"><select id="sts-month" class="select-ctrl" aria-label="ماه‌های قبل"><option value="">ماه‌های قبل</option></select></label>
+            <button type="button" class="chm-chip" role="tab" data-sts-range="all">تمام مدت</button>
+          </div>
+          <div class="sts-filters">
+            <select id="sts-caravan" class="select-ctrl" aria-label="کاروان"><option value="">همه کاروان‌ها</option></select>
+            <select id="sts-role" class="select-ctrl" aria-label="نقش">
+              <option value="">همه نقش‌ها</option>
+              <option value="student">دانش‌آموزان</option>
+              <option value="mentor">راهبران</option>
+            </select>
+            <select id="sts-station" class="select-ctrl" aria-label="منزلگاه (برای نمودار فیلم‌ها)"><option value="">همه منزلگاه‌ها</option></select>
+            <button type="button" id="sts-clear" class="lse-btn" title="حذف فیلترها"><i class="fa-solid fa-filter-circle-xmark"></i> همه</button>
+            <button type="button" id="sts-refresh" class="btn-icon header-btn" title="بروزرسانی" aria-label="بروزرسانی آمار"><i class="fa-solid fa-rotate"></i></button>
+          </div>
+        </div>
+
+        <div class="bento sts-kpis" id="sts-kpis"></div>
+
+        <div class="bento sts-bento" id="sts-bento">
+          <article class="tile sts-tile sts-wide" data-anim-key="st:main"><div id="sts-main-chart"></div></article>
+          <article class="tile sts-tile sts-half" data-anim-key="st:hours">
+            <div class="tile-head"><h3><i class="fa-solid fa-clock"></i> ساعات اوج استفاده</h3></div>
+            <div id="sts-hours"></div>
+          </article>
+          <article class="tile sts-tile sts-half" data-anim-key="st:roles">
+            <div class="tile-head"><h3><i class="fa-solid fa-user-tag"></i> به تفکیک نقش</h3></div>
+            <div id="sts-roles"></div>
+          </article>
+          <article class="tile sts-tile sts-half" data-anim-key="st:caravans">
+            <div class="tile-head"><h3><i class="fa-solid fa-compass"></i> کاروان‌ها</h3><div class="chm-chips sts-by" id="sts-caravans-by"></div></div>
+            <div id="sts-caravans"></div>
+          </article>
+          <article class="tile sts-tile sts-half" data-anim-key="st:people">
+            <div class="tile-head"><h3><i class="fa-solid fa-ranking-star"></i> فعال‌ترین افراد</h3><div class="chm-chips sts-by" id="sts-people-by"></div></div>
+            <div id="sts-people"></div>
+          </article>
+          <article class="tile sts-tile sts-half" data-anim-key="st:stations">
+            <div class="tile-head"><h3><i class="fa-solid fa-map-location-dot"></i> تماشای فیلم به تفکیک منزلگاه</h3></div>
+            <div id="sts-stations"></div>
+          </article>
+          <article class="tile sts-tile sts-half" data-anim-key="st:classes">
+            <div class="tile-head"><h3><i class="fa-solid fa-chalkboard-user"></i> پربیننده‌ترین کلاس‌ها</h3></div>
+            <div id="sts-classes"></div>
           </article>
         </div>
       </section>
@@ -556,6 +623,7 @@
               </div>
             </div>
           </section>
+          <div id="usr-activity-chart" class="nac-host"></div>
         </div>
       </section>
 
@@ -1600,10 +1668,12 @@
               <div class="lsv-notch-wrap"><nav class="lsv-notch" id="crv-circles" aria-label="کاروان‌ها"></nav></div>
               <div class="lsv-round-group">
                 <button type="button" class="lsv-round" data-click="openRenameActiveCaravan" title="تغییر نام کاروان" aria-label="تغییر نام کاروان"><i class="fa-solid fa-pen"></i></button>
+                <button type="button" class="lsv-round" data-click="openActiveCaravanPhoto" title="عکس کاروان" aria-label="عکس کاروان"><i class="fa-solid fa-image"></i></button>
                 <button id="btn-change-caravan-mentor" type="button" class="lsv-round" title="تغییر راهبر" aria-label="تغییر راهبر"><i class="fa-solid fa-user-pen"></i></button>
                 <button type="button" class="lsv-round lsv-round-danger" data-click="deleteActiveCaravan" title="حذف کاروان" aria-label="حذف کاروان"><i class="fa-solid fa-trash"></i></button>
               </div>
             </header>
+            <div id="crv-photo-slot" class="nph-inline nph-board" hidden></div>
             <div class="lsv-flow crv-flow">
               <div class="lsv-col crv-col-mentor">
                 <div class="lsv-col-card crv-mentor" id="crv-mentor-card"></div>
@@ -2559,6 +2629,7 @@
               </div>
             </div>
           </section>
+          <div id="mnt-activity-chart" class="nac-host"></div>
         </div>
 
         <!-- 1.1 STUDENT TICKETS MODAL (تیکت‌های دانش‌آموز با راهبر) -->
@@ -4623,6 +4694,7 @@
     </div>
 
     <script src="js/ui/style-attr.js"></script>
+    <script src="js/ui/jalali-datepicker.js"></script>
     <script src="js/app/sw-register.js"></script>
     <script src="safe.js"></script>
     <script src="auth.js"></script>
@@ -4637,6 +4709,9 @@
     <script src="js/ui/person-fields.js"></script>
     <script src="js/ui/flip.js"></script>
     <script src="js/ui/lightbox.js"></script>
+    <script src="js/ui/photo-picker.js"></script>
+    <script src="js/ui/bars.js"></script>
+    <script src="js/ui/activity-chart.js"></script>
     <script src="js/core/attention.js"></script>
     <script src="js/core/inbox.js"></script>
     <script src="js/layout/topnav.js"></script>
@@ -4676,6 +4751,7 @@
     <script src="js/features/lms/access.js"></script>
     <script src="js/features/lms/station-view.js"></script>
     <script src="js/features/lms/station-dnd.js"></script>
+    <script src="js/features/stats.js"></script>
     <script src="fa-digits.js"></script>
 </body>
 </html>

@@ -5,6 +5,7 @@ import { canUseChat, getChatSettings } from '../../services/chatSettings';
 import { isChannelManagerRole } from '../../utils/roles';
 import { visibleSpaceIds } from './service';
 import { loadActor } from './access';
+import prisma from '../../config/db';
 
 let io: Server | null = null;
 const REVALIDATE_MS = 5 * 60 * 1000;
@@ -123,7 +124,11 @@ export function attachChatSocket(server: HttpServer): void {
     }
 
     socket.on('disconnecting', () => {
-      if ((io?.sockets.adapter.rooms.get(`user:${userId}`)?.size ?? 0) <= 1) announcePresence(socket, userId, false);
+      if ((io?.sockets.adapter.rooms.get(`user:${userId}`)?.size ?? 0) <= 1) {
+        announcePresence(socket, userId, false);
+        // "last seen" on the panel's person page
+        prisma.user.update({ where: { id: userId }, data: { lastActiveTimestamp: new Date() } }).catch(() => {});
+      }
     });
 
     socket.on('typing', (spaceId: unknown) => {
