@@ -1,5 +1,7 @@
 import express, { Request, Response, NextFunction } from 'express';
 import compression from 'compression';
+import { clearAuthCache } from './middleware/auth';
+import { clearStationsCache } from './controllers/lmsController';
 import cors from 'cors';
 import helmet from 'helmet';
 import dotenv from 'dotenv';
@@ -39,6 +41,17 @@ app.use(
 const corsOrigins = (process.env.CORS_ORIGINS || '').split(',').map(o => o.trim()).filter(Boolean);
 app.use(cors({ origin: corsOrigins.length ? corsOrigins : '*' }));
 app.use(express.json());
+
+// Any write outside chat may change LMS content: drop the short-lived station tree cache.
+app.use((req, res, next) => {
+  if (req.method !== 'GET' && req.method !== 'HEAD' && req.method !== 'OPTIONS' && /\/(auth|admin|security|users|mentors)\b/.test(req.path)) {
+    res.on('finish', clearAuthCache);
+  }
+  if (req.method !== 'GET' && req.method !== 'HEAD' && req.method !== 'OPTIONS' && !req.path.includes('/chat')) {
+    res.on('finish', clearStationsCache);
+  }
+  next();
+});
 
 // Public static files & uploads (Placed before authentication / JWT middleware)
 // Uploads are user-controlled. They are served from the same origin as the admin panel, so they

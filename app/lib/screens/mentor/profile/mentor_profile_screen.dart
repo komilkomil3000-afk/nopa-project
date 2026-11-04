@@ -9,6 +9,7 @@ import 'package:flutter/material.dart' hide Text;
 import 'package:nopa_app/widgets/fa_text.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:provider/provider.dart';
+import 'package:nopa_app/utils/mentor_contact.dart';
 import 'package:nopa_app/core/theme/app_theme.dart';
 import 'package:nopa_app/models/user_model.dart';
 import 'package:nopa_app/services/api_service.dart';
@@ -282,7 +283,7 @@ class _ProfileScreenState extends State<MentorProfileScreen> {
         _buildProfileMenuItem(
           title: 'تیکت های شما',
           svgAsset: 'assets/svg_icons/ticket01.svg',
-          onTap: () => Navigator.pushNamed(context, AppRoutes.tickets),
+          onTap: () => openSupportOrTickets(context, user),
         ),
       ],
     );

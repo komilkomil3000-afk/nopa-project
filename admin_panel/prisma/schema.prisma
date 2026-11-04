@@ -358,6 +358,7 @@ model AuditLog {
 
   @@index([createdAt])
   @@index([action])
+  @@index([actorId, createdAt])
 }
 
 model RolePermission {

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:nopa_app/core/constants/app_routes.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:nopa_app/widgets/app_toast.dart';
 import 'package:nopa_app/models/user_model.dart';
@@ -39,6 +40,23 @@ Uri? buildMentorContactUri(String? platform, String? handle) {
     return Uri.parse('https://wa.me/$digits');
   }
   return null;
+}
+
+/// Opens the private chat with one specific person, so a "contact" button never lands on notifications.
+Future<void> openChatWithUser(BuildContext context, String userId) async {
+  final navigator = Navigator.of(context);
+  final space = await ChatRepository.instance.openDirect(userId);
+  if (space != null) {
+    await navigator.push(MaterialPageRoute(builder: (_) => ChatConversationScreen(spaceId: space.id)));
+  } else if (context.mounted) {
+    AppToast.error(context, 'امکان باز کردن گفتگو با این کاربر وجود ندارد.');
+  }
+}
+
+/// Opens the opening-chat for "support / tickets": the support chat with chat on, the tickets list otherwise.
+Future<void> openSupportOrTickets(BuildContext context, UserModel user) async {
+  if (user.chatEnabled) return SupportMessageDialog.show(context);
+  await Navigator.pushNamed(context, AppRoutes.tickets);
 }
 
 /// Opens the chat with the mentor using the ID registered in the database.

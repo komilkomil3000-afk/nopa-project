@@ -1006,7 +1006,11 @@ class _MarketScreenState extends State<MarketScreen> {
                         children: [
                           TapExpander(child: GestureDetector(
                             onTap: () {
-                              Navigator.pushNamed(context, AppRoutes.tickets);
+                              if (Provider.of<AppRepository>(context, listen: false).currentUser.chatEnabled) {
+                                openChatWithUser(context, memberId);
+                              } else {
+                                Navigator.pushNamed(context, AppRoutes.tickets);
+                              }
                             },
                             child: Container(
                               decoration: BoxDecoration(

@@ -11,6 +11,7 @@ import '../models/user_model.dart';
 import '../services/app_state_repository.dart';
 import 'package:provider/provider.dart';
 import 'nopa_modal_shell.dart';
+import 'support_message_dialog.dart';
 
 class ContactUsDialog extends StatelessWidget {
   final UserModel? user;
@@ -63,8 +64,14 @@ class ContactUsDialog extends StatelessWidget {
             NopaModalAction(
               label: 'ارسال تیکت',
               onPressed: () {
+                final navigator = Navigator.of(context);
                 Navigator.pop(context);
-                Navigator.pushNamed(context, AppRoutes.tickets);
+                final me = Provider.of<AppRepository>(context, listen: false).currentUser;
+                if (me.chatEnabled) {
+                  SupportMessageDialog.show(navigator.context);
+                } else {
+                  navigator.pushNamed(AppRoutes.tickets);
+                }
               },
             ),
             NopaModalAction(

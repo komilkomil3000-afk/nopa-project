@@ -6,8 +6,23 @@ import { evaluateStudentProgress } from './certificateController';
 import { isMentorRole } from '../utils/roles';
 import { CATEGORY_ORDER_BY, trackTypeForCategory } from '../utils/stationCategories';
 
+// The full station tree is expensive (5 nested includes, ~165 KB) and identical for every user of a
+// role class, so the serialized response is kept briefly in memory. Any non-chat write clears it.
+const STATIONS_CACHE_TTL_MS = 20_000;
+const stationsCache = new Map<string, { at: number; body: string }>();
+export function clearStationsCache() {
+  stationsCache.clear();
+}
+
 export const getStations = async (req: Request, res: Response) => {
   try {
+    const role = (req as any).user?.role;
+    const cacheKey = isAdminRole(role) ? 'admin' : isMentorRole(role) ? 'mentor' : 'student';
+    const hit = stationsCache.get(cacheKey);
+    if (hit && Date.now() - hit.at < STATIONS_CACHE_TTL_MS) {
+      res.setHeader('Cache-Control', 'private, no-cache');
+      return res.type('application/json').send(hit.body);
+    }
     const stations = await prisma.station.findMany({
       include: {
         challenges: true,
@@ -96,7 +111,10 @@ export const getStations = async (req: Request, res: Response) => {
       };
     });
 
-    res.json(mapped);
+    const body = JSON.stringify(mapped);
+    stationsCache.set(cacheKey, { at: Date.now(), body });
+    res.setHeader('Cache-Control', 'private, no-cache');
+    res.type('application/json').send(body);
   } catch (error) {
     console.error('getStations error:', error);
     res.status(500).json({ error: 'Internal Server Error' });

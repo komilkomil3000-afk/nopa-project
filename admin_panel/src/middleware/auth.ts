@@ -23,7 +23,29 @@ export type TokenCheck =
  * blacklist. Shared by the HTTP middleware and any non-HTTP entry point, such as a socket handshake.
  * A bad or expired token is a 401 so that clients know to refresh it.
  */
+// Every request used to cost 3 sequential queries (user, session, IP blacklist). A successful verdict is
+// kept for a few seconds per token. Writes to auth/admin/security routes clear it (see app.ts), and the
+// TTL bounds the staleness of anything changed another way.
+const AUTH_CACHE_TTL_MS = 10_000;
+const AUTH_CACHE_MAX = 5000;
+const authVerdicts = new Map<string, { at: number; ip: string; result: TokenCheck }>();
+export function clearAuthCache() {
+  authVerdicts.clear();
+}
+
 export async function verifyAccessToken(token: string, clientIp: string): Promise<TokenCheck> {
+  const cached = authVerdicts.get(token);
+  if (cached && cached.ip === clientIp && Date.now() - cached.at < AUTH_CACHE_TTL_MS) return cached.result;
+  const result = await verifyAccessTokenUncached(token, clientIp);
+  // Only successes are cached: a failure is always re-checked.
+  if (result.ok) {
+    if (authVerdicts.size >= AUTH_CACHE_MAX) authVerdicts.clear();
+    authVerdicts.set(token, { at: Date.now(), ip: clientIp, result });
+  }
+  return result;
+}
+
+async function verifyAccessTokenUncached(token: string, clientIp: string): Promise<TokenCheck> {
   let payload: { id: string; role: string; phoneNumber: string; tokenVersion?: number };
   try {
     payload = jwt.verify(token, getJwtSecret(), { algorithms: ['HS256'] }) as typeof payload;
@@ -36,7 +58,10 @@ export async function verifyAccessToken(token: string, clientIp: string): Promis
   }
 
   try {
-    const user = await prisma.user.findUnique({ where: { id: payload.id } });
+    const user = await prisma.user.findUnique({
+      where: { id: payload.id },
+      select: { role: true, tokenVersion: true, blocked: true, isDeleted: true, accountStatus: true, suspendedUntil: true, panelAccess: true },
+    });
     const isAdmin = String(user?.role || payload.role).toLowerCase() === 'admin';
 
     if (!user || (payload.tokenVersion !== undefined && user.tokenVersion !== payload.tokenVersion)) {
