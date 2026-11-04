@@ -1,3 +1,4 @@
+import 'package:nopa_app/core/avatar_catalog.dart';
 import 'dart:io' as io;
 import 'dart:math' as math;
 import 'package:file_picker/file_picker.dart';
@@ -281,7 +282,7 @@ class _ChatMemberProfileScreenState extends State<ChatMemberProfileScreen> {
       assets = {'zarik': me.zarik, 'nakh': me.nakh, 'farsh': me.farsh, 'derafsh': me.beyragh};
     }
     if (assets == null) return null;
-    final isMentor = p['role'] == 'mentor';
+    final isMentor = AvatarCatalog.isMentorRole(p['role']);
     if (isMentor && keys.every((k) => ((assets![k] as num?) ?? 0) == 0)) return null;
     return assets;
   }
@@ -300,7 +301,7 @@ class _ChatMemberProfileScreenState extends State<ChatMemberProfileScreen> {
       },
       builder: () {
         final p = _profile!;
-        final isMentor = p['role'] == 'mentor';
+        final isMentor = AvatarCatalog.isMentorRole(p['role']);
         final caravan = (p['caravanName'] ?? '').toString();
         final subtitle = isMentor ? (caravan.isEmpty ? 'راهبر' : 'راهبر کاروان $caravan') : (caravan.isEmpty ? 'همسفر نپا' : 'عضو کاروان $caravan');
         final stats = p['stats'] is Map ? Map<String, dynamic>.from(p['stats'] as Map) : null;
@@ -528,7 +529,7 @@ class _MemberRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final mentor = person['role'] == 'mentor';
+    final mentor = AvatarCatalog.isMentorRole(person['role']);
     return InkWell(
       onTap: onTap,
       child: Padding(

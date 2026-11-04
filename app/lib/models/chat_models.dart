@@ -1,3 +1,4 @@
+import 'package:nopa_app/core/avatar_catalog.dart';
 /// A conversation in the chat tab.
 class ChatSpace {
   final String id;
@@ -72,7 +73,7 @@ class ChatSpace {
       peerId: peer?['id'],
       peerAvatarUrl: peer?['avatarUrl'],
       peerGender: peer?['gender'],
-      peerIsMentor: peer?['role'] == 'mentor',
+      peerIsMentor: AvatarCatalog.isMentorRole(peer?['role']),
       coverImageUrl: (json['coverImageUrl']?.toString().trim().isNotEmpty ?? false) ? json['coverImageUrl'].toString().trim() : null,
       peerOnline: peer?['online'] == true,
       peerReadSeq: json['peerReadSeq'] ?? 0,
@@ -212,7 +213,7 @@ class ChatMessage {
       senderName: sender?['name'] ?? (json['botKey'] != null ? 'ربات نپا' : 'نپا'),
       senderAvatarUrl: sender?['avatarUrl'],
       senderGender: sender?['gender'],
-      senderIsMentor: sender?['role'] == 'mentor',
+      senderIsMentor: AvatarCatalog.isMentorRole(sender?['role']),
       reactions: ((json['reactions'] as List?) ?? []).map((r) => Map<String, dynamic>.from(r as Map)).toList(),
       attachments: ((json['attachments'] as List?) ?? [])
           .map((a) => ChatAttachment.fromJson(Map<String, dynamic>.from(a as Map)))

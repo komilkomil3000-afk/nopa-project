@@ -1,3 +1,4 @@
+import 'package:nopa_app/core/avatar_catalog.dart';
 import 'package:audioplayers/audioplayers.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart' hide Text;
@@ -390,7 +391,7 @@ class _ChatMessageBubbleState extends State<ChatMessageBubble> {
                             name: faces[i]['name'] ?? '',
                             radius: 8.5,
                             gender: faces[i]['gender'],
-                            isMentor: faces[i]['role'] == 'mentor',
+                            isMentor: AvatarCatalog.isMentorRole(faces[i]['role']),
                           ),
                         ),
                       ),

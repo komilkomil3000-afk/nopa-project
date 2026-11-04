@@ -563,10 +563,10 @@ class _ChatConversationScreenState extends State<ChatConversationScreen> {
         }
       },
       child: Container(
-        // The chat wallpaper, a little faded into the app's background
+        // The app's own background, so chat reads as part of it
         decoration: const BoxDecoration(
           gradient: AppColors.screenBackgroundGradient,
-          image: DecorationImage(image: AssetImage('assets/images/chat_bg.jpg'), fit: BoxFit.cover, opacity: 0.75),
+          image: DecorationImage(image: AssetImage('assets/images/login_bg.png'), fit: BoxFit.cover),
         ),
         child: Scaffold(
           backgroundColor: Colors.transparent,
@@ -836,7 +836,7 @@ class _ChatConversationScreenState extends State<ChatConversationScreen> {
     final text = closed
         ? 'این چالش بسته شده است.'
         : (space?.canReply == false
-            ? 'این میدان فقط خواندنی است؛ گفتگو در گروه چالش‌های کاروان شماست.'
+            ? 'این میدان مخصوص راهبران است؛ گفتگوی شما در گروه چالش‌های کاروان انجام می‌شود.'
             : (space?.isChannel == true
                 ? 'این کانال فقط خواندنی است؛ زیر پست‌هایی که گفتگو دارند، «ورود به گفتگو» را بزنید.'
                 : 'برای گفتگو، روی «ورود به گفتگو» زیر هر چالش یا پیام بزنید.'));

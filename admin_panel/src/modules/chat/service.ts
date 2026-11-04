@@ -18,6 +18,7 @@ const GLOBAL_SPACES = [
   { key: 'public', type: 'public', title: 'کانال همگانی' },
   { key: 'arena', type: 'arena', title: 'میدان آثار' },
   { key: 'mentors', type: 'mentors', title: 'اتاق راهبران' },
+  { key: 'mediaqa', type: 'mediaqa', title: 'گروه رسانه' },
 ];
 
 const ensured = new Set<string>();
@@ -53,7 +54,7 @@ export async function ensureCaravanSpaces(caravanId: string) {
   if (!ensured.has(challenges)) await ensureSpace(challenges, { type: 'challenges', title: 'گروه چالش‌ها', caravanId });
 }
 
-export const globalSpace = (key: 'announcements' | 'public' | 'arena' | 'mentors') => {
+export const globalSpace = (key: 'announcements' | 'public' | 'arena' | 'mentors' | 'mediaqa') => {
   const s = GLOBAL_SPACES.find(g => g.key === key)!;
   return ensureSpace(s.key, { type: s.type, title: s.title });
 };
@@ -81,7 +82,7 @@ export async function visibleSpaces(actor: ChatActor) {
   const candidates = await prisma.chatSpace.findMany({
     where: {
       OR: [
-        { type: { in: ['announcements', 'public', 'arena', 'mentors'] } },
+        { type: { in: ['announcements', 'public', 'arena', 'mentors', 'mediaqa'] } },
         { caravanId: { in: caravanIds } },
         { id: { in: Array.from(members.keys()) } },
       ],

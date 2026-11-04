@@ -1,3 +1,4 @@
+import 'package:nopa_app/core/avatar_catalog.dart';
 import 'package:nopa_app/screens/chat/chat_widgets.dart';
 import 'package:nopa_app/screens/chat/chat_profile_screen.dart';
 import 'dart:io' as io;
@@ -282,7 +283,7 @@ class _ChatTopicInfoScreenState extends State<ChatTopicInfoScreen> {
                 : () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => ChatMemberProfileScreen(spaceId: widget.spaceId, userId: user['id'].toString()))),
             child: Row(
               children: [
-                SafeAvatar(imageUrl: user['avatarUrl'], name: user['name'] ?? '', radius: 16, gender: user['gender']),
+                SafeAvatar(imageUrl: user['avatarUrl'], name: user['name'] ?? '', radius: 16, gender: user['gender'], isMentor: AvatarCatalog.isMentorRole(user['role'])),
                 const SizedBox(width: 8),
                 Expanded(child: Text(user['name'] ?? '', style: ChatTheme.title)),
                 Text('سهم ${row['share']}٪ · امتیاز ${row['score']}', style: ChatTheme.caption),

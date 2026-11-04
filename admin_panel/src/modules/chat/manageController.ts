@@ -8,7 +8,7 @@ import { MESSAGE_INCLUDE, serializeMessage } from './service';
 import { loadActor, managerMayEnter } from './access';
 
 // Oversight from the panel. Private conversations are not reachable from here.
-const SHARED_TYPES = ['announcements', 'public', 'mentors', 'caravan', 'challenges', 'media'];
+const SHARED_TYPES = ['announcements', 'public', 'mentors', 'mediaqa', 'caravan', 'challenges', 'media'];
 
 export async function listManagedSpaces(req: AuthRequest, res: Response) {
   try {
