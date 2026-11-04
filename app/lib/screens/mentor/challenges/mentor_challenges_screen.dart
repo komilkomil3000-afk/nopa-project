@@ -1,3 +1,4 @@
+import 'package:nopa_app/widgets/nopa_entrance.dart';
 import 'package:nopa_app/screens/chat/challenge_chat_button.dart';
 import '../../../widgets/nopa_modal_shell.dart';
 import 'package:nopa_app/screens/shell/app_shell.dart' show challengeFocusRequest;
@@ -242,7 +243,7 @@ class _ChallengesScreenState extends State<MentorChallengesScreen> {
       ];
     }
 
-    showDialog(
+    showNopaDialog(
       context: context,
       builder: (BuildContext context) {
         return StatefulBuilder(
@@ -703,11 +704,11 @@ class _ChallengesScreenState extends State<MentorChallengesScreen> {
                   final String id = item['id']?.toString() ?? 'ch_$index';
                   final bool isExpanded = _expandedChallengeIds.contains(id);
 
-                  return _buildChallengeCard(
+                  return NopaEntrance(entranceKey: 'challenge:$id', index: index, child: _buildChallengeCard(
                     item: item,
                     id: id,
                     isExpanded: isExpanded,
-                  );
+                  ));
                 },
               ),
 
@@ -788,12 +789,12 @@ class _ChallengesScreenState extends State<MentorChallengesScreen> {
                         : [
                             for (var index = 0; index < filtered.length; index++) ...[
                               if (index > 0) const SizedBox(height: 12),
-                              _buildMentorChallengeCard(
+                              NopaEntrance(entranceKey: 'm-challenge:${filtered[index]['id'] ?? index}', index: index, child: _buildMentorChallengeCard(
                                 context: context,
                                 user: user,
                                 item: filtered[index],
                                 id: filtered[index]['id']?.toString() ?? 'm_ch_$index',
-                              ),
+                              )),
                             ],
                           ],
                   ),
@@ -1750,7 +1751,7 @@ class MentorChallengeDialogs {
       }
     }
 
-    showDialog(
+    showNopaDialog(
       context: context,
       barrierDismissible: true,
       builder: (BuildContext ctx) {

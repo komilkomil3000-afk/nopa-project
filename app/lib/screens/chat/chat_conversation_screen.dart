@@ -1,3 +1,4 @@
+import 'package:nopa_app/widgets/nopa_modal_shell.dart';
 import 'dart:io' as io;
 import 'package:nopa_app/widgets/bottom_nav_bar.dart';
 
@@ -429,7 +430,7 @@ class _ChatConversationScreenState extends State<ChatConversationScreen> {
     final name = TextEditingController();
     String color = _tagColors.first;
     bool staffOnly = false;
-    final ok = await showDialog<bool>(
+    final ok = await showNopaDialog<bool>(
       context: context,
       builder: (ctx) => Directionality(
         textDirection: TextDirection.rtl,
@@ -532,7 +533,7 @@ class _ChatConversationScreenState extends State<ChatConversationScreen> {
 
   Future<void> _search() async {
     final controller = TextEditingController();
-    final query = await showDialog<String>(
+    final query = await showNopaDialog<String>(
       context: context,
       builder: (ctx) => Directionality(
         textDirection: TextDirection.rtl,

@@ -1,11 +1,25 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/cupertino.dart' show CupertinoPageTransitionsBuilder;
 import 'app_colors.dart';
+import 'app_motion.dart';
 export 'app_typography.dart';
 
 class AppTheme {
   static const String fontFamily = 'YekanBakh';
   static const List<String> fontFamilyFallback = ['YekanBakh', 'Tahoma', 'sans-serif'];
   static const String logoFontFamily = 'ChochoAura';
+
+  /// Brand page transition on Android/desktop; iOS keeps the native Cupertino swipe-back transition.
+  static const PageTransitionsTheme _pageTransitions = PageTransitionsTheme(
+    builders: {
+      TargetPlatform.android: NopaPageTransitionsBuilder(),
+      TargetPlatform.fuchsia: NopaPageTransitionsBuilder(),
+      TargetPlatform.windows: NopaPageTransitionsBuilder(),
+      TargetPlatform.linux: NopaPageTransitionsBuilder(),
+      TargetPlatform.iOS: CupertinoPageTransitionsBuilder(),
+      TargetPlatform.macOS: CupertinoPageTransitionsBuilder(),
+    },
+  );
 
   static TextTheme buildTextTheme(TextTheme base, [double scale = 1.0]) {
     return base.copyWith(
@@ -34,6 +48,7 @@ class AppTheme {
       fontFamilyFallback: fontFamilyFallback,
       brightness: Brightness.light,
       splashFactory: NoSplash.splashFactory,
+      pageTransitionsTheme: _pageTransitions,
       highlightColor: Colors.transparent,
       primaryColor: AppColors.purple,
       scaffoldBackgroundColor: const Color(0xFFF8F9FA),
@@ -73,6 +88,7 @@ class AppTheme {
       fontFamilyFallback: fontFamilyFallback,
       brightness: Brightness.dark,
       splashFactory: NoSplash.splashFactory,
+      pageTransitionsTheme: _pageTransitions,
       highlightColor: Colors.transparent,
       primaryColor: AppColors.purple,
       scaffoldBackgroundColor: AppColors.background,

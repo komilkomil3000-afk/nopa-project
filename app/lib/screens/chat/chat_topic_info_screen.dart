@@ -1,3 +1,4 @@
+import 'package:nopa_app/widgets/nopa_modal_shell.dart';
 import 'package:nopa_app/core/avatar_catalog.dart';
 import 'package:nopa_app/screens/chat/chat_widgets.dart';
 import 'package:nopa_app/screens/chat/chat_profile_screen.dart';
@@ -215,7 +216,7 @@ class _ChatTopicInfoScreenState extends State<ChatTopicInfoScreen> {
 
   Future<void> _object() async {
     final controller = TextEditingController();
-    final text = await showDialog<String>(
+    final text = await showNopaDialog<String>(
       context: context,
       builder: (ctx) => Directionality(
         textDirection: TextDirection.rtl,
@@ -339,7 +340,7 @@ class _ChatTopicInfoScreenState extends State<ChatTopicInfoScreen> {
   Future<void> _answerObjection(String userId, bool accept, int current) async {
     final amount = TextEditingController(text: '$current');
     final response = TextEditingController();
-    final ok = await showDialog<bool>(
+    final ok = await showNopaDialog<bool>(
       context: context,
       builder: (ctx) => Directionality(
         textDirection: TextDirection.rtl,
@@ -371,7 +372,7 @@ class _ChatTopicInfoScreenState extends State<ChatTopicInfoScreen> {
   Future<void> _correct(String userId, int current) async {
     final amount = TextEditingController(text: '$current');
     final reason = TextEditingController();
-    final ok = await showDialog<bool>(
+    final ok = await showNopaDialog<bool>(
       context: context,
       builder: (ctx) => Directionality(
         textDirection: TextDirection.rtl,

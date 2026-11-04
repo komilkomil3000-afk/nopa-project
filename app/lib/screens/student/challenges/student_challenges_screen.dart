@@ -1,3 +1,6 @@
+import 'package:nopa_app/widgets/nopa_celebration.dart';
+import 'package:nopa_app/widgets/nopa_entrance.dart';
+import 'package:nopa_app/widgets/nopa_modal_shell.dart';
 import 'package:nopa_app/screens/chat/challenge_chat_button.dart';
 import 'package:nopa_app/core/theme/app_colors.dart';
 import '../../../widgets/nopa_dialog_container.dart';
@@ -237,6 +240,7 @@ class _ChallengesScreenState extends State<StudentChallengesScreen> {
       ),
       persist: false,
     );
+    if (result.isQuiz && result.rewardAmount > 0) NopaCelebration.show(context);
     AppToast.success(
       context,
       result.isQuiz
@@ -354,11 +358,11 @@ class _ChallengesScreenState extends State<StudentChallengesScreen> {
                         : [
                             for (var index = 0; index < filtered.length; index++) ...[
                               if (index > 0) const SizedBox(height: 12),
-                              _buildChallengeCard(
+                              NopaEntrance(entranceKey: 'challenge:${filtered[index]['id'] ?? index}', index: index, child: _buildChallengeCard(
                                 item: filtered[index],
                                 id: filtered[index]['id']?.toString() ?? 'ch_$index',
                                 isExpanded: _expandedChallengeIds.contains(filtered[index]['id']?.toString() ?? 'ch_$index'),
-                              ),
+                              )),
                             ],
                           ],
                   ),
@@ -441,12 +445,12 @@ class _ChallengesScreenState extends State<StudentChallengesScreen> {
                         : [
                             for (var index = 0; index < filtered.length; index++) ...[
                               if (index > 0) const SizedBox(height: 12),
-                              _buildMentorChallengeCard(
+                              NopaEntrance(entranceKey: 'm-challenge:${filtered[index]['id'] ?? index}', index: index, child: _buildMentorChallengeCard(
                                 context: context,
                                 user: user,
                                 item: filtered[index],
                                 id: filtered[index]['id']?.toString() ?? 'm_ch_$index',
-                              ),
+                              )),
                             ],
                           ],
                   ),
@@ -697,7 +701,7 @@ class _ChallengesScreenState extends State<StudentChallengesScreen> {
     String selectedType = 'چند گزینه ای';
     String selectedAudience = 'همه اعضا';
 
-    showDialog(
+    showNopaDialog(
       context: context,
       barrierDismissible: true,
       builder: (BuildContext ctx) {

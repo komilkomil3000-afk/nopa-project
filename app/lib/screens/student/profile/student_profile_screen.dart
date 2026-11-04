@@ -1,3 +1,4 @@
+import 'package:nopa_app/widgets/nopa_modal_shell.dart';
 import 'package:nopa_app/widgets/app_toast.dart';
 import 'package:nopa_app/widgets/zoomable_avatar.dart';
 import 'package:nopa_app/core/theme/app_colors.dart';
@@ -152,7 +153,7 @@ class _ProfileScreenState extends State<StudentProfileScreen> {
       AvatarViewer.open(context, asset: source.asset, url: source.url, title: displayName);
       return;
     }
-    showDialog(
+    showNopaDialog(
       context: context,
       barrierColor: Colors.black87,
       builder: (ctx) => GestureDetector(

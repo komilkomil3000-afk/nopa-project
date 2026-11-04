@@ -1,3 +1,4 @@
+import 'package:nopa_app/widgets/nopa_modal_shell.dart';
 import 'package:nopa_app/screens/chat/chat_widgets.dart';
 import 'package:flutter/material.dart' hide Text;
 import 'package:nopa_app/core/avatar_catalog.dart';
@@ -39,7 +40,7 @@ class _ChatGroupsScreenState extends State<ChatGroupsScreen> {
 
   Future<String?> _askName(String title, {String initial = ''}) async {
     final controller = TextEditingController(text: initial);
-    final name = await showDialog<String>(
+    final name = await showNopaDialog<String>(
       context: context,
       builder: (ctx) => Directionality(
         textDirection: TextDirection.rtl,
@@ -68,7 +69,7 @@ class _ChatGroupsScreenState extends State<ChatGroupsScreen> {
   }
 
   Future<void> _delete(Map<String, dynamic> group) async {
-    final ok = await showDialog<bool>(
+    final ok = await showNopaDialog<bool>(
       context: context,
       builder: (ctx) => Directionality(
         textDirection: TextDirection.rtl,

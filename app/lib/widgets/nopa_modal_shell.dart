@@ -2,6 +2,7 @@ import 'package:flutter/material.dart' hide Text;
 import 'package:nopa_app/widgets/fa_text.dart';
 import 'package:nopa_app/widgets/tap_expander.dart';
 import '../core/theme/app_colors.dart';
+import '../core/theme/app_motion.dart';
 import '../core/theme/app_typography.dart';
 import 'nopa_dialog_container.dart';
 
@@ -231,6 +232,9 @@ Future<T?> showNopaSheet<T>(
   return showModalBottomSheet<T>(
     context: context,
     isScrollControlled: isScrollControlled,
+    sheetAnimationStyle: AppMotion.reduced(context)
+        ? AnimationStyle.noAnimation
+        : const AnimationStyle(duration: Duration(milliseconds: 250), reverseDuration: Duration(milliseconds: 180), curve: AppMotion.enter, reverseCurve: AppMotion.exit),
     isDismissible: isDismissible,
     backgroundColor: Colors.transparent,
     builder: (ctx) => Directionality(
@@ -251,4 +255,47 @@ Future<T?> showNopaSheet<T>(
       ),
     ),
   );
+}
+
+/// Drop-in replacement for [showDialog] with the app's dialog motion: the dialog fades in while scaling up
+/// from 0.94 (200 ms, ease-out) and fades out faster (150 ms). Same parameters and behaviour otherwise, and
+/// plain (no motion) when the system has animations turned off.
+Future<T?> showNopaDialog<T>({
+  required BuildContext context,
+  required WidgetBuilder builder,
+  bool barrierDismissible = true,
+  Color? barrierColor,
+}) {
+  final reduced = AppMotion.reduced(context);
+  return showDialog<T>(
+    context: context,
+    barrierDismissible: barrierDismissible,
+    barrierColor: barrierColor,
+    animationStyle: reduced
+        ? AnimationStyle.noAnimation
+        : const AnimationStyle(
+            duration: AppMotion.base,
+            reverseDuration: AppMotion.fast,
+            curve: AppMotion.enter,
+            reverseCurve: AppMotion.exit,
+          ),
+    builder: (ctx) => reduced ? builder(ctx) : _DialogScaleIn(child: builder(ctx)),
+  );
+}
+
+/// One-shot scale-up entrance. It animates only on first build; later rebuilds of the dialog do not replay it.
+class _DialogScaleIn extends StatelessWidget {
+  final Widget child;
+  const _DialogScaleIn({required this.child});
+
+  @override
+  Widget build(BuildContext context) {
+    return TweenAnimationBuilder<double>(
+      tween: Tween(begin: 0.94, end: 1.0),
+      duration: AppMotion.base,
+      curve: AppMotion.enter,
+      child: child,
+      builder: (context, scale, child) => Transform.scale(scale: scale, child: child),
+    );
+  }
 }

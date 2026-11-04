@@ -18,7 +18,7 @@ class ContactUsDialog extends StatelessWidget {
   const ContactUsDialog({super.key, this.user});
 
   static void show(BuildContext context, {UserModel? user}) {
-    showDialog(
+    showNopaDialog(
       context: context,
       barrierDismissible: true,
       builder: (context) => ContactUsDialog(user: user),

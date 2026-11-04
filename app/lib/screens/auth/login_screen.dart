@@ -352,7 +352,7 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
     bool saving = false;
     bool obscure = true;
 
-    await showDialog<void>(
+    await showNopaDialog<void>(
       context: context,
       barrierDismissible: false,
       builder: (ctx) {
@@ -570,7 +570,7 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
   }
 
   void _showDualRoleSelectionDialog(UserModel user) {
-    showDialog(
+    showNopaDialog(
       context: context,
       barrierDismissible: false,
       builder: (ctx) {

@@ -1,3 +1,6 @@
+import 'package:flutter/services.dart';
+import 'package:nopa_app/core/theme/app_motion.dart';
+import 'package:nopa_app/widgets/nopa_modal_shell.dart';
 import 'package:nopa_app/widgets/tap_expander.dart';
 import 'dart:io' as io;
 import 'package:cached_network_image/cached_network_image.dart';
@@ -44,7 +47,7 @@ class ChallengeSubmissionDialog extends StatefulWidget {
     required Map<String, dynamic> challenge,
     required String status,
   }) {
-    return showDialog<ChallengeSubmissionResult>(
+    return showNopaDialog<ChallengeSubmissionResult>(
       context: context,
       barrierDismissible: false,
       builder: (_) => ChallengeSubmissionDialog(challenge: challenge, status: status),
@@ -65,6 +68,18 @@ class _ChallengeSubmissionDialogState extends State<ChallengeSubmissionDialog> {
   int _step = 0;
   late final List<int> _answers;
   bool _sending = false;
+  bool _done = false; // success state: the send button turns into a check for a moment before the dialog closes
+
+  /// Shows the success check (unless animations are off), then closes the dialog with [result].
+  Future<void> _finish(ChallengeSubmissionResult result) async {
+    HapticFeedback.lightImpact();
+    if (!AppMotion.reduced(context)) {
+      setState(() => _done = true);
+      await Future<void>.delayed(const Duration(milliseconds: 380));
+      if (!mounted) return;
+    }
+    Navigator.pop(context, result);
+  }
   String? _pickedName;
   io.File? _pickedFile;
 
@@ -163,7 +178,7 @@ class _ChallengeSubmissionDialogState extends State<ChallengeSubmissionDialog> {
   }
 
   void _showFullImage(ImageProvider image) {
-    showDialog(
+    showNopaDialog(
       context: context,
       builder: (ctx) => Dialog(
         backgroundColor: Colors.black,
@@ -205,8 +220,7 @@ class _ChallengeSubmissionDialogState extends State<ChallengeSubmissionDialog> {
         AppToast.error(context, res.error ?? 'ثبت پاسخ با خطا مواجه شد. دوباره تلاش کنید.');
         return;
       }
-      Navigator.pop(
-        context,
+      await _finish(
         ChallengeSubmissionResult(
           answerText: _questions.length == 1
               ? 'گزینه انتخابی: ${_answers[0] + 1}'
@@ -254,7 +268,7 @@ class _ChallengeSubmissionDialogState extends State<ChallengeSubmissionDialog> {
     }
     await _textCtrl.clearDraft();
     if (!mounted) return;
-    Navigator.pop(context, ChallengeSubmissionResult(answerText: answer, isQuiz: false));
+    await _finish(ChallengeSubmissionResult(answerText: answer, isQuiz: false));
   }
 
   @override
@@ -656,16 +670,25 @@ class _ChallengeSubmissionDialogState extends State<ChallengeSubmissionDialog> {
       children: [
         TextButton(
           onPressed: _sending ? null : _submit,
-          child: _sending
-              ? const SizedBox(
-                  width: 18,
-                  height: 18,
-                  child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.buttonCamel),
-                )
-              : Text(
-                  widget.status == 'rejected' ? 'ارسال مجدد' : 'ارسال',
-                  style: AppTypography.h3Strong.copyWith(color: AppColors.buttonCamel),
-                ),
+          child: AnimatedSwitcher(
+            duration: AppMotion.dur(context, AppMotion.fast),
+            switchInCurve: AppMotion.enter,
+            transitionBuilder: (child, animation) => ScaleTransition(scale: animation, child: FadeTransition(opacity: animation, child: child)),
+            child: _done
+                ? const Icon(Icons.check_circle_rounded, key: ValueKey('done'), size: 22, color: AppColors.buttonCamel)
+                : _sending
+                    ? const SizedBox(
+                        key: ValueKey('sending'),
+                        width: 18,
+                        height: 18,
+                        child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.buttonCamel),
+                      )
+                    : Text(
+                        widget.status == 'rejected' ? 'ارسال مجدد' : 'ارسال',
+                        key: const ValueKey('idle'),
+                        style: AppTypography.h3Strong.copyWith(color: AppColors.buttonCamel),
+                      ),
+          ),
         ),
         close,
       ],

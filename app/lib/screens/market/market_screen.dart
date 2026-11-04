@@ -1,3 +1,4 @@
+import 'package:nopa_app/widgets/nopa_entrance.dart';
 import 'package:nopa_app/core/economy_rates.dart';
 import 'package:nopa_app/widgets/safe_avatar.dart';
 import 'package:nopa_app/core/constants/app_routes.dart';
@@ -256,7 +257,7 @@ class _MarketScreenState extends State<MarketScreen> {
     final String amountStr = amount % 1 == 0 ? amount.toInt().toString() : amount.toString();
     final String resultStr = _calculatedResult % 1 == 0 ? _calculatedResult.toInt().toString() : _calculatedResult.toStringAsFixed(1);
 
-    showDialog(
+    showNopaDialog(
       context: context,
       barrierDismissible: true,
       builder: (BuildContext ctx) {
@@ -575,7 +576,7 @@ class _MarketScreenState extends State<MarketScreen> {
               separatorBuilder: (context, index) => const SizedBox(width: 12),
               itemBuilder: (context, index) {
                 final item = _rateItems[index];
-                return _buildRateCard(item);
+                return NopaEntrance(entranceKey: 'market-rate:$index', index: index, child: _buildRateCard(item));
               },
             ),
           ),
@@ -859,7 +860,7 @@ class _MarketScreenState extends State<MarketScreen> {
             final memberId = member['id'] as String;
             final isExpanded = _expandedMemberAssetIds.contains(memberId);
 
-            return _buildMentorMemberAssetCard(member, memberId, isExpanded);
+            return NopaEntrance(entranceKey: 'market-member:$memberId', index: index, child: _buildMentorMemberAssetCard(member, memberId, isExpanded));
           },
         ),
         const SizedBox(height: 14),

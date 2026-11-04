@@ -9,7 +9,7 @@ class WelcomeDialog extends StatelessWidget {
   const WelcomeDialog({super.key, this.onContinue});
 
   static Future<void> show(BuildContext context, {VoidCallback? onContinue}) {
-    return showDialog(
+    return showNopaDialog(
       context: context,
       barrierDismissible: true,
       builder: (context) => WelcomeDialog(onContinue: onContinue),

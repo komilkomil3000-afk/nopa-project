@@ -1,3 +1,4 @@
+import 'package:nopa_app/widgets/nopa_modal_shell.dart';
 import 'dart:async';
 import 'dart:io' as io;
 import 'package:flutter/material.dart' hide Text;
@@ -150,7 +151,7 @@ class _ChatVoiceComposerState extends State<ChatVoiceComposer> {
   Future<void> _confirmAndSend() async {
     final file = _file;
     if (file == null || _sending) return;
-    final ok = await showDialog<bool>(
+    final ok = await showNopaDialog<bool>(
       context: context,
       builder: (ctx) => Directionality(
         textDirection: TextDirection.rtl,
