@@ -54,6 +54,8 @@ app.*.map.json
 *.md
 # Admin panel / backend project keeps its own docs
 !/admin_panel/**/*.md
+# Project skills for Claude Code (shared design / workflow guides)
+!/.claude/skills/**/*.md
 AGENT_CHANGELOG.md
 
 # Agent change log: local only (two machines/accounts write to it, so it conflicts on every merge)
