@@ -1339,11 +1339,11 @@ class HttpApiService {
     }
   }
 
-  // Buy Zarik (Mock Payment Simulator)
+  /// Buying zarik has no server endpoint or payment gateway yet. This used to be a mock that always
+  /// reported success; it now fails loudly so no screen can grant a purchase that never happened.
+  @Deprecated('No payment endpoint exists on the server; do not use until one is added.')
   Future<bool> buyZarikPackage(int packageZarikAmount) async {
-    await Future.delayed(const Duration(seconds: 2));
-    debugPrint('MOCK: Successfully purchased $packageZarikAmount Zarik.');
-    return true;
+    throw UnimplementedError('buyZarikPackage: no server payment endpoint exists yet.');
   }
 
   // Upload media file (multipart) to backend media upload endpoint
@@ -1425,11 +1425,11 @@ class HttpApiService {
     }
   }
 
-  // Unlock Class
+  /// Paid class unlocking has no server endpoint (stations and clips are unlocked by schedule/progress on
+  /// the server). This used to be a mock that always reported success; it now fails loudly instead.
+  @Deprecated('No class-unlock endpoint exists on the server; do not use until one is added.')
   Future<bool> unlockClass(String classId, int costZarik) async {
-    await Future.delayed(const Duration(seconds: 1));
-    debugPrint('MOCK: Unlocked class $classId for $costZarik Zarik.');
-    return true;
+    throw UnimplementedError('unlockClass: no server endpoint exists yet.');
   }
 
   // Get Media Assets

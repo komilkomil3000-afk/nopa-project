@@ -163,89 +163,15 @@ class _MentorStationScreenState extends State<MentorStationClass1Screen> {
     }
   }
 
+  /// Offline fallback: only the station numbers and names, never invented sessions, quizzes or stay times.
   List<Map<String, dynamic>> _defaultStations() {
     return [
-      {
-        'id': 'st_0',
-        'title': 'منزلگاه اول',
-        'description':
-            'اینجا منزلگاه اول، جایی در مناطق حاشیه‌ای صحرای فراموشی است. کاروانسرای غبارگرفته‌ای که اکنون در آن اقامت گزیده‌ایم، همیشه مسافران تازه‌کار را غافلگیر می‌کند. دیوارهای اینجا همه از آیینه‌هایی ساخته شده‌اند که می‌توانند چیزی فراتر از ظاهر را نشان دهند. عمق فکر و علایق و آرزوهای ما. پیر آیینه‌گر، مرشد و استادی است که در این منزلگاه سکونت دارد. همه‌ی این آیینه‌های خارق‌العاده، به دست او ساخته شده‌اند...',
-        'skillSessions': [
-          {'title': 'جلسه اول', 'totalParts': 5},
-          {'title': 'جلسه دوم', 'totalParts': 5},
-          {'title': 'جلسه سوم', 'totalParts': 5},
-        ],
-        'mediaSessions': [
-          {'title': 'جلسه اول', 'totalParts': 4},
-          {'title': 'جلسه دوم', 'totalParts': 4},
-          {'title': 'جلسه سوم', 'totalParts': 4},
-        ],
-        'quizzes': [
-          {'title': 'آزمون مقدماتی مهارت‌ها', 'totalQuestions': 10},
-          {'title': 'آزمون سواد رسانه‌ای', 'totalQuestions': 10},
-        ],
-        'stayDays': 'ده روز',
-        'animationEpisodes': 'دو قسمت',
-      },
-      {
-        'id': 'st_1',
-        'title': 'منزلگاه دوم',
-        'description':
-            'منزلگاه دوم، دروازه ورود به سرزمین حکمت و مهارت‌آموزی است. در این ایستگاه، کاروانیان با مفاهیم عمیق‌تر ارتباط و حل مسئله آشنا می‌شوند.',
-        'skillSessions': [
-          {'title': 'جلسه اول', 'totalParts': 5},
-          {'title': 'جلسه دوم', 'totalParts': 5},
-        ],
-        'mediaSessions': [
-          {'title': 'جلسه اول', 'totalParts': 3},
-          {'title': 'جلسه دوم', 'totalParts': 3},
-        ],
-        'quizzes': [
-          {'title': 'آزمون مهارت‌های ارتباطی', 'totalQuestions': 15},
-        ],
-        'stayDays': 'هشت روز',
-        'animationEpisodes': 'یک قسمت',
-      },
-      {
-        'id': 'st_2',
-        'title': 'منزلگاه سوم',
-        'description':
-            'منزلگاه سوم، وادی آزمایش و تفکر خلاق است که در آن کاروانیان گام‌های عملی در پروژه‌های تیمی برمی‌دارند.',
-        'skillSessions': [
-          {'title': 'جلسه اول', 'totalParts': 4},
-        ],
-        'mediaSessions': [
-          {'title': 'جلسه اول', 'totalParts': 4},
-        ],
-        'quizzes': [
-          {'title': 'آزمون تفکر خلاق', 'totalQuestions': 10},
-        ],
-        'stayDays': 'هفت روز',
-        'animationEpisodes': 'دو قسمت',
-      },
-      {
-        'id': 'st_3',
-        'title': 'منزلگاه چهارم',
-        'description':
-            'منزلگاه چهارم، اوج یادگیری و مهارت‌افزایی کاروانیان است.',
-        'stayDays': 'ده روز',
-        'animationEpisodes': 'سه قسمت',
-      },
-      {
-        'id': 'st_4',
-        'title': 'منزلگاه پنجم',
-        'description':
-            'منزلگاه پنجم، تثبیت آموخته‌ها و آمادگی برای ایستگاه نهایی.',
-        'stayDays': 'پنج روز',
-        'animationEpisodes': 'یک قسمت',
-      },
-      {
-        'id': 'st_5',
-        'title': 'منزلگاه ششم',
-        'description': 'منزلگاه پیروزی و پایان سفر قهرمانی.',
-        'stayDays': 'سه روز',
-        'animationEpisodes': 'یک قسمت',
-      },
+      for (int i = 1; i <= StationNumbering.count; i++)
+        {
+          'id': 'st_${i - 1}',
+          'title': Station.getOrdinalName(StationNumbering.numberAt(i)),
+          'orderIndex': StationNumbering.numberAt(i),
+        },
     ];
   }
 
@@ -314,11 +240,11 @@ class _MentorStationScreenState extends State<MentorStationClass1Screen> {
                 ],
                 animText:
                     currentStationData['animationEpisodes'] ??
-                    '${_currentStationClips.length} قسمت',
+                    '${_currentStationClips.length.toPersianDigits()} قسمت',
                 stayText:
                     currentStationData['stayDuration'] ??
                     currentStationData['stayDays'] ??
-                    '${(_selectedStationIndex * 3 + 5).toPersianDigits()} روز',
+                    'نامشخص',
               ),
 
               const SizedBox(height: 12),
@@ -987,7 +913,7 @@ class _MentorStationScreenState extends State<MentorStationClass1Screen> {
           for (int i = 0; i < categories.length; i++)
             NopaPillTab<int>(i, 'کلاس ${StationCategories.shortLabel(categories[i].title)}'),
           if (categories.isEmpty) const NopaPillTab<int>(sessionsTab, 'جلسات'),
-          const NopaPillTab<int>(quizzesTab, 'آزمون ها'),
+          const NopaPillTab<int>(quizzesTab, 'آزمون‌ها'),
         ],
         onChanged: (v) {
           setState(() {

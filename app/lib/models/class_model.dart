@@ -159,7 +159,7 @@ class PartQuizModel {
       sessionId: json['sessionId'] ?? '',
       clipId: json['clipId'],
       title: json['title'] ?? 'آزمونک پارت',
-      rewardZarik: json['rewardZarik'] ?? 10,
+      rewardZarik: json['rewardZarik'] ?? 0,
       questionsJson: json['questionsJson'],
     );
   }

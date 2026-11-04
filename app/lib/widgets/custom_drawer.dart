@@ -126,7 +126,7 @@ class CustomDrawer extends StatelessWidget {
 
     final String displayName = currentUser.name.trim().isNotEmpty
         ? currentUser.name
-        : (isMentor ? 'راهبر کاروان' : 'کمیل عباس');
+        : (isMentor ? 'راهبر کاروان' : 'کاربر');
 
     final String displaySubtitle = isChannelManager
         ? 'مسئول کانال و گروه‌ها'
@@ -134,7 +134,7 @@ class CustomDrawer extends StatelessWidget {
             currentUser.caravanName!.isNotEmpty &&
             currentUser.caravanName != 'فاقد کاروان'
         ? 'عضو ${currentUser.caravanName}'
-        : (isMentor ? 'راهبر ارشد کاروان' : 'عضو کاروان شماره پنجم');
+        : (isMentor ? 'راهبر کاروان' : 'فاقد کاروان');
 
     return Drawer(
       backgroundColor: Colors.transparent,
@@ -285,7 +285,7 @@ class CustomDrawer extends StatelessWidget {
                       },
                     ),
                     _buildMenuItem(
-                      title: 'چالش ها',
+                      title: 'چالش‌ها',
                       svgPath: 'assets/svg_icons/challeng01.svg',
                       isSelected: currentIndex == AppTabs.challenges,
                       iconSize: 22,
@@ -315,7 +315,7 @@ class CustomDrawer extends StatelessWidget {
                       },
                     ),
                     _buildMenuItem(
-                      title: 'برترین ها',
+                      title: 'برترین‌ها',
                       svgPath: 'assets/svg_icons/champun01.svg',
                       isSelected: false,
                       iconSize: 23,

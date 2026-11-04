@@ -21,7 +21,7 @@ import 'package:nopa_app/widgets/tap_expander.dart';
 /// The filter tabs under the chat header, right to left, and the space types each one holds.
 enum ChatFilter {
   all('همه', {}),
-  challenges('چالش ها', {'challenges', 'arena'}),
+  challenges('چالش‌ها', {'challenges', 'arena'}),
   personal('شخصی', {'direct', 'support'}),
   gathering('دورهمی', {'caravan', 'mentors', 'media', 'mediaqa'}),
   academy('آموزگاه', {'announcements', 'public'});

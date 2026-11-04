@@ -266,7 +266,7 @@ class _EditProfileScreenState extends State<StudentEditProfileScreen> {
   Widget build(BuildContext context) {
     final caravanName = (widget.user.caravanName != null && widget.user.caravanName!.isNotEmpty)
         ? widget.user.caravanName!
-        : 'کاروان شماره ۵';
+        : 'فاقد کاروان';
     final mentorName = (widget.user.caravanMentor != null && widget.user.caravanMentor!.isNotEmpty)
         ? widget.user.caravanMentor!
         : 'راهبر کاروان';

@@ -5,6 +5,7 @@ import 'package:flutter/material.dart' hide Text;
 import 'package:nopa_app/widgets/fa_text.dart';
 import 'package:nopa_app/widgets/app_toast.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:shamsi_date/shamsi_date.dart';
 import 'package:nopa_app/core/theme/app_theme.dart';
 import 'package:nopa_app/models/user_model.dart';
 import 'package:nopa_app/widgets/app_scaffold.dart';
@@ -24,82 +25,44 @@ class _CertificatesScreenState extends State<StudentCertificatesScreen> {
   // 1: دوره‌های گذرانده شده (Completed / Certificates earned)
   int _selectedTabIndex = 1; // Default to completed certificates so they see certificates right away
 
+  String get _caravanName {
+    final name = widget.user.caravanName?.trim() ?? '';
+    return name.isNotEmpty ? name : 'فاقد کاروان';
+  }
+
+  /// Shamsi date (Persian digits) of an ISO timestamp, e.g. Certificate.issuedAt; empty when it cannot be read.
+  static String _shamsiDate(dynamic iso) {
+    final dt = DateTime.tryParse(iso?.toString() ?? '');
+    if (dt == null) return '';
+    final j = Jalali.fromDateTime(dt.toLocal());
+    String two(int n) => n.toString().padLeft(2, '0');
+    return '${j.year}/${two(j.month)}/${two(j.day)}'.toPersianDigits();
+  }
+
+  /// Earned certificates: the user's Certificate rows (id, title, verifyId, issuedAt) sent by GET /users/me.
   List<Map<String, dynamic>> _getCompletedCourses() {
     final user = widget.user;
-    final caravan = (user.caravanName != null && user.caravanName!.isNotEmpty)
-        ? user.caravanName!
-        : 'کاروان شماره ۵';
-
+    final teacher = (user.caravanMentor?.trim().isNotEmpty ?? false) ? user.caravanMentor!.trim() : 'راهبر کاروان';
     return [
-      {
-        'id': 'cert_station_1',
-        'title': 'گواهی گذر از منزلگاه اول (کاروانسرای غبارگرفته)',
-        'description': 'شناخت مهارت‌های ارتباطی و فعالیت‌های جمعی در مسیر سفر',
-        'teacher': 'استاد محمد حسینی',
-        'sessionsCount': '۴ جلسه',
-        'date': '۱۴۰۳/۰۶/۱۵',
-        'isCompleted': true,
-        'caravan': caravan,
-        'imageUrl': '',
-      },
-      {
-        'id': 'cert_station_1',
-        'title': 'گواهی گذر از منزلگاه اول (کاروانسرای غبارگرفته)',
-        'description': 'شناخت مهارت‌های ارتباطی و فعالیت‌های جمعی در مسیر سفر',
-        'teacher': 'استاد محمد حسینی',
-        'sessionsCount': '۶ جلسه',
-        'date': '۱۴۰۳/۰۷/۰۱',
-        'isCompleted': true,
-        'caravan': caravan,
-        'imageUrl': '',
-      },
-      {
-        'id': 'cert_station_2',
-        'title': 'گواهی دوره جامع مهارت‌های رسانه‌ای و سواد دیجیتال',
-        'description': 'تولید محتوا، روایت‌گری و فعالیت مؤثر رسانه‌ای در فضای مجازی',
-        'teacher': 'دکتر علیرضا رضایی',
-        'sessionsCount': '۸ جلسه',
-        'date': '۱۴۰۳/۰۸/۱۰',
-        'isCompleted': true,
-        'caravan': caravan,
-        'imageUrl': '',
-      },
+      for (final c in (user.certificates ?? const []).whereType<Map>())
+        {
+          'id': c['id']?.toString() ?? '',
+          'verifyId': c['verifyId']?.toString() ?? '',
+          'title': c['title']?.toString() ?? 'گواهی‌نامه نپا',
+          'description': '',
+          'teacher': teacher,
+          'sessionsCount': '',
+          'date': _shamsiDate(c['issuedAt']),
+          'isCompleted': true,
+          'caravan': _caravanName,
+          'imageUrl': '',
+        },
     ];
   }
 
-  List<Map<String, dynamic>> _getOngoingCourses() {
-    final user = widget.user;
-    final caravan = (user.caravanName != null && user.caravanName!.isNotEmpty)
-        ? user.caravanName!
-        : 'کاروان شماره ۵';
-
-    return [
-      {
-        'id': 'course_station_3',
-        'title': 'دوره آموزشی منزلگاه سوم (گذرگاه امید و استقامت)',
-        'description': 'توسعه مهارت‌های حل مسئله و کارگروهی در چالش‌های سخت',
-        'teacher': 'استاد علی اکبری',
-        'sessionsCount': '۶ جلسه',
-        'progress': 0.65,
-        'progressText': '۴ از ۶ جلسه مشاهده شده',
-        'isCompleted': false,
-        'caravan': caravan,
-        'imageUrl': '',
-      },
-      {
-        'id': 'course_station_4',
-        'title': 'دوره تخصصی مدیریت منابع و سرمایه‌های کاروان',
-        'description': 'آشنایی با مدیریت دارایی‌های زریک، درفش و صرافی بازار',
-        'teacher': 'مهندس کاظمی',
-        'sessionsCount': '۵ جلسه',
-        'progress': 0.20,
-        'progressText': '۱ از ۵ جلسه مشاهده شده',
-        'isCompleted': false,
-        'caravan': caravan,
-        'imageUrl': '',
-      },
-    ];
-  }
+  /// Courses in progress: the server sends no per-course progress for certificates yet, so this list
+  /// stays empty (the tab shows its empty state) instead of invented courses.
+  List<Map<String, dynamic>> _getOngoingCourses() => const [];
 
 
 
@@ -366,7 +329,7 @@ class _CertificatesScreenState extends State<StudentCertificatesScreen> {
 
                           // Sessions Count & Instructor
                           Text(
-                            'تعداد جلسات: $sessionsCount • استاد: $teacher',
+                            sessionsCount.isNotEmpty ? 'تعداد جلسات: $sessionsCount • راهبر: $teacher' : 'راهبر: $teacher',
                             textAlign: TextAlign.right,
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,

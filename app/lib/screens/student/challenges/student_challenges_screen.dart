@@ -381,7 +381,7 @@ class _ChallengesScreenState extends State<StudentChallengesScreen> {
     UserModel user,
   ) {
     final mentorChallenges = _getMentorChallenges(repository);
-    final caravanName = user.caravanName ?? 'کاروان پنجم رضا جلالی';
+    final caravanName = user.caravanName ?? 'فاقد کاروان';
     const keys = ['intra_group', 'inter_group'];
 
     return Column(
@@ -687,16 +687,14 @@ class _ChallengesScreenState extends State<StudentChallengesScreen> {
   }
 
   void _showCreateChallengeDialog(BuildContext context, UserModel user) {
-    final titleCtrl = TextEditingController(text: 'بیا یه پوستر خفن بزنیم');
-    final questionCtrl = TextEditingController(text: 'وقتی استاد سر کلاس نمیاد چکار میکنید شما؟');
+    final titleCtrl = TextEditingController();
+    final questionCtrl = TextEditingController();
     final List<TextEditingController> optionControllers = [
-      TextEditingController(text: '۱. سوال نداره میریم خونه'),
-      TextEditingController(text: '۲. تکالیف جلسه بعد رو انجام میدیم'),
-      TextEditingController(text: '۳. با بچه‌ها تمرین مباحث قبلی رو انجام میدیم'),
-      TextEditingController(text: '۴. منتظر اعلام نماینده کلاس می‌مونیم'),
+      TextEditingController(text: '۱. '),
+      TextEditingController(text: '۲. '),
     ];
     int selectedCorrectOptionIndex = 0;
-    final rewardCtrl = TextEditingController(text: '100');
+    final rewardCtrl = TextEditingController();
     String selectedAsset = 'زریک';
     String selectedType = 'چند گزینه ای';
     String selectedAudience = 'همه اعضا';
@@ -753,7 +751,7 @@ class _ChallengesScreenState extends State<StudentChallengesScreen> {
                         // Field 2: نام کاروان
                         _buildContactDialogFieldRow(
                           label: 'نام کاروان:',
-                          child: _buildContactDialogValueText(user.caravanName ?? 'کاروان شماره پنجم'),
+                          child: _buildContactDialogValueText(user.caravanName ?? 'فاقد کاروان'),
                         ),
                         const SizedBox(height: 12),
 

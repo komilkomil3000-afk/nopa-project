@@ -75,7 +75,7 @@ class CaravanMemberModel {
     return CaravanMemberModel(
       id: json['id']?.toString() ?? '',
       name: json['name']?.toString() ?? 'عضو کاروان',
-      phoneNumber: json['phoneNumber']?.toString() ?? '۰۹۱۲۰۰۰۰۰۰۰',
+      phoneNumber: json['phoneNumber']?.toString() ?? '',
       avatarUrl: json['avatarUrl']?.toString() ?? '',
       levelFrame: (json['levelFrame'] is int) ? json['levelFrame'] : 1,
       zarikBalance: (json['zarikBalance'] is int) ? json['zarikBalance'] : (json['zarik'] is int ? json['zarik'] : 0),
@@ -135,87 +135,10 @@ class _MentorMembersScreenState extends State<MentorCaravansRosterScreen> {
         }
       }
 
-      // Default sample fallback for offline / fresh preview
+      // No caravan from the server: show the empty roster (never invented members or phone numbers)
       if (mounted) {
         setState(() {
-          _caravans = [
-            CaravanModel(
-              id: 'c1',
-              name: 'کاروان شماره پنجم',
-              mentorName: currentUser.name.isNotEmpty ? currentUser.name : 'رضا جلالی',
-              memberCount: 3,
-              members: [
-                CaravanMemberModel(
-                  id: 'u1',
-                  name: 'محمد حسینی',
-                  phoneNumber: '۰۹۱۲۳۴۵۶۷۸۹',
-                  avatarUrl: '',
-                  levelFrame: 2,
-                  zarikBalance: 350,
-                  nakh: 2,
-                  farsh: 1,
-                  beyragh: 4,
-                  role: 'student',
-                ),
-                CaravanMemberModel(
-                  id: 'u2',
-                  name: 'علی تقوی',
-                  phoneNumber: '۰۹۳۵۱۲۳۴۵۶۷',
-                  avatarUrl: '',
-                  levelFrame: 1,
-                  zarikBalance: 200,
-                  nakh: 1,
-                  farsh: 0,
-                  beyragh: 2,
-                  role: 'student',
-                ),
-                CaravanMemberModel(
-                  id: 'u3',
-                  name: 'سجاد رضایی',
-                  phoneNumber: '۰۹۱۹۸۷۶۵۴۳۲',
-                  avatarUrl: '',
-                  levelFrame: 3,
-                  zarikBalance: 520,
-                  nakh: 4,
-                  farsh: 2,
-                  beyragh: 5,
-                  role: 'student',
-                ),
-              ],
-            ),
-            CaravanModel(
-              id: 'c2',
-              name: 'کاروان شماره ششم',
-              mentorName: currentUser.name.isNotEmpty ? currentUser.name : 'رضا جلالی',
-              memberCount: 2,
-              members: [
-                CaravanMemberModel(
-                  id: 'u4',
-                  name: 'مهدی کاظمی',
-                  phoneNumber: '۰۹۱۲۹۹۹۸۸۷۷',
-                  avatarUrl: '',
-                  levelFrame: 1,
-                  zarikBalance: 150,
-                  nakh: 0,
-                  farsh: 0,
-                  beyragh: 1,
-                  role: 'student',
-                ),
-                CaravanMemberModel(
-                  id: 'u5',
-                  name: 'حسین احمدی',
-                  phoneNumber: '۰۹۱۸۱۱۱۲۲۳۳',
-                  avatarUrl: '',
-                  levelFrame: 2,
-                  zarikBalance: 410,
-                  nakh: 3,
-                  farsh: 1,
-                  beyragh: 3,
-                  role: 'student',
-                ),
-              ],
-            ),
-          ];
+          _caravans = [];
           _isLoading = false;
         });
       }

@@ -12,7 +12,7 @@ class AppStrings {
   static const String navProfile = 'پروفایل';
   static const String navChat = 'چت';
 
-  static const String stations = 'ایستگاه‌ها';
+  static const String stations = 'منزلگاه‌ها';
   static const String enter = 'ورود';
   static const String activeChallenges = 'چالش‌های فعال';
   static const String dailyReward = 'پاداش روزانه';

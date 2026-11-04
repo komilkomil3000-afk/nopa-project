@@ -586,7 +586,7 @@ class AppRepository extends ChangeNotifier with WidgetsBindingObserver {
         for (final item in data) {
           final members = (item['members'] is List) ? (item['members'] as List) : ((item['membersList'] is List) ? item['membersList'] as List : []);
           final memberCount = (item['memberCount'] is int) ? (item['memberCount'] as int) : members.length;
-          final overallProgress = (item['overallProgress'] is num) ? (item['overallProgress'] as num).toDouble() : 0.75;
+          final overallProgress = (item['overallProgress'] is num) ? (item['overallProgress'] as num).toDouble() : 0.0;
           final activeStation = item['activeStation']?.toString() ?? 'منزلگاه اول';
           int sumOf(List<String> keys) => members.whereType<Map>().fold<int>(0, (sum, m) {
                 for (final k in keys) {

@@ -97,7 +97,7 @@ class _CertificateViewScreenState extends State<StudentCertificateDetailScreen> 
                       _buildModalInputField('تحویل‌گیرنده:', nameCtrl, 'نام و نام خانوادگی'),
                       const SizedBox(height: 10),
 
-                      _buildModalInputField('تلفن همراه:', phoneCtrl, '09380346668', keyboardType: TextInputType.phone),
+                      _buildModalInputField('تلفن همراه:', phoneCtrl, '09120000000', keyboardType: TextInputType.phone),
                       const SizedBox(height: 10),
 
                       _buildModalInputField('آدرس:', addressCtrl, 'استان، شهر، خیابان، پلاک...', maxLines: 2),
@@ -191,9 +191,9 @@ class _CertificateViewScreenState extends State<StudentCertificateDetailScreen> 
   @override
   Widget build(BuildContext context) {
     final String title = widget.certificate['title'] ?? 'گواهی‌نامه رسمی نپا';
-    final String date = widget.certificate['date'] ?? '۱۴۰۳/۰۶/۱۵';
+    final String date = widget.certificate['date'] ?? '';
     final String teacher = widget.certificate['teacher'] ?? 'راهبر کاروان';
-    final String sessions = widget.certificate['sessionsCount'] ?? '۶ جلسه';
+    final String sessions = widget.certificate['sessionsCount'] ?? '';
 
     return AppScaffold(
       showBackButton: true,
@@ -333,7 +333,7 @@ class _CertificateViewScreenState extends State<StudentCertificateDetailScreen> 
                                     ),
                                   ),
                                   child: Text(
-                                    'تعداد جلسات: $sessions • راهبر / استاد: $teacher',
+                                    sessions.isNotEmpty ? 'تعداد جلسات: $sessions • راهبر: $teacher' : 'راهبر: $teacher',
                                     style: AppTypography.caption.copyWith(color: Color(0xFFC7B299)),
                                   ),
                                 ),

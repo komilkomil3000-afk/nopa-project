@@ -725,7 +725,7 @@ class _ChallengesScreenState extends State<MentorChallengesScreen> {
     UserModel user,
   ) {
     final mentorChallenges = _getMentorChallenges(repository);
-    final caravanName = user.caravanName ?? 'کاروان پنجم رضا جلالی';
+    final caravanName = user.caravanName ?? 'فاقد کاروان';
     const keys = ['intra_group', 'inter_group'];
 
     return Column(

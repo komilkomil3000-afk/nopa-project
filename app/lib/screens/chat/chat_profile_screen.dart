@@ -785,10 +785,10 @@ class _SharedMediaState extends State<_SharedMedia> {
   _MediaFeed _feedOf(String kind) => _feeds.putIfAbsent(kind, _MediaFeed.new);
 
   List<(String, String)> get _tabs => [
-        ('image', 'عکس ها'),
-        ('audio', 'صوت ها'),
-        ('link', 'لینک ها'),
-        if (widget.withSessions) ('session', 'نشست ها'),
+        ('image', 'عکس‌ها'),
+        ('audio', 'صوت‌ها'),
+        ('link', 'لینک‌ها'),
+        if (widget.withSessions) ('session', 'نشست‌ها'),
       ];
 
   @override

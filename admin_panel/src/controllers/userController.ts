@@ -281,7 +281,7 @@ export async function getMentorById(req: AuthRequest, res: Response) {
     const totalRatings = ratings.length;
     const avgRating = totalRatings > 0 
       ? ratings.reduce((sum, r) => sum + r.ratingValue, 0) / totalRatings 
-      : 4.8; // Default initial mock value
+      : 0; // no ratings yet
 
     const caravansCount = await prisma.caravan.count({
       where: { mentorId: id }
@@ -298,12 +298,12 @@ export async function getMentorById(req: AuthRequest, res: Response) {
       rating: parseFloat(avgRating.toFixed(1)),
       caravansCount,
       membersCount,
-      bio: 'راهبر ارشد سرزمین نپا، مربی تفکر خلاق و سواد رسانه‌ای نوجوانان.',
-      certificates: [
-        'گواهی عالی مربیگری تربیتی نپا',
-        'گواهی تخصصی رسانه و تولید محتوا',
-        'گواهی شایستگی مدیریت کاروان نپا'
-      ]
+      bio: mentor.bio || '',
+      // User.academicCertificates is free text from the panel; one certificate per line or comma
+      certificates: (mentor.academicCertificates || '')
+        .split(/[\n,،]+/)
+        .map((c) => c.trim())
+        .filter(Boolean)
     });
   } catch (error) {
     console.error('getMentorById error:', error);

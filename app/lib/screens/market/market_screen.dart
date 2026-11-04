@@ -42,27 +42,33 @@ class _MarketScreenState extends State<MarketScreen> {
   List<Map<String, dynamic>> get _rateItems => [
     {
       'title': 'کلاف',
-      'priceText': EconomyRates.allowBuyNakh ? '${EconomyRates.zarikPerNakh} زریک' : 'غیر قابل خرید',
+      'priceText': EconomyRates.allowBuyNakh ? '${EconomyRates.zarikPerNakh} ${AssetNames.of('zarik')}' : 'غیرقابل‌خرید',
       'assetKey': 'کلاف',
     },
     {
       'title': 'قالیچه',
-      'priceText': '${EconomyRates.nakhPerFarsh} کلاف',
+      'priceText': '${EconomyRates.nakhPerFarsh} ${AssetNames.of('nakh')}',
       'assetKey': 'قالیچه',
+    },
+    // Banner ranks of an inter-group challenge (AssetType keys derafsh_bronze / _silver / _gold / _cloth)
+    {
+      'title': 'درفش پارچه‌ای',
+      'priceText': 'غیرقابل‌خرید',
+      'assetKey': 'درفش پارچه‌ای',
     },
     {
       'title': 'درفش برنزی',
-      'priceText': 'غیر قابل خرید',
+      'priceText': 'غیرقابل‌خرید',
       'assetKey': 'درفش برنزی',
     },
     {
-      'title': 'درفش نقره ای',
-      'priceText': 'غیر قابل خرید',
-      'assetKey': 'درفش نقره ای',
+      'title': 'درفش نقره‌ای',
+      'priceText': 'غیرقابل‌خرید',
+      'assetKey': 'درفش نقره‌ای',
     },
     {
       'title': 'درفش طلایی',
-      'priceText': 'غیر قابل خرید',
+      'priceText': 'غیرقابل‌خرید',
       'assetKey': 'درفش طلایی',
     },
   ];
@@ -696,7 +702,7 @@ class _MarketScreenState extends State<MarketScreen> {
 
   /// Section 2: سرمایه های شما (student only; the mentor sees caravan totals under گزارش اعضا)
   Widget _buildAssetsSection(UserModel? user) {
-    const title = 'سرمایه های شما';
+    const title = 'سرمایه‌های شما';
     final int totalZarik = user?.zarik ?? 0;
     final int totalNakh = user?.nakh ?? 0;
     final int totalFarsh = user?.farsh ?? 0;
@@ -2013,7 +2019,7 @@ class _MarketScreenState extends State<MarketScreen> {
           child: Align(
             alignment: Alignment.centerRight,
             child: Text(
-              'برترین ها',
+              'برترین‌ها',
               style: AppTypography.h2,
             ),
           ),
@@ -2027,8 +2033,8 @@ class _MarketScreenState extends State<MarketScreen> {
             expand: true,
             selected: _selectedLeaderboardTab,
             tabs: const [
-              NopaPillTab<int>(0, 'برترین شرکت کننده ها'),
-              NopaPillTab<int>(1, 'برترین کاروان ها'),
+              NopaPillTab<int>(0, 'برترین شرکت کننده‌ها'),
+              NopaPillTab<int>(1, 'برترین کاروان‌ها'),
             ],
             onChanged: (v) => setState(() => _selectedLeaderboardTab = v),
           ),

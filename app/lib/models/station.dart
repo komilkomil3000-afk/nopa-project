@@ -67,7 +67,7 @@ class Station {
     required this.isLocked,
     this.isCurrent = false,
     required this.imageUrl,
-    this.classesCount = '۲ دسته کلاس',
+    this.classesCount = '',
     this.categories = const [],
     this.orderIndex = 0,
   });
@@ -113,7 +113,7 @@ class Station {
       return originalTitle.trim();
     }
     if (number >= 0 && number < pureStationNames.length) return pureStationNames[number];
-    return 'ایستگاه $number';
+    return 'منزلگاه $number';
   }
 
   static String resolveTitle(String? originalTitle, int number) {

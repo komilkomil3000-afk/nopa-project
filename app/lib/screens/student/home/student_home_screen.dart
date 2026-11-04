@@ -97,7 +97,7 @@ class _HomeScreenState extends State<StudentHomeScreen> {
               Expanded(
                 child: _buildInfoColumn(
                   title: 'مسافر',
-                  value: user?.name ?? 'کمیل عباس',
+                  value: user?.name ?? 'کاربر',
                 ),
               ),
               Container(height: 24, width: 1, color: const Color(0xFF3E3B5C)),
@@ -105,7 +105,7 @@ class _HomeScreenState extends State<StudentHomeScreen> {
               Expanded(
                 child: _buildInfoColumn(
                   title: 'کاروان',
-                  value: user?.caravanName ?? 'شماره پنجم',
+                  value: user?.caravanName ?? 'فاقد کاروان',
                 ),
               ),
               Container(height: 24, width: 1, color: const Color(0xFF3E3B5C)),
@@ -113,7 +113,7 @@ class _HomeScreenState extends State<StudentHomeScreen> {
               Expanded(
                 child: _buildInfoColumn(
                   title: 'راهبر',
-                  value: user?.caravanMentor ?? 'رضا جلالی',
+                  value: user?.caravanMentor ?? 'تعیین نشده',
                 ),
               ),
               Container(height: 24, width: 1, color: const Color(0xFF3E3B5C)),
@@ -203,7 +203,7 @@ class _HomeScreenState extends State<StudentHomeScreen> {
           child: Align(
             alignment: Alignment.centerRight,
             child: Text(
-              'سرمایه ها',
+              'سرمایه‌ها',
               style: AppTypography.h2,
             ),
           ),
@@ -423,7 +423,7 @@ class _HomeScreenState extends State<StudentHomeScreen> {
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       const Text(
-                        'منزلگاه ها',
+                        'منزلگاه‌ها',
                         style: AppTypography.h2,
                       ),
                       TextButton(
@@ -472,7 +472,7 @@ class _HomeScreenState extends State<StudentHomeScreen> {
                             final String teacherName = stationMap['instructors']?.toString() ??
                                 stationMap['subtitle']?.toString() ??
                                 stationMap['teacher']?.toString() ??
-                                'استاد کاروان نپا';
+                                'اساتید منزلگاه';
                             final String iconUrl = Station.imageFrom(stationMap);
 
                             final int stationOrder = (stationMap['orderIndex'] as num?)?.toInt() ?? (index + 1);

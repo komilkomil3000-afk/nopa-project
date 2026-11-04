@@ -97,7 +97,7 @@ class _ProfileScreenState extends State<MentorProfileScreen> {
                 onTap: () => _openEditProfile(currentUser),
               ),
               _buildProfileMenuItem(
-                title: 'کاروان ها و اعضا',
+                title: 'کاروان‌ها و اعضا',
                 svgAsset: 'assets/svg_icons/widow01.svg',
                 fallbackIcon: Icons.grid_view_rounded,
                 onTap: () => Navigator.push(
@@ -113,7 +113,7 @@ class _ProfileScreenState extends State<MentorProfileScreen> {
                 onTap: () => _openEditProfile(currentUser),
               ),
               if (!currentUser.chatEnabled) _buildProfileMenuItem(
-                title: 'پیام ها',
+                title: 'پیام‌ها',
                 svgAsset: '',
                 fallbackIcon: Icons.notifications_none_rounded,
                 onTap: () => Navigator.pushNamed(context, AppRoutes.notifications),
@@ -145,12 +145,12 @@ class _ProfileScreenState extends State<MentorProfileScreen> {
 
   /// User Info Card: Avatar with edit pencil badge on right, Name & Subtitle on left
   Widget _buildUserHeaderCard(UserModel user, {bool isMentor = false}) {
-    final String displayName = user.name.isNotEmpty ? user.name : (isMentor ? 'رضا جلالی' : 'کمیل عباس');
+    final String displayName = user.name.isNotEmpty ? user.name : (isMentor ? 'راهبر کاروان' : 'کاربر');
     final String subtitle = isMentor
-        ? (user.role == UserRole.superMentor ? 'سرراهبر' : 'مربی')
-        : ((user.caravanName != null && user.caravanName!.trim().isNotEmpty)
+        ? (user.role == UserRole.superMentor ? 'سرراهبر' : 'راهبر')
+        : ((user.caravanName != null && user.caravanName!.trim().isNotEmpty && user.caravanName != 'فاقد کاروان')
             ? 'عضو کاروان ${user.caravanName}'
-            : 'عضو کاروان شماره پنجم');
+            : 'فاقد کاروان');
 
     return Directionality(
       textDirection: TextDirection.rtl,
@@ -276,7 +276,7 @@ class _ProfileScreenState extends State<MentorProfileScreen> {
         ),
         if (!isMentor)
           _buildProfileMenuItem(
-            title: 'گواهی ها',
+            title: 'گواهی‌ها',
             svgAsset: 'assets/svg_icons/digree .svg',
             // Certificates are not issued yet: shown grey
             enabled: false,
@@ -290,7 +290,7 @@ class _ProfileScreenState extends State<MentorProfileScreen> {
             },
           ),
         _buildProfileMenuItem(
-          title: 'تیکت های شما',
+          title: 'تیکت‌های شما',
           svgAsset: 'assets/svg_icons/ticket01.svg',
           onTap: () => openSupportOrTickets(context, user),
         ),

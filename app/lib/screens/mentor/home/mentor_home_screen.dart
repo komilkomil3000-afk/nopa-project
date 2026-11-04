@@ -85,7 +85,7 @@ class _MentorHomeScreenState extends State<MentorHomeScreen> {
       (c) => c.id == appState.selectedCaravanId,
       orElse: () => appState.caravans.isNotEmpty
           ? appState.caravans.first
-          : CaravanModel(id: 'c1', name: caravanName, memberCount: 24, overallProgress: 0.78, activeStation: 'منزلگاه اول'),
+          : CaravanModel(id: '', name: caravanName, memberCount: 0, overallProgress: 0.0, activeStation: 'منزلگاه اول'),
     );
 
     return Directionality(
@@ -101,7 +101,7 @@ class _MentorHomeScreenState extends State<MentorHomeScreen> {
               Expanded(
                 child: _buildInfoColumn(
                   title: 'راهبر',
-                  value: user?.name.isNotEmpty == true ? user!.name : 'رضا جلالی',
+                  value: user?.name.isNotEmpty == true ? user!.name : 'راهبر کاروان',
                 ),
               ),
               Container(height: 24, width: 1, color: const Color(0xFF3E3B5C)),
@@ -423,7 +423,7 @@ class _MentorHomeScreenState extends State<MentorHomeScreen> {
           child: Align(
             alignment: Alignment.centerRight,
             child: Text(
-              'سرمایه های کاروان',
+              'سرمایه‌های کاروان',
               style: AppTypography.h2,
             ),
           ),
@@ -580,7 +580,7 @@ class _MentorHomeScreenState extends State<MentorHomeScreen> {
   Widget _buildQuickAccessSection() {
     final List<Map<String, dynamic>> quickAccessItems = [
       {
-        'title': 'منزلگاه ها',
+        'title': 'منزلگاه‌ها',
         'icon': 'assets/svg_icons/qa_stations01.svg',
         'onTap': () => navigateToMainTab(AppTabs.academy),
       },
@@ -590,7 +590,7 @@ class _MentorHomeScreenState extends State<MentorHomeScreen> {
         'onTap': () => Navigator.pushNamed(context, AppRoutes.mentorMembers),
       },
       {
-        'title': 'چالش ها',
+        'title': 'چالش‌ها',
         'icon': 'assets/svg_icons/qa_challenges01.svg',
         'onTap': () => navigateToMainTab(AppTabs.challenges),
       },

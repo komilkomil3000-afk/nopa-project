@@ -216,7 +216,7 @@ class _StudentAcademyRoadmapScreenState extends State<StudentAcademyRoadmapScree
     final String teacherName = item['instructors']?.toString() ??
         item['subtitle']?.toString() ??
         item['teacher']?.toString() ??
-        'استاد کاروان نپا';
+        'اساتید منزلگاه';
 
     final int stationOrder = (item['orderIndex'] as num?)?.toInt() ?? (index + 1);
     final String stationTitle = Station.getPureName(stationOrder, item['title']?.toString());
