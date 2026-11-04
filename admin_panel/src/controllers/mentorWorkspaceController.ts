@@ -157,6 +157,29 @@ function correctIndexOf(q: any): number {
   return Number(q && (q.correctIndex !== undefined ? q.correctIndex : (q.correct !== undefined ? q.correct : q.correctAnswer)));
 }
 
+/** "YYYY-MM-DD" of a moment in Asia/Tehran (the day the app usage is counted on). */
+export function tehranDay(d: Date): string {
+  return new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Tehran', year: 'numeric', month: '2-digit', day: '2-digit' }).format(d);
+}
+
+/** The app reports the seconds it was open in the foreground; they are added to today's row (capped per call). */
+export async function recordAppUsage(req: AuthRequest, res: Response) {
+  try {
+    const seconds = Math.max(0, Math.min(300, Math.round(Number(req.body?.seconds) || 0)));
+    if (seconds === 0) return res.json({ ok: true });
+    const userId = req.user!.id;
+    const day = tehranDay(new Date());
+    await prisma.userUsageDay.upsert({
+      where: { userId_day: { userId, day } },
+      create: { userId, day, seconds },
+      update: { seconds: { increment: seconds } }
+    });
+    res.json({ ok: true });
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
+  }
+}
+
 export async function getMentorCaravanProgress(req: AuthRequest, res: Response) {
   try {
     const userId = req.user!.id;
@@ -338,10 +361,16 @@ export async function getMentorCaravanProgress(req: AuthRequest, res: Response) 
     }
     if (adminIds.length > 0) challengeOr.push({ AND: [{ caravanId: null }, { createdByMentorId: { in: adminIds } }] });
     const caravanChallenges = challengeOr.length > 0
-      ? await prisma.challenge.findMany({ where: { OR: challengeOr }, select: { id: true, recipientIds: true } })
+      ? await prisma.challenge.findMany({ where: { OR: challengeOr }, select: { id: true, recipientIds: true, stationId: true } })
       : [];
     const challengeSubmissions = memberIds.length > 0
       ? await prisma.submission.findMany({ where: { studentId: { in: memberIds } }, select: { challengeId: true, studentId: true } })
+      : [];
+
+    // Time in the app per member and day (last 30 days, Asia/Tehran days)
+    const usageSince = tehranDay(new Date(Date.now() - 29 * 86400000));
+    const usageRows = memberIds.length > 0
+      ? await prisma.userUsageDay.findMany({ where: { userId: { in: memberIds }, day: { gte: usageSince } }, select: { userId: true, day: true, seconds: true } })
       : [];
 
     // Format members with real progress calculated from database
@@ -400,6 +429,17 @@ export async function getMentorCaravanProgress(req: AuthRequest, res: Response) 
         challengeSubmissions.filter(sub => sub.studentId === m.id && visibleIds.has(sub.challengeId)).map(sub => sub.challengeId)
       );
 
+      // Participation per station (challenges without a station are filed under "")
+      const challengesByStation: Record<string, { total: number; participated: number }> = {};
+      for (const c of visibleChallenges) {
+        const key = c.stationId || '';
+        const row = challengesByStation[key] || (challengesByStation[key] = { total: 0, participated: 0 });
+        row.total++;
+        if (participated.has(c.id)) row.participated++;
+      }
+      const usageDays: Record<string, number> = {};
+      usageRows.filter(u => u.userId === m.id).forEach(u => { usageDays[u.day] = u.seconds; });
+
       return {
         id: m.id,
         name: m.name || 'عضو کاروان',
@@ -413,6 +453,8 @@ export async function getMentorCaravanProgress(req: AuthRequest, res: Response) 
         completedStationsCount,
         challengesTotal: visibleChallenges.length,
         challengesParticipated: participated.size,
+        challengesByStation,
+        usageDays,
         clipProgress,
         clipStatus,
         quizResults

@@ -1,3 +1,4 @@
+import 'package:shamsi_date/shamsi_date.dart';
 import 'package:nopa_app/widgets/tap_expander.dart';
 import 'package:nopa_app/core/theme/app_colors.dart';
 import 'package:nopa_app/widgets/bottom_nav_bar.dart';
@@ -893,8 +894,6 @@ class _StudentReportCardAndEvaluationScreenState extends State<StudentReportCard
     if (mounted) setState(() => _loaded = true);
   }
 
-  final Set<int> _expandedStationIndices = {0};
-
   int get _levelFrame {
     final v = (_memberData?['levelFrame'] as num?)?.toInt() ?? widget.member.levelFrame;
     return v < 1 ? 1 : v;
@@ -919,14 +918,21 @@ class _StudentReportCardAndEvaluationScreenState extends State<StudentReportCard
     ];
   }
 
-  bool _isClipWatched(dynamic clipId) {
-    final st = _clipStatus[clipId];
-    return st is Map && (st['isWatched'] == true || st['quizPassed'] == true);
+  /// Station the overall-status numbers are about: null = the member's current station, -1 = all stations.
+  int? _scopeChoice;
+
+  int get _currentStationIndex => _stations.isEmpty ? -1 : (_levelFrame - 1).clamp(0, _stations.length - 1);
+
+  int get _scopeIndex {
+    final i = _scopeChoice ?? _currentStationIndex;
+    return i >= _stations.length ? -1 : i;
   }
+
+  List<Map<String, dynamic>> get _scopeStations => _scopeIndex < 0 ? _stations : [_stations[_scopeIndex]];
 
   int get _totalVideos {
     int n = 0;
-    for (final st in _stations) {
+    for (final st in _scopeStations) {
       for (final sess in _sessionsOf(st)) {
         n += ((sess['clips'] as List?) ?? []).length;
       }
@@ -936,7 +942,7 @@ class _StudentReportCardAndEvaluationScreenState extends State<StudentReportCard
 
   int get _watchedVideos {
     int n = 0;
-    for (final st in _stations) {
+    for (final st in _scopeStations) {
       for (final sess in _sessionsOf(st)) {
         for (final c in ((sess['clips'] as List?) ?? []).whereType<Map>()) {
           final status = _clipStatus[c['id']];
@@ -947,12 +953,12 @@ class _StudentReportCardAndEvaluationScreenState extends State<StudentReportCard
     return n;
   }
 
-  int get _totalQuizzes => _stations.fold(0, (sum, st) => sum + ((st['quizzes'] as List?) ?? []).length);
+  int get _totalQuizzes => _scopeStations.fold(0, (sum, st) => sum + ((st['quizzes'] as List?) ?? []).length);
 
   int get _takenQuizzes {
     final results = (_memberData?['quizResults'] as Map?) ?? const {};
     int n = 0;
-    for (final st in _stations) {
+    for (final st in _scopeStations) {
       for (final q in ((st['quizzes'] as List?) ?? []).whereType<Map>()) {
         if (results.containsKey(q['id'])) n++;
       }
@@ -960,21 +966,21 @@ class _StudentReportCardAndEvaluationScreenState extends State<StudentReportCard
     return n;
   }
 
-  String _ofText(int part, int total) => '${part.toPersian()} از ${total.toPersian()}';
-
-  /// Sessions of a station as shown in the accordion, from the member's real watch records.
-  List<Map<String, dynamic>> _getStationSessions(Map<String, dynamic>? stationData) {
-    return _sessionsOf(stationData).map((sess) {
-      final clips = ((sess['clips'] as List?) ?? []).whereType<Map>().toList();
-      final watched = clips.where((c) => _isClipWatched(c['id'])).length;
-      return <String, dynamic>{
-        'title': sess['title'],
-        'watched': watched,
-        'total': clips.length,
-        'done': clips.isNotEmpty && watched >= clips.length,
-      };
-    }).toList();
+  /// "x از y" challenges of the selected station (or of all of them).
+  String get _scopedChallengesText {
+    final m = _memberData;
+    if (m == null) return '—';
+    if (_scopeIndex < 0) {
+      return _ofText((m['challengesParticipated'] as num?)?.toInt() ?? 0, (m['challengesTotal'] as num?)?.toInt() ?? 0);
+    }
+    final byStation = m['challengesByStation'];
+    if (byStation is! Map) return '—';
+    final row = byStation[_stations[_scopeIndex]['id']?.toString()];
+    return _ofText((row is Map ? (row['participated'] as num?)?.toInt() : null) ?? 0,
+        (row is Map ? (row['total'] as num?)?.toInt() : null) ?? 0);
   }
+
+  String _ofText(int part, int total) => '${part.toPersian()} از ${total.toPersian()}';
 
   @override
   Widget build(BuildContext context) {
@@ -1056,14 +1062,21 @@ class _StudentReportCardAndEvaluationScreenState extends State<StudentReportCard
 
               const SizedBox(height: 18),
 
-              // 3. Overall Progress Card (باکس وضعیت کلی با استایل مبادله)
+              // 3. Overall Progress Card (باکس وضعیت کلی) with a station picker for the numbers below it
               _buildExchangeCard(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      'وضعیت کلی مسافر در کاروان',
-                      style: AppTypography.h3.copyWith(color: Color(0xFFFFD580)),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            'وضعیت کلی مسافر در کاروان',
+                            style: AppTypography.h3.copyWith(color: Color(0xFFFFD580)),
+                          ),
+                        ),
+                        if (_loaded && _stations.isNotEmpty) _buildScopeSelector(),
+                      ],
                     ),
                     const SizedBox(height: 14),
                     Row(
@@ -1072,13 +1085,7 @@ class _StudentReportCardAndEvaluationScreenState extends State<StudentReportCard
                         _buildStatBox('منزلگاه کنونی', StationNumbering.numberAt(levelFrame).toPersian()),
                         _buildStatBox('ویدیوها', hasData ? _ofText(_watchedVideos, _totalVideos) : '—'),
                         _buildStatBox('آزمون‌ها', hasData ? _ofText(_takenQuizzes, _totalQuizzes) : '—'),
-                        _buildStatBox(
-                          'چالش‌ها',
-                          hasData
-                              ? _ofText((_memberData!['challengesParticipated'] as num?)?.toInt() ?? 0,
-                                  (_memberData!['challengesTotal'] as num?)?.toInt() ?? 0)
-                              : '—',
-                        ),
+                        _buildStatBox('چالش‌ها', hasData ? _scopedChallengesText : '—'),
                       ],
                     ),
                   ],
@@ -1112,35 +1119,13 @@ class _StudentReportCardAndEvaluationScreenState extends State<StudentReportCard
 
               const SizedBox(height: 18),
 
-              // 5. Station Road Map Summary & Sessions Accordion (پیشرفت در منزلگاه‌ها با استایل مبادله)
-              _buildExchangeCard(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text(
-                      'پیشرفت در منزلگاه‌ها',
-                      style: AppTypography.h3,
-                    ),
-                    const SizedBox(height: 14),
-                    if (!_loaded)
-                      const Center(
-                        child: Padding(
-                          padding: EdgeInsets.all(16),
-                          child: CircularProgressIndicator(color: Color(0xFFDFB690)),
-                        ),
-                      )
-                    else
-                      for (int i = 0; i < _stations.length; i++) ...[
-                        _buildStationAccordionItem(
-                          index: i,
-                          stationData: _stations[i],
-                          userLevelFrame: levelFrame,
-                        ),
-                        if (i < _stations.length - 1) const SizedBox(height: 10),
-                      ],
-                  ],
-                ),
-              ),
+              // 5. Participation in challenges (مشارکت در چالش‌ها)
+              _buildExchangeCard(child: _buildParticipationCard(hasData)),
+
+              const SizedBox(height: 18),
+
+              // 6. Time in the app (زمان حضور در اپلیکیشن)
+              _buildExchangeCard(child: _buildUsageCard(hasData)),
 
               const SizedBox(height: 30),
             ],
@@ -1150,185 +1135,187 @@ class _StudentReportCardAndEvaluationScreenState extends State<StudentReportCard
     );
   }
 
-  /// Station Accordion Item with nested Stepper of sessions
-  Widget _buildStationAccordionItem({
-    required int index,
-    required Map<String, dynamic>? stationData,
-    required int userLevelFrame,
-  }) {
-    // Same rules as the member's own station list
-    final int completed = _completedCount;
-    final bool isLocked = index > 0 && (index + 1) > userLevelFrame && index > completed;
-    final bool isCurrentStation = (index + 1) == userLevelFrame || (index == 0 && userLevelFrame <= 1);
-    final bool isCompletedStation = (index + 1) < userLevelFrame || index < completed;
-    final bool isExpanded = _expandedStationIndices.contains(index);
-
-    final String stationTitle = stationData != null && stationData['title'] != null
-        ? stationData['title'].toString()
-        : 'منزلگاه ${StationNumbering.numberAt(index + 1)}';
-
-    final sessions = _getStationSessions(stationData);
-
-    return Container(
-      decoration: BoxDecoration(
-        color: const Color(0xFF1E1D36),
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(
-          color: isCurrentStation
-              ? const Color(0xFFDE9959).withValues(alpha: 0.6)
-              : const Color(0xFF453F73).withValues(alpha: 0.5),
-          width: 1.1,
+  /// Small pill that picks the station the overall-status numbers are about ("همه" = every station).
+  Widget _buildScopeSelector() {
+    final idx = _scopeIndex;
+    final label = idx < 0 ? 'همه' : 'منزلگاه ${StationNumbering.numberAt(idx + 1).toPersian()}';
+    return PopupMenuButton<int>(
+      tooltip: 'انتخاب منزلگاه',
+      color: const Color(0xFF2A2835),
+      position: PopupMenuPosition.under,
+      onSelected: (v) => setState(() => _scopeChoice = v),
+      itemBuilder: (_) => [
+        PopupMenuItem(value: -1, height: 36, child: Text('همه منزلگاه‌ها', style: AppTypography.bodyMedium.copyWith(color: idx < 0 ? AppColors.accentGoldEnd : Colors.white))),
+        for (int i = 0; i < _stations.length; i++)
+          PopupMenuItem(
+            value: i,
+            height: 36,
+            child: Text('منزلگاه ${StationNumbering.numberAt(i + 1).toPersian()}',
+                style: AppTypography.bodyMedium.copyWith(color: i == idx ? AppColors.accentGoldEnd : Colors.white)),
+          ),
+      ],
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+        decoration: BoxDecoration(
+          color: const Color(0xFF2A2835),
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(color: AppColors.buttonCamel.withValues(alpha: 0.85), width: 1.0),
         ),
-      ),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(13),
-        child: Column(
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
           children: [
-            // Station Header Row (Tap to expand/collapse)
-            TapExpander(child: InkWell(
-              onTap: () {
-                setState(() {
-                  if (isExpanded) {
-                    _expandedStationIndices.remove(index);
-                  } else {
-                    _expandedStationIndices.add(index);
-                  }
-                });
-              },
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-                child: Row(
-                  children: [
-                    // Status Badge Icon
-                    Container(
-                      width: 28,
-                      height: 28,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        color: isCompletedStation
-                            ? const Color(0xFF10B981)
-                            : (isCurrentStation ? const Color(0xFFDE9959) : const Color(0xFF383562)),
-                      ),
-                      child: Center(
-                        child: Icon(
-                          isCompletedStation
-                              ? Icons.check_rounded
-                              : (isCurrentStation ? Icons.play_arrow_rounded : Icons.lock_outline_rounded),
-                          color: Colors.white,
-                          size: 16,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-
-                    // Station Title
-                    Expanded(
-                      child: Text(
-                        'منزلگاه ${StationNumbering.numberAt(index + 1).toPersian()}: $stationTitle',
-                        style: AppTypography.h3.copyWith(color: isLocked ? Colors.white54 : Colors.white),
-                      ),
-                    ),
-
-                    // Chevron Arrow
-                    Icon(
-                      isExpanded ? Icons.keyboard_arrow_up_rounded : Icons.keyboard_arrow_down_rounded,
-                      color: AppColors.buttonCancelPurple,
-                      size: 20,
-                    ),
-                  ],
-                ),
-              ),
-            )),
-
-            // Expanded Sessions Stepper List
-            if (isExpanded) ...[
-              Container(
-                decoration: const BoxDecoration(
-                  color: Color(0xFF161528),
-                  border: Border(top: BorderSide(color: Color(0xFF282542), width: 1.0)),
-                ),
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                child: Column(
-                  children: List.generate(sessions.length, (sIdx) {
-                    final session = sessions[sIdx];
-                    final bool isSessionCompleted = session['done'] == true;
-                    final isLastSession = sIdx == sessions.length - 1;
-
-                    return Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        // Stepper Node & Line on Right in RTL
-                        Column(
-                          children: [
-                            Container(
-                              width: 22,
-                              height: 22,
-                              decoration: BoxDecoration(
-                                shape: BoxShape.circle,
-                                color: isSessionCompleted
-                                    ? const Color(0xFF10B981)
-                                    : const Color(0xFF352F5A),
-                                border: Border.all(
-                                  color: isSessionCompleted
-                                      ? const Color(0xFF10B981)
-                                      : const Color(0xFF8B88E8).withValues(alpha: 0.6),
-                                  width: 1.2,
-                                ),
-                              ),
-                              child: Center(
-                                child: Icon(
-                                  isSessionCompleted ? Icons.check_rounded : Icons.play_arrow_rounded,
-                                  color: isSessionCompleted ? Colors.white : const Color(0xFFFFD580),
-                                  size: 13,
-                                ),
-                              ),
-                            ),
-                            if (!isLastSession)
-                              Container(
-                                width: 2,
-                                height: 32,
-                                color: isSessionCompleted
-                                    ? const Color(0xFF10B981).withValues(alpha: 0.5)
-                                    : const Color(0xFF383562),
-                              ),
-                          ],
-                        ),
-
-                        const SizedBox(width: 12),
-
-                        // Session Title and Subtitle
-                        Expanded(
-                          child: Padding(
-                            padding: const EdgeInsets.only(bottom: 12.0),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  session['title']?.toString() ?? 'جلسه ${(sIdx + 1).toPersian()}',
-                                  style: AppTypography.bodyMedium.copyWith(color: isSessionCompleted ? Colors.white : const Color(0xFFDDD9EE)),
-                                ),
-                                const SizedBox(height: 3),
-                                Text(
-                                  isSessionCompleted
-                                      ? 'همه پارت‌ها دیده شده'
-                                      : (isLocked
-                                          ? 'قفل شده'
-                                          : 'دیده شده: ${_ofText((session['watched'] as int?) ?? 0, (session['total'] as int?) ?? 0)}'),
-                                  style: AppTypography.caption.copyWith(color: isSessionCompleted ? const Color(0xFF10B981) : const Color(0xFF8E8B9E)),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-                      ],
-                    );
-                  }),
-                ),
-              ),
-            ],
+            Text(label, style: AppTypography.captionGold),
+            const SizedBox(width: 2),
+            const Icon(Icons.keyboard_arrow_down_rounded, size: 16, color: Color(0xFFF4DCC5)),
           ],
         ),
       ),
+    );
+  }
+
+  /// Percentage of the visible challenges the member took part in, as a ring plus a bar per station.
+  Widget _buildParticipationCard(bool hasData) {
+    final total = (_memberData?['challengesTotal'] as num?)?.toInt() ?? 0;
+    final done = (_memberData?['challengesParticipated'] as num?)?.toInt() ?? 0;
+    final fraction = total == 0 ? 0.0 : (done / total).clamp(0.0, 1.0);
+    final byStation = _memberData?['challengesByStation'];
+    final rows = <Widget>[];
+    if (byStation is Map) {
+      for (int i = 0; i < _stations.length; i++) {
+        final row = byStation[_stations[i]['id']?.toString()];
+        if (row is! Map) continue;
+        final t = (row['total'] as num?)?.toInt() ?? 0;
+        final d = (row['participated'] as num?)?.toInt() ?? 0;
+        if (t == 0) continue;
+        rows.add(Padding(
+          padding: const EdgeInsets.only(top: 6),
+          child: Row(
+            children: [
+              SizedBox(width: 62, child: Text('منزلگاه ${StationNumbering.numberAt(i + 1).toPersian()}', style: AppTypography.caption.copyWith(color: Color(0xFFDDD9EE)))),
+              Expanded(
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(4),
+                  child: LinearProgressIndicator(
+                    value: (d / t).clamp(0.0, 1.0),
+                    minHeight: 6,
+                    backgroundColor: const Color(0xFF2E2D4A),
+                    valueColor: const AlwaysStoppedAnimation(Color(0xFF9292E2)),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 8),
+              SizedBox(width: 48, child: Text(_ofText(d, t), textAlign: TextAlign.left, style: AppTypography.caption.copyWith(color: Color(0xFF9D99B8)))),
+            ],
+          ),
+        ));
+      }
+    }
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text('مشارکت در چالش‌ها', style: AppTypography.h3.copyWith(color: Color(0xFFFFD580))),
+        const SizedBox(height: 14),
+        if (!_loaded)
+          const Center(child: Padding(padding: EdgeInsets.all(12), child: CircularProgressIndicator(color: Color(0xFFDFB690))))
+        else if (!hasData)
+          Text('اطلاعاتی دریافت نشد', style: AppTypography.captionMuted)
+        else
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              SizedBox(
+                width: 84,
+                height: 84,
+                child: CustomPaint(
+                  painter: _DonutPainter(fraction: fraction, color: const Color(0xFFE5A66B), track: const Color(0xFF2E2D4A)),
+                  child: Center(child: Text('${(fraction * 100).round().toPersian()}٪', style: AppTypography.h3)),
+                ),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      total == 0 ? 'چالشی برای این مسافر ثبت نشده است' : 'در ${done.toPersian()} چالش از ${total.toPersian()} چالش شرکت کرده است',
+                      style: AppTypography.bodyMedium,
+                    ),
+                    ...rows,
+                  ],
+                ),
+              ),
+            ],
+          ),
+      ],
+    );
+  }
+
+  static const int _usageDaysShown = 14;
+
+  /// Time in the app over the last two weeks, one bar per day.
+  Widget _buildUsageCard(bool hasData) {
+    final usage = (_memberData?['usageDays'] as Map?) ?? const {};
+    // Days are counted in Tehran time, like on the server
+    final tehranNow = DateTime.now().toUtc().add(const Duration(hours: 3, minutes: 30));
+    final days = <DateTime>[for (int i = _usageDaysShown - 1; i >= 0; i--) tehranNow.subtract(Duration(days: i))];
+    String key(DateTime d) => '${d.year.toString().padLeft(4, '0')}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}';
+    final seconds = [for (final d in days) ((usage[key(d)] as num?)?.toInt() ?? 0)];
+    final total = seconds.fold<int>(0, (a, b) => a + b);
+    final activeDays = seconds.where((v) => v > 0).length;
+    String fmt(int sec) {
+      final m = (sec / 60).round();
+      if (m < 60) return '${m.toPersian()} دقیقه';
+      final h = m ~/ 60;
+      final r = m % 60;
+      return r == 0 ? '${h.toPersian()} ساعت' : '${h.toPersian()} ساعت و ${r.toPersian()} دقیقه';
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text('زمان حضور در اپلیکیشن', style: AppTypography.h3.copyWith(color: Color(0xFFFFD580))),
+        const SizedBox(height: 4),
+        Text('${_usageDaysShown.toPersian()} روز اخیر', style: AppTypography.captionMuted),
+        const SizedBox(height: 14),
+        if (!_loaded)
+          const Center(child: Padding(padding: EdgeInsets.all(12), child: CircularProgressIndicator(color: Color(0xFFDFB690))))
+        else if (!hasData)
+          Text('اطلاعاتی دریافت نشد', style: AppTypography.captionMuted)
+        else ...[
+          SizedBox(
+            height: 90,
+            width: double.infinity,
+            child: CustomPaint(
+              painter: _BarsPainter(values: seconds.map((v) => v / 60.0).toList(), color: const Color(0xFF9292E2), track: const Color(0xFF2E2D4A)),
+            ),
+          ),
+          const SizedBox(height: 4),
+          Row(
+            children: [
+              for (final d in days)
+                Expanded(
+                  child: Center(
+                    child: Text(Jalali.fromDateTime(d).day.toPersian(), style: AppTypography.caption.copyWith(fontSize: 9, color: Color(0xFF9D99B8))),
+                  ),
+                ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              _buildStatBox('مجموع', total == 0 ? '—' : fmt(total)),
+              _buildStatBox('روزهای فعال', activeDays.toPersian()),
+              _buildStatBox('میانگین هر روز فعال', activeDays == 0 ? '—' : fmt((total / activeDays).round())),
+            ],
+          ),
+          if (total == 0)
+            Padding(
+              padding: const EdgeInsets.only(top: 10),
+              child: Text('هنوز زمانی ثبت نشده است. زمان حضور از نسخهٔ جدید اپ به بعد ثبت می‌شود.', style: AppTypography.captionMuted),
+            ),
+        ],
+      ],
     );
   }
 
@@ -1412,3 +1399,54 @@ class _StudentReportCardAndEvaluationScreenState extends State<StudentReportCard
 
 
 typedef MentorMembersScreen = MentorCaravansRosterScreen;
+
+/// Ring showing [fraction] (0..1) of a whole.
+class _DonutPainter extends CustomPainter {
+  final double fraction;
+  final Color color;
+  final Color track;
+  _DonutPainter({required this.fraction, required this.color, required this.track});
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    const stroke = 10.0;
+    final rect = Rect.fromLTWH(stroke / 2, stroke / 2, size.width - stroke, size.height - stroke);
+    final base = Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = stroke
+      ..strokeCap = StrokeCap.round;
+    canvas.drawArc(rect, 0, 6.283185307179586, false, base..color = track);
+    if (fraction > 0) {
+      canvas.drawArc(rect, -1.5707963267948966, 6.283185307179586 * fraction, false, base..color = color);
+    }
+  }
+
+  @override
+  bool shouldRepaint(_DonutPainter old) => old.fraction != fraction || old.color != color || old.track != track;
+}
+
+/// One bar per value, the oldest on the right (the screen reads right to left); empty days show a short track.
+class _BarsPainter extends CustomPainter {
+  final List<double> values;
+  final Color color;
+  final Color track;
+  _BarsPainter({required this.values, required this.color, required this.track});
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    if (values.isEmpty) return;
+    final maxV = values.fold<double>(0, (a, b) => b > a ? b : a);
+    final slot = size.width / values.length;
+    final barW = slot * 0.56;
+    for (int i = 0; i < values.length; i++) {
+      final x = size.width - (i + 1) * slot + (slot - barW) / 2;
+      final v = values[i];
+      final h = v <= 0 || maxV <= 0 ? 3.0 : (v / maxV * (size.height - 4)).clamp(4.0, size.height);
+      final rrect = RRect.fromRectAndRadius(Rect.fromLTWH(x, size.height - h, barW, h), const Radius.circular(3));
+      canvas.drawRRect(rrect, Paint()..color = v > 0 ? color : track);
+    }
+  }
+
+  @override
+  bool shouldRepaint(_BarsPainter old) => old.values != values || old.color != color;
+}
