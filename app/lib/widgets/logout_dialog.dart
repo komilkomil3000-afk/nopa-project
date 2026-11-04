@@ -10,7 +10,7 @@ class LogoutDialog extends StatefulWidget {
   const LogoutDialog({super.key});
 
   static Future<void> show(BuildContext context) {
-    return showDialog(
+    return showNopaDialog(
       context: context,
       barrierDismissible: true,
       builder: (context) => const LogoutDialog(),

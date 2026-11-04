@@ -1,3 +1,4 @@
+import 'package:nopa_app/widgets/nopa_entrance.dart';
 import 'package:nopa_app/widgets/tap_expander.dart';
 import 'package:nopa_app/widgets/bottom_nav_bar.dart';
 import 'package:nopa_app/core/constants/app_routes.dart';
@@ -207,7 +208,7 @@ class _HomeScreenState extends State<StudentHomeScreen> {
             ),
           ),
         ),
-        const SizedBox(height: 10),
+        const SizedBox(height: 8),
         SizedBox(
           height: 44,
           child: Directionality(
@@ -443,7 +444,7 @@ class _HomeScreenState extends State<StudentHomeScreen> {
                   ),
                 ),
               ),
-              const SizedBox(height: 10),
+              const SizedBox(height: 8),
               SizedBox(
                 height: 264,
                 child: _stations.isEmpty
@@ -487,7 +488,7 @@ class _HomeScreenState extends State<StudentHomeScreen> {
                               orderIndex: stationOrder,
                             );
 
-                            return StationCard(
+                            return NopaEntrance(entranceKey: 'home-station:${station.id}', index: index, child: StationCard(
                               station: station,
                               onTap: () async {
                                 final result = await Navigator.pushNamed(context, AppRoutes.class1, arguments: station);
@@ -495,7 +496,7 @@ class _HomeScreenState extends State<StudentHomeScreen> {
                                   navigateToMainTab(result);
                                 }
                               },
-                            );
+                            ));
                           },
                         ),
                       ),

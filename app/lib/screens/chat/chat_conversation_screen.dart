@@ -1,3 +1,4 @@
+import 'package:nopa_app/widgets/nopa_modal_shell.dart';
 import 'dart:io' as io;
 import 'package:nopa_app/widgets/bottom_nav_bar.dart';
 
@@ -429,7 +430,7 @@ class _ChatConversationScreenState extends State<ChatConversationScreen> {
     final name = TextEditingController();
     String color = _tagColors.first;
     bool staffOnly = false;
-    final ok = await showDialog<bool>(
+    final ok = await showNopaDialog<bool>(
       context: context,
       builder: (ctx) => Directionality(
         textDirection: TextDirection.rtl,
@@ -532,7 +533,7 @@ class _ChatConversationScreenState extends State<ChatConversationScreen> {
 
   Future<void> _search() async {
     final controller = TextEditingController();
-    final query = await showDialog<String>(
+    final query = await showNopaDialog<String>(
       context: context,
       builder: (ctx) => Directionality(
         textDirection: TextDirection.rtl,
@@ -563,10 +564,10 @@ class _ChatConversationScreenState extends State<ChatConversationScreen> {
         }
       },
       child: Container(
-        // The chat wallpaper, a little faded into the app's background
+        // The app's own background, so chat reads as part of it
         decoration: const BoxDecoration(
           gradient: AppColors.screenBackgroundGradient,
-          image: DecorationImage(image: AssetImage('assets/images/chat_bg.jpg'), fit: BoxFit.cover, opacity: 0.75),
+          image: DecorationImage(image: AssetImage('assets/images/login_bg.png'), fit: BoxFit.cover),
         ),
         child: Scaffold(
           backgroundColor: Colors.transparent,
@@ -836,7 +837,7 @@ class _ChatConversationScreenState extends State<ChatConversationScreen> {
     final text = closed
         ? 'این چالش بسته شده است.'
         : (space?.canReply == false
-            ? 'این میدان فقط خواندنی است؛ گفتگو در گروه چالش‌های کاروان شماست.'
+            ? 'این میدان مخصوص راهبران است؛ گفتگوی شما در گروه چالش‌های کاروان انجام می‌شود.'
             : (space?.isChannel == true
                 ? 'این کانال فقط خواندنی است؛ زیر پست‌هایی که گفتگو دارند، «ورود به گفتگو» را بزنید.'
                 : 'برای گفتگو، روی «ورود به گفتگو» زیر هر چالش یا پیام بزنید.'));

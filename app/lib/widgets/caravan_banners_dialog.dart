@@ -11,7 +11,7 @@ class CaravanBannersDialog extends StatelessWidget {
   const CaravanBannersDialog({super.key, required this.data});
 
   static Future<void> show(BuildContext context, Map<String, dynamic> data) {
-    return showDialog<void>(context: context, builder: (_) => CaravanBannersDialog(data: data));
+    return showNopaDialog<void>(context: context, builder: (_) => CaravanBannersDialog(data: data));
   }
 
   static const _tiers = [

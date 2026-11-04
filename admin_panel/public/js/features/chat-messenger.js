@@ -12,11 +12,11 @@
 
   const TYPE_LABELS = {
     announcements: 'کانال اعلانات', public: 'کانال همگانی', mentors: 'اتاق راهبران', caravan: 'گروه کاروان',
-    challenges: 'گروه چالش‌ها', arena: 'میدان رقابت', media: 'گروه رسانه‌ای', direct: 'گفتگوی خصوصی', support: 'پشتیبانی نپا',
+    challenges: 'گروه چالش‌ها', arena: 'میدان رقابت', mediaqa: 'گروه رسانه', media: 'گروه رسانه‌ای', direct: 'گفتگوی خصوصی', support: 'پشتیبانی نپا',
   };
   const TYPE_ICONS = {
     announcements: 'fa-bullhorn', public: 'fa-globe', mentors: 'fa-user-tie', caravan: 'fa-people-roof', challenges: 'fa-fire',
-    arena: 'fa-trophy', media: 'fa-photo-film', direct: 'fa-user', support: 'fa-headset',
+    arena: 'fa-trophy', mediaqa: 'fa-photo-film', media: 'fa-photo-film', direct: 'fa-user', support: 'fa-headset',
   };
   const FILTERS = [
     { key: 'all', label: 'همه', types: null },

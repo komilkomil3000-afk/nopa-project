@@ -102,7 +102,7 @@ class _EditProfileScreenState extends State<MentorEditProfileScreen> {
   }
 
   void _openChangeRequestDialog({required String requestType}) {
-    showDialog(
+    showNopaDialog(
       context: context,
       barrierDismissible: true,
       builder: (ctx) => _ChangeRequestSupportDialog(

@@ -1,5 +1,7 @@
+import 'package:nopa_app/widgets/nopa_modal_shell.dart';
 import 'package:nopa_app/screens/chat/chat_widgets.dart';
 import 'package:flutter/material.dart' hide Text;
+import 'package:nopa_app/core/avatar_catalog.dart';
 import 'package:nopa_app/screens/chat/chat_theme.dart';
 import 'package:nopa_app/screens/chat/chat_topic_info_screen.dart';
 import 'package:nopa_app/services/chat_repository.dart';
@@ -38,7 +40,7 @@ class _ChatGroupsScreenState extends State<ChatGroupsScreen> {
 
   Future<String?> _askName(String title, {String initial = ''}) async {
     final controller = TextEditingController(text: initial);
-    final name = await showDialog<String>(
+    final name = await showNopaDialog<String>(
       context: context,
       builder: (ctx) => Directionality(
         textDirection: TextDirection.rtl,
@@ -67,7 +69,7 @@ class _ChatGroupsScreenState extends State<ChatGroupsScreen> {
   }
 
   Future<void> _delete(Map<String, dynamic> group) async {
-    final ok = await showDialog<bool>(
+    final ok = await showNopaDialog<bool>(
       context: context,
       builder: (ctx) => Directionality(
         textDirection: TextDirection.rtl,
@@ -178,4 +180,93 @@ class _ChatGroupsScreenState extends State<ChatGroupsScreen> {
       ),
     );
   }
+}
+
+/// The + button: name a new group and tick its members. A mentor sees only the students of their own
+/// caravan (the server enforces it too); a channel manager sees everyone they may add.
+Future<void> showCreateGroupSheet(BuildContext context) async {
+  final chat = ChatRepository.instance;
+  final res = await chat.api('GET', '/chat/groups/candidates');
+  if (!context.mounted) return;
+  if (!res.ok) {
+    AppToast.error(context, res.error);
+    return;
+  }
+  final people = (res.data as List).map((p) => Map<String, dynamic>.from(p as Map)).toList();
+  final name = TextEditingController();
+  final chosen = <String>{};
+  var saving = false;
+  await showModalBottomSheet<void>(
+    context: context,
+    isScrollControlled: true,
+    backgroundColor: ChatTheme.surfaceBottom,
+    shape: ChatTheme.sheetShape,
+    builder: (ctx) => Directionality(
+      textDirection: TextDirection.rtl,
+      child: StatefulBuilder(
+        builder: (ctx, setSheet) => Padding(
+          padding: EdgeInsets.only(bottom: MediaQuery.of(ctx).viewInsets.bottom),
+          child: ConstrainedBox(
+            constraints: BoxConstraints(maxHeight: MediaQuery.of(ctx).size.height * 0.85),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+                  child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                    Text('گروه جدید', style: ChatTheme.title.copyWith(fontSize: 16)),
+                    const SizedBox(height: 10),
+                    TextField(controller: name, maxLength: 60, style: ChatTheme.body, decoration: chatField('نام گروه')),
+                    Text('اعضا (${chosen.length} نفر)', style: ChatTheme.caption),
+                  ]),
+                ),
+                Flexible(
+                  child: ListView(
+                    shrinkWrap: true,
+                    children: [
+                      if (people.isEmpty) Padding(padding: const EdgeInsets.all(16), child: Text('عضوی برای انتخاب وجود ندارد.', style: ChatTheme.caption, textAlign: TextAlign.center)),
+                      for (final person in people)
+                        CheckboxListTile(
+                          value: chosen.contains(person['id']),
+                          activeColor: ChatTheme.accent,
+                          secondary: SafeAvatar(imageUrl: person['avatarUrl'], name: person['name'] ?? '', radius: 16, gender: person['gender'], isMentor: AvatarCatalog.isMentorRole(person['role'])),
+                          title: Text(person['name'] ?? '', style: ChatTheme.body),
+                          onChanged: (v) => setSheet(() => v == true ? chosen.add(person['id'] as String) : chosen.remove(person['id'])),
+                        ),
+                    ],
+                  ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: ChatButton(
+                    label: saving ? 'در حال ساخت...' : 'ساخت گروه',
+                    onPressed: () async {
+                      if (saving) return;
+                      final title = name.text.trim();
+                      if (title.isEmpty) {
+                        AppToast.error(ctx, 'نام گروه را بنویسید.');
+                        return;
+                      }
+                      setSheet(() => saving = true);
+                      final created = await chat.api('POST', '/chat/groups', body: {'title': title, 'memberIds': chosen.toList()});
+                      if (!ctx.mounted) return;
+                      if (!created.ok) {
+                        setSheet(() => saving = false);
+                        AppToast.error(ctx, created.error);
+                        return;
+                      }
+                      Navigator.pop(ctx);
+                    },
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    ),
+  );
+  name.dispose();
+  await chat.refreshSpaces();
 }

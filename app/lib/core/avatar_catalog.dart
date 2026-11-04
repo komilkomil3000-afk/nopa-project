@@ -30,7 +30,13 @@ class AvatarCatalog {
   /// The default picture of a mentor (راهبر), which depends only on gender.
   static String? mentorDefault(String? gender) {
     if (gender == 'female') return assetPath(mentorFemale);
-    if (gender == 'male') return assetPath(mentorMale);
-    return null;
+    // A mentor whose gender was never recorded still gets a picture
+    return assetPath(mentorMale);
+  }
+
+  /// Mentors and super mentors, however the role is spelled (mentor, super_mentor...).
+  static bool isMentorRole(dynamic role) {
+    final r = role.toString().toLowerCase().replaceAll(RegExp(r'[\s_-]'), '');
+    return r == 'mentor' || r == 'supermentor';
   }
 }

@@ -65,6 +65,7 @@ model User {
   mentoredCaravans             Caravan[]      @relation("MentorCaravans")
   mentorDocuments              MentorDocument[]
   submissions                  Submission[]
+  usageDays                    UserUsageDay[]
   quizSubmissions              QuizSubmission[] @relation("StudentQuizSubmissions")
   quizReviews                  QuizSubmission[] @relation("MentorQuizReviews")
   formSubmissions              FormSubmission[]
@@ -605,6 +606,20 @@ model QuizSubmission {
 
   @@index([quizId])
   @@index([studentId])
+}
+
+// Seconds a user kept the app open in the foreground, per day (Asia/Tehran). Shown to the mentor as an activity chart.
+model UserUsageDay {
+  id        String   @id @default(uuid())
+  userId    String
+  day       String   // "YYYY-MM-DD"
+  seconds   Int      @default(0)
+  updatedAt DateTime @updatedAt
+
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, day])
+  @@index([day])
 }
 
 model SessionWatchRecord {

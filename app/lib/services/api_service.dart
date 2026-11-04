@@ -1681,6 +1681,21 @@ class HttpApiService {
     }
   }
 
+  /// Reports [seconds] the app was open in the foreground (added to today's usage on the server).
+  Future<bool> pingAppUsage(int seconds) async {
+    try {
+      final res = await _post(
+        Uri.parse('$baseUrl/usage/ping'),
+        headers: _getHeaders(),
+        body: jsonEncode({'seconds': seconds}),
+      );
+      return res.statusCode == 200;
+    } catch (e) {
+      debugPrint('pingAppUsage error: $e');
+    }
+    return false;
+  }
+
   Future<Map<String, dynamic>?> heartbeatSessionWatch(String sessionId, int currentPositionSeconds, int durationSeconds) async {
     try {
       final res = await _post(

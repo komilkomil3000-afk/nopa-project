@@ -1,3 +1,4 @@
+import 'package:nopa_app/widgets/nopa_modal_shell.dart';
 import 'package:flutter/material.dart' hide Text;
 import 'package:nopa_app/widgets/fa_text.dart';
 import 'package:nopa_app/widgets/app_toast.dart';
@@ -27,7 +28,7 @@ class SupportMessageDialog extends StatefulWidget {
       }
     }
     if (!context.mounted) return;
-    return showDialog(
+    return showNopaDialog(
       context: context,
       barrierDismissible: true,
       builder: (context) => SupportMessageDialog(initialSubject: initialSubject),

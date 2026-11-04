@@ -1,3 +1,4 @@
+import 'package:nopa_app/widgets/nopa_modal_shell.dart';
 import 'package:flutter/material.dart' hide Text;
 import 'package:nopa_app/core/theme/app_typography.dart';
 import 'package:nopa_app/widgets/fa_text.dart';
@@ -20,7 +21,7 @@ Future<void> showAvatarPicker(BuildContext context) async {
     AppToast.info(context, 'جنسیت شما هنوز توسط مدیریت ثبت نشده است.');
     return;
   }
-  await showDialog<void>(
+  await showNopaDialog<void>(
     context: context,
     builder: (_) => const Dialog(
       backgroundColor: Colors.transparent,

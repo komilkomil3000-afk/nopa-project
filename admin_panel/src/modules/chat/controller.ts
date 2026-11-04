@@ -13,6 +13,7 @@ import { notifyAbsent, publishMessage, publishUpdate } from './publish';
 import { emitToSpace, isOnline, refreshUserRooms } from './realtime';
 import { peopleOf } from './profiles';
 import { ensureOpenCase } from './support';
+import { recordArenaSubmission } from './intergroup';
 import {
   attachmentKind, CHAT_FILES_DIR, ChatError, directKey, findVisibleSpace, MAX_BODY, MESSAGE_INCLUDE, PAGE_SIZE,
   randomStorageName, REACTION_TYPES, serializeMessage, signFileUrl, verifyFileToken, visibleSpaces,
@@ -200,6 +201,8 @@ export const sendMessage = handler(async (req, res, actor) => {
     mentions,
   });
   if (created) {
+    // A mentor's file under an inter-group challenge in the arena is that caravan's work
+    if (space.type === 'arena' && threadRootId) await recordArenaSubmission(actor, space, message);
     if (space.type === 'support' && space.key === `support:${actor.id}`) await ensureOpenCase(space.id, actor.id, body, message.seq);
     // Bold/italic markers stay in the chat, not in the notification
     await notifyAbsent(space, actor.id, actor.name, message.body.replace(/\*\*(.+?)\*\*|__(.+?)__/gs, (_m: string, b?: string, i?: string) => b ?? i ?? ''), mentions);
@@ -390,3 +393,12 @@ export async function serveFile(req: AuthRequest, res: Response) {
     res.status(500).json({ error: 'خطا در دریافت فایل' });
   }
 }
+
+/** A fresh signed link for a file the caller may see: saved copies of a message carry links that have expired. */
+export const attachmentLink = handler(async (req, res, actor) => {
+  const attachment = await prisma.chatAttachment.findUnique({ where: { id: req.params.id }, select: { id: true, messageId: true } });
+  if (!attachment || !attachment.messageId) throw new ChatError(404, 'فایل یافت نشد');
+  const { message } = await requireMessage(actor, attachment.messageId);
+  if (message.deletedAt) throw new ChatError(404, 'فایل یافت نشد');
+  res.json({ url: signFileUrl(attachment.id) });
+});

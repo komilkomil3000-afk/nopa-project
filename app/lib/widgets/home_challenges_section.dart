@@ -58,7 +58,7 @@ class _HomeChallengesSectionState extends State<HomeChallengesSection> {
                 ),
               ),
 
-              const SizedBox(height: 12),
+              const SizedBox(height: 8),
 
               // 2. Outer Card Container with exact Login Box Stroke & Gradient
               Padding(

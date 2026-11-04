@@ -2,7 +2,7 @@ import { Response } from 'express';
 import prisma from '../config/db';
 import { AuthRequest } from '../middleware/auth';
 import { getAssetNames } from '../utils/assetNames';
-import { closeCompetitionTopics, payPrizes, prizePlan, publishResults, unconfirmedCaravans } from '../modules/chat/intergroup';
+import { applyRankBadges, closeCompetitionTopics, payPrizes, prizePlan, publishResults, unconfirmedCaravans } from '../modules/chat/intergroup';
 import { getEconomyPolicy } from '../services/economy';
 import { changeBalance } from '../services/ledger';
 
@@ -169,6 +169,7 @@ export async function finalizeChallengeRanking(req: AuthRequest, res: Response) 
     if (notes.length > 0) await prisma.notification.createMany({ data: notes });
     await publishResults(id, challenge.title, ranking).catch(e => console.error('publishResults error:', e));
     await closeCompetitionTopics(id).catch(e => console.error('closeCompetitionTopics error:', e));
+    await applyRankBadges(id);
 
     res.json({ success: true, result: rows, paid: plan.reduce((sum, p) => sum + p.amount, 0) });
   } catch (error: any) {
@@ -269,6 +270,7 @@ export async function editChallengeRanking(req: AuthRequest, res: Response) {
       for (const userId of recipients) notes.push({ userId, title: `${names.derafsh} کاروان`, message: msg, type: 'reward' });
     }
     if (notes.length > 0) await prisma.notification.createMany({ data: notes });
+    await applyRankBadges(id);
 
     res.json({ success: true, result: rows });
   } catch (error) {

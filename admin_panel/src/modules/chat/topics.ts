@@ -2,7 +2,7 @@ import { Challenge } from '@prisma/client';
 import prisma from '../../config/db';
 import { canModerate, canTag, ChatActor } from './access';
 import { handler, requireMessage, requireSpace } from './http';
-import { publishBotMessage, publishUpdate } from './publish';
+import { publishMessage, publishUpdate } from './publish';
 import { refreshUserRooms } from './realtime';
 import { ChatError, directKey, ensureCaravanSpaces, ensureSpace, globalSpace, MESSAGE_INCLUDE, serializeMessage } from './service';
 import { generateInsight } from './insights';
@@ -40,20 +40,24 @@ async function directSpace(a: string, b: string) {
 }
 
 /** The conversations a challenge belongs in. Rival caravans each get a private one. */
-async function targetsOf(c: Challenge): Promise<{ spaceId: string; recipientId: string | null }[]> {
+type Target = { spaceId: string; recipientId: string | null; caravanId: string | null };
+
+async function targetsOf(c: Challenge): Promise<Target[]> {
   if (c.category === 'individual') {
-    const out = [];
-    for (const recipientId of c.recipientIds) out.push({ spaceId: (await directSpace(c.createdByMentorId, recipientId)).id, recipientId });
+    const out: Target[] = [];
+    for (const recipientId of c.recipientIds) out.push({ spaceId: (await directSpace(c.createdByMentorId, recipientId)).id, recipientId, caravanId: null });
     return out;
   }
+  // A caravan's challenge group only gets its own challenges: its mentor's, or the admin's for this caravan (or for all)
   const caravanIds = c.caravanId ? [c.caravanId] : (await prisma.caravan.findMany({ select: { id: true } })).map(x => x.id);
-  const out: { spaceId: string; recipientId: string | null }[] = [];
+  const out: Target[] = [];
   for (const caravanId of caravanIds) {
     await ensureCaravanSpaces(caravanId);
     const space = await prisma.chatSpace.findUniqueOrThrow({ where: { key: `challenges:${caravanId}` } });
-    out.push({ spaceId: space.id, recipientId: null });
+    out.push({ spaceId: space.id, recipientId: null, caravanId });
   }
-  if (c.category === 'inter_group') out.push({ spaceId: (await globalSpace('arena')).id, recipientId: null });
+  // An inter-group challenge is also announced in the shared exhibition ("میدان آثار")
+  if (c.category === 'inter_group') out.push({ spaceId: (await globalSpace('arena')).id, recipientId: null, caravanId: null });
   return out;
 }
 
@@ -66,17 +70,25 @@ export async function syncChallengeCards(challengeId: string): Promise<void> {
   if (challenge.startDate && challenge.startDate > new Date() && existingTopics === 0) return;
   const meta = await cardMeta(challenge);
 
-  for (const { spaceId, recipientId } of await targetsOf(challenge)) {
+  for (const { spaceId, recipientId, caravanId } of await targetsOf(challenge)) {
     const scopeKey = `${challenge.id}:${spaceId}:${recipientId || ''}`;
+    // In a caravan's own group the card is posted under that caravan's mentor, not the system
+    const mentor = caravanId
+      ? (await prisma.caravan.findUnique({ where: { id: caravanId }, select: { mentor: { select: { id: true, name: true } } } }))?.mentor ?? null
+      : null;
+    const spaceMeta = mentor ? { ...meta, mentorName: mentor.name } : meta;
     const existing = await prisma.chatTopic.findUnique({ where: { scopeKey } });
     if (existing) {
       const current = await prisma.chatMessage.findUnique({ where: { id: existing.messageId }, select: { meta: true } });
       const finalAnswer = (current?.meta as any)?.finalAnswer;
-      await prisma.chatMessage.update({ where: { id: existing.messageId }, data: { meta: { ...meta, finalAnswer }, body: challenge.title } });
+      await prisma.chatMessage.update({ where: { id: existing.messageId }, data: { meta: { ...spaceMeta, finalAnswer }, body: challenge.title, ...(mentor ? { senderId: mentor.id } : {}) } });
       await publishUpdate(existing.messageId);
       continue;
     }
-    const { message } = await publishBotMessage({ spaceId, botKey: 'challenge', body: challenge.title, kind: 'challenge', meta, stationId: challenge.stationId || undefined });
+    const { message } = await publishMessage({
+      spaceId, botKey: 'challenge', body: challenge.title, kind: 'challenge', meta: spaceMeta, stationId: challenge.stationId || undefined,
+      senderId: mentor?.id, stayOutside: true, attachmentIds: [], mentions: [],
+    });
     await prisma.chatTopic.create({ data: { scopeKey, messageId: message.id, spaceId, challengeId: challenge.id, recipientId } });
     await publishUpdate(message.id);
   }

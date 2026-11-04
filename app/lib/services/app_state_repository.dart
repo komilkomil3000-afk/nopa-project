@@ -81,10 +81,30 @@ class AppRepository extends ChangeNotifier with WidgetsBindingObserver {
   bool _pollInFlight = false;
   bool _appInForeground = true;
 
+  // Foreground time not yet reported to the server (shown to mentors as the member's time in the app).
+  int _usagePendingSeconds = 0;
+  bool _usageFlushing = false;
+
+  Future<void> _flushUsage() async {
+    if (_usageFlushing || _usagePendingSeconds < 5 || !_apiService.isAuthenticated) return;
+    _usageFlushing = true;
+    final sending = _usagePendingSeconds;
+    try {
+      if (await _apiService.pingAppUsage(sending)) _usagePendingSeconds -= sending;
+    } catch (_) {
+    } finally {
+      _usageFlushing = false;
+    }
+  }
+
   void _startPeriodicNotificationSync() {
     _notificationPollTimer?.cancel();
     var tick = 0;
     _notificationPollTimer = Timer.periodic(pollInterval, (_) async {
+      if (_appInForeground && _apiService.isAuthenticated) {
+        _usagePendingSeconds += pollInterval.inSeconds;
+        if (_usagePendingSeconds >= 60) _flushUsage();
+      }
       // One request round at a time (a slow network must not pile up requests) and none while in background.
       if (_pollInFlight || !_appInForeground || !_apiService.isAuthenticated) return;
       if (ChatRepository.instance.connected && ++_socketTicks % slowPollEvery != 0) return;
@@ -159,6 +179,7 @@ class AppRepository extends ChangeNotifier with WidgetsBindingObserver {
         }
       } else if (state == AppLifecycleState.paused || state == AppLifecycleState.inactive || state == AppLifecycleState.detached) {
         recordActivity();
+        _flushUsage();
       }
     } catch (e) {
       debugPrint('Lifecycle state change caught: $e');

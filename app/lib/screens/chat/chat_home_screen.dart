@@ -1,3 +1,4 @@
+import 'package:nopa_app/core/avatar_catalog.dart';
 import 'package:flutter/material.dart' hide Text;
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:nopa_app/core/theme/app_colors.dart';
@@ -7,7 +8,6 @@ import 'package:nopa_app/screens/chat/chat_conversation_screen.dart';
 import 'package:nopa_app/screens/chat/chat_format.dart';
 import 'package:nopa_app/screens/chat/chat_groups_screen.dart';
 import 'package:nopa_app/screens/chat/chat_theme.dart';
-import 'package:nopa_app/screens/chat/chat_topic_info_screen.dart';
 import 'package:nopa_app/screens/chat/chat_widgets.dart';
 import 'package:nopa_app/models/user_model.dart';
 import 'package:nopa_app/services/app_state_repository.dart';
@@ -23,7 +23,7 @@ enum ChatFilter {
   all('همه', {}),
   challenges('چالش ها', {'challenges', 'arena'}),
   personal('شخصی', {'direct', 'support'}),
-  gathering('دورهمی', {'caravan', 'mentors', 'media'}),
+  gathering('دورهمی', {'caravan', 'mentors', 'media', 'mediaqa'}),
   academy('آموزگاه', {'announcements', 'public'});
 
   final String label;
@@ -77,6 +77,9 @@ class _ChatHomeScreenState extends State<ChatHomeScreen> {
   @override
   Widget build(BuildContext context) {
     final chat = ChatRepository.instance;
+    // Mentors and channel managers start groups from here; students write to their mentor or support
+    final role = Provider.of<AppRepository>(context, listen: false).currentUser.role;
+    final staff = role.isMentorLike || role.isChannelManager;
     return ListenableBuilder(
       listenable: chat,
       builder: (context, _) {
@@ -109,8 +112,8 @@ class _ChatHomeScreenState extends State<ChatHomeScreen> {
                         heroTag: 'chat-new',
                         backgroundColor: ChatTheme.accent,
                         foregroundColor: ChatTheme.surfaceBottom,
-                        onPressed: () => _showContacts(context),
-                        child: const Icon(Icons.edit_rounded, size: 20),
+                        onPressed: staff ? () => showCreateGroupSheet(context) : () => _showContacts(context),
+                        child: Icon(staff ? Icons.add_rounded : Icons.edit_rounded, size: staff ? 24 : 20),
                       ),
                     ),
                   ],
@@ -133,7 +136,7 @@ class _ChatHomeScreenState extends State<ChatHomeScreen> {
         padding: const EdgeInsets.fromLTRB(0, 10, 0, 180),
         itemCount: spaces.length + 2,
         itemBuilder: (context, i) {
-          if (i == 0) return const _StaffTools();
+          if (i == 0) return const SizedBox.shrink();
           if (i == 1) {
             return spaces.isEmpty
                 ? const Padding(
@@ -209,7 +212,7 @@ class _ChatHomeScreenState extends State<ChatHomeScreen> {
           children: [
             for (final person in contacts)
               ListTile(
-                leading: SafeAvatar(imageUrl: person['avatarUrl'], name: person['name'] ?? '', radius: 18, gender: person['gender'], isMentor: person['role'] == 'mentor'),
+                leading: SafeAvatar(imageUrl: person['avatarUrl'], name: person['name'] ?? '', radius: 18, gender: person['gender'], isMentor: AvatarCatalog.isMentorRole(person['role'])),
                 title: Text(person['name'] ?? '', style: ChatTheme.body),
                 onTap: () => Navigator.pop(ctx, person),
               ),
@@ -335,39 +338,6 @@ class _FilterBar extends StatelessWidget {
             ),
         ],
       ),
-    );
-  }
-}
-
-/// Mentors and channel managers reach their tools from the top of the list, not from floating buttons.
-class _StaffTools extends StatelessWidget {
-  const _StaffTools();
-
-  @override
-  Widget build(BuildContext context) {
-    final role = Provider.of<AppRepository>(context, listen: false).currentUser.role;
-    if (!role.isMentorLike && !role.isChannelManager) return const SizedBox.shrink();
-    Widget tool(IconData icon, String label, Widget screen) => Expanded(
-          child: GestureDetector(
-            behavior: HitTestBehavior.opaque,
-            onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => screen)),
-            child: Container(
-              padding: const EdgeInsets.symmetric(vertical: 10),
-              decoration: ChatTheme.card(),
-              child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
-                Icon(icon, color: ChatTheme.accent, size: 18),
-                const SizedBox(width: 6),
-                Text(label, style: ChatTheme.caption.copyWith(color: ChatTheme.text, fontSize: 12.5)),
-              ]),
-            ),
-          ),
-        );
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
-      child: Row(children: [
-        tool(Icons.group_add_rounded, 'گروه‌ها', const ChatGroupsScreen()),
-        if (role.isMentorLike) ...[const SizedBox(width: 10), tool(Icons.dashboard_rounded, 'داشبورد راهبر', const ChatDashboardScreen())],
-      ]),
     );
   }
 }

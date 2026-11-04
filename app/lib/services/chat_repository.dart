@@ -27,7 +27,8 @@ class ChatRepository extends ChangeNotifier {
   Timer? _offlineTimer;
   bool _offlineRoundRunning = false;
   final Map<String, int> _watching = {};
-  static const Duration offlinePollInterval = Duration(seconds: 5);
+  static const Duration offlinePollInterval = Duration(seconds: 3);
+  DateTime _lastTokenRenewal = DateTime.fromMillisecondsSinceEpoch(0);
 
   List<ChatSpace> spaces = [];
   bool loadingSpaces = false;
@@ -42,7 +43,29 @@ class ChatRepository extends ChangeNotifier {
   static String _key(String spaceId, String? threadRootId) => '$spaceId|${threadRootId ?? ''}';
 
   /// The app went to the background or came back: without a socket, polling waits for its return.
-  void setForeground(bool value) => _foreground = value;
+  void setForeground(bool value) {
+    _foreground = value;
+    if (value) _reconnectNow();
+  }
+
+  /// Back in the app with no live connection: renew the login if it ran out and try again at once,
+  /// instead of waiting for the reconnect timer (whose delay grows up to 20 s).
+  Future<void> _reconnectNow() async {
+    final socket = _socket;
+    if (socket == null || socket.connected) return;
+    await _renewTokenForSocket(force: false);
+    if (!socket.connected) socket.connect();
+  }
+
+  /// A socket that was refused for its token keeps retrying with the same one for ever: get a fresh token first.
+  Future<void> _renewTokenForSocket({required bool force}) async {
+    final expiry = _api.tokenExpiry;
+    final stale = force || _api.token == null || (expiry != null && expiry.isBefore(DateTime.now().add(const Duration(minutes: 1))));
+    if (!stale || DateTime.now().difference(_lastTokenRenewal).inSeconds < 15) return;
+    _lastTokenRenewal = DateTime.now();
+    await _api.silentRefreshToken();
+    _socket?.auth = {'token': _api.token ?? ''};
+  }
 
   List<Map<String, dynamic>> staffTagsOf(String messageId) => _staffTags[messageId] ?? const [];
 
@@ -145,7 +168,11 @@ class ChatRepository extends ChangeNotifier {
       notifyListeners();
     });
     // The access token may have been refreshed since the last attempt
-    socket.onConnectError((_) => socket.auth = {'token': _api.token ?? ''});
+    socket.onConnectError((error) async {
+      socket.auth = {'token': _api.token ?? ''};
+      // Refused for the token (expired while the app slept): renew it, the next attempt then succeeds
+      if (error.toString().contains('UNAUTHORIZED')) await _renewTokenForSocket(force: true);
+    });
     socket.on('message:new', (data) => _onNew(Map<String, dynamic>.from(data as Map)));
     socket.on('message:update', (data) => _onUpdate(Map<String, dynamic>.from(data as Map)));
     socket.on('read', (data) => _onRead(Map<String, dynamic>.from(data as Map)));

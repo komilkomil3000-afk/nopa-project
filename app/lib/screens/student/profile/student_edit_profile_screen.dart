@@ -96,7 +96,7 @@ class _EditProfileScreenState extends State<StudentEditProfileScreen> {
   }
 
   void _openChangeRequestDialog({required String requestType}) {
-    showDialog(
+    showNopaDialog(
       context: context,
       barrierDismissible: true,
       builder: (ctx) => _ChangeRequestSupportDialog(
@@ -993,7 +993,7 @@ class _EditProfileScreenState extends State<StudentEditProfileScreen> {
         const SizedBox(height: 6),
         _buildPwActionButton(
           'تغییر رمز عبور',
-          () => showDialog(
+          () => showNopaDialog(
             context: context,
             barrierDismissible: true,
             builder: (_) => _PasswordChangeDialog(phoneNumber: widget.user.phoneNumber),

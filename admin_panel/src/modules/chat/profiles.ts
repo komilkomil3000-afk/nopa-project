@@ -10,7 +10,7 @@ import { isOnline, onlineUserIds } from './realtime';
 import { ChatError, signFileUrl } from './service';
 
 const PERSON_SELECT = { id: true, name: true, avatarUrl: true, role: true, gender: true };
-const PUBLIC_TYPES = new Set(['announcements', 'public', 'arena']);
+const PUBLIC_TYPES = new Set(['announcements', 'public', 'arena', 'mediaqa']);
 const MEDIA_LIMIT = 60;
 const STATS_DAYS = 30;
 

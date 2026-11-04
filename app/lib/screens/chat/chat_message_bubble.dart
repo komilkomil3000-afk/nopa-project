@@ -1,3 +1,4 @@
+import 'package:nopa_app/core/avatar_catalog.dart';
 import 'package:audioplayers/audioplayers.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart' hide Text;
@@ -11,6 +12,8 @@ import 'package:nopa_app/screens/chat/chat_theme.dart';
 import 'package:nopa_app/screens/chat/chat_waveform.dart';
 import 'package:nopa_app/screens/chat/chat_widgets.dart';
 import 'package:nopa_app/services/audio_exclusivity_service.dart';
+import 'package:nopa_app/services/chat_repository.dart';
+import 'package:nopa_app/widgets/app_toast.dart';
 import 'package:nopa_app/widgets/fa_text.dart';
 import 'package:nopa_app/widgets/safe_avatar.dart';
 import 'package:nopa_app/widgets/zoomable_image.dart';
@@ -190,6 +193,7 @@ class _ChatMessageBubbleState extends State<ChatMessageBubble> {
       children: [
         if (widget.showSender) _sender(),
         if (m.replyToId != null) _quote(),
+        if (_isSubmission) _submissionBadge(),
         if (_challenge) ..._challengeContent() else ...[
           for (final attachment in m.attachments) ChatAttachmentView(attachment: attachment, onGold: !_mineLook),
           if (m.body.isNotEmpty) _bodyText(),
@@ -208,6 +212,30 @@ class _ChatMessageBubbleState extends State<ChatMessageBubble> {
         if (widget.onOpenThread != null && m.threadOpen) _threadBox(),
         _footer(),
       ],
+    );
+  }
+
+  /// A caravan's work under an inter-group challenge in «میدان آثار».
+  bool get _isSubmission => m.meta?['submission'] == true;
+
+  /// «اثر کاروان», and the place the admin gave it once the ranking is confirmed.
+  Widget _submissionBadge() {
+    final rank = (m.meta?['rank'] as num?)?.toInt();
+    final label = (m.meta?['rankLabel'] ?? '').toString();
+    final caravan = (m.meta?['caravanName'] ?? '').toString();
+    final color = switch (rank) {
+      1 => const Color(0xFFE5B84B),
+      2 => const Color(0xFFC4C9D4),
+      3 => const Color(0xFFCD8B5A),
+      _ => ChatTheme.accent,
+    };
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 5),
+      child: Wrap(spacing: 4, runSpacing: 4, children: [
+        const ChatChip(label: 'اثر کاروان'),
+        if (rank != null)
+          ChatChip(label: caravan.isEmpty ? label : '$label · $caravan', color: color),
+      ]),
     );
   }
 
@@ -256,12 +284,13 @@ class _ChatMessageBubbleState extends State<ChatMessageBubble> {
     final mentorCreator = creator.isNotEmpty && (creatorRole == 'mentor' || (creatorRole == null && creator != 'مدیر سیستم'));
     final description = (meta['description'] ?? '').toString();
     return [
-      Row(mainAxisSize: MainAxisSize.min, children: [
+      Row(children: [
         Icon(Icons.local_fire_department_rounded, size: 16, color: _textColor),
         const SizedBox(width: 4),
         Text('چالش ${meta['tag'] ?? ''}', style: ChatTheme.caption.copyWith(color: _mutedColor, fontWeight: FontWeight.bold)),
-        const SizedBox(width: 6),
-        _InfoBox(text: topicStatusLabels[status] ?? status, onGold: !_mineLook, strong: status == 'open'),
+        const Spacer(),
+        // Top-left corner of the card (the end of the row in RTL)
+        ChallengeStatusBadge(status: status),
       ]),
       const SizedBox(height: 6),
       Text(meta['title']?.toString() ?? m.body, style: ChatTheme.title.copyWith(color: _textColor, fontSize: 14.5)),
@@ -337,7 +366,7 @@ class _ChatMessageBubbleState extends State<ChatMessageBubble> {
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    ChatReactionEmoji(type: entry.key, size: 13, animate: mineSet.contains(entry.key)),
+                    ChatReactionEmoji(type: entry.key, size: 13),
                     const SizedBox(width: 3),
                     Text('${entry.value}', style: ChatTheme.caption.copyWith(color: _textColor)),
                     // A mentor's reaction wears the mentor's badge
@@ -387,7 +416,7 @@ class _ChatMessageBubbleState extends State<ChatMessageBubble> {
                             name: faces[i]['name'] ?? '',
                             radius: 8.5,
                             gender: faces[i]['gender'],
-                            isMentor: faces[i]['role'] == 'mentor',
+                            isMentor: AvatarCatalog.isMentorRole(faces[i]['role']),
                           ),
                         ),
                       ),
@@ -439,8 +468,7 @@ class _InfoBox extends StatelessWidget {
   final IconData? icon;
   final String text;
   final bool onGold;
-  final bool strong;
-  const _InfoBox({this.icon, required this.text, required this.onGold, this.strong = false});
+  const _InfoBox({this.icon, required this.text, required this.onGold});
 
   @override
   Widget build(BuildContext context) {
@@ -448,7 +476,7 @@ class _InfoBox extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
       decoration: BoxDecoration(
-        color: fg.withValues(alpha: strong ? 0.18 : 0.09),
+        color: fg.withValues(alpha: 0.09),
         borderRadius: BorderRadius.circular(8),
         border: Border.all(color: fg.withValues(alpha: 0.22)),
       ),
@@ -516,7 +544,7 @@ class ChatAttachmentView extends StatelessWidget {
           ),
         );
       case 'audio':
-        return ChatAudioPlayer(url: _url, onGold: onGold, peaks: ChatWaveform.decodePeaks(attachment.name), seed: attachment.id);
+        return ChatAudioPlayer(url: _url, onGold: onGold, peaks: ChatWaveform.decodePeaks(attachment.name), seed: attachment.id, attachmentId: attachment.id);
       default:
         final color = onGold ? ChatTheme.goldTitle : ChatTheme.accent;
         return GestureDetector(
@@ -554,7 +582,9 @@ class ChatAudioPlayer extends StatefulWidget {
 
   /// Defaults to a width that fits a bubble; the composer lets it fill the bar.
   final double? width;
-  const ChatAudioPlayer({super.key, required this.url, this.onGold = false, this.peaks, this.seed, this.filePath, this.color, this.width});
+  /// The chat file behind [url]: its link is renewed before playing (saved messages carry expired ones).
+  final String? attachmentId;
+  const ChatAudioPlayer({super.key, required this.url, this.onGold = false, this.peaks, this.seed, this.filePath, this.color, this.width, this.attachmentId});
 
   @override
   State<ChatAudioPlayer> createState() => _ChatAudioPlayerState();
@@ -563,10 +593,28 @@ class ChatAudioPlayer extends StatefulWidget {
 class _ChatAudioPlayerState extends State<ChatAudioPlayer> {
   final AudioPlayer _player = AudioPlayer();
   late final List<double> _peaks = widget.peaks ?? ChatWaveform.pseudoPeaks(widget.seed ?? widget.filePath ?? widget.url);
-  Source get _source => widget.filePath != null ? DeviceFileSource(widget.filePath!) : UrlSource(widget.url);
+  String? _freshUrl;
+  DateTime _freshAt = DateTime.fromMillisecondsSinceEpoch(0);
+  Source get _source => widget.filePath != null ? DeviceFileSource(widget.filePath!) : UrlSource(_freshUrl ?? widget.url);
+
+  /// Asks the server for a new signed link (valid an hour) when the one in hand may have expired.
+  Future<void> _renewLink() async {
+    final id = widget.attachmentId;
+    if (id == null || widget.filePath != null) return;
+    if (_freshUrl != null && DateTime.now().difference(_freshAt).inMinutes < 30) return;
+    final res = await ChatRepository.instance.api('GET', '/chat/attachments/$id/link');
+    final url = res.ok && res.data is Map ? (res.data as Map)['url']?.toString() : null;
+    if (url != null && url.isNotEmpty) {
+      _freshUrl = ApiConstants.resolveImageUrl(url);
+      _freshAt = DateTime.now();
+      _loaded = false;
+    }
+  }
   bool _playing = false;
   bool _loaded = false;
   bool _completed = false;
+  /// The source was started: resume and seek are safe.
+  bool _started = false;
   Duration _position = Duration.zero;
   Duration _total = Duration.zero;
 
@@ -589,6 +637,7 @@ class _ChatAudioPlayerState extends State<ChatAudioPlayer> {
       if (mounted) {
         setState(() {
           _completed = true;
+          _started = false;
           _position = Duration.zero;
         });
       }
@@ -601,45 +650,76 @@ class _ChatAudioPlayerState extends State<ChatAudioPlayer> {
     super.dispose();
   }
 
+  /// Learns the length once, without ever blocking playback: a failure here is not fatal.
   Future<void> _ensureLoaded() async {
+    await _renewLink();
     if (_loaded) return;
-    await _player.setSource(_source);
-    _loaded = true;
-    final duration = await _player.getDuration();
-    if (duration != null && mounted) setState(() => _total = duration);
+    try {
+      await _player.setSource(_source);
+      _loaded = true;
+      final duration = await _player.getDuration();
+      if (duration != null && duration > Duration.zero && mounted) setState(() => _total = duration);
+    } catch (_) {}
   }
 
+  /// Plays from [_position]. A paused player resumes; a fresh, finished or never-started one starts its
+  /// source again at that position (seeking a stopped player is what used to fail).
   Future<void> _toggle() async {
     if (_playing) {
       await _player.pause();
       return;
     }
     AudioExclusivityService.registerAudioPlayer(_player);
-    if (_completed) {
-      _completed = false;
-      _loaded = true;
-      await _player.play(_source);
-      return;
+    try {
+      if (_started && !_completed) {
+        await _player.resume();
+      } else {
+        await _renewLink();
+        final from = _completed ? Duration.zero : _position;
+        _completed = false;
+        await _player.play(_source, position: from);
+        _started = true;
+      }
+    } catch (_) {
+      // One more try from scratch before giving up
+      try {
+        _completed = false;
+        await _player.stop();
+        _freshAt = DateTime.fromMillisecondsSinceEpoch(0); // renew the link too
+        await _renewLink();
+        await _player.play(_source, position: _position);
+        _started = true;
+      } catch (_) {
+        if (mounted) AppToast.error(context, 'پخش صدا انجام نشد.');
+      }
     }
-    await _ensureLoaded();
-    await _player.resume();
   }
 
   Future<void> _seekTo(double fraction) async {
-    await _ensureLoaded();
+    if (_total == Duration.zero) await _ensureLoaded();
     if (!mounted) return;
     if (_total == Duration.zero) {
       setState(() => _scrub = null);
       return;
     }
     final target = Duration(milliseconds: (_total.inMilliseconds * fraction).round());
-    _completed = false;
-    await _player.seek(target);
-    if (mounted) {
-      setState(() {
-        _position = target;
-        _scrub = null;
-      });
+    final wasCompleted = _completed;
+    setState(() {
+      _position = target;
+      _scrub = null;
+    });
+    try {
+      if (_started && !wasCompleted) {
+        await _player.seek(target);
+      } else {
+        // Nothing playing yet (or finished): start from the touched moment
+        _completed = false;
+        _started = false;
+        await _toggle();
+      }
+    } catch (_) {
+      _started = false;
+      await _toggle();
     }
   }
 
@@ -654,7 +734,10 @@ class _ChatAudioPlayerState extends State<ChatAudioPlayer> {
     final fraction = _scrub ?? (_total.inMilliseconds > 0 ? (_position.inMilliseconds / _total.inMilliseconds).clamp(0.0, 1.0) : 0.0);
     final shown = _scrub != null ? Duration(milliseconds: (_total.inMilliseconds * _scrub!).round()) : _position;
     final color = widget.color ?? (widget.onGold ? ChatTheme.goldTitle : ChatTheme.accent);
-    return SizedBox(
+    // Play button on the left, the timeline to its right, whatever the chat direction
+    return Directionality(
+      textDirection: TextDirection.ltr,
+      child: SizedBox(
       width: widget.width ?? 230,
       child: Row(
         children: [
@@ -689,6 +772,7 @@ class _ChatAudioPlayerState extends State<ChatAudioPlayer> {
             ),
           ),
         ],
+      ),
       ),
     );
   }

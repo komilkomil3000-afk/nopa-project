@@ -13,6 +13,7 @@ IconData chatSpaceIcon(String type) => switch (type) {
       'arena' => Icons.emoji_events_rounded,
       'public' => Icons.forum_rounded,
       'mentors' => Icons.groups_rounded,
+      'mediaqa' => Icons.perm_media_rounded,
       'challenges' => Icons.local_fire_department_rounded,
       'support' => Icons.support_agent_rounded,
       _ => Icons.diversity_3_rounded,

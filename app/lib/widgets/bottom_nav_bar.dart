@@ -1,3 +1,6 @@
+import 'package:nopa_app/widgets/nopa_pressable.dart';
+import 'package:flutter/services.dart';
+import '../core/theme/app_motion.dart';
 import 'package:nopa_app/widgets/tap_expander.dart';
 import 'package:nopa_app/core/theme/app_typography.dart';
 import 'package:flutter/material.dart' hide Text;
@@ -107,16 +110,19 @@ class CustomBottomNavBar extends StatelessWidget {
             final item = items[index];
 
             return Expanded(
-              child: TapExpander(child: GestureDetector(
+              child: NopaPressable(pressedScale: 0.92, child: TapExpander(child: GestureDetector(
                 behavior: HitTestBehavior.opaque,
-                onTap: () => onTap(index),
+                onTap: () {
+                  if (!isSelected) HapticFeedback.selectionClick();
+                  onTap(index);
+                },
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Stack(
                       clipBehavior: Clip.none,
                       children: [
-                        _buildNavIcon(item, isSelected),
+                        _buildNavIcon(context, item, isSelected),
                         if (index == AppTabs.chat && chatUnread > 0)
                           const Positioned(
                             top: -2,
@@ -134,7 +140,7 @@ class CustomBottomNavBar extends StatelessWidget {
                     ),
                   ],
                 ),
-              )),
+              ))),
             );
           }).toList(),
         ),
@@ -142,18 +148,23 @@ class CustomBottomNavBar extends StatelessWidget {
     );
   }
 
-  Widget _buildNavIcon(_NavItemData item, bool isSelected) {
+  Widget _buildNavIcon(BuildContext context, _NavItemData item, bool isSelected) {
     final Color iconColor = isSelected
         ? const Color(0xFFDFB690) // Gold/tan color
         : const Color(0xFF9292E2); // Lavender/purple color
 
-    return SvgPicture.asset(
-      item.iconPath,
-      width: 25,
-      height: 25,
-      colorFilter: ColorFilter.mode(iconColor, BlendMode.srcIn),
-      placeholderBuilder: (context) =>
-          Icon(item.fallbackIcon, size: 25, color: iconColor),
+    // Selected icon grows slightly (transform only, no layout change)
+    return AnimatedScale(
+      scale: isSelected ? 1.12 : 1.0,
+      duration: AppMotion.dur(context, AppMotion.base),
+      curve: AppMotion.enter,
+      child: SvgPicture.asset(
+        item.iconPath,
+        width: 25,
+        height: 25,
+        colorFilter: ColorFilter.mode(iconColor, BlendMode.srcIn),
+        placeholderBuilder: (context) => Icon(item.fallbackIcon, size: 25, color: iconColor),
+      ),
     );
   }
 }

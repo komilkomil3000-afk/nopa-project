@@ -1,3 +1,4 @@
+import 'package:nopa_app/widgets/nopa_pressable.dart';
 import 'package:nopa_app/widgets/tap_expander.dart';
 import 'package:flutter/material.dart' hide Text;
 import 'package:nopa_app/widgets/fa_text.dart';
@@ -24,7 +25,7 @@ class StationCard extends StatelessWidget {
 
     return AspectRatio(
       aspectRatio: 0.57, // the poster area under it is A4 (1:1.414)
-      child: TapExpander(child: GestureDetector(
+      child: NopaPressable(child: TapExpander(child: GestureDetector(
         behavior: HitTestBehavior.opaque,
         onTap: onTap,
         child: Container(
@@ -213,7 +214,7 @@ class StationCard extends StatelessWidget {
             ),
           ),
         ),
-      )),
+      ))),
     );
   }
 }

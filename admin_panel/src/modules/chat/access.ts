@@ -1,7 +1,7 @@
 import prisma from '../../config/db';
 import { ChatPermissions, DEFAULT_CHAT_PERMISSIONS, isChannelManagerRole, isMentorRole, isSubAdminRole, parseChatPermissions, ROLE_CHANNEL_MANAGER } from '../../utils/roles';
 
-export type SpaceType = 'announcements' | 'public' | 'arena' | 'mentors' | 'caravan' | 'challenges' | 'media' | 'direct' | 'support';
+export type SpaceType = 'announcements' | 'public' | 'arena' | 'mediaqa' | 'mentors' | 'caravan' | 'challenges' | 'media' | 'direct' | 'support';
 
 export interface ChatActor {
   id: string;
@@ -46,6 +46,7 @@ export function canSee(a: ChatActor, s: SpaceRef, isMember: boolean): boolean {
     case 'announcements':
     case 'public':
     case 'arena':
+    case 'mediaqa':
       return true;
     case 'support':
       return isMember || isAdmin(a) || (isManager(a) && a.permissions.privateChats);
@@ -68,7 +69,8 @@ export function canPostTopLevel(a: ChatActor, s: SpaceRef): boolean {
     case 'public':
       return isAdmin(a) || (isManager(a) && a.permissions.publishChannels);
     case 'arena':
-      return isAdmin(a);
+      // Mentors speak in the arena with the admin; students answer only in their own caravan's challenge group
+      return isAdmin(a) || isMentorRole(a.role);
     case 'challenges':
       return isAdmin(a) || leadsCaravan(a, s);
     default:
@@ -76,9 +78,9 @@ export function canPostTopLevel(a: ChatActor, s: SpaceRef): boolean {
   }
 }
 
-/** Answering under a message. The inter-group arena is read-only: rival caravans never talk directly. */
+/** Answering under a message. The inter-group arena is for mentors and the admin: students and rival caravans never talk directly there. */
 export function canReply(a: ChatActor, s: SpaceRef): boolean {
-  return s.type !== 'arena' || isAdmin(a);
+  return s.type !== 'arena' || isAdmin(a) || isMentorRole(a.role);
 }
 
 /** Pin, delete others' messages, mute. Private conversations have no moderators. */

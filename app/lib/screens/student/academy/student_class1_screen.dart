@@ -721,7 +721,7 @@ class _Class1ScreenState extends State<StudentClass1Screen> {
           textAlign: TextAlign.right,
           style: AppTypography.h3Strong,
         ),
-        const SizedBox(height: 10),
+        const SizedBox(height: 8),
 
         // Video Preview Box with Swipeable PageView strictly 16:9
         AspectRatio(

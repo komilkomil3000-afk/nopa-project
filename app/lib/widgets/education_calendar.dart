@@ -288,7 +288,7 @@ class _EducationCalendarState extends State<EducationCalendar> {
             ),
           ),
 
-          const SizedBox(height: 12),
+          const SizedBox(height: 8),
 
           // 2. Month Selector Row matching exact user screenshot:
           // Left: < آبان  |  Center: مهرماه  |  Right: شهریور >

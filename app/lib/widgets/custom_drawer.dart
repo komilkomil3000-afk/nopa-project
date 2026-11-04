@@ -1,4 +1,7 @@
 import 'package:nopa_app/main.dart' show navigatorKey;
+import 'package:nopa_app/services/app_update_service.dart';
+import 'package:nopa_app/widgets/app_toast.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'package:nopa_app/core/theme/app_colors.dart';
 import 'package:nopa_app/widgets/bottom_nav_bar.dart';
 import 'nopa_modal_shell.dart';
@@ -50,6 +53,66 @@ class CustomDrawer extends StatelessWidget {
           '**بازارچه:** خرج سکه و جوایز کسب‌شده برای خرید تجهیزات و پاداش‌ها.\n'
           '**پشتیبانی:** ارتباط سریع با راهبر کاروان و کارشناسان نپا.',
           style: AppTypography.bodyMedium.copyWith(color: Color(0xFFD3D0E3)),
+        ),
+      ),
+    );
+  }
+
+  Future<void> _checkForUpdate(BuildContext context) async {
+    AppUpdateInfo? update;
+    try {
+      update = await AppUpdateService.check();
+    } catch (_) {
+      final ctx = navigatorKey.currentContext;
+      if (ctx != null && ctx.mounted) AppToast.error(ctx, 'بررسی نسخه انجام نشد. اتصال اینترنت را بررسی کنید.');
+      return;
+    }
+    final ctx = navigatorKey.currentContext;
+    if (ctx == null || !ctx.mounted) return;
+    if (update == null) {
+      showNopaModal<void>(
+        ctx,
+        builder: (d) => NopaModalShell(
+          maxWidth: 400,
+          headerIcon: Icons.check_circle_rounded,
+          padding: const EdgeInsets.all(22),
+          actions: [NopaModalAction(label: 'باشه', onPressed: () => Navigator.pop(d))],
+          child: Text(
+            'شما آخرین نسخه را دارید، برید حالشو ببرید :)',
+            textAlign: TextAlign.center,
+            style: AppTypography.bodyMedium.copyWith(color: const Color(0xFFD3D0E3)),
+          ),
+        ),
+      );
+      return;
+    }
+    final found = update;
+    showNopaModal<void>(
+      ctx,
+      builder: (d) => NopaModalShell(
+        maxWidth: 400,
+        headerIcon: Icons.cloud_download_rounded,
+        title: 'نسخه‌ی جدید ${found.version}',
+        padding: const EdgeInsets.all(22),
+        actions: [
+          NopaModalAction(label: 'بعداً', variant: NopaModalActionVariant.secondary, onPressed: () => Navigator.pop(d)),
+          NopaModalAction(
+            label: 'دانلود و به‌روزرسانی',
+            onPressed: () async {
+              final uri = Uri.tryParse(found.downloadUrl);
+              if (uri == null || found.downloadUrl.isEmpty || !await launchUrl(uri, mode: LaunchMode.externalApplication)) {
+                if (d.mounted) AppToast.error(d, 'لینک دانلود در دسترس نیست.');
+                return;
+              }
+              if (d.mounted) Navigator.pop(d);
+            },
+          ),
+        ],
+        child: Text(
+          found.notes.isEmpty
+              ? 'یک نسخه‌ی جدید از نپا منتشر شده است. برای ادامه، برنامه را به‌روزرسانی کنید.'
+              : 'تغییرات این نسخه:\n${found.notes.map((n) => '• $n').join('\n')}',
+          style: AppTypography.bodyMedium.copyWith(color: const Color(0xFFD3D0E3)),
         ),
       ),
     );
@@ -318,6 +381,17 @@ class CustomDrawer extends StatelessWidget {
                       },
                     ),
 
+                    _buildMenuItem(
+                      title: 'بررسی نسخه جدید',
+                      icon: Icons.cloud_download_rounded,
+                      isSelected: false,
+                      iconSize: 22,
+                      onTap: () {
+                        Navigator.pop(context);
+                        _checkForUpdate(context);
+                      },
+                    ),
+
                     // Admin / Dual Role Switcher (if applicable)
                     if (currentUser.isDualRole || currentUser.role == UserRole.admin) ...[
                       _buildGradientDivider(),
@@ -375,7 +449,8 @@ class CustomDrawer extends StatelessWidget {
 
   Widget _buildMenuItem({
     required String title,
-    required String svgPath,
+    String? svgPath,
+    IconData? icon,
     required VoidCallback onTap,
     bool isSelected = false,
     Color? customIconColor,
@@ -405,13 +480,15 @@ class CustomDrawer extends StatelessWidget {
                   width: 32,
                   height: 32,
                   child: Center(
-                    child: SvgPicture.asset(
-                      svgPath,
-                      width: iconSize,
-                      height: iconSize,
-                      fit: BoxFit.contain,
-                      colorFilter: ColorFilter.mode(effectiveIconColor, BlendMode.srcIn),
-                    ),
+                    child: icon != null
+                        ? Icon(icon, size: iconSize, color: effectiveIconColor)
+                        : SvgPicture.asset(
+                            svgPath!,
+                            width: iconSize,
+                            height: iconSize,
+                            fit: BoxFit.contain,
+                            colorFilter: ColorFilter.mode(effectiveIconColor, BlendMode.srcIn),
+                          ),
                   ),
                 ),
                 const SizedBox(width: 14),
