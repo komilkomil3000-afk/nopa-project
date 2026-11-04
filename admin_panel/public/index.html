@@ -536,61 +536,106 @@
         </div>
       </section>
 
-      <!-- TAB: INSTRUCTORS (بانک اساتید) -->
+      <!-- INSTRUCTORS (بانک اساتید): a bento overview of the bank and one instructor's page (all instructors as circles in
+           the notch, the instructor's card linked to the class sessions that name them and to the resume card).
+           Drawn by instructors.js; styles in css/stations.css (.lst-*, .lsv-*, .ins-*). -->
       <section id="instructors-tab" class="tab-panel" data-style="display: none;">
-        <div class="panel-card glass u-mb-20 u-flex u-col u-gap-16">
-          <div class="u-flex u-justify-between u-items-center u-wrap u-gap-12 u-bb-fg-8 u-pb-14">
-            <div class="u-flex u-items-center u-gap-10">
-              <div class="panel-title u-m-0 u-flex u-items-center u-gap-8">
-                <i class="fa-solid fa-chalkboard-user u-c-primary-text"></i> بانک و دایرکتوری اساتید دوره
+        <div id="ins-overview-view">
+          <div class="lms-head-actions u-flex u-justify-end u-items-center u-mb-20">
+            <div class="u-flex u-gap-10">
+              <button type="button" class="btn-primary u-bgc-primary" data-click="openInstructorModal"><i class="fa-solid fa-plus"></i> ثبت استاد جدید</button>
+            </div>
+          </div>
+
+          <div class="lst-bento ins-bento">
+            <div class="lst-tile lst-tile-stations glass">
+              <div class="lst-tile-head">
+                <h4 class="lst-tile-title"><i class="fa-solid fa-chalkboard-user"></i> همه اساتید <span class="lst-tile-sub" id="instructors-count-badge">برای ورود به صفحه استاد بزنید</span></h4>
+                <div class="crv-filters">
+                  <div class="search-box">
+                    <i class="fa-solid fa-search"></i>
+                    <input aria-label="جستجوی اساتید" type="text" id="instructor-search-input" class="input-ctrl" placeholder="نام، کد ملی، تماس، مدرک یا کلاس..." data-input="filterInstructorsList">
+                  </div>
+                  <select aria-label="فیلتر وضعیت استاد" id="instructor-status-filter" class="select-ctrl" data-change="filterInstructorsList">
+                    <option value="all">همه اساتید</option>
+                    <option value="active">فعال</option>
+                    <option value="inactive">غیرفعال</option>
+                  </select>
+                </div>
               </div>
-              <span id="instructors-count-badge" class="badge u-bg-primary-15 u-c-primary-text u-bd-primary-30 u-p-4-10 u-r-8 u-fs-xs u-bold">
-                ۰ استاد
-              </span>
+              <div id="ins-bento-list" class="crv-card-grid" aria-busy="true"></div>
             </div>
-            <div class="actions u-flex u-gap-10 u-wrap">
-              <button type="button" class="btn-action" data-click="fetchInstructorsList"><i class="fa-solid fa-sync"></i> بروزرسانی</button>
-              <button type="button" class="btn-primary u-bg-grad-primary u-c-white u-bd-none u-bold u-p-8-20 u-r-8 u-pointer u-flex u-items-center u-gap-6 u-shadow-0-2-8-primary-30" data-click="openInstructorModal">
-                <i class="fa-solid fa-plus"></i> ثبت استاد جدید
-              </button>
-            </div>
-          </div>
 
-          <!-- فیلتر و جستجوی اساتید -->
-          <div class="u-flex u-gap-12 u-items-center">
-            <div class="form-group u-m-0 u-flex-1">
-              <div class="u-relative">
-                <i class="fa-solid fa-magnifying-glass u-absolute u-right-12 u-top-50p u-c-text-muted u-fs-sm u-center-y"></i>
-                <input aria-label="جستجوی اساتید" type="text" id="instructor-search-input" class="input-ctrl u-bg-surface u-bdc-fg-12 u-c-text u-p-8-32-8-12 u-fs-sm u-w-full" placeholder="جستجو بر اساس نام استاد، کد ملی، شماره تماس، مدرک یا کلاس‌های تدریس..." data-input="filterInstructorsList">
+            <div class="lst-tile glass">
+              <h4 class="lst-tile-title"><i class="fa-solid fa-chart-simple"></i> آمار کلی</h4>
+              <div class="lst-mini-stats">
+                <div class="lst-mini-stat"><span class="stat-label">اساتید</span><span class="stat-value u-c-primary-text" id="ins-stat-total">-</span></div>
+                <div class="lst-mini-stat"><span class="stat-label">فعال</span><span class="stat-value u-c-success-text" id="ins-stat-active">-</span></div>
+                <div class="lst-mini-stat"><span class="stat-label">دارای رزومه</span><span class="stat-value u-c-accent-text" id="ins-stat-resume">-</span></div>
+                <div class="lst-mini-stat"><span class="stat-label">دارای تصویر</span><span class="stat-value u-c-info-text" id="ins-stat-photo">-</span></div>
               </div>
             </div>
-          </div>
 
-          <!-- وضعیت خالی بودن -->
-          <div id="instructors-empty-state" class="u-p-40 u-text-center u-c-text-muted" data-style="display: none">
-            <i class="fa-solid fa-chalkboard-user u-fs-40 u-c-text-faint u-mb-12"></i>
-            <div class="u-fs-base u-bold">هیچ استادی یافت نشد</div>
-            <div class="u-fs-xs u-c-text-faint u-mt-4">با کلیک بر روی دکمه «ثبت استاد جدید» مشخصات اساتید را به بانک اضافه فرمایید.</div>
-          </div>
+            <div class="lst-tile glass">
+              <h4 class="lst-tile-title"><i class="fa-solid fa-graduation-cap"></i> مدارک تحصیلی</h4>
+              <div id="ins-bento-degrees"></div>
+            </div>
 
-          <!-- جدول نمایش اساتید -->
-          <div id="instructors-table-wrapper" class="table-container u-scroll-x">
-            <table class="data-table u-w-full u-collapse-collapse">
-              <thead>
-                <tr class="u-bb-fg-10 u-c-text-muted u-fs-xs">
-                  <th class="u-p-10 u-w-40 u-text-center">#</th>
-                  <th class="u-p-10 u-text-right">استاد و مدرک تحصیلی</th>
-                  <th class="u-p-10 u-text-right">اطلاعات تماس و هویت</th>
-                  <th class="u-p-10 u-text-right">کلاس‌های تدریس</th>
-                  <th class="u-p-10 u-text-right">رزومه و سوابق</th>
-                  <th class="u-p-10 u-text-center u-w-140">عملیات</th>
-                </tr>
-              </thead>
-              <tbody id="instructors-table-tbody">
-                <!-- Dynamically populated -->
-              </tbody>
-            </table>
+            <div class="lst-tile glass">
+              <h4 class="lst-tile-title"><i class="fa-solid fa-bolt"></i> دسترسی سریع</h4>
+              <div class="lst-quick">
+                <button type="button" class="lst-quick-btn" data-click="openInstructorModal"><i class="fa-solid fa-plus"></i> استاد جدید</button>
+                <button type="button" class="lst-quick-btn" data-click="fetchInstructorsList"><i class="fa-solid fa-sync"></i> بروزرسانی</button>
+                <button type="button" class="lst-quick-btn" data-click="mntGoTab" data-click-args="[&quot;lms-tab&quot;]"><i class="fa-solid fa-graduation-cap"></i> منزلگاه‌ها</button>
+              </div>
+            </div>
+
+            <div class="lst-tile lst-tile-wide glass">
+              <h4 class="lst-tile-title"><i class="fa-solid fa-list-check"></i> نیازمند تکمیل</h4>
+              <div id="ins-bento-health"></div>
+            </div>
           </div>
+        </div>
+
+        <!-- One instructor's page -->
+        <div id="instructor-detail-view" data-style="display: none;">
+          <div class="lsv-head">
+            <button type="button" class="lsv-round" data-click="closeInstructorView" title="بازگشت به همه اساتید" aria-label="بازگشت به همه اساتید"><i class="fa-solid fa-arrow-right"></i></button>
+            <h3 id="ins-title">استاد</h3>
+            <span id="ins-state"></span>
+          </div>
+          <section class="lsv-board ins-board">
+            <header class="lsv-board-head">
+              <div class="lsv-board-title">
+                <h4>شناسنامه و کلاس‌های استاد</h4>
+                <span id="ins-sub"></span>
+              </div>
+              <div class="lsv-notch-wrap"><nav class="lsv-notch" id="ins-circles" aria-label="اساتید"></nav></div>
+              <div class="lsv-round-group">
+                <button type="button" class="lsv-round" data-click="editActiveInstructor" title="ویرایش مشخصات استاد" aria-label="ویرایش مشخصات استاد"><i class="fa-solid fa-pen"></i></button>
+                <button type="button" class="lsv-round" id="ins-toggle-active" data-click="toggleActiveInstructor" title="فعال / غیرفعال" aria-label="فعال / غیرفعال"><i class="fa-solid fa-power-off"></i></button>
+                <button type="button" class="lsv-round lsv-round-danger" data-click="deleteActiveInstructor" title="حذف استاد" aria-label="حذف استاد"><i class="fa-solid fa-trash"></i></button>
+              </div>
+            </header>
+            <div class="lsv-flow crv-flow ins-flow">
+              <div class="lsv-col crv-col-mentor">
+                <div class="lsv-col-card crv-mentor" id="ins-info-card"></div>
+                <div class="lsv-col-label"><i class="fa-solid fa-id-card"></i> شناسنامه استاد</div>
+              </div>
+              <div class="lsv-link" aria-hidden="true"></div>
+              <div class="lsv-col mnt-col-caravans">
+                <div class="lsv-col-card" id="ins-sessions-card">
+                  <div class="crv-members-list" id="ins-sessions-list"></div>
+                </div>
+                <div class="lsv-col-label"><i class="fa-solid fa-chalkboard"></i> جلسات تدریس در منزلگاه‌ها <span class="lsv-col-count" id="ins-sessions-count">0</span></div>
+              </div>
+              <div class="lsv-link" aria-hidden="true"></div>
+              <div class="lsv-col mnt-col-students">
+                <div class="lsv-col-card ins-resume-card" id="ins-resume-card"></div>
+                <div class="lsv-col-label"><i class="fa-solid fa-file-lines"></i> رزومه، سوابق و کلاس‌ها</div>
+              </div>
+            </div>
+          </section>
         </div>
       </section>
 
@@ -1788,116 +1833,135 @@
 
       <!-- PLACEHOLDER TABS FOR NEW SECTIONS -->
       <!-- Mentors -->
+      <!-- MENTORS (راهبران)
+           Like the stations / caravans tabs: a bento overview of all mentors, and one mentor's page (the mentor's
+           caravans as circles in the notch, the mentor's card linked to the caravans' card and to the chosen
+           caravan's students). Drawn by js/features/mentors.js; styles in css/stations.css (.lst-*, .lsv-*, .mnt-*). -->
       <section id="mentors-profile-tab" class="tab-panel" data-style="display: none;">
-        <div class="panel-card glass u-mb-20 u-flex u-col u-gap-16">
-          <div class="u-flex u-justify-between u-items-center u-wrap u-gap-12 u-bb-fg-8 u-pb-14">
-            <div class="u-flex u-items-center u-gap-10">
-              <div class="panel-title u-m-0 u-flex u-items-center u-gap-8">
-                <i class="fa-solid fa-user-tie u-c-primary-text"></i> پروفایل و شناسنامه راهبران
-              </div>
-              <span id="mentors-total-count-badge" class="badge u-bg-primary-15 u-c-primary-text u-bd-primary-30 u-p-4-10 u-r-8 u-fs-xs u-bold">
-                ۰ راهبر
-              </span>
-            </div>
-            <div class="actions u-flex u-gap-10 u-wrap">
-              <button class="btn-action" data-click="exportData" data-click-args="[&quot;mentors&quot;,&quot;excel&quot;]"><i class="fa-solid fa-file-excel"></i> خروجی اکسل</button>
-              <button class="btn-action" data-click="exportData" data-click-args="[&quot;mentors&quot;,&quot;pdf&quot;]"><i class="fa-solid fa-file-pdf"></i> خروجی پی‌دی‌اف</button>
-              <button class="btn-primary u-bg-grad-primary u-c-white u-bd-none u-bold u-p-8-20 u-r-8 u-pointer u-flex u-items-center u-gap-6 u-shadow-0-2-8-primary-30" data-click="showMentorModal">
-                <i class="fa-solid fa-plus"></i> ثبت راهبر جدید
-              </button>
+        <div id="mnt-overview-view">
+          <div class="lms-head-actions u-flex u-justify-end u-items-center u-mb-20">
+            <div class="u-flex u-gap-10">
+              <button type="button" class="btn-primary u-bgc-primary" data-click="showMentorModal"><i class="fa-solid fa-plus"></i> ثبت راهبر جدید</button>
             </div>
           </div>
 
-          <!-- فیلتر و جستجوی چندگانه راهبران -->
-          <div class="u-grid u-cols-2fr-1fr-1fr-1fr u-gap-12 u-items-end">
-            <div class="form-group u-m-0">
-              <label for="mentor-filter-search" class="u-fs-xs u-c-text-muted u-mb-4 u-block">
-                <i class="fa-solid fa-magnifying-glass u-c-primary-text"></i> جستجوی هوشمند راهبر:
-              </label>
-              <input type="text" id="mentor-filter-search" class="input-ctrl u-bg-surface u-bdc-fg-12 u-c-text u-p-8-12 u-fs-sm" placeholder="نام، موبایل، کد ملی، شهر یا تخصص..." data-input="filterMentorsList">
+          <div class="lst-bento mnt-bento">
+            <div class="lst-tile lst-tile-stations glass">
+              <div class="lst-tile-head">
+                <h4 class="lst-tile-title"><i class="fa-solid fa-user-tie"></i> همه راهبران <span class="lst-tile-sub" id="mentors-total-count-badge">برای ورود به صفحه راهبر بزنید</span></h4>
+                <div class="crv-filters">
+                  <div class="search-box">
+                    <i class="fa-solid fa-search"></i>
+                    <input aria-label="جستجوی راهبران" type="text" id="mentor-filter-search" class="input-ctrl" placeholder="نام، موبایل، کد ملی، شهر یا کاروان..." data-input="filterMentorsList">
+                  </div>
+                  <select aria-label="فیلتر کاروان" id="mentor-filter-caravan" class="select-ctrl" data-change="filterMentorsList">
+                    <option value="all">همه (کاروان)</option>
+                    <option value="has_caravan">دارای کاروان</option>
+                    <option value="no_caravan">بدون کاروان</option>
+                  </select>
+                  <select aria-label="فیلتر وضعیت حساب" id="mentor-filter-status" class="select-ctrl" data-change="filterMentorsList">
+                    <option value="all">همه وضعیت‌ها</option>
+                    <option value="ACTIVE">فعال</option>
+                    <option value="PENDING_VERIFICATION">در انتظار بررسی</option>
+                    <option value="SUSPENDED">مسدود / تعلیق</option>
+                  </select>
+                  <select aria-label="مرتب‌سازی راهبران" id="mentor-filter-sort" class="select-ctrl" data-change="filterMentorsList">
+                    <option value="caravans_desc">بیشترین کاروان</option>
+                    <option value="students_desc">بیشترین دانش‌آموز</option>
+                    <option value="rating_desc">بالاترین امتیاز</option>
+                    <option value="name_asc">ترتیب نام</option>
+                  </select>
+                </div>
+              </div>
+              <div id="mnt-bento-mentors" class="crv-card-grid" aria-busy="true"></div>
             </div>
 
-            <div class="form-group u-m-0">
-              <label for="mentor-filter-caravan" class="u-fs-xs u-c-text-muted u-mb-4 u-block">
-                <i class="fa-solid fa-people-group u-c-success-text"></i> وضعیت کاروان:
-              </label>
-              <select id="mentor-filter-caravan" class="input-ctrl u-bg-surface u-bdc-fg-12 u-c-text u-p-8-10 u-fs-sm" data-change="filterMentorsList">
-                <option value="all">همه</option>
-                <option value="has_caravan">دارای کاروان فعال</option>
-                <option value="no_caravan">فاقد کاروان</option>
-              </select>
+            <div class="lst-tile glass">
+              <h4 class="lst-tile-title"><i class="fa-solid fa-chart-simple"></i> آمار کلی</h4>
+              <div class="lst-mini-stats">
+                <div class="lst-mini-stat"><span class="stat-label">راهبران</span><span class="stat-value u-c-primary-text" id="mnt-stat-mentors">-</span></div>
+                <div class="lst-mini-stat"><span class="stat-label">کاروان‌ها</span><span class="stat-value u-c-success-text" id="mnt-stat-caravans">-</span></div>
+                <div class="lst-mini-stat"><span class="stat-label">دانش‌آموزان</span><span class="stat-value u-c-accent-text" id="mnt-stat-students">-</span></div>
+                <div class="lst-mini-stat"><span class="stat-label">میانگین امتیاز</span><span class="stat-value u-c-info-text" id="mnt-stat-rating">-</span></div>
+              </div>
             </div>
 
-            <div class="form-group u-m-0">
-              <label for="mentor-filter-status" class="u-fs-xs u-c-text-muted u-mb-4 u-block">
-                <i class="fa-solid fa-circle-check u-c-accent-text"></i> وضعیت حساب:
-              </label>
-              <select id="mentor-filter-status" class="input-ctrl u-bg-surface u-bdc-fg-12 u-c-text u-p-8-10 u-fs-sm" data-change="filterMentorsList">
-                <option value="all">همه وضعیت‌ها</option>
-                <option value="ACTIVE">فعال (ACTIVE)</option>
-                <option value="PENDING_VERIFICATION">در انتظار بررسی</option>
-                <option value="SUSPENDED">مسدود / تعلیق</option>
-              </select>
+            <div class="lst-tile glass">
+              <h4 class="lst-tile-title"><i class="fa-solid fa-user-shield"></i> وضعیت حساب‌ها</h4>
+              <div id="mnt-bento-status"></div>
             </div>
 
-            <div class="form-group u-m-0">
-              <label for="mentor-filter-sort" class="u-fs-xs u-c-text-muted u-mb-4 u-block">
-                <i class="fa-solid fa-arrow-down-wide-short u-c-primary-text"></i> مرتب‌سازی:
-              </label>
-              <select id="mentor-filter-sort" class="input-ctrl u-bg-surface u-bdc-fg-12 u-c-text u-p-8-10 u-fs-sm" data-change="filterMentorsList">
-                <option value="caravans_desc">بیشترین تعداد کاروان</option>
-                <option value="name_asc">الفبایی نام راهبر</option>
-              </select>
+            <div class="lst-tile glass">
+              <h4 class="lst-tile-title"><i class="fa-solid fa-bolt"></i> دسترسی سریع</h4>
+              <div class="lst-quick">
+                <button type="button" class="lst-quick-btn" data-click="showMentorModal"><i class="fa-solid fa-plus"></i> راهبر جدید</button>
+                <button type="button" class="lst-quick-btn" data-click="loadMentors"><i class="fa-solid fa-sync"></i> بروزرسانی</button>
+                <button type="button" class="lst-quick-btn" data-click="mntGoTab" data-click-args="[&quot;mentors-tickets-tab&quot;]"><i class="fa-solid fa-inbox"></i> تیکت‌ها</button>
+                <button type="button" class="lst-quick-btn" data-click="mntGoTab" data-click-args="[&quot;mentors-docs-tab&quot;]"><i class="fa-solid fa-file-circle-check"></i> مدارک</button>
+                <button type="button" class="lst-quick-btn" data-click="exportData" data-click-args="[&quot;mentors&quot;,&quot;excel&quot;]"><i class="fa-solid fa-file-excel"></i> خروجی اکسل</button>
+                <button type="button" class="lst-quick-btn" data-click="exportData" data-click-args="[&quot;mentors&quot;,&quot;pdf&quot;]"><i class="fa-solid fa-file-pdf"></i> خروجی پی‌دی‌اف</button>
+              </div>
+            </div>
+
+            <div class="lst-tile glass">
+              <h4 class="lst-tile-title"><i class="fa-solid fa-star"></i> بالاترین امتیاز</h4>
+              <div id="mnt-bento-top"></div>
+            </div>
+
+            <div class="lst-tile glass">
+              <h4 class="lst-tile-title"><i class="fa-solid fa-people-group"></i> بیشترین دانش‌آموز</h4>
+              <div id="mnt-bento-crowd"></div>
+            </div>
+
+            <div class="lst-tile lst-tile-wide glass">
+              <h4 class="lst-tile-title"><i class="fa-solid fa-list-check"></i> نیازمند توجه</h4>
+              <div id="mnt-bento-health"></div>
             </div>
           </div>
         </div>
-          <div class="table-container glass">
-          <table class="data-table" id="mentors-table">
-            <thead>
-              <tr>
-                <th class="u-w-50 u-text-center">آواتار</th>
-                <th>نام و نام خانوادگی</th>
-                <th>موبایل</th>
-                <th>کد ملی</th>
-                <th>کاروان‌های تحت هدایت</th>
-                <th class="u-w-140 u-text-center">عملیات</th>
-              </tr>
-            </thead>
-            <tbody id="mentors-table-body">
-              <!-- Populated by JS -->
-            </tbody>
-          </table>
-        </div>
 
-        <!-- 1. MENTOR DOSSIER MODAL (شناسنامه جامع راهبر) -->
-        <div id="mentor-dossier-modal" class="modal-overlay u-z-z-modal" data-style="display: none">
-          <div class="modal-content glass u-maxw-900 u-w-95p u-maxh-90vh u-scroll-y u-border-box u-r-18 u-bg-surface u-bd-primary-35 u-shadow-modal-8 u-p-24 u-c-text">
-            <div class="u-flex u-justify-between u-items-center u-mb-20 u-bb-fg-10 u-pb-16">
-              <div class="u-flex u-items-center u-gap-12">
-                <div id="dossier-avatar" class="u-w-52 u-h-52 u-r-50p u-flex u-items-center u-justify-center u-bold u-fs-lg u-c-white u-bd-2-solid-fg-20 u-grad-info-primary">
-                  را
-                </div>
-                <div>
-                  <h3 id="dossier-mentor-name" class="u-m-0 u-c-primary-text u-fs-lg u-flex u-items-center u-gap-8">
-                    شناسنامه تفصیلی راهبر
-                  </h3>
-                  <div class="u-fs-xs u-c-text-muted u-mt-4" id="dossier-mentor-subtitle">اطلاعات هویتی، کاروان‌ها و افراد تحت نظارت</div>
-                </div>
-              </div>
-              <button aria-label="بستن" type="button" class="modal-close" data-click="NopaActions.hide" data-click-args="[&quot;mentor-dossier-modal&quot;]">&times;</button>
-            </div>
-
-            <div id="dossier-content-body">
-              <!-- Dynamically populated -->
-            </div>
-
-            <div class="u-flex u-justify-between u-items-center u-bt-fg-10 u-pt-16 u-mt-20">
-              <div id="dossier-footer-actions">
-                <!-- Action buttons -->
-              </div>
-              <button type="button" class="btn-action u-p-8-20 u-r-8 u-bg-fg-10 u-c-text-soft u-bd-none u-pointer" data-click="NopaActions.hide" data-click-args="[&quot;mentor-dossier-modal&quot;]">بستن پرونده</button>
-            </div>
+        <!-- One mentor's page -->
+        <div id="mentor-detail-view" data-style="display: none;">
+          <div class="lsv-head" id="mnt-head">
+            <button type="button" class="lsv-round" data-click="closeMentorView" title="بازگشت به همه راهبران" aria-label="بازگشت به همه راهبران"><i class="fa-solid fa-arrow-right"></i></button>
+            <h3 id="mnt-title">راهبر</h3>
+            <span id="mnt-state"></span>
           </div>
+          <section class="lsv-board mnt-board">
+            <header class="lsv-board-head">
+              <div class="lsv-board-title">
+                <h4>شناسنامه و کاروان‌های راهبر</h4>
+                <span id="mnt-sub"></span>
+              </div>
+              <div class="lsv-notch-wrap"><nav class="lsv-notch" id="mnt-circles" aria-label="کاروان‌های راهبر"></nav></div>
+              <div class="lsv-round-group">
+                <button type="button" class="lsv-round" data-click="editActiveMentor" title="ویرایش مشخصات راهبر" aria-label="ویرایش مشخصات راهبر"><i class="fa-solid fa-pen"></i></button>
+                <button type="button" class="lsv-round" data-click="openAssignMentorCaravans" title="کاروان‌های تحت راهبری" aria-label="کاروان‌های تحت راهبری"><i class="fa-solid fa-compass"></i></button>
+                <button type="button" class="lsv-round lsv-round-danger" data-click="moderateActiveMentor" title="وضعیت و تعلیق حساب" aria-label="وضعیت و تعلیق حساب"><i class="fa-solid fa-user-shield"></i></button>
+              </div>
+            </header>
+            <div class="lsv-flow crv-flow mnt-flow">
+              <div class="lsv-col crv-col-mentor">
+                <div class="lsv-col-card crv-mentor" id="mnt-info-card"></div>
+                <div class="lsv-col-label"><i class="fa-solid fa-id-card"></i> شناسنامه راهبر</div>
+              </div>
+              <div class="lsv-link" aria-hidden="true"></div>
+              <div class="lsv-col mnt-col-caravans">
+                <div class="lsv-col-card" id="mnt-caravans-card">
+                  <div class="crv-members-list" id="mnt-caravans-list"></div>
+                </div>
+                <div class="lsv-col-label"><i class="fa-solid fa-compass"></i> کاروان‌های تحت راهبری <span class="lsv-col-count" id="mnt-caravans-count">0</span></div>
+              </div>
+              <div class="lsv-link" aria-hidden="true"></div>
+              <div class="lsv-col mnt-col-students">
+                <div class="lsv-col-card" id="mnt-students-card">
+                  <label class="search-box mnt-students-search"><i class="fa-solid fa-magnifying-glass"></i><input type="search" id="mnt-students-filter" class="input-ctrl" placeholder="جستجوی نام، موبایل یا کد..." autocomplete="off" aria-label="جستجوی دانش‌آموز" data-input="renderMentorStudents"></label>
+                  <div class="crv-members-list" id="mnt-students-list"></div>
+                </div>
+                <div class="lsv-col-label"><i class="fa-solid fa-user-graduate"></i> <span id="mnt-students-label">دانش‌آموزان کاروان</span> <span class="lsv-col-count" id="mnt-students-count">0</span></div>
+              </div>
+            </div>
+          </section>
         </div>
 
         <!-- 1.1 STUDENT TICKETS MODAL (تیکت‌های دانش‌آموز با راهبر) -->
@@ -1952,85 +2016,97 @@
           </div>
         </div>
 
-        <!-- 3. MENTOR MODERATION MODAL (مدیریت وضعیت و تعلیق راهبر) -->
-        <div id="mentor-moderation-modal" class="modal-overlay u-z-z-modal" data-style="display: none">
-          <div class="modal-content glass u-maxw-580 u-w-95p u-border-box u-r-16 u-bg-surface u-bd-danger-40 u-shadow-modal-8 u-p-24 u-c-text">
-            <div class="u-flex u-justify-between u-items-center u-mb-16 u-bb-fg-10 u-pb-12">
-              <div>
-                <h3 class="u-m-0 u-c-danger-text u-fs-md u-flex u-items-center u-gap-8">
-                  <i class="fa-solid fa-user-shield"></i> مدیریت وضعیت و تعلیق راهبر
-                </h3>
-                <div id="mod-mentor-subtitle" class="u-fs-xs u-c-text-muted u-mt-4">تعیین وضعیت فعالیت، مسدودسازی موقت یا حذف</div>
+        <!-- MENTOR MODERATION (وضعیت و تعلیق راهبر): station-editor look -->
+        <div id="mentor-moderation-modal" class="modal-overlay lse-overlay u-z-z-modal" data-style="display: none">
+          <div class="lse lse-sm">
+            <header class="lse-head lse-head-plain">
+              <div class="lse-id">
+                <span class="lse-id-icon is-accent"><i class="fa-solid fa-user-shield"></i></span>
+                <div class="lse-id-text"><h3>وضعیت و تعلیق راهبر</h3><span id="mod-mentor-subtitle">فعال‌سازی، تعلیق موقت، مسدودسازی یا حذف</span></div>
               </div>
-              <button aria-label="بستن" class="modal-close" type="button" data-click="NopaActions.hide" data-click-args="[&quot;mentor-moderation-modal&quot;]">&times;</button>
-            </div>
-
-            <form data-submit="executeMentorModeration" data-submit-args="[&quot;$event&quot;]">
-              <input type="hidden" id="mod-mentor-id">
-
-              <div class="u-bg-surface-2-60 u-r-10 u-p-14 u-mb-16">
-                <div class="u-bold u-mb-10 u-fs-sm u-c-text-soft">انتخاب نوع اقدام مدیریتی:</div>
-                <div class="u-flex u-col u-gap-10">
-                  <label class="u-flex u-items-center u-gap-8 u-pointer u-fs-sm u-c-success-text">
+              <button type="button" class="lsv-round" data-click="NopaActions.hide" data-click-args="[&quot;mentor-moderation-modal&quot;]" title="بستن" aria-label="بستن"><i class="fa-solid fa-xmark"></i></button>
+            </header>
+            <form class="lse-form" data-submit="executeMentorModeration" data-submit-args="[&quot;$event&quot;]">
+              <div class="lse-body">
+                <input type="hidden" id="mod-mentor-id">
+                <div class="mnt-mod-options" role="radiogroup" aria-label="نوع اقدام">
+                  <label class="lse-tree-row mnt-mod-option is-ok">
                     <input type="radio" name="mod_action" value="activate" checked data-change="toggleTempSuspendDate" data-change-args="[false]">
-                    <span>فعال‌سازی مجدد و رفع تعلیق حساب (ACTIVE)</span>
+                    <span class="lse-tree-text"><strong>فعال‌سازی و رفع تعلیق</strong><small>حساب راهبر فعال می‌شود</small></span>
                   </label>
-                  <label class="u-flex u-items-center u-gap-8 u-pointer u-fs-sm u-c-accent-text">
+                  <label class="lse-tree-row mnt-mod-option is-warn">
                     <input type="radio" name="mod_action" value="temp_suspend" data-change="toggleTempSuspendDate" data-change-args="[true]">
-                    <span>تعلیق موقت حساب تا تاریخ مشخص</span>
+                    <span class="lse-tree-text"><strong>تعلیق موقت</strong><small>تا تاریخی که تعیین می‌کنید</small></span>
                   </label>
-                  <label class="u-flex u-items-center u-gap-8 u-pointer u-fs-sm u-c-danger-text">
+                  <label class="lse-tree-row mnt-mod-option is-danger">
                     <input type="radio" name="mod_action" value="permanent_suspend" data-change="toggleTempSuspendDate" data-change-args="[false]">
-                    <span>مسدودسازی دائمی حساب کاربری راهبر (SUSPENDED)</span>
+                    <span class="lse-tree-text"><strong>مسدودسازی دائمی</strong><small>ورود راهبر به اپ بسته می‌شود</small></span>
                   </label>
-                  <label class="u-flex u-items-center u-gap-8 u-pointer u-fs-sm u-c-danger-text">
+                  <label class="lse-tree-row mnt-mod-option is-danger">
                     <input type="radio" name="mod_action" value="soft_delete" data-change="toggleTempSuspendDate" data-change-args="[false]">
-                    <span>حذف کامل راهبر از سیستم (Soft Delete)</span>
+                    <span class="lse-tree-text"><strong>حذف راهبر</strong><small>حذف نرم؛ سوابق نگه داشته می‌شود</small></span>
                   </label>
                 </div>
+                <label class="lse-field" id="mod-temp-date-container" data-style="display: none">
+                  <span>تاریخ پایان تعلیق موقت</span>
+                  <input type="date" id="mod-suspended-until" class="input-ctrl">
+                </label>
               </div>
-
-              <div id="mod-temp-date-container" class="u-mb-14" data-style="display: none">
-                <label for="mod-suspended-until" class="u-fs-xs u-c-accent-text u-mb-4 u-block">تاریخ پایان تعلیق موقت:</label>
-                <input type="date" id="mod-suspended-until" class="input-ctrl u-bg-surface-2 u-c-text">
-              </div>
-
-              <div class="u-flex u-justify-end u-gap-10 u-bt-fg-10 u-pt-14">
-                <button type="button" class="btn-action u-p-8-20 u-r-8 u-bg-fg-10 u-c-text-soft u-bd-none u-pointer" data-click="NopaActions.hide" data-click-args="[&quot;mentor-moderation-modal&quot;]">انصراف</button>
-                <button type="submit" class="btn-primary u-p-8-20 u-r-8 u-bg-grad-danger u-c-white u-bd-none u-bold u-pointer">
-                  <i class="fa-solid fa-shield-halved"></i> اعمال اقدام مدیریتی
-                </button>
-              </div>
+              <footer class="lse-foot">
+                <span class="lse-foot-note"></span>
+                <div class="lse-foot-actions">
+                  <button type="button" class="lse-btn" data-click="NopaActions.hide" data-click-args="[&quot;mentor-moderation-modal&quot;]">انصراف</button>
+                  <button type="submit" class="lsv-pill"><i class="fa-solid fa-shield-halved"></i> اعمال اقدام</button>
+                </div>
+              </footer>
             </form>
           </div>
         </div>
       </section>
 
+      <!-- MENTORS' TICKETS: the chat tab's messenger (css/chat.css .chm-*): the tickets grouped by the students' mentor on
+           one side, the open ticket as a conversation on the other. Drawn by js/features/tickets-chat.js. -->
       <section id="mentors-tickets-tab" class="tab-panel" data-style="display: none;">
-        <div class="panel-card glass u-mb-20">
-          <div class="panel-title">میزکار و تیکت‌های راهبران</div>
-        </div>
-        <div class="table-container glass">
-          <table class="data-table" id="mentor-tickets-table">
-            <thead>
-              <tr>
-                <th>دانش‌آموز</th>
-                <th>دسته‌بندی</th>
-                <th>موضوع</th>
-                <th>وضعیت</th>
-                <th>تاریخ</th>
-                <th>رتبه (ستاره)</th>
-                <th>عملیات</th>
-              </tr>
-            </thead>
-            <tbody>
-              <!-- Populated by JS -->
-            </tbody>
-          </table>
+        <div id="mtk-messenger" class="chm mtk" data-state="list">
+          <aside class="chm-side" aria-label="تیکت‌ها به تفکیک راهبر">
+            <div class="chm-side-head">
+              <div class="chm-side-title"><i class="fa-solid fa-inbox"></i>تیکت‌های راهبران</div>
+              <button type="button" class="chm-icon-btn" id="mtk-refresh" title="بازخوانی" aria-label="بازخوانی"><i class="fa-solid fa-rotate"></i></button>
+            </div>
+            <label class="search-box chm-search"><i class="fa-solid fa-magnifying-glass"></i><input type="search" id="mtk-filter-text" placeholder="جستجوی راهبر، دانش‌آموز یا موضوع..." autocomplete="off"></label>
+            <div class="chm-chips" id="mtk-chips" role="tablist"></div>
+            <div class="chm-list" id="mtk-list" aria-live="polite"></div>
+          </aside>
+          <section class="chm-main" aria-label="تیکت">
+            <div class="chm-empty" id="mtk-empty">
+              <span class="chm-empty-icon"><i class="fa-solid fa-inbox"></i></span>
+              <strong>یک تیکت را انتخاب کنید</strong>
+              <span>تیکت‌های دانش‌آموزان هر کاروان زیر نام راهبر همان کاروان دسته‌بندی شده‌اند.</span>
+            </div>
+            <div class="chm-conv" id="mtk-conv" hidden>
+              <header class="chm-head">
+                <button type="button" class="chm-icon-btn chm-back" id="mtk-back" aria-label="بازگشت به فهرست"><i class="fa-solid fa-arrow-right"></i></button>
+                <span class="chm-avatar" id="mtk-head-avatar"></span>
+                <div class="chm-head-text"><strong id="mtk-head-title"></strong><span id="mtk-head-sub"></span></div>
+                <div class="chm-head-tools">
+                  <span class="chm-mini-chip" id="mtk-head-status"></span>
+                  <button type="button" class="chm-pill-btn is-ok" id="mtk-resolve"><i class="fa-solid fa-circle-check"></i>حل‌شد</button>
+                </div>
+              </header>
+              <div class="chm-stream" id="mtk-stream" tabindex="0" aria-live="polite"></div>
+              <div class="chm-compose-wrap">
+                <div class="chm-notice" id="mtk-notice" hidden></div>
+                <form class="chm-composer" id="mtk-composer" autocomplete="off">
+                  <textarea id="mtk-input" rows="1" maxlength="4000" placeholder="پاسخ به دانش‌آموز..." aria-label="متن پاسخ"></textarea>
+                  <button type="submit" class="chm-send" id="mtk-send" aria-label="ارسال پاسخ"><i class="fa-solid fa-paper-plane"></i></button>
+                </form>
+              </div>
+            </div>
+          </section>
         </div>
       </section>
 
-      <!-- LMS -->
+
       <section id="lms-tab" class="tab-panel" data-style="display: none;">
         <div id="lms-overview-view">
         <div class="lms-head-actions u-flex u-justify-end u-items-center u-mb-20">
@@ -2598,95 +2674,89 @@
 
   <!-- COMPREHENSIVE MENTOR EDIT MODAL -->
   <!-- MENTOR MODAL (REGISTER / EDIT) -->
-  <div class="modal-overlay u-z-z-modal" id="mentor-modal-overlay" data-style="display: none">
-    <div class="modal-content glass u-maxw-850 u-w-92p u-maxh-90vh u-flex u-col u-bg-surface u-bd-primary-30 u-r-16 u-shadow-modal-85 u-c-text u-p-0 u-overflow-hidden">
-      <div class="modal-header u-bb-fg-10 u-p-20-24 u-flex u-justify-between u-items-center u-bg-surface-2-50">
-        <h3 id="mentor-modal-form-title" class="u-m-0 u-c-primary-text u-fs-md u-flex u-items-center u-gap-8">
-          <i class="fa-solid fa-user-pen"></i> ثبت و ویرایش مشخصات راهبر
-        </h3>
-        <button aria-label="بستن" type="button" id="btn-close-mentor-modal" class="modal-close" data-click="NopaActions.hide" data-click-args="[&quot;mentor-modal-overlay&quot;]">&times;</button>
-      </div>
+  <!-- Mentor form (new / edit): the station editor's look (css/stations.css .lse-*; js/features/mentors.js) -->
+  <div class="modal-overlay lse-overlay u-z-z-modal" id="mentor-modal-overlay" data-style="display: none">
+    <div class="lse lse-editor mnt-modal">
+      <header class="lse-head lse-head-plain">
+        <div class="lse-id">
+          <span class="lse-id-icon is-accent"><i class="fa-solid fa-user-tie"></i></span>
+          <div class="lse-id-text">
+            <h3 id="mentor-modal-form-title">ثبت راهبر جدید</h3>
+            <span>مشخصات هویتی، رتبه، وضعیت حساب و کاروان‌های تحت راهبری</span>
+          </div>
+        </div>
+        <button type="button" id="btn-close-mentor-modal" class="lsv-round" data-click="NopaActions.hide" data-click-args="[&quot;mentor-modal-overlay&quot;]" title="بستن" aria-label="بستن"><i class="fa-solid fa-xmark"></i></button>
+      </header>
 
-      <div class="u-p-24 u-scroll-y u-maxh-modal-body">
-        <form id="mentor-form" data-submit="handleMentorFormSubmit" data-submit-args="[&quot;$event&quot;]" class="u-flex u-col u-gap-20">
+      <form id="mentor-form" class="lse-form" data-submit="handleMentorFormSubmit" data-submit-args="[&quot;$event&quot;]">
+        <div class="lse-body">
           <input type="hidden" id="modal-mentor-id">
-          
-          <!-- Identity & Contact -->
-          <div class="panel-card u-bg-surface-2-50 u-bd-fg-8 u-r-12 u-p-16">
-            <h4 class="u-c-primary-text u-m-0-0-14-0 u-fs-base"><i class="fa-solid fa-address-card"></i> اطلاعات هویتی و ارتباطی</h4>
-            <div class="u-grid u-cols-fit-240 u-gap-14">
+
+          <section class="lse-card">
+            <h4 class="lse-card-title"><i class="fa-solid fa-address-card"></i> اطلاعات هویتی و ارتباطی</h4>
+            <div class="lse-grid lse-grid-2">
               <!-- name / phone / national id / birth date / gender / city: js/ui/person-fields.js -->
               <div data-person-fields="modal-mentor" data-extra="city"></div>
-              <div class="form-group u-m-0">
-                <label for="modal-mentor-academic-degree" class="u-fs-xs u-c-text-muted u-mb-4 u-block">مدرک و رشته تحصیلی</label>
-                <input type="text" id="modal-mentor-academic-degree" class="input-ctrl u-bg-surface-inset u-c-text" placeholder="کارشناسی ارشد مدیریت، علوم تربیتی، ...">
-              </div>
-              <div class="form-group u-m-0">
-                <label class="u-fs-xs u-c-text-muted u-mb-4 u-block">پیام‌رسان فعال</label>
+              <label class="lse-field">
+                <span>مدرک و رشته تحصیلی</span>
+                <input type="text" id="modal-mentor-academic-degree" class="input-ctrl" placeholder="کارشناسی ارشد علوم تربیتی، ...">
+              </label>
+              <label class="lse-field">
+                <span>پیام‌رسان فعال</span>
                 <!-- Free text + suggestions, so a custom platform saved earlier is not wiped on edit -->
-                <input aria-label="پلتفرم شبکه‌ی اجتماعی" type="text" id="modal-mentor-social-platform" list="mentor-social-platform-options" class="input-ctrl u-bg-surface-inset u-c-text" placeholder="مثال: ایتا">
+                <input type="text" id="modal-mentor-social-platform" list="mentor-social-platform-options" class="input-ctrl" placeholder="مثال: ایتا">
                 <datalist id="mentor-social-platform-options">
                   <option value="بله"></option>
                   <option value="ایتا"></option>
                   <option value="تلگرام"></option>
                   <option value="واتساپ"></option>
                 </datalist>
-              </div>
-              <div class="form-group u-m-0">
-                <label for="modal-mentor-social-handle" class="u-fs-xs u-c-text-muted u-mb-4 u-block">آیدی یا شماره در پیام‌رسان</label>
-                <input type="text" id="modal-mentor-social-handle" class="input-ctrl u-bg-surface-inset u-c-text u-direction-ltr u-text-right" placeholder="@username">
-              </div>
+              </label>
+              <label class="lse-field">
+                <span>آیدی یا شماره در پیام‌رسان</span>
+                <input type="text" id="modal-mentor-social-handle" class="input-ctrl" dir="ltr" placeholder="@username">
+              </label>
             </div>
-          </div>
+          </section>
 
-          <!-- Account Status & Level -->
-          <div class="panel-card u-bg-surface-2-50 u-bd-fg-8 u-r-12 u-p-16">
-            <h4 class="u-c-accent-text u-m-0-0-14-0 u-fs-base"><i class="fa-solid fa-shield-halved"></i> رتبه و وضعیت حساب</h4>
-            <div class="u-grid u-cols-fit-240 u-gap-14">
-              <div class="form-group u-m-0">
-                <label for="modal-mentor-level" class="u-fs-xs u-c-text-muted u-mb-4 u-block">سطح راهبری (Mentor Level)</label>
-                <select id="modal-mentor-level" class="select-ctrl u-bg-surface-inset u-c-text">
-                  <option value="1">سطح ۱: راهبر مقدماتی (Junior)</option>
-                  <option value="2">سطح ۲: راهبر پیشرفته (Senior)</option>
-                  <option value="3">سطح ۳: راهبر ارشد و کل (Master)</option>
+          <section class="lse-card">
+            <h4 class="lse-card-title"><i class="fa-solid fa-shield-halved"></i> رتبه و وضعیت حساب</h4>
+            <div class="lse-grid lse-grid-2">
+              <label class="lse-field">
+                <span>سطح راهبری</span>
+                <select id="modal-mentor-level" class="select-ctrl">
+                  <option value="1">سطح ۱: راهبر مقدماتی</option>
+                  <option value="2">سطح ۲: راهبر پیشرفته</option>
+                  <option value="3">سطح ۳: راهبر ارشد</option>
                 </select>
-              </div>
-              <div class="form-group u-m-0">
-                <label for="modal-mentor-status" class="u-fs-xs u-c-text-muted u-mb-4 u-block">وضعیت اکانت</label>
-                <select id="modal-mentor-status" class="select-ctrl u-bg-surface-inset u-c-text">
-                  <option value="ACTIVE">فعال (ACTIVE)</option>
-                  <option value="PENDING_VERIFICATION">در انتظار بررسی مدارک (PENDING)</option>
-                  <option value="SUSPENDED">مسدود / معلق (SUSPENDED)</option>
-                  <option value="RESTRICTED">محدود شده (RESTRICTED)</option>
+              </label>
+              <label class="lse-field">
+                <span>وضعیت حساب</span>
+                <select id="modal-mentor-status" class="select-ctrl">
+                  <option value="ACTIVE">فعال</option>
+                  <option value="PENDING_VERIFICATION">در انتظار بررسی مدارک</option>
+                  <option value="SUSPENDED">مسدود / معلق</option>
+                  <option value="RESTRICTED">محدود شده</option>
                 </select>
-              </div>
+              </label>
             </div>
-          </div>
+          </section>
 
-          <!-- Multi-Caravan Assignment (OPTIONAL: CAN BE CREATED WITHOUT CARAVANS) -->
-          <div class="panel-card u-bg-surface-2-50 u-bd-success-30 u-r-12 u-p-16">
-            <div class="u-flex u-justify-between u-items-center u-mb-12 u-wrap u-gap-8">
-              <h4 class="u-c-success-text u-m-0 u-fs-base"><i class="fa-solid fa-campground"></i> کاروان‌های تحت هدایت و راهبری (اختیاری)</h4>
-              <span class="u-fs-xs u-c-text-muted"><i class="fa-solid fa-circle-check u-c-success-text"></i> امکان ثبت راهبر بدون کاروان یا با انتخاب چندین کاروان</span>
+          <section class="lse-card">
+            <div class="lse-card-row">
+              <h4 class="lse-card-title"><i class="fa-solid fa-compass"></i> کاروان‌های تحت راهبری <small>اختیاری</small></h4>
+              <button type="button" class="lse-btn" data-click="uncheckAllMentorCaravans" title="برداشتن همه تیک‌ها"><i class="fa-solid fa-ban"></i> بدون کاروان</button>
             </div>
-
-            <div class="form-group u-mb-10">
-              <div class="u-flex u-gap-8 u-mb-10 u-items-center">
-                <input aria-label="جستجوی کاروان" type="text" id="mentor-caravan-search-input" class="input-ctrl u-p-8-12 u-fs-xs u-flex-1 u-bg-surface-inset u-c-text" placeholder="جستجوی نام کاروان..." data-input="filterMentorCaravansChecklist" data-input-args="[&quot;$value&quot;]">
-                <button type="button" class="btn-action u-p-8-14 u-fs-xs u-bg-danger-15 u-c-danger-text u-bd-danger-30 u-r-6 u-pointer u-nowrap" data-click="uncheckAllMentorCaravans" title="پاک کردن همه تیک‌ها">
-                  <i class="fa-solid fa-ban"></i> بدون کاروان (لغو همه)
-                </button>
-              </div>
-              <div id="modal-mentor-caravans-list" class="u-grid u-cols-fill-200 u-gap-10 u-maxh-160 u-scroll-y u-p-12 u-bg-shade-30 u-r-8 u-bd-fg-8">
-                <!-- Populated via JS checkboxes -->
-              </div>
+            <label class="search-box crv-modal-search"><i class="fa-solid fa-search"></i><input aria-label="جستجوی کاروان" type="text" id="mentor-caravan-search-input" class="input-ctrl" placeholder="جستجوی نام کاروان..." data-input="filterMentorCaravansChecklist" data-input-args="[&quot;$value&quot;]"></label>
+            <div id="modal-mentor-caravans-list" class="mnt-check-grid">
+              <!-- Populated via JS checkboxes -->
             </div>
-          </div>
+          </section>
 
-          <!-- Certificates Verification Pipeline (Optional preview if present) -->
-          <div id="modal-mentor-certs-section" class="panel-card u-bg-surface-2-50 u-bd-primary-30 u-r-12 u-p-16" data-style="display: none">
-            <h4 class="u-c-primary-text u-m-0-0-12-0 u-fs-base"><i class="fa-solid fa-file-certificate"></i> گواهینامه‌ها و مدارک ارسالی</h4>
-            <div class="table-container u-bg-shade-20 u-r-8">
+          <!-- Certificates sent by the mentor (shown on edit when there are any) -->
+          <section id="modal-mentor-certs-section" class="lse-card" data-style="display: none">
+            <h4 class="lse-card-title"><i class="fa-solid fa-file-circle-check"></i> گواهینامه‌ها و مدارک ارسالی</h4>
+            <div class="table-container">
               <table class="data-table u-fs-sm">
                 <thead>
                   <tr>
@@ -2701,16 +2771,40 @@
                 </tbody>
               </table>
             </div>
+          </section>
+        </div>
+        <footer class="lse-foot">
+          <span class="lse-foot-note"><i class="fa-solid fa-circle-info"></i> راهبر جدید با همین شماره همراه وارد اپ می‌شود</span>
+          <div class="lse-foot-actions">
+            <button type="button" class="lse-btn" data-click="NopaActions.hide" data-click-args="[&quot;mentor-modal-overlay&quot;]">انصراف</button>
+            <button type="submit" class="lsv-pill"><i class="fa-solid fa-check"></i> ذخیره راهبر</button>
           </div>
+        </footer>
+      </form>
+    </div>
+  </div>
 
-          <div class="u-flex u-justify-end u-gap-12 u-mt-10 u-bt-fg-10 u-pt-16">
-            <button type="button" class="btn-action u-p-10-20 u-r-8 u-pointer u-fs-sm" data-click="NopaActions.hide" data-click-args="[&quot;mentor-modal-overlay&quot;]">انصراف</button>
-            <button type="submit" class="btn-primary u-p-10-24 u-r-8 u-bg-grad-primary u-c-white u-bd-none u-bold u-pointer u-flex u-items-center u-gap-8 u-shadow-0-4-12-primary-40">
-              <i class="fa-solid fa-check"></i> ثبت نهایی و ذخیره راهبر
-            </button>
-          </div>
-        </form>
+  <!-- A mentor's caravans: tick the caravans this mentor leads (js/features/mentors.js) -->
+  <div id="mentor-caravans-modal" class="modal-overlay lse-overlay u-z-z-modal" data-style="display:none">
+    <div class="lse lse-sm crv-modal-tall">
+      <header class="lse-head lse-head-plain">
+        <div class="lse-id">
+          <span class="lse-id-icon is-accent"><i class="fa-solid fa-compass"></i></span>
+          <div class="lse-id-text"><h3 id="mnt-assign-title">کاروان‌های راهبر</h3><span>هر کاروان یک راهبر دارد؛ انتخاب کاروانی که راهبر دیگری دارد، راهبرش را عوض می‌کند</span></div>
+        </div>
+        <button type="button" class="lsv-round" data-click="NopaActions.hide" data-click-args="[&quot;mentor-caravans-modal&quot;]" title="بستن" aria-label="بستن"><i class="fa-solid fa-xmark"></i></button>
+      </header>
+      <div class="lse-body">
+        <label class="search-box crv-modal-search"><i class="fa-solid fa-search"></i><input type="text" id="mnt-assign-search" class="input-ctrl" placeholder="جستجوی نام کاروان یا راهبر فعلی..." autocomplete="off" aria-label="جستجوی کاروان" data-input="renderAssignMentorCaravans"></label>
+        <div id="mnt-assign-list" class="crv-results crv-results-tall"></div>
       </div>
+      <footer class="lse-foot">
+        <span class="lse-foot-note" id="mnt-assign-note"></span>
+        <div class="lse-foot-actions">
+          <button type="button" class="lse-btn" data-click="NopaActions.hide" data-click-args="[&quot;mentor-caravans-modal&quot;]">انصراف</button>
+          <button type="button" class="lsv-pill" id="mnt-assign-save" data-click="saveAssignMentorCaravans"><i class="fa-solid fa-check"></i> ذخیره کاروان‌ها</button>
+        </div>
+      </footer>
     </div>
   </div>
 
@@ -2834,24 +2928,6 @@
             </div>
           </footer>
         </form>
-      </div>
-    </div>
-
-    <!-- Ticket Drawer Modal -->
-    <div id="ticket-drawer-modal" class="modal-overlay" data-style="display:none;">
-      <div class="modal-content glass u-maxw-820 u-w-90p u-flex u-col u-bg-surface-2-95">
-        <div class="modal-header u-bb-fg-10">
-          <h3 id="ticket-drawer-title">جزئیات تیکت</h3>
-          <button aria-label="بستن" class="modal-close" data-click="closeTicketDrawer">&times;</button>
-        </div>
-        <div class="u-p-20 u-flex u-col u-gap-16 u-maxh-520 u-scroll-y">
-          <div id="ticket-thread-container"></div>
-          <div class="u-flex u-col u-gap-8">
-            <label for="ticket-reply-text" class="u-c-text-muted">پاسخ به تیکت</label>
-            <textarea id="ticket-reply-text" class="input-ctrl" rows="4" placeholder="متن پاسخ را وارد کنید..."></textarea>
-            <button class="btn-primary u-self-end" id="btn-submit-ticket-reply">ارسال پاسخ</button>
-          </div>
-        </div>
       </div>
     </div>
 
@@ -3793,78 +3869,78 @@
     </div>
 
     <!-- MODAL: ADD / EDIT INSTRUCTOR -->
-    <div id="instructor-form-modal" class="modal-overlay u-z-z-modal" data-style="display: none">
-      <div class="modal-box glass u-w-90p u-maxw-650 u-maxh-90vh u-scroll-y u-bg-surface u-bd-primary-30 u-r-16 u-p-24 u-shadow-pop-lg">
-        <div class="u-flex u-justify-between u-items-center u-bb-fg-8 u-pb-14 u-mb-20">
-          <div>
-            <h3 id="instructor-modal-title" class="u-m-0 u-c-primary-text u-fs-md u-flex u-items-center u-gap-8">
-              <i class="fa-solid fa-chalkboard-user"></i> ثبت استاد جدید در بانک اساتید
-            </h3>
-            <div class="u-fs-xs u-c-text-muted u-mt-4">مشخصات هویتی، علمی، رزومه و کلاس‌های آموزشی استاد</div>
-          </div>
-          <button aria-label="بستن" type="button" class="modal-close" data-click="NopaActions.hide" data-click-args="[&quot;instructor-form-modal&quot;]">&times;</button>
-        </div>
-
-        <form id="instructor-creator-form" data-submit="saveInstructorForm" data-submit-args="[&quot;$event&quot;]">
-          <input type="hidden" id="inst-id">
-
-          <div class="u-grid u-cols-2 u-gap-12 u-mb-12">
-            <div class="form-group">
-              <label for="inst-name" class="u-fs-xs u-c-text-soft"><i class="fa-solid fa-user u-c-primary-text"></i> نام و نام خانوادگی استاد: <span class="u-c-danger-text">*</span></label>
-              <input type="text" id="inst-name" class="input-ctrl u-bg-surface-2 u-bdc-border-strong" placeholder="مثال: علیرضا خوش‌منظر" required>
-            </div>
-            <div class="form-group">
-              <label for="inst-degree" class="u-fs-xs u-c-text-soft"><i class="fa-solid fa-graduation-cap u-c-primary-text"></i> مدرک تحصیلی و تخصص:</label>
-              <input type="text" id="inst-degree" class="input-ctrl u-bg-surface-2 u-bdc-border-strong" placeholder="مثال: کارشناسی ارشد رسانه، دکترای علوم تربیتی">
+    <!-- Instructor form (new / edit): the station editor's look (css/stations.css .lse-*; instructors.js) -->
+    <div id="instructor-form-modal" class="modal-overlay lse-overlay u-z-z-modal" data-style="display: none">
+      <div class="lse lse-sm ins-modal">
+        <header class="lse-head lse-head-plain">
+          <div class="lse-id">
+            <span class="lse-id-icon is-accent" id="inst-avatar-preview-container"><img id="inst-avatar-preview" src="" alt="" hidden><i class="fa-solid fa-chalkboard-user"></i></span>
+            <div class="lse-id-text">
+              <h3 id="instructor-modal-title">ثبت استاد جدید</h3>
+              <span>مشخصات هویتی، علمی، رزومه و کلاس‌های آموزشی استاد</span>
             </div>
           </div>
+          <button type="button" class="lsv-round" data-click="NopaActions.hide" data-click-args="[&quot;instructor-form-modal&quot;]" title="بستن" aria-label="بستن"><i class="fa-solid fa-xmark"></i></button>
+        </header>
 
-          <div class="u-grid u-cols-2 u-gap-12 u-mb-12">
-            <div class="form-group">
-              <label for="inst-phone" class="u-fs-xs u-c-text-soft"><i class="fa-solid fa-phone u-c-primary-text"></i> شماره تماس / موبایل:</label>
-              <input type="text" id="inst-phone" class="input-ctrl u-bg-surface-2 u-bdc-border-strong u-direction-ltr u-text-left" placeholder="0912...">
-            </div>
-            <div class="form-group">
-              <label for="inst-national-id" class="u-fs-xs u-c-text-soft"><i class="fa-solid fa-id-card u-c-primary-text"></i> کد ملی:</label>
-              <input type="text" id="inst-national-id" class="input-ctrl u-bg-surface-2 u-bdc-border-strong u-direction-ltr u-text-left" placeholder="کد ملی ۱۰ رقمی">
-            </div>
-          </div>
+        <form id="instructor-creator-form" class="lse-form" data-submit="saveInstructorForm" data-submit-args="[&quot;$event&quot;]">
+          <div class="lse-body">
+            <input type="hidden" id="inst-id">
+            <section class="lse-card">
+              <h4 class="lse-card-title"><i class="fa-solid fa-user"></i> مشخصات استاد</h4>
+              <div class="lse-grid lse-grid-2">
+                <label class="lse-field">
+                  <span>نام و نام خانوادگی <b class="lse-req">*</b></span>
+                  <input type="text" id="inst-name" class="input-ctrl" placeholder="مثال: علیرضا خوش‌منظر" required>
+                </label>
+                <label class="lse-field">
+                  <span>مدرک تحصیلی و تخصص</span>
+                  <input type="text" id="inst-degree" class="input-ctrl" placeholder="مثال: کارشناسی ارشد رسانه">
+                </label>
+                <label class="lse-field">
+                  <span>شماره تماس / موبایل</span>
+                  <input type="text" id="inst-phone" class="input-ctrl" dir="ltr" placeholder="0912...">
+                </label>
+                <label class="lse-field">
+                  <span>کد ملی</span>
+                  <input type="text" id="inst-national-id" class="input-ctrl" dir="ltr" placeholder="کد ملی ۱۰ رقمی">
+                </label>
+              </div>
+              <div class="lse-field">
+                <span class="lse-field-label">عکس / تصویر استاد</span>
+                <div class="lse-inline">
+                  <input aria-label="آدرس تصویر استاد" type="text" id="inst-avatar" class="input-ctrl" dir="ltr" placeholder="https://... یا /uploads/..." data-input="previewInstructorAvatar">
+                  <label class="lse-btn lse-upload">
+                    <i class="fa-solid fa-cloud-arrow-up"></i> آپلود عکس
+                    <input type="file" accept="image/*" hidden data-change="handleDirectFileUpload" data-change-args="[&quot;$this&quot;,&quot;inst-avatar&quot;]">
+                  </label>
+                </div>
+              </div>
+            </section>
 
-          <div class="form-group u-mb-12">
-            <label for="inst-classes" class="u-fs-xs u-c-text-soft"><i class="fa-solid fa-book-open-reader u-c-primary-text"></i> کلاس‌ها و سرفصل‌هایی که تدریس می‌کند:</label>
-            <input type="text" id="inst-classes" class="input-ctrl u-bg-surface-2 u-bdc-border-strong" placeholder="مثال: کلاس‌های مهارتی، سواد رسانه، فتوشاپ و تولید محتوا">
-          </div>
-
-          <div class="form-group u-mb-12">
-            <label class="u-fs-xs u-c-text-soft"><i class="fa-solid fa-image u-c-primary-text"></i> عکس / تصویر استاد:</label>
-            <div class="u-flex u-gap-8">
-              <input aria-label="آدرس تصویر استاد" type="text" id="inst-avatar" class="input-ctrl u-bg-surface-2 u-bdc-border-strong u-direction-ltr u-text-left u-flex-1" placeholder="https://... یا /uploads/...">
-              <label class="u-bg-primary-18 u-bd-primary u-c-primary-text u-p-8-14 u-r-7 u-pointer u-fs-xs u-inline-flex u-items-center u-gap-6 u-nowrap">
-                <i class="fa-solid fa-cloud-arrow-up"></i> آپلود عکس
-                <input type="file" accept="image/*" data-style="display: none;" data-change="handleDirectFileUpload" data-change-args="[&quot;$this&quot;,&quot;inst-avatar&quot;]">
+            <section class="lse-card">
+              <h4 class="lse-card-title"><i class="fa-solid fa-book-open-reader"></i> کلاس‌ها، رزومه و معرفی</h4>
+              <label class="lse-field">
+                <span>کلاس‌ها و سرفصل‌هایی که تدریس می‌کند <small>با ویرگول جدا کنید</small></span>
+                <input type="text" id="inst-classes" class="input-ctrl" placeholder="مثال: سواد رسانه، فتوشاپ، تولید محتوا">
               </label>
+              <label class="lse-field">
+                <span>سوابق علمی و رزومه</span>
+                <textarea id="inst-resume" class="input-ctrl" rows="3" placeholder="سوابق تدریس، تالیفات، تجربیات و مدارک تخصصی..."></textarea>
+              </label>
+              <label class="lse-field">
+                <span>توضیحات و بیوگرافی <small>برای دانش‌آموزان نمایش داده می‌شود</small></span>
+                <textarea id="inst-desc" class="input-ctrl" rows="3" placeholder="معرفی کوتاه استاد..."></textarea>
+              </label>
+            </section>
+          </div>
+          <footer class="lse-foot">
+            <span class="lse-foot-note"></span>
+            <div class="lse-foot-actions">
+              <button type="button" class="lse-btn" data-click="NopaActions.hide" data-click-args="[&quot;instructor-form-modal&quot;]">انصراف</button>
+              <button type="submit" class="lsv-pill"><i class="fa-solid fa-check"></i> ذخیره مشخصات استاد</button>
             </div>
-            <div id="inst-avatar-preview-container" class="u-mt-8" data-style="display: none">
-              <img id="inst-avatar-preview" src="" class="u-w-50 u-h-50 u-r-50p u-fit-cover u-bd-2-solid-primary">
-            </div>
-          </div>
-
-          <div class="form-group u-mb-12">
-            <label for="inst-resume" class="u-fs-xs u-c-text-soft"><i class="fa-solid fa-file-lines u-c-primary-text"></i> سوابق علمی و رزومه:</label>
-            <textarea id="inst-resume" class="input-ctrl u-bg-surface-2 u-bdc-border-strong" rows="2" placeholder="سوابق تدریس، تالیفات، تجربیات و مدارک تخصصی استاد..."></textarea>
-          </div>
-
-          <div class="form-group u-mb-20">
-            <label for="inst-desc" class="u-fs-xs u-c-text-soft"><i class="fa-solid fa-align-right u-c-primary-text"></i> توضیحات و بیوگرافی استاد:</label>
-            <textarea id="inst-desc" class="input-ctrl u-bg-surface-2 u-bdc-border-strong" rows="2" placeholder="توضیحات تکمیلی، معرفی کوتاه جهت نمایش به دانش‌آموزان..."></textarea>
-          </div>
-
-          <div class="u-flex u-justify-end u-gap-10 u-bt-fg-10 u-pt-14">
-            <button type="button" class="btn-action u-p-8-20 u-r-8 u-bg-fg-10 u-c-text-soft u-bd-none u-pointer" data-click="NopaActions.hide" data-click-args="[&quot;instructor-form-modal&quot;]">انصراف</button>
-            <button type="submit" class="btn-primary u-p-8-24 u-r-8 u-bg-grad-primary u-c-white u-bd-none u-bold u-pointer u-flex u-items-center u-gap-8">
-              <i class="fa-solid fa-check"></i> ذخیره مشخصات استاد
-            </button>
-          </div>
+          </footer>
         </form>
       </div>
     </div>

@@ -29,399 +29,647 @@ window.calculateMentorStars = function(ratings, evals) {
   return { score: avg, count: count, text: `${avg} (${count} نظر)`, avgNumeric: parseFloat(avg) };
 };
 
+// Like the stations / caravans tabs: a bento overview of all mentors (#mnt-overview-view) and one mentor's page
+// (#mentor-detail-view): the mentor's caravans as circles in the notch, the mentor's card linked to the caravans'
+// card and to the chosen caravan's students. Styles: css/stations.css (.lst-*, .lsv-*, .crv-*, .mnt-*).
+// Shared helpers (crvAvatar, crvFa, crvArgs, crvFadeOut) come from caravans.js, loaded before this file.
+window.mntActiveMentorId = null;
+window.mntActiveCaravanId = null;
+window.mntRenderedMentorId = null;
+const mntDossierCache = new Map();
+
+const MNT_STATUS = {
+  ACTIVE: ['فعال', 'lst-chip-active', 'fa-circle-check'],
+  PENDING_VERIFICATION: ['در انتظار بررسی', 'lst-chip-scheduled', 'fa-hourglass-half'],
+  SUSPENDED: ['مسدود / تعلیق', 'lst-chip-locked', 'fa-ban'],
+  RESTRICTED: ['محدود شده', 'lst-chip-locked', 'fa-lock'],
+};
+const MNT_LEVELS = { 1: 'راهبر مقدماتی', 2: 'راهبر پیشرفته', 3: 'راهبر ارشد' };
+
+function mntCaravansOf(m) { return (m && m.mentoredCaravans) || []; }
+function mntCaravanMembers(c) { return Number(c?._count?.members ?? c?.memberCount ?? 0) || 0; }
+function mntStudentsOf(m) { return mntCaravansOf(m).reduce((n, c) => n + mntCaravanMembers(c), 0); }
+function mntStars(m) { return window.calculateMentorStars(m?.ratingsReceived, m?.evaluationsReceived); }
+function mntStatusKey(m) {
+  if (m?.isDeleted || m?.blocked) return 'SUSPENDED';
+  return MNT_STATUS[m?.accountStatus] ? m.accountStatus : 'ACTIVE';
+}
+function mntStatusChip(m) {
+  const [label, cls, icon] = MNT_STATUS[mntStatusKey(m)];
+  return `<span class="lst-chip ${cls}"><i class="fa-solid ${icon}"></i> ${label}</span>`;
+}
+function mntPendingDocs(m) { return (m?.mentorDocuments || []).filter(d => (d.status || 'pending') === 'pending').length; }
+// a national id is shown only when it is real (old seed data used 123456… placeholders)
+function mntNationalId(v) {
+  const s = String(v || '').trim();
+  return s && s !== 'null' && !s.startsWith('۱۲۳۴۵۶') && !s.startsWith('123456') ? s : '';
+}
+function mntFind(id) { return (window.mentorsMasterList || []).find(m => String(m.id) === String(id)) || null; }
+
+// Opens another tab of the panel (quick-access buttons)
+window.mntGoTab = function(tabId) {
+  if (window.NopaRouter) window.NopaRouter.switchTab(tabId, true);
+};
+
 window.loadMentors = async function() {
-  const tbody = document.getElementById('mentors-table-body') || document.querySelector('#mentors-table tbody');
-  if (!tbody) return;
-
-  NopaTable.loading(tbody, 'در حال بارگذاری لیست راهبران و اساتید...');
-
+  window.mntSetLoading(true);
   try {
     const res = await request('/api/v1/admin/mentors');
     if (!res.ok) throw new Error('خطا در دریافت لیست راهبران');
     const mentors = await res.json();
     window.mentorsMasterList = Array.isArray(mentors) ? mentors : [];
-
-    const totalBadge = document.getElementById('mentors-total-count-badge');
-    if (totalBadge) {
-      totalBadge.textContent = `${window.mentorsMasterList.length} راهبر`;
-    }
-
+    window.mntSetLoading(false);
     window.filterMentorsList();
+
+    // The open mentor page follows the new data; a removed mentor sends it back to the overview
+    if (window.mntActiveMentorId) {
+      if (mntFind(window.mntActiveMentorId)) {
+        mntDossierCache.delete(String(window.mntActiveMentorId));
+        window.loadMentorPage();
+      } else {
+        window.closeMentorView();
+      }
+    }
   } catch (err) {
     console.error('Error loading mentors:', err);
-    NopaTable.error(tbody, `خطا در بارگذاری اطلاعات: ${err.message}`);
+    window.mntSetLoading(false);
+    const grid = document.getElementById('mnt-bento-mentors');
+    if (grid) grid.innerHTML = `<div class="lst-empty"><i class="fa-solid fa-triangle-exclamation lst-warn"></i> ${esc(err.message)}</div>`;
   }
 };
 
+// ==================== OVERVIEW (BENTO) ====================
+
 window.filterMentorsList = function() {
-  const tbody = document.getElementById('mentors-table-body') || document.querySelector('#mentors-table tbody');
-  if (!tbody) return;
+  const overview = document.getElementById('mnt-overview-view');
+  if (window.NopaFlip && overview) window.NopaFlip.render(overview, mntDrawBento); else mntDrawBento();
+};
 
-  if (!window.mentorsMasterList || window.mentorsMasterList.length === 0) {
-    NopaTable.empty(tbody, 'هیچ راهبری در سیستم ثبت نشده است.');
-    return;
-  }
-
+function mntFiltered() {
   const query = (document.getElementById('mentor-filter-search')?.value || '').trim().toLowerCase();
-  const levelFilter = document.getElementById('mentor-filter-level')?.value || 'all';
   const caravanFilter = document.getElementById('mentor-filter-caravan')?.value || 'all';
   const statusFilter = document.getElementById('mentor-filter-status')?.value || 'all';
   const sortFilter = document.getElementById('mentor-filter-sort')?.value || 'caravans_desc';
 
-  let filtered = [...window.mentorsMasterList];
+  let list = (window.mentorsMasterList || []).filter(m => {
+    if (query) {
+      const hay = [m.name, m.phoneNumber, m.nationalId, m.city, m.userCode, ...mntCaravansOf(m).map(c => c.name)]
+        .map(v => String(v || '').toLowerCase()).join(' ');
+      if (!hay.includes(query)) return false;
+    }
+    if (caravanFilter === 'has_caravan' && !mntCaravansOf(m).length) return false;
+    if (caravanFilter === 'no_caravan' && mntCaravansOf(m).length) return false;
+    if (statusFilter !== 'all' && mntStatusKey(m) !== statusFilter) return false;
+    return true;
+  });
+  const by = {
+    caravans_desc: (a, b) => mntCaravansOf(b).length - mntCaravansOf(a).length,
+    students_desc: (a, b) => mntStudentsOf(b) - mntStudentsOf(a),
+    rating_desc: (a, b) => mntStars(b).avgNumeric - mntStars(a).avgNumeric,
+    name_asc: (a, b) => (a.name || '').localeCompare(b.name || '', 'fa'),
+  };
+  list.sort(by[sortFilter] || by.caravans_desc);
+  return { list, filtering: !!query || caravanFilter !== 'all' || statusFilter !== 'all' };
+}
 
-  // 1. Text search filter
-  if (query) {
-    filtered = filtered.filter(m => {
-      const name = (m.name || '').toLowerCase();
-      const phone = (m.phoneNumber || '').toLowerCase();
-      const natId = (m.nationalId || '').toLowerCase();
-      const city = (m.city || '').toLowerCase();
-      const caravanNames = (m.mentoredCaravans || []).map(c => (c.name || '').toLowerCase()).join(' ');
+function mntMentorCard(m) {
+  const caravans = mntCaravansOf(m);
+  const stars = mntStars(m);
+  const faces = caravans.slice(0, 4).map(c => crvAvatar(c.coverImageUrl, c.name, 'crv-face')).join('');
+  const more = caravans.length > 4 ? `<span class="crv-face crv-face-more">+${crvFa(caravans.length - 4)}</span>` : '';
+  const docs = mntPendingDocs(m);
+  return `
+    <button type="button" class="crv-card mnt-card" data-anim-key="mn:${esc(m.id)}" data-click="openMentorView" data-click-args="${crvArgs(m.id)}" title="ورود به صفحه ${esc(m.name || 'راهبر')}">
+      <span class="crv-card-top">
+        ${crvAvatar(m.avatarUrl, m.name, 'crv-card-cover')}
+        <span class="crv-card-name"><strong>${esc(m.name || 'راهبر بدون نام')}</strong>${mntStatusChip(m)}</span>
+      </span>
+      <span class="crv-card-mentor">
+        <i class="fa-solid fa-medal"></i>
+        <span>${esc(MNT_LEVELS[m.mentorLevel] || MNT_LEVELS[1])}${m.city ? ` · ${esc(m.city)}` : ''}</span>
+      </span>
+      <span class="crv-card-cap">
+        <span>${caravans.length ? `${crvFa(caravans.length)} کاروان` : '<em class="u-c-danger-text">بدون کاروان</em>'}</span>
+        <strong>${crvFa(mntStudentsOf(m))} دانش‌آموز</strong>
+      </span>
+      <span class="crv-card-foot">
+        <span class="crv-faces">${faces}${more}</span>
+        <span class="crv-card-nums">
+          ${docs ? `<span class="u-c-danger-text" title="مدرک در انتظار بررسی"><i class="fa-solid fa-file-circle-exclamation"></i> ${crvFa(docs)}</span>` : ''}
+          <span class="u-c-accent-text" title="امتیاز"><i class="fa-solid fa-star"></i> ${stars.score !== null ? crvFa(stars.score) : '-'}</span>
+        </span>
+      </span>
+    </button>`;
+}
 
-      return name.includes(query) || phone.includes(query) || natId.includes(query) || city.includes(query) || caravanNames.includes(query);
+function mntDrawBento() {
+  const all = window.mentorsMasterList || [];
+  const { list, filtering } = mntFiltered();
+
+  const badge = document.getElementById('mentors-total-count-badge');
+  if (badge) badge.textContent = filtering ? `نمایش ${crvFa(list.length)} از ${crvFa(all.length)} راهبر` : 'برای ورود به صفحه راهبر بزنید';
+
+  // ---- all mentors: one card each, then a "new mentor" card ----
+  const grid = document.getElementById('mnt-bento-mentors');
+  if (grid) {
+    const cards = list.map(mntMentorCard);
+    if (!filtering) {
+      cards.push(`
+        <button type="button" class="crv-card crv-card-add" data-anim-key="mn-add" data-click="showMentorModal" title="ثبت راهبر جدید">
+          <span class="lsv-round lsv-round-lg"><i class="fa-solid fa-plus"></i></span>
+          <span>راهبر جدید</span>
+        </button>`);
+    } else if (!list.length) {
+      cards.push('<div class="lst-empty" data-anim-key="mn-empty">راهبری با این مشخصات یافت نشد.</div>');
+    }
+    grid.innerHTML = cards.join('');
+    grid.setAttribute('aria-busy', 'false');
+  }
+
+  // ---- stats ----
+  const caravanCount = all.reduce((n, m) => n + mntCaravansOf(m).length, 0);
+  const studentCount = all.reduce((n, m) => n + mntStudentsOf(m), 0);
+  const rated = all.map(m => mntStars(m)).filter(s => s.score !== null);
+  const avg = rated.length ? (rated.reduce((n, s) => n + s.avgNumeric, 0) / rated.length).toFixed(1) : null;
+  const setStat = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = v; };
+  setStat('mnt-stat-mentors', crvFa(all.length));
+  setStat('mnt-stat-caravans', crvFa(caravanCount));
+  setStat('mnt-stat-students', crvFa(studentCount));
+  setStat('mnt-stat-rating', avg !== null ? `${crvFa(avg)} / ۵` : '-');
+
+  // ---- account statuses ----
+  const statusEl = document.getElementById('mnt-bento-status');
+  if (statusEl) {
+    const counts = { ACTIVE: 0, PENDING_VERIFICATION: 0, SUSPENDED: 0 };
+    all.forEach(m => { const k = mntStatusKey(m); counts[k === 'RESTRICTED' ? 'SUSPENDED' : k]++; });
+    const total = all.length || 1;
+    const pct = k => (counts[k] / total * 100).toFixed(1);
+    statusEl.innerHTML = `
+      <div class="lst-bar">
+        <span class="lst-bar-active" data-style="width:${pct('ACTIVE')}%"></span>
+        <span class="lst-bar-scheduled" data-style="width:${pct('PENDING_VERIFICATION')}%"></span>
+        <span class="lst-bar-locked" data-style="width:${pct('SUSPENDED')}%"></span>
+      </div>
+      <div class="lst-legend">
+        <div class="lst-legend-row"><span><span class="lst-dot lst-dot-active"></span>فعال</span><strong>${crvFa(counts.ACTIVE)}</strong></div>
+        <div class="lst-legend-row"><span><span class="lst-dot lst-dot-scheduled"></span>در انتظار بررسی</span><strong>${crvFa(counts.PENDING_VERIFICATION)}</strong></div>
+        <div class="lst-legend-row"><span><span class="lst-dot lst-dot-locked"></span>مسدود / محدود</span><strong>${crvFa(counts.SUSPENDED)}</strong></div>
+      </div>`;
+  }
+
+  const rankList = (rows, value) => rows.length
+    ? `<ul class="lst-list">${rows.map((m, i) => `
+        <li class="lst-list-item lst-clickable" role="button" tabindex="0" data-click="openMentorView" data-click-args="${crvArgs(m.id)}">
+          <span class="crv-rank">${crvFa(i + 1)}</span>
+          ${crvAvatar(m.avatarUrl, m.name, 'lst-avatar')}
+          <span class="lst-grow"><strong>${esc(m.name || '')}</strong></span>
+          ${value(m)}
+        </li>`).join('')}</ul>`
+    : '';
+
+  // ---- best rated ----
+  const topEl = document.getElementById('mnt-bento-top');
+  if (topEl) {
+    const top = all.filter(m => mntStars(m).score !== null).sort((a, b) => mntStars(b).avgNumeric - mntStars(a).avgNumeric).slice(0, 4);
+    topEl.innerHTML = rankList(top, m => `<span class="u-c-accent-text"><i class="fa-solid fa-star"></i> ${crvFa(mntStars(m).score)}</span>`)
+      || '<div class="lst-empty">هنوز ارزیابی‌ای برای راهبران ثبت نشده است.</div>';
+  }
+
+  // ---- most students ----
+  const crowdEl = document.getElementById('mnt-bento-crowd');
+  if (crowdEl) {
+    const crowd = all.filter(m => mntStudentsOf(m) > 0).sort((a, b) => mntStudentsOf(b) - mntStudentsOf(a)).slice(0, 4);
+    crowdEl.innerHTML = rankList(crowd, m => `<span>${crvFa(mntCaravansOf(m).length)} کاروان · ${crvFa(mntStudentsOf(m))} نفر</span>`)
+      || '<div class="lst-empty">هنوز دانش‌آموزی در کاروان‌های راهبران نیست.</div>';
+  }
+
+  // ---- what needs attention ----
+  const healthEl = document.getElementById('mnt-bento-health');
+  if (healthEl) {
+    const issues = [];
+    all.forEach(m => {
+      const problems = [];
+      if (!mntCaravansOf(m).length) problems.push('بدون کاروان');
+      if (mntStatusKey(m) === 'PENDING_VERIFICATION') problems.push('در انتظار بررسی حساب');
+      if (mntStatusKey(m) === 'SUSPENDED') problems.push('حساب مسدود');
+      const docs = mntPendingDocs(m);
+      if (docs) problems.push(`${crvFa(docs)} مدرک در انتظار بررسی`);
+      if (!m.phoneNumber) problems.push('بدون شماره همراه');
+      if (problems.length) issues.push({ m, problems });
     });
+    healthEl.innerHTML = issues.length
+      ? `<ul class="lst-list">${issues.slice(0, 6).map(({ m, problems }) => `
+          <li class="lst-list-item lst-clickable" role="button" tabindex="0" data-click="openMentorView" data-click-args="${crvArgs(m.id)}">
+            <i class="fa-solid fa-triangle-exclamation lst-warn"></i>
+            <span class="lst-grow"><strong>${esc(m.name || '')}</strong>: ${esc(problems.join('، '))}</span>
+          </li>`).join('')}</ul>`
+      : '<div class="lst-empty"><i class="fa-solid fa-circle-check u-c-success-text"></i> همه راهبران فعال‌اند و کاروان دارند.</div>';
   }
+}
 
-  // 2. Mentor level filter
-  if (levelFilter !== 'all') {
-    const targetLvl = parseInt(levelFilter);
-    filtered = filtered.filter(m => (parseInt(m.mentorLevel) || 1) === targetLvl);
+// ==================== LOADING SHIMMER ====================
+// The caravans tab's: a light band sweeps over each tile until the mentors arrive; the first load shows skeletons
+window.mntSetLoading = function(on) {
+  const overview = document.getElementById('mnt-overview-view');
+  if (!overview) return;
+  overview.querySelectorAll('.lst-bento > .lst-tile').forEach(t => t.classList.toggle('is-loading', on));
+  const grid = document.getElementById('mnt-bento-mentors');
+  if (grid) grid.setAttribute('aria-busy', on ? 'true' : 'false');
+  if (!on || (window.mentorsMasterList || []).length) return;
+
+  if (grid) {
+    grid.innerHTML = Array.from({ length: 6 }, () => `
+      <div class="crv-card lst-skel" aria-hidden="true">
+        <span class="crv-card-top"><span class="crv-card-cover"></span><span class="crv-card-name"><span class="lst-skel-line"></span><span class="lst-skel-line lst-skel-chip"></span></span></span>
+        <span class="lst-skel-line lst-skel-short"></span>
+        <span class="lst-skel-line"></span>
+        <span class="lst-skel-line lst-skel-short"></span>
+      </div>`).join('');
   }
-
-  // 3. Caravan assignment filter
-  if (caravanFilter === 'has_caravan') {
-    filtered = filtered.filter(m => (m.mentoredCaravans && m.mentoredCaravans.length > 0) || m.caravanId != null);
-  } else if (caravanFilter === 'no_caravan') {
-    filtered = filtered.filter(m => (!m.mentoredCaravans || m.mentoredCaravans.length === 0) && !m.caravanId);
-  }
-
-  // 4. Account status filter
-  if (statusFilter !== 'all') {
-    filtered = filtered.filter(m => (m.accountStatus || 'ACTIVE') === statusFilter);
-  }
-
-  // 5. Sorting
-  filtered.sort((a, b) => {
-    const caravansCountA = (a.mentoredCaravans?.length || 0);
-    const caravansCountB = (b.mentoredCaravans?.length || 0);
-
-    if (sortFilter === 'caravans_desc') {
-      return caravansCountB - caravansCountA;
-    } else if (sortFilter === 'name_asc') {
-      return (a.name || '').localeCompare(b.name || '', 'fa');
-    }
-    return 0;
+  const lines = '<div class="lst-skel-lines" aria-hidden="true">' + '<span class="lst-skel-row"></span>'.repeat(3) + '</div>';
+  ['mnt-bento-status', 'mnt-bento-top', 'mnt-bento-crowd', 'mnt-bento-health'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.innerHTML = lines;
   });
-
-  // Update count badge
-  const totalBadge = document.getElementById('mentors-total-count-badge');
-  if (totalBadge) {
-    if (filtered.length === window.mentorsMasterList.length) {
-      totalBadge.textContent = `${window.mentorsMasterList.length} راهبر`;
-    } else {
-      totalBadge.textContent = `نمایش ${filtered.length} از ${window.mentorsMasterList.length} راهبر`;
-    }
-  }
-
-  // Render rows
-  if (filtered.length === 0) {
-    NopaTable.empty(tbody, 'هیچ راهبری با معیارهای فیلتر و جستجوی انتخاب‌شده مطابقت ندارد.', 'fa-solid fa-filter-circle-xmark');
-    return;
-  }
-
-  window.renderMentorsRows(filtered, tbody);
 };
 
-window.renderMentorsRows = function(mentorsList, tbody) {
-  tbody.innerHTML = mentorsList.map(m => {
-    const avatarInitials = (m.name ? m.name.trim().split(' ').map(n => n[0]).join('') : 'را').substring(0, 2);
+// ==================== MENTOR PAGE ====================
+// Opening draws at once from the list (card, caravans); the students column shimmers until the mentor's dossier
+// arrives (kept for next time). The circles are the mentor's caravans: picking one shows its students.
 
-    // Format caravans badges
-    const caravans = m.mentoredCaravans || (m.caravan ? [m.caravan] : []);
-    const caravansHtml = caravans.length > 0
-      ? caravans.map(c => `<span class="badge u-bg-primary-20 u-c-primary-text u-bd-primary-40 u-p-4-8 u-r-6 u-fs-2xs u-m-2 u-inline-block"><i class="fa-solid fa-people-group"></i> ${esc(c.name)}</span>`).join(' ')
-      : '<span class="u-c-text-faint u-fs-xs">فاقد کاروان</span>';
+window.openMentorView = function(mentorId) {
+  const overview = document.getElementById('mnt-overview-view');
+  window.mntActiveMentorId = String(mentorId);
+  window.mntActiveCaravanId = null;
+  crvFadeOut(overview, () => {
+    window.loadMentorPage();
+    document.getElementById('mentors-profile-tab')?.scrollIntoView({ block: 'start', behavior: NopaMotion.scrollBehavior() });
+  });
+};
 
-    // Status indicator
-    const isSuspended = m.accountStatus === 'SUSPENDED' || m.blocked || m.isDeleted;
-    const statusDot = isSuspended ? '<span title="مسدود / غیرفعال" class="u-inline-block u-w-9 u-h-9 u-r-50p u-bg-danger"></span>' : '<span title="فعال" class="u-inline-block u-w-9 u-h-9 u-r-50p u-bg-success"></span>';
+window.closeMentorView = function() {
+  const view = document.getElementById('mentor-detail-view');
+  const overview = document.getElementById('mnt-overview-view');
+  window.mntActiveMentorId = null;
+  window.mntRenderedMentorId = null;
+  crvFadeOut(view, () => {
+    if (window.mntActiveMentorId) return; // another mentor was opened meanwhile
+    if (view) view.style.display = 'none';
+    if (overview) {
+      overview.style.display = '';
+      if (window.NopaFlip) window.NopaFlip.enter(overview.querySelectorAll(':scope > div:first-child, .lst-bento > .lst-tile'));
+    }
+  });
+};
 
-    // National ID (only real data)
-    const nationalIdText = (m.nationalId && m.nationalId !== 'null' && m.nationalId.trim() && !m.nationalId.startsWith('۱۲۳۴۵۶') && !m.nationalId.startsWith('123456'))
-      ? `<span class="u-mono u-c-text-soft">${esc(m.nationalId)}</span>`
-      : '<span class="u-c-text-faint u-fs-2xs">وارد نشده است</span>';
+window.selectMentorCaravan = function(caravanId) {
+  if (String(window.mntActiveCaravanId) === String(caravanId)) return;
+  window.mntActiveCaravanId = String(caravanId);
+  const view = document.getElementById('mentor-detail-view');
+  const m = mntFind(window.mntActiveMentorId);
+  if (!m || !view) return;
+  const filter = document.getElementById('mnt-students-filter');
+  if (filter) filter.value = '';
+  const paint = () => mntPaint(m, mntDossierCache.get(String(m.id)) || null);
+  if (window.NopaFlip) window.NopaFlip.render(view, paint); else paint();
+  const picked = view.querySelector('.lsv-circle.is-active .lsv-circle-img');
+  if (picked && typeof picked.animate === 'function' && !window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+    picked.animate([{ transform: 'scale(0.8)' }, { transform: 'scale(1.12)' }, { transform: 'none' }], { duration: 420, easing: 'cubic-bezier(0.22, 1, 0.36, 1)' });
+  }
+  mntFitNotch(view);
+};
 
+window.editActiveMentor = function() {
+  if (window.mntActiveMentorId) window.editMentor(window.mntActiveMentorId);
+};
+window.moderateActiveMentor = function() {
+  if (window.mntActiveMentorId) window.openMentorModerationModal(window.mntActiveMentorId);
+};
+// "open caravan" on a caravan row: the caravan's own page in the caravans tab
+window.openMentorCaravanPage = function(caravanId) {
+  window.mntGoTab('caravans-tab');
+  if (typeof window.openCaravanView === 'function') window.openCaravanView(caravanId);
+};
+
+function mntCircles(m, activeId) {
+  return mntCaravansOf(m).map(c => {
+    const active = String(c.id) === String(activeId);
     return `
-      <tr class="u-tr-all-0_2s-ease">
-        <td class="u-text-center">
-          <div class="u-w-38 u-h-38 u-r-50p u-flex u-items-center u-justify-center u-bold u-c-white u-fs-sm u-m-0-auto u-shadow-0-2-6-shade-30 u-bg-primary">
-            ${avatarInitials}
-          </div>
-        </td>
-        <td>
-          <div class="u-flex u-items-center u-gap-6">
-            ${statusDot}
-            <strong class="u-c-text u-fs-base">${esc(m.name || 'راهبر بدون نام')}</strong>
-          </div>
-          ${m.role === 'SUPER_MENTOR' ? '<span class="u-fs-2xs u-c-accent-text u-bg-accent-15 u-p-1-6 u-r-4">سرراهبر</span>' : ''}
-        </td>
-        <td class="u-mono u-direction-ltr u-text-right u-c-text-soft">${esc(m.phoneNumber || '-')}</td>
-        <td class="u-text-center">${nationalIdText}</td>
-        <td>${caravansHtml}</td>
-        <td class="u-text-center u-nowrap">
-          <div class="u-inline-flex u-gap-6 u-items-center">
-            <button class="btn-action u-bg-primary-15 u-c-primary-text u-bd-primary-35 u-r-6 u-p-6-10 u-fs-xs u-pointer u-fw-500 u-inline-flex u-items-center u-gap-4" data-click="viewMentorDossier" data-click-args="${esc(JSON.stringify([String(m.id)]))}" title="نمایش شناسنامه جامع">
-              <i class="fa-solid fa-eye"></i> شناسنامه
-            </button>
-            <button class="btn-action u-bg-success-15 u-c-success-text u-bd-success-35 u-r-6 u-p-6-10 u-fs-xs u-pointer u-fw-500 u-inline-flex u-items-center u-gap-4" data-click="editMentor" data-click-args="${esc(JSON.stringify([String(m.id)]))}" title="ویرایش اطلاعات">
-              <i class="fa-solid fa-pen"></i> ویرایش
-            </button>
-            <button class="btn-action u-bg-danger-15 u-c-danger-text u-bd-danger-35 u-r-6 u-p-6-10 u-fs-xs u-pointer u-fw-500 u-inline-flex u-items-center u-gap-4" data-click="openMentorModerationModal" data-click-args="${esc(JSON.stringify([String(m.id)]))}" title="مدیریت وضعیت و تعلیق">
-              <i class="fa-solid fa-user-shield"></i> وضعیت
-            </button>
-          </div>
-        </td>
-      </tr>
-    `;
-  }).join('');
-};
+      <button type="button" class="lsv-circle${active ? ' is-active' : ''}" data-anim-key="mc:${esc(c.id)}" data-click="selectMentorCaravan" data-click-args="${crvArgs(c.id)}" title="${esc(c.name)}"${active ? ' aria-current="true"' : ''}>
+        <span class="lsv-circle-main">
+          <span class="lsv-circle-img">${c.coverImageUrl ? `<img src="${esc(c.coverImageUrl)}" alt="" loading="lazy" data-error="lmsImageFallback" data-error-args='["$this", "${crvInitial(c.name)}"]'>` : `<span>${crvInitial(c.name)}</span>`}</span>
+          <span class="lsv-circle-badge ${c.status === 'suspended' ? 'lsv-state-locked' : 'lsv-state-active'}">${crvFa(mntCaravanMembers(c))}</span>
+        </span>
+        <span class="lsv-circle-name"><span>${esc(c.name)}</span></span>
+      </button>`;
+  }).join('') + `
+      <button type="button" class="lsv-circle lsv-circle-add" data-anim-key="mc-add" data-click="openAssignMentorCaravans" title="تخصیص کاروان به این راهبر" aria-label="تخصیص کاروان به این راهبر">
+        <span class="lsv-circle-main">
+          <span class="lsv-circle-img"><i class="fa-solid fa-plus"></i></span>
+          <span class="lsv-circle-badge lsv-state-add"><i class="fa-solid fa-plus"></i></span>
+        </span>
+        <span class="lsv-circle-name"><span>تخصیص کاروان</span></span>
+      </button>`;
+}
 
-window.currentDossierData = null;
-window.currentMentorId = null;
+function mntInfoCard(m, dossier) {
+  const stars = mntStars(m);
+  const natId = mntNationalId(m.nationalId);
+  const facts = [
+    m.userCode ? `<span><i class="fa-solid fa-hashtag"></i> NP-${esc(m.userCode)}</span>` : '',
+    `<span><i class="fa-solid fa-medal"></i> ${esc(MNT_LEVELS[m.mentorLevel] || MNT_LEVELS[1])}</span>`,
+    m.city ? `<span><i class="fa-solid fa-location-dot"></i> ${esc(m.city)}</span>` : '',
+    m.academicDegree ? `<span><i class="fa-solid fa-graduation-cap"></i> ${esc(m.academicDegree)}</span>` : '',
+    m.dateOfBirth ? `<span><i class="fa-solid fa-cake-candles"></i> ${esc(m.dateOfBirth)}</span>` : '',
+    natId ? `<span><i class="fa-solid fa-id-card"></i> ${esc(natId)}</span>` : '',
+    m.socialPlatform || m.socialMessengerHandle ? `<span><i class="fa-solid fa-comment-dots"></i> ${esc(m.socialPlatform || '')} <bdi dir="ltr">${esc(m.socialMessengerHandle || '')}</bdi></span>` : '',
+    `<span><i class="fa-solid ${m.identityVerified ? 'fa-user-check' : 'fa-user-clock'}"></i> ${m.identityVerified ? 'هویت تایید شده' : 'هویت تایید نشده'}</span>`,
+  ].filter(Boolean).join('');
+  const students = dossier ? (dossier.supervisedStudents || []).length : mntStudentsOf(m);
+  const openTickets = dossier ? (dossier.supervisedStudents || []).reduce((n, s) => n + (s.stats?.openTickets || 0), 0) : null;
+  const docs = mntPendingDocs(m);
+  return `
+    ${crvAvatar(m.avatarUrl, m.name, 'crv-mentor-photo')}
+    <strong class="crv-mentor-name">${esc(m.name || 'راهبر بدون نام')}</strong>
+    ${m.phoneNumber ? `<span class="crv-mentor-phone" dir="ltr">${esc(m.phoneNumber)}</span>` : ''}
+    <span class="mnt-stars" title="${esc(stars.text)}">${[1, 2, 3, 4, 5].map(i => `<i class="fa-${stars.avgNumeric >= i - 0.25 ? 'solid' : 'regular'} fa-star"></i>`).join('')}<small>${stars.score !== null ? `${crvFa(stars.score)} · ${crvFa(stars.count)} نظر` : 'بدون ارزیابی'}</small></span>
+    <div class="mnt-mini">
+      <span><strong>${crvFa(mntCaravansOf(m).length)}</strong><small>کاروان</small></span>
+      <span><strong>${crvFa(students)}</strong><small>دانش‌آموز</small></span>
+      <span class="${openTickets ? 'is-warn' : ''}"><strong>${openTickets === null ? '…' : crvFa(openTickets)}</strong><small>تیکت باز</small></span>
+    </div>
+    <div class="lsv-facts crv-mentor-facts">${facts}</div>
+    ${m.bio ? `<p class="crv-mentor-bio">${esc(m.bio)}</p>` : ''}
+    <div class="mnt-info-actions">
+      <button type="button" class="lsv-pill" data-click="editMentor" data-click-args="${crvArgs(m.id)}"><i class="fa-solid fa-pen"></i> ویرایش</button>
+      <button type="button" class="lse-btn" data-click="openMentorModerationModal" data-click-args="${crvArgs(m.id)}"><i class="fa-solid fa-user-shield"></i> وضعیت حساب</button>
+      ${docs ? `<button type="button" class="lse-btn mnt-docs-btn" data-click="mntGoTab" data-click-args="${crvArgs('mentors-docs-tab')}"><i class="fa-solid fa-file-circle-exclamation"></i> ${crvFa(docs)} مدرک</button>` : ''}
+    </div>`;
+}
 
-window.viewMentorDossier = async function(mentorId) {
-  const modal = document.getElementById('mentor-dossier-modal');
-  const body = document.getElementById('dossier-content-body');
-  const footerActions = document.getElementById('dossier-footer-actions');
-  if (!modal || !body) return;
-
-  window.currentMentorId = mentorId;
-  modal.style.display = 'flex';
-  modal.style.zIndex = 'var(--z-modal)';
-  body.innerHTML = '<div class="u-text-center u-p-32 u-c-primary-text"><i class="fa-solid fa-spinner fa-spin fa-2x"></i><div class="u-mt-10">در حال بارگذاری شناسنامه جامع راهبر...</div></div>';
-
-  let mentor = window.mentorsMasterList.find(m => m.id === mentorId);
-
-  try {
-    const res = await request(`/api/v1/admin/mentors/${mentorId}/dossier`);
-    let dossier = null;
-    if (res.ok) {
-      dossier = await res.json();
-    }
-    window.currentDossierData = dossier;
-
-    if (!mentor && dossier?.identity) {
-      mentor = dossier.identity;
-    }
-
-    const mentorName = dossier?.identity?.name || mentor?.name || 'راهبر آموزشی';
-    const initials = mentorName.trim().split(' ').map(n => n[0]).join('').substring(0, 2);
-    
-    document.getElementById('dossier-mentor-name').innerHTML = `<i class="fa-solid fa-id-card u-c-primary-text"></i> شناسنامه راهبر: ${esc(mentorName)}`;
-    const cleanNatId = (dossier?.identity?.nationalId || mentor?.nationalId || '').trim();
-    const natIdDisplay = (cleanNatId && cleanNatId !== 'null' && !cleanNatId.startsWith('۱۲۳۴۵۶') && !cleanNatId.startsWith('123456')) ? cleanNatId : 'وارد نشده است';
-    document.getElementById('dossier-mentor-subtitle').textContent = `کد ملی: ${natIdDisplay} | موبایل: ${dossier?.identity?.phoneNumber || mentor?.phoneNumber || '-'}`;
-    document.getElementById('dossier-avatar').textContent = initials;
-
-    // Build rich dossier content with pure real ratings
-    const caravans = dossier?.caravans || mentor?.mentoredCaravans || [];
-    const students = dossier?.supervisedStudents || [];
-    const starsInfo = window.calculateMentorStars(mentor?.ratingsReceived, mentor?.evaluationsReceived);
-    const scoreTitle = starsInfo.score !== null ? `${starsInfo.score} <span class="u-fs-xs u-c-text-muted">/ ۵</span>` : `<span class="u-fs-md u-c-text-muted">فاقد ارزیابی</span>`;
-    const scoreSub = starsInfo.count > 0 ? `از میان ${starsInfo.count} ارزیابی ثبت‌شده` : `هنوز ارزیابی یا امتیازی برای این راهبر ثبت نشده است`;
-
-    body.innerHTML = `
-      <!-- TOP STATS CARDS -->
-      <div class="u-grid u-cols-fit-200 u-gap-12 u-mb-20">
-        <div class="u-bg-surface-2-70 u-bd-primary-30 u-r-12 u-p-14 u-text-center">
-          <div class="u-fs-2xs u-c-text-soft u-mb-4"><i class="fa-solid fa-people-group u-c-primary-text"></i> کاروان‌های تحت راهبری</div>
-          <div class="u-fs-xl u-bold u-c-primary-text">${caravans.length} <span class="u-fs-xs u-c-text-muted">کاروان</span></div>
-          <div class="u-fs-2xs u-c-text-muted u-mt-2">گروه‌های فعال آموزشی</div>
-        </div>
-
-        <div class="u-bg-surface-2-70 u-bd-success-30 u-r-12 u-p-14 u-text-center">
-          <div class="u-fs-2xs u-c-text-soft u-mb-4"><i class="fa-solid fa-users u-c-success-text"></i> دانش‌آموزان تحت نظارت</div>
-          <div class="u-fs-xl u-bold u-c-success-text">${students.length} <span class="u-fs-xs u-c-text-muted">دانش‌آموز</span></div>
-          <div class="u-fs-2xs u-c-text-muted u-mt-2">افراد تحت سرپرستی این راهبر</div>
-        </div>
-
-        <div class="u-bg-surface-2-70 u-bd-primary-30 u-r-12 u-p-14 u-text-center">
-          <div class="u-fs-2xs u-c-text-soft u-mb-4"><i class="fa-solid fa-shield-halved u-c-primary-text"></i> وضعیت حساب کاربری</div>
-          <div class="u-fs-lg u-bold u-c-success-text u-mt-4">${mentor?.accountStatus || 'ACTIVE'}</div>
-          <div class="u-fs-2xs u-c-text-muted u-mt-4">دسترسی به پنل راهبر</div>
-        </div>
-      </div>
-
-      <!-- PERSONAL & IDENTITY DOSSIER -->
-      <div class="u-bg-surface-60 u-bd-fg-8 u-r-12 u-p-16 u-mb-16">
-        <div class="u-bold u-c-primary-text u-fs-base u-mb-12 u-flex u-items-center u-gap-6">
-          <i class="fa-solid fa-user-check"></i> مشخصات هویتی و فردی راهبر
-        </div>
-        <div class="u-grid u-cols-fit-200 u-gap-12 u-fs-sm">
-          <div><strong class="u-c-text-muted">نام کامل:</strong> <span class="u-c-text">${esc(mentorName)}</span></div>
-          <div><strong class="u-c-text-muted">شماره همراه:</strong> <span class="u-c-text u-mono">${esc(mentor?.phoneNumber || '-')}</span></div>
-          <div><strong class="u-c-text-muted">کد ملی:</strong> <span class="u-c-text u-mono">${mentor?.nationalId && mentor?.nationalId !== 'null' && !mentor?.nationalId.startsWith('۱۲۳۴۵۶') && !mentor?.nationalId.startsWith('123456') ? esc(mentor.nationalId) : 'وارد نشده است'}</span></div>
-          <div><strong class="u-c-text-muted">تاریخ تولد:</strong> <span class="u-c-text">${esc(mentor?.dateOfBirth || 'ثبت نشده')}</span></div>
-          <div><strong class="u-c-text-muted">شهر محل سکونت:</strong> <span class="u-c-text">${esc(mentor?.city || 'ثبت نشده')}</span></div>
-          <div><strong class="u-c-text-muted">پلتفرم پیام‌رسان:</strong> <span class="u-c-text">${esc(mentor?.socialPlatform || 'ثبت نشده')} (${esc(mentor?.socialMessengerHandle || '-')})</span></div>
-          <div><strong class="u-c-text-muted">وضعیت احراز هویت:</strong> <span data-style="color:${mentor?.identityVerified ? 'var(--success-text)' : 'var(--accent)'};">${mentor?.identityVerified ? 'تایید شده' : 'در انتظار بررسی'}</span></div>
-        </div>
-      </div>
-
-      <!-- CARAVANS LIST -->
-      <div class="u-bg-surface-60 u-bd-fg-8 u-r-12 u-p-16 u-mb-16">
-        <div class="u-bold u-c-primary-text u-fs-base u-mb-12 u-flex u-items-center u-gap-6">
-          <i class="fa-solid fa-caravan"></i> وضعیت کاروان‌های تحت نظارت
-        </div>
-        ${caravans.length > 0 ? `
-          <div class="u-grid u-cols-fit-240 u-gap-10">
-            ${caravans.map(c => `
-              <div class="u-bg-surface-2-70 u-bd-fg-6 u-r-10 u-p-12">
-                <div class="u-flex u-justify-between u-fs-sm u-bold u-c-primary-text u-mb-6">
-                  <span>${esc(c.name)}</span>
-                  <span class="u-fs-2xs u-c-text-soft">${c.memberCount || 0} عضو</span>
-                </div>
-                <div class="u-fs-2xs u-c-text-muted u-mb-6">پیشرفت کلی کاروان: ${c.progress || 0}%</div>
-                <div class="u-bg-shade-30 u-h-6 u-r-3 u-overflow-hidden">
-                  <div class="u-h-full" data-style="background:linear-gradient(90deg, var(--primary), var(--success)); width:${c.progress || 0}%"></div>
-                </div>
-              </div>
-            `).join('')}
-          </div>
-        ` : '<div class="u-c-text-muted u-fs-xs">راهبر در حال حاضر به کاروانی منتسب نشده است.</div>'}
-      </div>
-
-      <!-- SUPERVISED STUDENTS SECTION (افراد تحت سرپرستی این راهبر) -->
-      <div class="u-bg-surface-60 u-bd-primary-30 u-r-14 u-p-20 u-mb-16 u-shadow-0-4-20-shade-30">
-        <div class="u-flex u-justify-between u-items-center u-wrap u-gap-12 u-mb-16 u-bb-fg-8 u-pb-14">
-          <div class="u-flex u-items-center u-gap-10">
-            <div class="u-w-38 u-h-38 u-r-10 u-bg-primary-15 u-bd-primary-30 u-flex u-items-center u-justify-center u-c-primary-text u-fs-md">
-              <i class="fa-solid fa-users"></i>
-            </div>
-            <div>
-              <div class="u-bold u-c-primary-text u-fs-base">دانش‌آموزان تحت سرپرستی این راهبر</div>
-              <div class="u-fs-xs u-c-text-muted u-mt-2">فقط دانش‌آموزان کاروان‌های این راهبر به همراه تیکت‌ها و رفت‌وبرگشت چالش‌ها</div>
-            </div>
-          </div>
-          <div class="u-flex u-items-center u-gap-10">
-            <span class="u-bg-primary-12 u-bd-primary-30 u-c-primary-text u-p-6-12 u-r-20 u-fs-xs u-bold">
-              ${students.length} دانش‌آموز تحت نظارت
-            </span>
-            <input type="text" id="dossier-student-filter-input" placeholder="جستجو در نام، موبایل یا کاروان..." data-input="filterDossierStudents" data-input-args="[&quot;$value&quot;]" class="u-bg-shade-35 u-bd-fg-15 u-c-text u-p-6-12 u-r-8 u-fs-xs u-w-210">
-          </div>
-        </div>
-
-        <div id="dossier-students-container">
-          <!-- Populated by window.renderDossierStudents -->
-        </div>
-      </div>
-    `;
-
-    window.renderDossierStudents(students, mentorId);
-
-    footerActions.innerHTML = `
-      <button type="button" class="btn-primary u-bg-grad-success u-c-white u-bd-none u-p-8-20 u-r-8 u-bold u-pointer u-inline-flex u-items-center u-gap-6" data-click="editMentorFromDossier" data-click-args="${esc(JSON.stringify([String(mentorId)]))}">
-        <i class="fa-solid fa-pen"></i> ویرایش مشخصات این راهبر
+function mntCaravanRow(c, active) {
+  const count = mntCaravanMembers(c);
+  const cap = Number(c.capacityLimit || 25) || 25;
+  const progress = Math.round(Number(c.overallProgress || 0));
+  const fill = Math.min(100, Math.round(count / cap * 100));
+  const btn = (icon, title, click, a, extra = '') =>
+    `<button type="button" class="lsv-round lsv-round-sm${extra ? ' ' + extra : ''}" data-click="${click}" data-click-args="${a}" title="${title}" aria-label="${title}"><i class="${icon}"></i></button>`;
+  return `
+    <div class="lsv-row crv-member mnt-caravan${active ? ' is-active' : ''}" data-anim-key="mr:${esc(c.id)}">
+      <button type="button" class="mnt-caravan-main" data-click="selectMentorCaravan" data-click-args="${crvArgs(c.id)}" title="نمایش دانش‌آموزان ${esc(c.name)}"${active ? ' aria-current="true"' : ''}>
+        ${crvAvatar(c.coverImageUrl, c.name, 'lsv-row-avatar lsv-row-num')}
+        <span class="lsv-row-text">
+          <strong>${esc(c.name)}</strong>
+          <span>${crvFa(count)} / ${crvFa(cap)} عضو · پیشرفت ${crvFa(progress)}٪${c.status === 'suspended' ? ' · تعلیق‌شده' : ''}</span>
+          <span class="lst-bar"><span class="${fill >= 100 ? 'lst-bar-locked' : fill >= 80 ? 'lst-bar-scheduled' : 'lst-bar-active'}" data-style="width:${fill}%"></span></span>
+        </span>
       </button>
-    `;
-  } catch (err) {
-    console.error('viewMentorDossier error:', err);
-    body.innerHTML = `<div class="u-c-danger-text u-text-center u-p-20">خطا در دریافت اطلاعات پرونده: ${esc(err.message)}</div>`;
-  }
-};
+      <span class="lsv-round-group crv-member-tools">
+        ${btn('fa-solid fa-arrow-up-right-from-square', 'صفحه کاروان', 'openMentorCaravanPage', crvArgs(c.id))}
+        ${btn('fa-solid fa-link-slash', 'برداشتن از این راهبر', 'unassignMentorCaravan', crvArgs(c.id, c.name), 'lsv-round-danger')}
+      </span>
+    </div>`;
+}
 
-window.renderDossierStudents = function(students, mentorId) {
-  const container = document.getElementById('dossier-students-container');
-  if (!container) return;
+function mntStudentRow(s, mentorId) {
+  const st = s.stats || {};
+  const btn = (icon, title, click, count, cls) =>
+    `<button type="button" class="mnt-student-btn ${cls}" data-click="${click}" data-click-args="${crvArgs(mentorId, s.id)}" title="${title}"><i class="${icon}"></i> ${crvFa(count)}</button>`;
+  return `
+    <div class="lsv-row crv-member mnt-student" data-anim-key="ms:${esc(s.id)}">
+      ${crvAvatar(s.avatarUrl, s.name, 'lsv-row-avatar lsv-row-num')}
+      <span class="lsv-row-text">
+        <strong>${esc(s.name || '-')}</strong>
+        <span>${s.userCode ? `NP-${esc(s.userCode)}` : ''}${s.userCode && s.phoneNumber ? ' · ' : ''}${s.phoneNumber ? `<bdi dir="ltr">${esc(s.phoneNumber)}</bdi>` : ''}</span>
+      </span>
+      <span class="u-c-accent-text mnt-student-zarik" title="زریک"><i class="fa-solid fa-coins"></i> ${crvFa(s.zarikBalance)}</span>
+      <span class="mnt-student-tools">
+        ${btn('fa-solid fa-comments', 'تیکت‌ها و مکالمات', 'openStudentTicketsModal', st.totalTickets || 0, st.openTickets ? 'is-warn' : '')}
+        ${btn('fa-solid fa-trophy', 'رفت و برگشت چالش‌ها', 'openStudentChallengesModal', st.totalSubmissions || 0, st.pendingSubmissions ? 'is-accent' : '')}
+      </span>
+    </div>`;
+}
 
-  if (!students || students.length === 0) {
-    container.innerHTML = `
-      <div class="u-text-center u-p-32-20 u-bg-shade-20 u-r-12 u-c-text-muted u-bd-1-dashed-fg-8">
-        <i class="fa-solid fa-user-graduate fa-2x u-c-text-faint u-mb-8"></i>
-        <div class="u-fs-base u-bold u-c-text-soft">هیچ دانش‌آموزی در کاروان‌های این راهبر یافت نشد</div>
-        <div class="u-fs-xs u-mt-4">به محض انتساب دانش‌آموزان به کاروان‌های این راهبر، لیست آن‌ها به همراه سوابق تعاملی در این قسمت نمایش می‌یابد.</div>
-      </div>
-    `;
+// Students column: the chosen caravan's students, searchable; skeleton rows until the dossier arrives
+window.renderMentorStudents = function() {
+  const list = document.getElementById('mnt-students-list');
+  const card = document.getElementById('mnt-students-card');
+  const m = mntFind(window.mntActiveMentorId);
+  if (!list || !m) return;
+  const dossier = mntDossierCache.get(String(m.id)) || null;
+  const caravan = mntCaravansOf(m).find(c => String(c.id) === String(window.mntActiveCaravanId)) || null;
+  const label = document.getElementById('mnt-students-label');
+  if (label) label.textContent = caravan ? `دانش‌آموزان «${caravan.name}»` : 'دانش‌آموزان کاروان';
+  if (card) card.classList.toggle('is-loading', !dossier && !!caravan);
+  const count = document.getElementById('mnt-students-count');
+
+  if (!caravan) {
+    if (count) count.textContent = crvFa(0);
+    list.innerHTML = '<div class="lsv-col-empty">برای دیدن دانش‌آموزان، ابتدا کاروانی به این راهبر تخصیص دهید.</div>';
     return;
   }
-
-  container.innerHTML = `
-    <div class="u-flex u-col u-gap-10">
-      ${students.map(s => {
-        const initials = (s.name || 'دا').trim().split(' ').map(n => n[0]).join('').substring(0, 2);
-        const openTicketsBadge = s.stats.openTickets > 0 ? 
-          `<span class="u-bg-danger-20 u-c-danger-text u-bd-danger-40 u-p-2-8 u-r-6 u-fs-2xs u-bold">${s.stats.openTickets} تیکت باز</span>` : 
-          `<span class="u-bg-success-15 u-c-success-text u-p-2-8 u-r-6 u-fs-2xs">تیکت بازی ندارد</span>`;
-        
-        const pendingSubmissionsBadge = s.stats.pendingSubmissions > 0 ?
-          `<span class="u-bg-accent-20 u-c-accent-text u-bd-accent-40 u-p-2-8 u-r-6 u-fs-2xs u-bold">${s.stats.pendingSubmissions} در انتظار بررسی</span>` :
-          `<span class="u-bg-success-15 u-c-success-text u-p-2-8 u-r-6 u-fs-2xs">تکالیف بررسی‌شده</span>`;
-
-        return `
-          <div class="u-bg-surface-2-70 u-bd-fg-8 u-r-12 u-p-14 u-flex u-justify-between u-items-center u-wrap u-gap-14 u-transition" data-hover="border-primary">
-            <!-- Student Bio & Info -->
-            <div class="u-flex u-items-center u-gap-12 u-minw-240">
-              <div class="u-w-44 u-h-44 u-r-50p u-flex u-items-center u-justify-center u-bold u-fs-md u-c-white u-bd-2-solid-fg-20 u-shrink-0 u-grad-success-primary">
-                ${initials}
-              </div>
-              <div>
-                <div class="u-bold u-c-text u-fs-base u-flex u-items-center u-gap-8">
-                  <span>${esc(s.name)}</span>
-                  <span class="u-bg-primary-15 u-c-primary-text u-bd-primary-30 u-p-1-8 u-r-5 u-fs-2xs u-fw-normal">
-                    <i class="fa-solid fa-campground"></i> ${esc(s.caravanName)}
-                  </span>
-                </div>
-                <div class="u-fs-xs u-c-text-muted u-mt-4 u-flex u-gap-12 u-mono">
-                  <span>موبایل: ${esc(s.phoneNumber || '-')}</span>
-                  <span>کد: ${s.userCode || '-'}</span>
-                  <span class="u-c-accent-text">${s.zarikBalance || 0} زریک</span>
-                </div>
-              </div>
-            </div>
-
-            <!-- Stats Indicators -->
-            <div class="u-flex u-gap-10 u-items-center u-wrap">
-              <div class="u-bg-surface-70 u-bd-fg-6 u-r-8 u-p-6-10 u-fs-xs u-flex u-items-center u-gap-6">
-                <i class="fa-solid fa-headset u-c-accent-text"></i>
-                <span class="u-c-text-soft">کل تیکت‌ها: ${s.stats.totalTickets}</span>
-                ${openTicketsBadge}
-              </div>
-
-              <div class="u-bg-surface-70 u-bd-fg-6 u-r-8 u-p-6-10 u-fs-xs u-flex u-items-center u-gap-6">
-                <i class="fa-solid fa-trophy u-c-primary-text"></i>
-                <span class="u-c-text-soft">ارسال‌ها: ${s.stats.totalSubmissions}</span>
-                ${pendingSubmissionsBadge}
-              </div>
-            </div>
-
-            <!-- Action Buttons for Tickets & Challenges -->
-            <div class="u-flex u-gap-8 u-items-center u-wrap">
-              <button type="button" data-click="openStudentTicketsModal" data-click-args="${esc(JSON.stringify([String(mentorId), String(s.id)]))}" class="u-bd-accent-50 u-c-accent-text u-p-8-14 u-r-8 u-fs-xs u-bold u-pointer u-inline-flex u-items-center u-gap-6 u-transition u-grad-accent-soft" data-hover="accent-fill">
-                <i class="fa-solid fa-comments"></i> مشاهده تیکت‌ها (${s.stats.totalTickets})
-              </button>
-
-              <button type="button" data-click="openStudentChallengesModal" data-click-args="${esc(JSON.stringify([String(mentorId), String(s.id)]))}" class="u-bd-primary-50 u-c-primary-text u-p-8-14 u-r-8 u-fs-xs u-bold u-pointer u-inline-flex u-items-center u-gap-6 u-transition u-grad-primary-soft" data-hover="primary-fill">
-                <i class="fa-solid fa-trophy"></i> رفت و برگشت چالش‌ها (${s.stats.totalSubmissions})
-              </button>
-            </div>
-          </div>
-        `;
-      }).join('')}
-    </div>
-  `;
+  if (!dossier) {
+    if (count) count.textContent = crvFa(mntCaravanMembers(caravan));
+    list.innerHTML = Array.from({ length: Math.min(5, Math.max(2, mntCaravanMembers(caravan))) }, () => `
+      <div class="lsv-row crv-member" aria-hidden="true"><span class="lsv-row-avatar lst-skel-avatar"></span>
+        <span class="lsv-row-text"><span class="lst-skel-line"></span><span class="lst-skel-line lst-skel-short"></span></span></div>`).join('');
+    return;
+  }
+  const q = (document.getElementById('mnt-students-filter')?.value || '').trim().toLowerCase();
+  const inCaravan = (dossier.supervisedStudents || []).filter(s => String(s.caravanId) === String(caravan.id));
+  const shown = inCaravan.filter(s => !q || [s.name, s.phoneNumber, s.userCode].some(v => String(v || '').toLowerCase().includes(q)));
+  if (count) count.textContent = crvFa(inCaravan.length);
+  list.innerHTML = shown.length
+    ? shown.map(s => mntStudentRow(s, m.id)).join('')
+    : `<div class="lsv-col-empty">${inCaravan.length ? 'دانش‌آموزی با این جستجو یافت نشد.' : 'این کاروان هنوز دانش‌آموزی ندارد.'}</div>`;
 };
 
-window.filterDossierStudents = function(query) {
-  if (!window.currentDossierData?.supervisedStudents) return;
-  const q = (query || '').trim().toLowerCase();
-  const filtered = window.currentDossierData.supervisedStudents.filter(s => {
-    return (s.name && s.name.toLowerCase().includes(q)) ||
-           (s.phoneNumber && s.phoneNumber.includes(q)) ||
-           (s.caravanName && s.caravanName.toLowerCase().includes(q));
+// Draws the mentor page; dossier = the mentor's dossier (students, tickets) or null while it loads
+function mntPaint(m, dossier) {
+  const caravans = mntCaravansOf(m);
+  if (!caravans.some(c => String(c.id) === String(window.mntActiveCaravanId))) {
+    window.mntActiveCaravanId = caravans.length ? String(caravans[0].id) : null;
+  }
+  const activeId = window.mntActiveCaravanId;
+  const set = (id, fn) => { const el = document.getElementById(id); if (el) fn(el); };
+
+  set('mnt-title', el => { el.textContent = m.name || 'راهبر'; });
+  set('mnt-state', el => { el.innerHTML = mntStatusChip(m); });
+  set('mnt-sub', el => { el.textContent = `${crvFa(caravans.length)} کاروان · ${crvFa(mntStudentsOf(m))} دانش‌آموز`; });
+  set('mnt-circles', el => { el.innerHTML = mntCircles(m, activeId); });
+  set('mnt-info-card', el => { el.innerHTML = mntInfoCard(m, dossier); });
+  set('mnt-caravans-count', el => { el.textContent = crvFa(caravans.length); });
+  set('mnt-caravans-list', el => {
+    const addRow = `
+      <button type="button" class="lsv-row lsv-row-add crv-member" data-anim-key="mr-add" data-click="openAssignMentorCaravans">
+        <span class="lsv-row-avatar lsv-row-plus"><i class="fa-solid fa-plus"></i></span>
+        <span class="lsv-row-text"><strong>تخصیص کاروان</strong><span>کاروان‌هایی که «${esc(m.name || '')}» راهبرشان است</span></span>
+      </button>`;
+    el.innerHTML = (caravans.length ? caravans.map(c => mntCaravanRow(c, String(c.id) === String(activeId))).join('') : '<div class="lsv-col-empty">این راهبر هنوز کاروانی ندارد.</div>') + addRow;
   });
-  window.renderDossierStudents(filtered, window.currentMentorId);
+  window.renderMentorStudents();
+}
+
+window.loadMentorPage = async function() {
+  const view = document.getElementById('mentor-detail-view');
+  const overview = document.getElementById('mnt-overview-view');
+  const mId = window.mntActiveMentorId;
+  const m = mId && mntFind(mId);
+  if (!view || !m) return;
+
+  const cached = mntDossierCache.get(mId) || null;
+  const wasOpen = view.style.display !== 'none';
+  const same = wasOpen && window.mntRenderedMentorId === mId;
+  window.mntRenderedMentorId = mId;
+  if (overview) overview.style.display = 'none';
+  view.style.display = 'block';
+  window.currentMentorId = mId;
+  window.currentDossierData = cached;
+  if (same && window.NopaFlip) window.NopaFlip.render(view, () => mntPaint(m, cached));
+  else {
+    mntPaint(m, cached);
+    if (window.NopaFlip) window.NopaFlip.enter(view.querySelectorAll('.lsv-head, .lsv-board, .lsv-notch .lsv-circle, .mnt-flow > .lsv-col'));
+  }
+  mntFitNotch(view);
+  if (cached) return;
+
+  // The dossier (supervised students with their tickets and submissions), drawn when this mentor is still open
+  let dossier = null;
+  try {
+    const res = await request(`/api/v1/admin/mentors/${encodeURIComponent(mId)}/dossier`);
+    if (res.ok) dossier = await res.json();
+  } catch (_) {}
+  if (window.mntActiveMentorId !== mId) return;
+  if (!dossier) {
+    document.getElementById('mnt-students-card')?.classList.remove('is-loading');
+    const list = document.getElementById('mnt-students-list');
+    if (list) list.innerHTML = '<div class="lsv-col-empty"><i class="fa-solid fa-triangle-exclamation lst-warn"></i> خطا در دریافت دانش‌آموزان این راهبر</div>';
+    return;
+  }
+  mntDossierCache.set(mId, dossier);
+  window.currentDossierData = dossier;
+  if (window.NopaFlip) window.NopaFlip.render(view, () => mntPaint(m, dossier)); else mntPaint(m, dossier);
 };
+
+function mntFitNotch(view) {
+  if (typeof lmsFitBoardNotch === 'function') lmsFitBoardNotch(view);
+  const notch = view.querySelector('.lsv-notch');
+  const activeEl = notch && notch.querySelector('.lsv-circle.is-active');
+  if (activeEl && notch.scrollWidth > notch.clientWidth) {
+    const nr = notch.getBoundingClientRect();
+    const ar = activeEl.getBoundingClientRect();
+    notch.scrollLeft += (ar.left + ar.width / 2) - (nr.left + nr.width / 2);
+  }
+}
+
+// ==================== CARAVANS OF A MENTOR ====================
+// One dialog ticks the caravans this mentor leads; each changed caravan gets its mentor set (or cleared) through
+// PATCH /admin/caravans/:id, the same call the caravan page's "change mentor" uses.
+let mntAssignCaravans = [];
+let mntAssignPicked = new Set();
+
+window.openAssignMentorCaravans = async function() {
+  const m = mntFind(window.mntActiveMentorId);
+  if (!m) return;
+  const modal = document.getElementById('mentor-caravans-modal');
+  const title = document.getElementById('mnt-assign-title');
+  if (title) title.textContent = `کاروان‌های «${m.name || 'راهبر'}»`;
+  const search = document.getElementById('mnt-assign-search');
+  if (search) search.value = '';
+  mntAssignPicked = new Set(mntCaravansOf(m).map(c => String(c.id)));
+  const list = document.getElementById('mnt-assign-list');
+  if (list) list.innerHTML = '<div class="lst-skel-lines" aria-hidden="true">' + '<span class="lst-skel-row"></span>'.repeat(5) + '</div>';
+  if (modal) { modal.style.display = 'flex'; modal.style.zIndex = 'var(--z-modal)'; }
+  try {
+    const res = await request('/api/v1/admin/caravans');
+    const data = res.ok ? await res.json() : [];
+    mntAssignCaravans = Array.isArray(data) ? data : (data.caravans || data.data || []);
+  } catch (e) {
+    mntAssignCaravans = [];
+  }
+  window.renderAssignMentorCaravans();
+};
+
+window.renderAssignMentorCaravans = function() {
+  const list = document.getElementById('mnt-assign-list');
+  const note = document.getElementById('mnt-assign-note');
+  const mId = String(window.mntActiveMentorId || '');
+  if (!list) return;
+  const q = (document.getElementById('mnt-assign-search')?.value || '').trim().toLowerCase();
+  const rows = mntAssignCaravans.filter(c => !q || [c.name, c.mentor?.name].some(v => String(v || '').toLowerCase().includes(q)));
+  list.innerHTML = rows.length ? rows.map(c => {
+    const owner = c.mentor && String(c.mentor.id || c.mentorId) !== mId ? c.mentor.name : '';
+    const checked = mntAssignPicked.has(String(c.id));
+    return `
+      <label class="lse-tree-row crv-cand">
+        <input type="checkbox" value="${esc(c.id)}" ${checked ? 'checked' : ''} data-change="toggleAssignMentorCaravan" data-change-args="${esc(JSON.stringify(['$this']))}">
+        ${crvAvatar(c.coverImageUrl, c.name, 'lse-tree-num crv-result-avatar')}
+        <span class="lse-tree-text"><strong>${esc(c.name || '')}</strong><small>${crvFa(crvMemberCount(c))} عضو</small></span>
+        ${owner ? `<span class="lst-chip lst-chip-scheduled"><i class="fa-solid fa-user-tie"></i> ${esc(owner)}</span>` : (c.mentor ? '' : '<span class="lst-chip lst-chip-locked"><i class="fa-solid fa-user-slash"></i> بدون راهبر</span>')}
+      </label>`;
+  }).join('') : `<div class="lsv-col-empty">${mntAssignCaravans.length ? 'کاروانی با این نام یافت نشد.' : 'هنوز کاروانی ساخته نشده است.'}</div>`;
+  if (note) note.innerHTML = `<i class="fa-solid fa-circle-info"></i> ${crvFa(mntAssignPicked.size)} کاروان انتخاب شده`;
+};
+
+window.toggleAssignMentorCaravan = function(input) {
+  if (input.checked) mntAssignPicked.add(String(input.value)); else mntAssignPicked.delete(String(input.value));
+  const note = document.getElementById('mnt-assign-note');
+  if (note) note.innerHTML = `<i class="fa-solid fa-circle-info"></i> ${crvFa(mntAssignPicked.size)} کاروان انتخاب شده`;
+};
+
+async function mntSetCaravanMentor(caravanId, mentorId) {
+  const res = await request(`/api/v1/admin/caravans/${encodeURIComponent(caravanId)}`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ mentorId })
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.error || 'خطا در تغییر راهبر کاروان');
+  }
+}
+
+window.saveAssignMentorCaravans = async function() {
+  const m = mntFind(window.mntActiveMentorId);
+  if (!m) return;
+  const before = new Set(mntCaravansOf(m).map(c => String(c.id)));
+  const add = [...mntAssignPicked].filter(id => !before.has(id));
+  const remove = [...before].filter(id => !mntAssignPicked.has(id));
+  if (!add.length && !remove.length) { NopaActions.hide('mentor-caravans-modal'); return; }
+  const btn = document.getElementById('mnt-assign-save');
+  if (btn) btn.disabled = true;
+  try {
+    for (const id of add) await mntSetCaravanMentor(id, m.id);
+    for (const id of remove) await mntSetCaravanMentor(id, null);
+    showToast('کاروان‌های راهبر ذخیره شد.', 'success');
+    NopaActions.hide('mentor-caravans-modal');
+    if (add.length) window.mntActiveCaravanId = add[0];
+    await window.loadMentors();
+    if (typeof window.loadCaravansTab === 'function' && (window.caravansData || []).length) window.loadCaravansTab();
+  } catch (e) {
+    showToast(e.message, 'error');
+    await window.loadMentors();
+  } finally {
+    if (btn) btn.disabled = false;
+  }
+};
+
+window.unassignMentorCaravan = async function(caravanId, caravanName) {
+  const m = mntFind(window.mntActiveMentorId);
+  if (!m) return;
+  if (!(await NopaConfirm(`کاروان «${caravanName}» از راهبری «${m.name || ''}» برداشته شود؟ کاروان بدون راهبر می‌ماند.`))) return;
+  try {
+    await mntSetCaravanMentor(caravanId, null);
+    showToast('کاروان از این راهبر برداشته شد.', 'success');
+    await window.loadMentors();
+    if (typeof window.loadCaravansTab === 'function' && (window.caravansData || []).length) window.loadCaravansTab();
+  } catch (e) {
+    showToast(e.message, 'error');
+  }
+};
+
+// The tab starts in its loading state until the first fetch finishes
+if (!(window.mentorsMasterList || []).length) window.mntSetLoading(true);
 
 window.openStudentTicketsModal = function(mentorId, studentId) {
   const modal = document.getElementById('student-tickets-modal');
@@ -734,9 +982,10 @@ window.refreshDossierData = async function(mentorId) {
     if (res.ok) {
       const dossier = await res.json();
       window.currentDossierData = dossier;
-      if (dossier.supervisedStudents) {
-        window.renderDossierStudents(dossier.supervisedStudents, mentorId);
-      }
+      mntDossierCache.set(String(mentorId), dossier);
+      // a reply or a review changes the students' counters on the open mentor page
+      const m = mntFind(mentorId);
+      if (m && String(window.mntActiveMentorId) === String(mentorId)) mntPaint(m, dossier);
     }
   } catch (e) {
     console.error('refreshDossierData error:', e);
@@ -751,7 +1000,7 @@ window.showMentorModal = async function() {
   NopaPersonFields.fill('modal-mentor', {}); // also forgets a previously loaded phone and clears field errors
 
   document.getElementById('modal-mentor-id').value = '';
-  document.getElementById('mentor-modal-form-title').innerHTML = '<i class="fa-solid fa-user-plus"></i> ثبت راهبر جدید در سامانه';
+  document.getElementById('mentor-modal-form-title').textContent = 'ثبت راهبر جدید';
   const certsSection = document.getElementById('modal-mentor-certs-section');
   if (certsSection) certsSection.style.display = 'none';
 
@@ -785,7 +1034,7 @@ window.editMentor = async function(mentorId) {
   document.getElementById('modal-mentor-social-platform').value = m.socialPlatform || '';
   document.getElementById('modal-mentor-social-handle').value = m.socialMessengerHandle || '';
 
-  document.getElementById('mentor-modal-form-title').innerHTML = `<i class="fa-solid fa-user-pen"></i> ویرایش اطلاعات راهبر: ${esc(m.name || '')}`;
+  document.getElementById('mentor-modal-form-title').textContent = `ویرایش راهبر: ${m.name || ''}`;
 
   const caravanSearch = document.getElementById('mentor-caravan-search-input');
   if (caravanSearch) caravanSearch.value = '';
@@ -836,7 +1085,7 @@ window.populateMentorCaravansChecklist = async function(assignedIds = []) {
   const container = document.getElementById('modal-mentor-caravans-list');
   if (!container) return;
 
-  container.innerHTML = '<span class="u-fs-2xs u-c-text-muted"><i class="fa-solid fa-spinner fa-spin"></i> در حال بارگذاری کاروان‌ها...</span>';
+  container.innerHTML = '<div class="lst-skel-lines" aria-hidden="true">' + '<span class="lst-skel-row"></span>'.repeat(3) + '</div>';
   
   try {
     const res = await request('/api/v1/admin/caravans');
@@ -844,19 +1093,20 @@ window.populateMentorCaravansChecklist = async function(assignedIds = []) {
     window.cachedCaravansForMentorModal = Array.isArray(caravans) ? caravans : [];
 
     if (window.cachedCaravansForMentorModal.length === 0) {
-      container.innerHTML = '<span class="u-fs-xs u-c-text-muted">هیچ کاروانی در سامانه ثبت نشده است.</span>';
+      container.innerHTML = '<div class="lsv-col-empty">هیچ کاروانی در سامانه ثبت نشده است.</div>';
       return;
     }
 
     container.innerHTML = window.cachedCaravansForMentorModal.map(c => `
-      <label class="mentor-caravan-item-label u-flex u-items-center u-gap-8 u-bg-surface-85 u-bd-fg-12 u-r-8 u-p-8-12 u-c-text u-fs-sm u-pointer u-transition" data-caravan-name="${(c.name || '').toLowerCase()}">
-        <input type="checkbox" class="mentor-caravan-checkbox u-w-16 u-h-16 u-pointer" value="${c.id}" ${assignedIds.includes(c.id) ? 'checked' : ''}>
-        <span class="u-fw-500">${esc(c.name)}</span>
+      <label class="lse-tree-row crv-cand mentor-caravan-item-label" data-caravan-name="${esc((c.name || '').toLowerCase())}">
+        <input type="checkbox" class="mentor-caravan-checkbox" value="${esc(c.id)}" ${assignedIds.includes(c.id) ? 'checked' : ''}>
+        ${crvAvatar(c.coverImageUrl, c.name, 'lse-tree-num crv-result-avatar')}
+        <span class="lse-tree-text"><strong>${esc(c.name)}</strong><small>${c.mentor?.name ? `راهبر فعلی: ${esc(c.mentor.name)}` : 'بدون راهبر'}</small></span>
       </label>
     `).join('');
   } catch (e) {
     console.error('Error fetching caravans checklist:', e);
-    container.innerHTML = '<span class="u-fs-xs u-c-danger-text">خطا در دریافت لیست کاروان‌ها</span>';
+    container.innerHTML = '<div class="lsv-col-empty">خطا در دریافت لیست کاروان‌ها</div>';
   }
 };
 
@@ -1162,11 +1412,4 @@ window.loadMentorsData = async function() {
   if (typeof window.loadMentors === 'function') {
     await window.loadMentors();
   }
-};
-
-// "edit" button inside the mentor dossier: close the dossier, open the mentor form
-window.editMentorFromDossier = function(mentorId) {
-  const dossier = document.getElementById('mentor-dossier-modal');
-  if (dossier) dossier.style.display = 'none';
-  return window.editMentor(mentorId);
 };

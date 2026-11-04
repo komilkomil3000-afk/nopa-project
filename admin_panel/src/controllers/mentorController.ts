@@ -20,7 +20,8 @@ export async function getMentors(req: AuthRequest, res: Response) {
         evaluationsReceived: true,
         supportReplies: true,
         mentorDocuments: true,
-        mentoredCaravans: true
+        // live member counts for the mentors tab's cards and caravan circles
+        mentoredCaravans: { where: { isDeleted: false }, include: { _count: { select: { members: true } } } }
       },
       orderBy: { createdAt: 'desc' }
     });

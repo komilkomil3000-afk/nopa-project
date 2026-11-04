@@ -819,3 +819,19 @@
   .chs-bento, .chs-skel .lst-skel-row::after { animation: none; }
   .chs-mode { transition: none; }
 }
+
+/* ---------- Mentors' tickets tab (js/features/tickets-chat.js): the messenger with the tickets grouped per mentor ---------- */
+.mtk-group { display: flex; flex-direction: column; gap: 2px; }
+.mtk-group-head .chm-row-title { font-size: var(--text-sm, 0.9rem); }
+.mtk-caret { font-size: 10px; color: var(--text-faint); transition: transform 0.2s ease; transform: rotate(90deg); }
+.mtk-group.is-open .mtk-caret { transform: none; }
+.mtk-group.is-open > .mtk-group-head { background: rgb(var(--fg-rgb) / 0.04); }
+.mtk-group-body { display: flex; flex-direction: column; gap: 2px; padding-inline-start: 18px; margin-inline-start: 22px; border-inline-start: 1px dashed rgb(var(--primary-rgb) / 0.45); }
+.mtk-group-body[hidden] { display: none; }
+.mtk-ticket { padding: 8px; }
+.mtk .chm-tag-dot { background: var(--accent); }
+.mtk .chm-head-tools { align-items: center; gap: 8px; }
+.mtk .is-spinning i { animation: fa-spin 1s linear infinite; }
+@media (max-width: 900px) {
+  .mtk .chm-head-tools .chm-pill-btn { display: inline-flex; }
+}

@@ -73,9 +73,6 @@
 .field-error:empty { display: none; }
 /* the mentor modal lays its identity fields out in a grid with its own gap */
 #mentor-form .person-field { margin: 0; }
-/* match the mentor modal's other inputs (inline inset background) until its inline styles are removed */
-#mentor-form .person-field .input-ctrl,
-#mentor-form .person-field .select-ctrl { background: var(--surface-inset); }
 
 /* ---------- Hover states that used to be inline onmouseover/onmouseout handlers ---------- */
 /* !important: these elements still carry their resting colours as inline styles */

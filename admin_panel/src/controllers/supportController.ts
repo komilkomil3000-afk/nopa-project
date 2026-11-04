@@ -69,8 +69,14 @@ export async function getTickets(req: AuthRequest, res: Response) {
       tickets = await prisma.supportTicket.findMany({
         where: adminWhere,
         include: {
-          replies: { orderBy: { createdAt: 'asc' } },
-          student: { select: { name: true, avatarUrl: true, phoneNumber: true, role: true, caravan: { select: { name: true } } } }
+          replies: { orderBy: { createdAt: 'asc' }, include: { mentor: { select: { id: true, name: true, avatarUrl: true, role: true } } } },
+          // the caravan's mentor lets the panel group tickets by mentor (mentors' tickets tab)
+          student: {
+            select: {
+              id: true, name: true, avatarUrl: true, phoneNumber: true, role: true, userCode: true,
+              caravan: { select: { id: true, name: true, mentor: { select: { id: true, name: true, avatarUrl: true, phoneNumber: true } } } }
+            }
+          }
         },
         orderBy: { createdAt: 'desc' }
       });

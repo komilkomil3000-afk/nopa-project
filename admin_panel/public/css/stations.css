@@ -2264,3 +2264,120 @@ body.lms-dragging:not(:has(.lms-drag-ghost-clip)) .lse-tree-clips { display: non
   .crv-flow > .lsv-link::after { top: auto; bottom: -3px; right: calc(50% - 3px); }
   .crv-filters { justify-content: stretch; }
 }
+
+/* ---------- Mentors tab (js/features/mentors.js) and instructors bank (instructors.js): the caravans tab's bento
+   overview and page. Circles in the notch are the mentor's caravans (all instructors in the bank); the mentor's card
+   (right) is linked to the caravans' card and to the chosen caravan's students. ---------- */
+.mnt-card .crv-card-mentor i, .ins-card .crv-card-mentor i { color: var(--primary-text); }
+.mnt-card .crv-card-cap em { font-style: normal; }
+.ins-card-classes { display: flex; flex-wrap: wrap; gap: 4px; min-height: 22px; font-size: var(--text-2xs, 0.7rem); }
+.ins-chip {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 10px;
+  border-radius: 999px;
+  background: rgb(var(--primary-rgb) / 0.12);
+  color: var(--text-soft);
+  font-size: 10.5px;
+  font-weight: 600;
+  white-space: nowrap;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.lsv-col.mnt-col-caravans { flex: 0 1 420px; min-width: 300px; }
+.lsv-col.mnt-col-students { flex: 1 1 320px; min-width: 280px; }
+.lsv-col.mnt-col-caravans .lsv-col-card, .lsv-col.mnt-col-students .lsv-col-card { flex: 0 1 auto; }
+.mnt-flow .crv-mentor, .ins-flow .crv-mentor { min-height: 0; }
+.mnt-stars { display: inline-flex; align-items: center; gap: 2px; color: var(--accent); font-size: 0.8rem; }
+.mnt-stars small { margin-inline-start: 6px; font-size: var(--text-2xs, 0.7rem); color: var(--text-muted); }
+.mnt-mini { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; width: 100%; margin: 4px 0; }
+.mnt-mini > span {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1px;
+  padding: 8px 4px;
+  border-radius: 14px;
+  background: rgb(var(--primary-rgb) / 0.08);
+}
+.mnt-mini strong { font-size: 1rem; font-weight: 800; color: var(--text); }
+.mnt-mini small { font-size: 10px; color: var(--text-muted); }
+.mnt-mini > span.is-warn { background: rgb(var(--danger-rgb) / 0.12); }
+.mnt-mini > span.is-warn strong { color: var(--danger-text); }
+.mnt-info-actions { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px; margin-top: 6px; }
+.mnt-docs-btn { color: var(--danger-text); }
+/* a caravan row: the main part picks the caravan, the tools stay apart (no nested buttons) */
+.mnt-caravan { cursor: default; }
+.mnt-caravan.is-active { background: rgb(var(--primary-rgb) / 0.12); }
+.mnt-caravan.is-active .lsv-row-num { background: var(--text); color: var(--bg); }
+.mnt-caravan-main {
+  flex: 1 1 200px;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 0;
+  border: none;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: right;
+  cursor: pointer;
+}
+.mnt-caravan-main:focus-visible { outline: 2px solid rgb(var(--primary-rgb) / 0.6); outline-offset: 4px; border-radius: 12px; }
+.mnt-caravan .lsv-row-text { gap: 4px; }
+.mnt-caravan .lst-bar { height: 5px; margin-top: 2px; }
+.mnt-students-search { display: block; min-width: 0; width: 100%; max-width: none; margin: 4px 0 6px; }
+.mnt-students-search .input-ctrl { width: 100%; border-radius: 999px; }
+.mnt-student-zarik { font-size: var(--text-2xs, 0.7rem); font-weight: 700; white-space: nowrap; }
+.mnt-student-tools { display: inline-flex; gap: 4px; }
+.mnt-student-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 10px;
+  border: 1px solid var(--border-strong);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--text-soft);
+  font: inherit;
+  font-size: 10.5px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+}
+.mnt-student-btn:hover { background: rgb(var(--primary-rgb) / 0.12); border-color: rgb(var(--primary-rgb) / 0.6); color: var(--text); }
+.mnt-student-btn.is-warn { border-color: rgb(var(--danger-rgb) / 0.5); color: var(--danger-text); }
+.mnt-student-btn.is-accent { border-color: rgb(var(--accent-rgb) / 0.55); color: var(--accent-text); }
+#mnt-state:empty, #ins-state:empty { display: none; }
+/* Instructor page: the resume card */
+.ins-resume-card { gap: 14px; padding: 16px; }
+.ins-block h5 { margin: 0 0 6px; display: flex; align-items: center; gap: 6px; font-size: var(--text-xs, 0.78rem); font-weight: 800; color: var(--text); }
+.ins-block h5 i { color: var(--primary-text); }
+.ins-block p { margin: 0; font-size: var(--text-xs, 0.78rem); line-height: 1.9; color: var(--text-soft); white-space: pre-line; }
+.ins-block p.ins-empty { color: var(--text-faint); }
+.ins-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+/* Mentor / instructor dialogs: person fields and caravan checklist in the editor's look */
+.lse .person-field { margin: 0; }
+.lse .person-field label { margin-bottom: 6px; font-size: var(--text-xs, 0.78rem); font-weight: 600; color: var(--text-soft); }
+.lse.mnt-modal { width: min(880px, 100%); }
+.lse.ins-modal { width: min(720px, 100%); }
+.mnt-check-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 4px; max-height: 240px; overflow-y: auto; scrollbar-width: thin; padding: 6px; border: 1px solid var(--border); border-radius: 18px; background: var(--surface); }
+.mnt-check-grid .lsv-col-empty, .mnt-check-grid .lst-skel-lines { grid-column: 1 / -1; }
+.mnt-mod-options { display: flex; flex-direction: column; gap: 4px; padding: 6px; border: 1px solid var(--border); border-radius: 18px; background: var(--surface); }
+.mnt-mod-option input { width: 18px; height: 18px; flex: 0 0 auto; cursor: pointer; }
+.mnt-mod-option.is-ok input { accent-color: var(--success); }
+.mnt-mod-option.is-warn input { accent-color: var(--accent); }
+.mnt-mod-option.is-danger input { accent-color: var(--danger); }
+.mnt-mod-option.is-danger strong { color: var(--danger-text); }
+.mnt-mod-option:has(input:checked) { background: rgb(var(--primary-rgb) / 0.12); }
+#inst-avatar-preview-container img { width: 100%; height: 100%; object-fit: cover; }
+#inst-avatar-preview-container img[hidden], #inst-avatar-preview-container i[hidden] { display: none; }
+@media (max-width: 1100px) {
+  .lsv-col.mnt-col-caravans { min-width: 260px; }
+  .lsv-col.mnt-col-students { min-width: 240px; }
+}
+@media (max-width: 900px) {
+  .lsv-col.mnt-col-caravans, .lsv-col.mnt-col-students { flex: 0 0 auto; min-width: 0; }
+}

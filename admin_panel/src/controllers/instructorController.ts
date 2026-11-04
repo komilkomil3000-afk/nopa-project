@@ -43,7 +43,16 @@ export const getInstructorById = async (req: Request, res: Response) => {
     if (!instructor) {
       return res.status(404).json({ error: 'استاد مورد نظر یافت نشد' });
     }
-    res.json({ success: true, data: instructor });
+    // Class sessions that name this instructor (ClassSession.instructor holds names, not ids)
+    const sessions = await prisma.classSession.findMany({
+      where: { instructor: { contains: instructor.name.trim() }, isDeleted: false },
+      select: {
+        id: true, title: true, sessionDate: true, sessionTime: true, videoUrl: true,
+        category: { select: { id: true, title: true, station: { select: { id: true, title: true } } } }
+      },
+      orderBy: [{ createdAt: 'asc' }]
+    });
+    res.json({ success: true, data: { ...instructor, sessions } });
   } catch (error: any) {
     console.error('getInstructorById error:', error);
     res.status(500).json({ error: error.message || 'خطای سرور' });
