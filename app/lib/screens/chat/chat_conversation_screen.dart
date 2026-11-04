@@ -252,14 +252,25 @@ class _ChatConversationScreenState extends State<ChatConversationScreen> {
     return img.encodeJpg(resized, quality: 80);
   }
 
+  /// The most a file (photo, video or any other) may weigh to be sent in chat.
+  static const int _maxFileBytes = 30 * 1024 * 1024;
+
   Future<void> _sendFile(io.File original) async {
+    // Too big: say so at once instead of uploading for minutes and failing
+    final size = await original.length();
+    if (!mounted) return;
+    if (size > _maxFileBytes) {
+      final mb = (size / (1024 * 1024)).toStringAsFixed(1);
+      AppToast.error(context, 'حجم این فایل $mb مگابایت است؛ حداکثر حجم مجاز برای ارسال ۳۰ مگابایت است.');
+      return;
+    }
     setState(() => _uploading = true);
     final file = await _shrink(original);
     final attachment = await _chat.upload(file, widget.spaceId);
     if (!mounted) return;
     setState(() => _uploading = false);
     if (attachment == null) {
-      AppToast.error(context, 'ارسال فایل انجام نشد. نوع و حجم فایل (حداکثر ۲۰ مگابایت) را بررسی کنید.');
+      AppToast.error(context, 'ارسال فایل انجام نشد. نوع و حجم فایل (حداکثر ۳۰ مگابایت) را بررسی کنید.');
       return;
     }
     await _chat.send(spaceId: widget.spaceId, sender: _me(), threadRootId: _threadId, attachments: [attachment]);
@@ -331,6 +342,7 @@ class _ChatConversationScreenState extends State<ChatConversationScreen> {
       alignRight: mine || card,
       items: items,
       showReactions: !message.deleted,
+      showStar: !message.deleted && moderator,
       myReactions: {for (final r in message.reactions) if (r['userId'] == myId) r['type'] as String},
     );
     if (!mounted) return;
@@ -541,7 +553,7 @@ class _ChatConversationScreenState extends State<ChatConversationScreen> {
           backgroundColor: ChatTheme.surfaceBottom,
           shape: ChatTheme.dialogShape,
           title: Text('جستجو در گفتگو', style: ChatTheme.title),
-          content: TextField(controller: controller, autofocus: true, style: ChatTheme.body, decoration: chatField('عبارت مورد نظر'), onSubmitted: (v) => Navigator.pop(ctx, v)),
+          content: TextField(controller: controller, autofocus: true, style: ChatTheme.body, decoration: chatField('عبارت مورد نظر، یا #برتر برای پیام‌های برتر'), onSubmitted: (v) => Navigator.pop(ctx, v)),
           actions: [ChatButton(label: 'جستجو', onPressed: () => Navigator.pop(ctx, controller.text))],
         ),
       ),
@@ -661,7 +673,8 @@ class _ChatConversationScreenState extends State<ChatConversationScreen> {
   /// Golden header: face, name and status on the right (a tap opens the profile), tools and back on the left.
   Widget _header(ChatSpace? space) {
     final thread = _threadId != null;
-    final title = thread ? 'گفتگوی زیر پیام' : (space?.title ?? '');
+    final challengeThread = thread && widget.threadRoot?.kind == 'challenge';
+    final title = thread ? (challengeThread ? 'گفتگوی چالش' : 'گفتگوی زیر پیام') : (space?.title ?? '');
     final online = space?.isDirect == true && space!.peerOnline;
     final avatar = thread
         ? const ChatIconAvatar(icon: Icons.forum_rounded, radius: 21)
@@ -703,7 +716,11 @@ class _ChatConversationScreenState extends State<ChatConversationScreen> {
         avatar: ChatRing(online: online, child: avatar),
         title: title,
         subtitle: _status(space),
-        onTap: thread ? null : () => _openProfile(space),
+        // In a challenge's conversation the header leads to the challenge's info and evaluation:
+        // participations, closing the challenge and applying the points
+        onTap: thread
+            ? (widget.threadRoot?.kind == 'challenge' ? () => _openInfo(widget.threadRoot!, space) : null)
+            : () => _openProfile(space),
       ),
     );
   }
@@ -824,6 +841,8 @@ class _ChatConversationScreenState extends State<ChatConversationScreen> {
           onRetry: () => _chat.retry(message),
           onReact: (type) {
             if (message.deleted) return;
+            // Only mentors can take the star back; for everyone else its chip is just a count
+            if (type == ChatTheme.starReaction && space?.canModerate != true) return;
             _chat.react(message, type);
           },
         );

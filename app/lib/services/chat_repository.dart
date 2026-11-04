@@ -614,8 +614,11 @@ class ChatRepository extends ChangeNotifier {
     if (at >= 0) {
       final current = list![at];
       final same = current.reactions.any((r) => r['userId'] == _userId && r['type'] == type);
+      // The star is separate from one's ordinary reaction: toggling either leaves the other alone
+      const star = 'star'; // ChatTheme.starReaction
+      final isStar = type == star;
       final next = <Map<String, dynamic>>[
-        ...current.reactions.where((r) => r['userId'] != _userId),
+        ...current.reactions.where((r) => r['userId'] != _userId || (r['type'] == star) != isStar),
         if (!same) {'userId': _userId, 'type': type},
       ];
       list[at] = ChatMessage.fromJson({...current.raw, 'reactions': next});

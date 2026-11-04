@@ -33,6 +33,7 @@ import {
   replyMentorTicket,
   getMentorCaravanProgress,
   recordAppUsage,
+  getMyActivityStats,
   sendMentorMessage
 } from '../controllers/mentorWorkspaceController';
 import adminRouter from './admin';
@@ -145,6 +146,7 @@ router.get('/mentor/tickets/:id', authenticateJWT as any, authorizeRoles('mentor
 router.post('/mentor/tickets/:id/messages', authenticateJWT as any, authorizeRoles('mentor', 'admin') as any, replyMentorTicket as any);
 router.post('/mentor/messages', authenticateJWT as any, authorizeRoles('mentor', 'SUPER_MENTOR', 'admin') as any, sendMentorMessage as any);
 router.post('/usage/ping', authenticateJWT as any, recordAppUsage as any);
+router.get('/usage/me', authenticateJWT as any, getMyActivityStats as any);
 router.get('/mentor/caravan-progress', authenticateJWT as any, authorizeRoles('mentor', 'SUPER_MENTOR', 'admin') as any, getMentorCaravanProgress as any);
 
 export default router;

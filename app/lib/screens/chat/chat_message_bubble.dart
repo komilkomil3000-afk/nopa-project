@@ -590,8 +590,17 @@ class ChatAudioPlayer extends StatefulWidget {
   State<ChatAudioPlayer> createState() => _ChatAudioPlayerState();
 }
 
-class _ChatAudioPlayerState extends State<ChatAudioPlayer> {
+class _ChatAudioPlayerState extends State<ChatAudioPlayer> with AutomaticKeepAliveClientMixin {
   final AudioPlayer _player = AudioPlayer();
+
+  /// A voice that is playing (or paused midway) is kept when its message scrolls out of view,
+  /// so the sound goes on while the user reads up the chat; it is released once it ends.
+  @override
+  bool get wantKeepAlive => _playing || (_started && !_completed);
+
+  void _refreshKeepAlive() {
+    if (mounted) updateKeepAlive();
+  }
   late final List<double> _peaks = widget.peaks ?? ChatWaveform.pseudoPeaks(widget.seed ?? widget.filePath ?? widget.url);
   String? _freshUrl;
   DateTime _freshAt = DateTime.fromMillisecondsSinceEpoch(0);
@@ -626,6 +635,7 @@ class _ChatAudioPlayerState extends State<ChatAudioPlayer> {
     super.initState();
     _player.onPlayerStateChanged.listen((s) {
       if (mounted) setState(() => _playing = s == PlayerState.playing);
+      _refreshKeepAlive();
     });
     _player.onPositionChanged.listen((p) {
       if (mounted && _scrub == null) setState(() => _position = p);
@@ -641,11 +651,13 @@ class _ChatAudioPlayerState extends State<ChatAudioPlayer> {
           _position = Duration.zero;
         });
       }
+      _refreshKeepAlive();
     });
   }
 
   @override
   void dispose() {
+    AudioExclusivityService.unregisterAudioPlayer(_player);
     _player.dispose();
     super.dispose();
   }
@@ -679,6 +691,7 @@ class _ChatAudioPlayerState extends State<ChatAudioPlayer> {
         _completed = false;
         await _player.play(_source, position: from);
         _started = true;
+        _refreshKeepAlive();
       }
     } catch (_) {
       // One more try from scratch before giving up
@@ -731,6 +744,7 @@ class _ChatAudioPlayerState extends State<ChatAudioPlayer> {
 
   @override
   Widget build(BuildContext context) {
+    super.build(context);
     final fraction = _scrub ?? (_total.inMilliseconds > 0 ? (_position.inMilliseconds / _total.inMilliseconds).clamp(0.0, 1.0) : 0.0);
     final shown = _scrub != null ? Duration(milliseconds: (_total.inMilliseconds * _scrub!).round()) : _position;
     final color = widget.color ?? (widget.onGold ? ChatTheme.goldTitle : ChatTheme.accent);

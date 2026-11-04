@@ -33,6 +33,7 @@ Future<String?> showChatMessageMenu(
   required bool alignRight,
   required List<ChatMenuItem> items,
   bool showReactions = true,
+  bool showStar = false,
   Set<String> myReactions = const {},
 }) {
   dismissChatMessageMenu();
@@ -54,7 +55,7 @@ Future<String?> showChatMessageMenu(
       duration: const Duration(milliseconds: 150),
       curve: Curves.easeOut,
       builder: (ctx, t, child) => Opacity(opacity: t, child: Transform.scale(scale: 0.96 + 0.04 * t, child: child)),
-      child: _ChatMessageMenu(anchor: anchor, alignRight: alignRight, items: items, showReactions: showReactions, myReactions: myReactions, onClose: close),
+      child: _ChatMessageMenu(anchor: anchor, alignRight: alignRight, items: items, showReactions: showReactions, showStar: showStar, myReactions: myReactions, onClose: close),
     ),
   );
   Overlay.of(context, rootOverlay: true).insert(entry);
@@ -66,10 +67,11 @@ class _ChatMessageMenu extends StatelessWidget {
   final bool alignRight;
   final List<ChatMenuItem> items;
   final bool showReactions;
+  final bool showStar;
   final Set<String> myReactions;
   final void Function(String? value) onClose;
 
-  const _ChatMessageMenu({required this.anchor, required this.alignRight, required this.items, required this.showReactions, required this.myReactions, required this.onClose});
+  const _ChatMessageMenu({required this.anchor, required this.alignRight, required this.items, required this.showReactions, required this.showStar, required this.myReactions, required this.onClose});
 
   static const double _menuWidth = 230;
   static const double _itemHeight = 44;
@@ -84,7 +86,7 @@ class _ChatMessageMenu extends StatelessWidget {
     // Above the keyboard when it is open
     final bottom = size.height - math.max(padding.bottom, MediaQuery.viewInsetsOf(context).bottom) - 12;
     final menuHeight = items.length * _itemHeight + 12;
-    final reactionsWidth = math.min(size.width - ChatTheme.gutter * 2, ChatTheme.reactions.length * 48.0 + 16);
+    final reactionsWidth = math.min(size.width - ChatTheme.gutter * 2, (ChatTheme.reactions.length + (showStar ? 1 : 0)) * 48.0 + 16 + (showStar ? 9 : 0));
 
     // Reactions just over the message and the menu just under it; near the bottom both go over it
     final above = showReactions ? _reactionsHeight + _gap : 0.0;
@@ -119,7 +121,7 @@ class _ChatMessageMenu extends StatelessWidget {
               left: horizontal(reactionsWidth),
               width: reactionsWidth,
               height: _reactionsHeight,
-              child: _Reactions(myReactions: myReactions, onPick: onClose),
+              child: _Reactions(myReactions: myReactions, showStar: showStar, onPick: onClose),
             ),
           if (items.isNotEmpty)
             Positioned(
@@ -174,8 +176,27 @@ class _ChatMessageMenu extends StatelessWidget {
 
 class _Reactions extends StatelessWidget {
   final Set<String> myReactions;
+  final bool showStar;
   final void Function(String value) onPick;
-  const _Reactions({required this.myReactions, required this.onPick});
+  const _Reactions({required this.myReactions, required this.showStar, required this.onPick});
+
+  Widget _button(String key, String label) => Tooltip(
+        message: label,
+        child: InkWell(
+          customBorder: const CircleBorder(),
+          onTap: () => onPick('react:$key'),
+          child: Container(
+            width: 40,
+            height: 40,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: myReactions.contains(key) ? ChatTheme.accent.withValues(alpha: 0.45) : Colors.transparent,
+            ),
+            alignment: Alignment.center,
+            child: ChatReactionEmoji(type: key, size: 24),
+          ),
+        ),
+      );
 
   @override
   Widget build(BuildContext context) {
@@ -189,24 +210,12 @@ class _Reactions extends StatelessWidget {
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceEvenly,
           children: [
-            for (final entry in ChatTheme.reactions.entries)
-              Tooltip(
-                message: entry.value.label,
-                child: InkWell(
-                  customBorder: const CircleBorder(),
-                  onTap: () => onPick('react:${entry.key}'),
-                  child: Container(
-                    width: 40,
-                    height: 40,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: myReactions.contains(entry.key) ? ChatTheme.accent.withValues(alpha: 0.45) : Colors.transparent,
-                    ),
-                    alignment: Alignment.center,
-                    child: ChatReactionEmoji(type: entry.key, size: 24),
-                  ),
-                ),
-              ),
+            for (final entry in ChatTheme.reactions.entries) _button(entry.key, entry.value.label),
+            // The mentor's extra: a star that marks the message as a top one
+            if (showStar) ...[
+              Container(width: 1, height: 26, color: ChatTheme.ink.withValues(alpha: 0.15)),
+              _button(ChatTheme.starReaction, 'برتر'),
+            ],
           ],
         ),
       ),

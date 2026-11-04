@@ -6,7 +6,6 @@ import 'package:nopa_app/widgets/bottom_nav_bar.dart';
 import 'package:nopa_app/core/constants/app_routes.dart';
 import 'package:nopa_app/widgets/tap_expander.dart';
 import 'package:nopa_app/core/station_numbering.dart';
-import 'package:nopa_app/core/station_state.dart';
 import 'package:nopa_app/core/asset_names.dart';
 import 'package:flutter/material.dart' hide Text;
 import 'package:nopa_app/widgets/fa_text.dart';
@@ -24,6 +23,7 @@ import 'package:nopa_app/screens/student/profile/student_edit_profile_screen.dar
 import 'package:nopa_app/screens/mentor/profile/mentor_caravans_roster_screen.dart';
 import 'package:nopa_app/widgets/app_scaffold.dart';
 import 'package:nopa_app/widgets/station_progress_stepper.dart';
+import 'package:nopa_app/widgets/report_activity_cards.dart';
 import '../../../widgets/story_dialog.dart';
 
 class StudentProfileScreen extends StatefulWidget {
@@ -463,13 +463,13 @@ class _ReportCardAndAchievementsScreen extends StatefulWidget {
 }
 
 class _ReportCardAndAchievementsScreenState extends State<_ReportCardAndAchievementsScreen> {
-  final Set<int> _expandedStationIndices = {0};
 
   // Start from what the profile already loaded, then re-read everything from the server so the
   // report card never shows stale numbers.
   late List<Map<String, dynamic>> _stations = widget.stations;
   late List<Map<String, dynamic>> _progress = widget.progressList;
   bool _refreshing = true;
+  Map<String, dynamic>? _activity;
 
   @override
   void initState() {
@@ -485,6 +485,7 @@ class _ReportCardAndAchievementsScreenState extends State<_ReportCardAndAchievem
         api.getStations(forceRefresh: true),
         api.getUserProgress(),
         repo.refreshUser(),
+        api.getMyActivityStats(),
       ]);
       if (!mounted) return;
       setState(() {
@@ -492,34 +493,10 @@ class _ReportCardAndAchievementsScreenState extends State<_ReportCardAndAchievem
         final progress = results[1] as List;
         if (stations.isNotEmpty) _stations = stations.cast<Map<String, dynamic>>();
         _progress = progress.whereType<Map>().map((e) => Map<String, dynamic>.from(e)).toList();
+        _activity = results[3] as Map<String, dynamic>?;
       });
     } catch (_) {}
     if (mounted) setState(() => _refreshing = false);
-  }
-
-  bool _isClipDone(dynamic clipId) => _progress.any(
-      (p) => p['clipId'] == clipId && (p['isWatched'] == true || p['quizPassed'] == true));
-
-  List<Map<String, dynamic>> _getStationSessions(int stationIndex, Map<String, dynamic>? stationData) {
-    if (stationData != null && stationData['categories'] != null) {
-      final categories = stationData['categories'] as List? ?? [];
-      final List<Map<String, dynamic>> sessions = [];
-      for (final cat in categories) {
-        if (cat is Map && cat['sessions'] is List) {
-          sessions.addAll((cat['sessions'] as List).whereType<Map<String, dynamic>>());
-        }
-      }
-      if (sessions.isNotEmpty) return sessions;
-    }
-
-    return [];
-  }
-
-  /// A session is done once every one of its clips was watched or its quiz passed (from the database).
-  bool _isSessionDone(Map<String, dynamic> session) {
-    final clips = (session['videoClips'] as List?) ?? [];
-    if (clips.isEmpty) return false;
-    return clips.every((clip) => clip is Map && _isClipDone(clip['id']));
   }
 
   @override
@@ -615,237 +592,12 @@ class _ReportCardAndAchievementsScreenState extends State<_ReportCardAndAchievem
 
               const SizedBox(height: 18),
 
-              // 4. Station Road Map & Sessions Stepper (پیشرفت در منزلگاه‌ها با استایل مبادله)
-              _buildExchangeCard(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text(
-                      'پیشرفت در منزلگاه‌ها',
-                      style: AppTypography.h3,
-                    ),
-                    const SizedBox(height: 14),
-                    if (_refreshing && stations.isEmpty)
-                      const Padding(
-                        padding: EdgeInsets.symmetric(vertical: 16),
-                        child: Center(child: CircularProgressIndicator(color: AppColors.buttonCamel, strokeWidth: 2.5)),
-                      )
-                    else if (stations.isEmpty)
-                      const Padding(
-                        padding: EdgeInsets.symmetric(vertical: 12),
-                        child: Text(
-                          'اطلاعات منزلگاه‌ها دریافت نشد. اتصال اینترنت را بررسی کنید و دوباره وارد این صفحه شوید.',
-                          style: AppTypography.bodyMediumMuted,
-                        ),
-                      )
-                    else
-                      for (int i = 0; i < stations.length; i++) ...[
-                        _buildStationAccordionItem(
-                          index: i,
-                          stationData: stations[i],
-                          state: StationState.resolve(
-                            index: i,
-                            levelFrame: levelFrame,
-                            completedStationsCount: user.completedStationsCount,
-                            serverLocked: stations[i]['isLocked'] == true,
-                          ),
-                        ),
-                        if (i < stations.length - 1) const SizedBox(height: 10),
-                      ],
-                  ],
-                ),
-              ),
+              // 4. Participation in challenges and time in the app (مشارکت در چالش‌ها و زمان حضور)
+              ReportActivityCards(data: _activity, loaded: !_refreshing, stations: stations),
 
               const SizedBox(height: 30),
             ],
           ),
-        ),
-      ),
-    );
-  }
-
-  /// Station Accordion Item with nested Stepper of sessions
-  Widget _buildStationAccordionItem({
-    required int index,
-    required Map<String, dynamic>? stationData,
-    required StationState state,
-  }) {
-    final bool isCompletedStation = state.isCompleted;
-    final bool isCurrentStation = state.isCurrent;
-    final bool isLocked = state.isLocked;
-    final bool isExpanded = _expandedStationIndices.contains(index);
-
-    final String stationTitle = stationData != null && stationData['title'] != null
-        ? stationData['title'].toString()
-        : 'منزلگاه ${StationNumbering.numberAt(index + 1)}';
-
-    final sessions = _getStationSessions(index, stationData);
-
-    return Container(
-      decoration: BoxDecoration(
-        color: const Color(0xFF1E1D36),
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(
-          color: isCurrentStation
-              ? const Color(0xFFDE9959).withValues(alpha: 0.6)
-              : const Color(0xFF453F73).withValues(alpha: 0.5),
-          width: 1.1,
-        ),
-      ),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(13),
-        child: Column(
-          children: [
-            // Station Header Row (Tap to expand/collapse)
-            TapExpander(child: InkWell(
-              onTap: () {
-                setState(() {
-                  if (isExpanded) {
-                    _expandedStationIndices.remove(index);
-                  } else {
-                    _expandedStationIndices.add(index);
-                  }
-                });
-              },
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-                child: Row(
-                  children: [
-                    // Status Badge Icon
-                    Container(
-                      width: 28,
-                      height: 28,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        color: isCompletedStation
-                            ? const Color(0xFF10B981)
-                            : (isCurrentStation ? const Color(0xFFDE9959) : const Color(0xFF383562)),
-                      ),
-                      child: Center(
-                        child: Icon(
-                          isCompletedStation
-                              ? Icons.check_rounded
-                              : (isCurrentStation ? Icons.play_arrow_rounded : Icons.lock_outline_rounded),
-                          color: Colors.white,
-                          size: 16,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-
-                    // Station Title
-                    Expanded(
-                      child: Text(
-                        'منزلگاه ${StationNumbering.numberAt(index + 1).toPersian()}: $stationTitle',
-                        style: AppTypography.h3.copyWith(color: isLocked ? Colors.white54 : Colors.white),
-                      ),
-                    ),
-
-                    // Chevron Arrow
-                    Icon(
-                      isExpanded ? Icons.keyboard_arrow_up_rounded : Icons.keyboard_arrow_down_rounded,
-                      color: AppColors.buttonCancelPurple,
-                      size: 20,
-                    ),
-                  ],
-                ),
-              ),
-            )),
-
-            // Expanded Sessions Stepper List
-            if (isExpanded) ...[
-              Container(
-                decoration: const BoxDecoration(
-                  color: Color(0xFF161528),
-                  border: Border(top: BorderSide(color: Color(0xFF282542), width: 1.0)),
-                ),
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                child: Column(
-                  children: List.generate(sessions.length, (sIdx) {
-                    final session = sessions[sIdx];
-                    final bool isSessionCompleted = _isSessionDone(session);
-                    final bool isSessionCurrent = !isSessionCompleted && (sIdx == 0 || _isSessionDone(sessions[sIdx - 1]));
-                    final isLastSession = sIdx == sessions.length - 1;
-
-                    return Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        // Stepper Node & Line on Right in RTL
-                        Column(
-                          children: [
-                            Container(
-                              width: 22,
-                              height: 22,
-                              decoration: BoxDecoration(
-                                shape: BoxShape.circle,
-                                color: isSessionCompleted
-                                    ? const Color(0xFF10B981)
-                                    : (isSessionCurrent
-                                        ? const Color(0xFFDFB690).withValues(alpha: 0.2)
-                                        : const Color(0xFF352F5A)),
-                                border: Border.all(
-                                  color: isSessionCompleted
-                                      ? const Color(0xFF10B981)
-                                      : (isSessionCurrent
-                                          ? const Color(0xFFDFB690)
-                                          : const Color(0xFF8B88E8).withValues(alpha: 0.6)),
-                                  width: 1.2,
-                                ),
-                              ),
-                              child: Center(
-                                child: Icon(
-                                  isSessionCompleted
-                                      ? Icons.check_rounded
-                                      : (isSessionCurrent ? Icons.pause_rounded : Icons.play_arrow_rounded),
-                                  color: isSessionCompleted
-                                      ? Colors.white
-                                      : (isSessionCurrent ? const Color(0xFFDFB690) : const Color(0xFFFFD580)),
-                                  size: 13,
-                                ),
-                              ),
-                            ),
-                            if (!isLastSession)
-                              Container(
-                                width: 2,
-                                height: 32,
-                                color: isSessionCompleted
-                                    ? const Color(0xFF10B981).withValues(alpha: 0.5)
-                                    : const Color(0xFF383562),
-                              ),
-                          ],
-                        ),
-
-                        const SizedBox(width: 12),
-
-                        // Session Title and Subtitle
-                        Expanded(
-                          child: Padding(
-                            padding: const EdgeInsets.only(bottom: 12.0),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  session['title']?.toString() ?? 'جلسه ${(sIdx + 1).toPersian()}',
-                                  style: AppTypography.bodyMedium.copyWith(color: isSessionCompleted ? Colors.white : const Color(0xFFDDD9EE)),
-                                ),
-                                const SizedBox(height: 3),
-                                Text(
-                                  isSessionCompleted
-                                      ? 'مشاهده‌شده و تایید شده'
-                                      : (isLocked ? 'قفل شده' : 'آماده مشاهده و گذراندن'),
-                                  style: AppTypography.caption.copyWith(color: isSessionCompleted ? const Color(0xFF10B981) : const Color(0xFF8E8B9E)),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-                      ],
-                    );
-                  }),
-                ),
-              ),
-            ],
-          ],
         ),
       ),
     );

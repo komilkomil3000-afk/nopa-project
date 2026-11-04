@@ -1696,6 +1696,19 @@ class HttpApiService {
     return false;
   }
 
+  /// The signed-in user's challenge participation and time in the app (for the report card).
+  Future<Map<String, dynamic>?> getMyActivityStats() async {
+    try {
+      final res = await _get(Uri.parse('$baseUrl/usage/me'), headers: _getHeaders());
+      if (res.statusCode == 200) {
+        return (await parseJsonAsync(res.body)) as Map<String, dynamic>?;
+      }
+    } catch (e) {
+      debugPrint('getMyActivityStats error: $e');
+    }
+    return null;
+  }
+
   Future<Map<String, dynamic>?> heartbeatSessionWatch(String sessionId, int currentPositionSeconds, int durationSeconds) async {
     try {
       final res = await _post(
