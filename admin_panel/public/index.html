@@ -680,67 +680,132 @@
         </div>
       </section>
 
-      <!-- TAB 2: REWARDS & LEDGER -->
+      <!-- TAB: سرمایه‌ها (money rules + asset names) as a bento like the stations tab. Drawn by js/features/economy.js and
+           js/features/asset-names.js; styles in css/stations.css (.lst-*, .lse-*, .eco-*). -->
       <section id="assets-tab" class="tab-panel" data-style="display: none;">
-        <div class="panel-card glass u-maxw-760">
-          <div class="panel-title"><i class="fa-solid fa-tags u-c-primary-text u-ml-8"></i>نام دارایی‌ها</div>
-          <div class="u-fs-sm u-c-text-muted u-m-6-0-16 u-lh-1_8">
-            نام هر دارایی را اینجا تغییر دهید؛ نیازی به دسترسی به دیتابیس نیست. اپلیکیشن در اجرای بعدی و این پنل پس از رفرش صفحه، نام جدید را نشان می‌دهند. پیام‌ها و اعلان‌های جدید سرور هم با نام جدید ساخته می‌شوند. تغییر نام، موجودی‌ها را تغییر نمی‌دهد.
+        <div id="eco-overview-view">
+          <div class="lms-head-actions u-flex u-justify-end u-items-center u-mb-20">
+            <div class="u-flex u-gap-10">
+              <button type="button" class="btn-action" data-click="previewEconomy"><i class="fa-solid fa-calculator"></i> محاسبه‌ی اثر</button>
+              <button type="button" class="btn-primary u-bgc-primary" data-click="saveEconomy"><i class="fa-solid fa-floppy-disk"></i> ذخیره نسخه‌ی جدید</button>
+            </div>
           </div>
-          <div id="asset-names-list" class="u-grid u-cols-2 u-gap-12"></div>
+
+          <div class="lst-bento eco-bento">
+            <div class="lst-tile lst-tile-stations glass">
+              <div class="lst-tile-head">
+                <h4 class="lst-tile-title"><i class="fa-solid fa-scale-balanced"></i> قوانین مالی <span class="lst-tile-sub" id="eco-version-badge">هر ذخیره یک نسخه‌ی جدید می‌سازد و از همان لحظه اعمال می‌شود</span></h4>
+              </div>
+              <div id="economy-settings" class="eco-groups" aria-busy="true"></div>
+              <div class="eco-foot">
+                <label class="search-box eco-note"><i class="fa-solid fa-pen"></i><input type="text" id="economy-note" class="input-ctrl" maxlength="300" placeholder="دلیل تغییر (اختیاری)" aria-label="دلیل تغییر"></label>
+                <div class="u-flex u-gap-8">
+                  <button type="button" class="lse-btn" data-click="previewEconomy"><i class="fa-solid fa-calculator"></i> محاسبه‌ی اثر</button>
+                  <button type="button" class="lsv-pill" data-click="saveEconomy"><i class="fa-solid fa-check"></i> ذخیره</button>
+                </div>
+              </div>
+              <p class="lse-hint u-m-0">موجودی کاربران و تراکنش‌های قبلی با ذخیره تغییر نمی‌کنند.</p>
+            </div>
+
+            <div class="lst-tile glass">
+              <h4 class="lst-tile-title"><i class="fa-solid fa-chart-simple"></i> نرخ‌های فعلی</h4>
+              <div class="lst-mini-stats">
+                <div class="lst-mini-stat"><span class="stat-label">نسخه</span><span class="stat-value u-c-primary-text" id="eco-stat-version">-</span></div>
+                <div class="lst-mini-stat"><span class="stat-label">کلاف هر قالیچه</span><span class="stat-value u-c-success-text" id="eco-stat-nakh">-</span></div>
+                <div class="lst-mini-stat"><span class="stat-label">فروش قالیچه (زریک)</span><span class="stat-value u-c-accent-text" id="eco-stat-farsh">-</span></div>
+                <div class="lst-mini-stat"><span class="stat-label">سقف جایزه چالش</span><span class="stat-value u-c-info-text" id="eco-stat-challenge">-</span></div>
+              </div>
+            </div>
+
+            <div class="lst-tile glass">
+              <h4 class="lst-tile-title"><i class="fa-solid fa-tags"></i> نام دارایی‌ها <span class="lst-tile-sub">با رفرش صفحه اعمال می‌شود</span></h4>
+              <div id="asset-names-list"></div>
+            </div>
+
+            <div class="lst-tile glass">
+              <h4 class="lst-tile-title"><i class="fa-solid fa-calculator"></i> اثر تغییرات</h4>
+              <div id="economy-preview"></div>
+            </div>
+
+            <div class="lst-tile glass">
+              <h4 class="lst-tile-title"><i class="fa-solid fa-bolt"></i> دسترسی سریع</h4>
+              <div class="lst-quick">
+                <button type="button" class="lst-quick-btn" data-click="previewEconomy"><i class="fa-solid fa-calculator"></i> محاسبه‌ی اثر</button>
+                <button type="button" class="lst-quick-btn" data-click="loadAssetsTab"><i class="fa-solid fa-sync"></i> بروزرسانی</button>
+                <button type="button" class="lst-quick-btn" data-click="usrGoTab" data-click-args="[&quot;rewards-tab&quot;]"><i class="fa-solid fa-coins"></i> کیف پول و لیگ</button>
+              </div>
+            </div>
+
+            <div class="lst-tile glass">
+              <h4 class="lst-tile-title"><i class="fa-solid fa-clock-rotate-left"></i> تاریخچه‌ی نسخه‌ها</h4>
+              <div id="economy-history"></div>
+            </div>
+
+            <div class="lst-tile lst-tile-wide glass">
+              <h4 class="lst-tile-title"><i class="fa-solid fa-list-check"></i> نیازمند توجه <span class="lst-tile-sub">بر اساس مقادیر فرم</span></h4>
+              <div id="eco-bento-health"></div>
+            </div>
+          </div>
         </div>
-        <div class="panel-card glass u-maxw-760">
-          <div class="panel-title"><i class="fa-solid fa-scale-balanced u-c-primary-text u-ml-8"></i>قوانین مالی</div>
-          <div class="u-fs-12_5 u-c-text-muted u-m-6-0-16 u-lh-1_8">
-            هر ذخیره یک نسخه‌ی جدید می‌سازد و از همان لحظه اعمال می‌شود. موجودی کاربران و تراکنش‌های قبلی تغییر نمی‌کنند.
+
+        <!-- Rename one asset (replaces the inline inputs) -->
+        <div id="eco-asset-modal" class="modal-overlay lse-overlay u-z-z-modal" data-style="display:none">
+          <div class="lse lse-sm">
+            <header class="lse-head lse-head-plain">
+              <div class="lse-id">
+                <span class="lse-id-icon is-accent"><i class="fa-solid fa-tag"></i></span>
+                <div class="lse-id-text"><h3 id="eco-asset-modal-title">نام دارایی</h3><span>اپ در اجرای بعدی و این پنل پس از رفرش، نام جدید را نشان می‌دهند</span></div>
+              </div>
+              <button type="button" class="lsv-round" data-click="NopaActions.hide" data-click-args="[&quot;eco-asset-modal&quot;]" title="بستن" aria-label="بستن"><i class="fa-solid fa-xmark"></i></button>
+            </header>
+            <form class="lse-form" data-submit="saveAssetNameForm" data-submit-args="[&quot;$event&quot;]">
+              <input type="hidden" id="eco-asset-key">
+              <div class="lse-body">
+                <section class="lse-card">
+                  <h4 class="lse-card-title"><i class="fa-solid fa-language"></i> نام فارسی</h4>
+                  <label class="lse-field"><span>نام <b class="lse-req">*</b> <small id="eco-asset-key-label" dir="ltr"></small></span><input type="text" id="eco-asset-name" class="input-ctrl" maxlength="30" required></label>
+                  <p class="lse-hint">پیام‌ها و اعلان‌های جدید سرور هم با نام جدید ساخته می‌شوند. تغییر نام، موجودی‌ها را تغییر نمی‌دهد.</p>
+                </section>
+              </div>
+              <footer class="lse-foot">
+                <span class="lse-foot-note"><i class="fa-solid fa-circle-info"></i> نیازی به دسترسی به دیتابیس نیست</span>
+                <div class="lse-foot-actions">
+                  <button type="button" class="lse-btn" data-click="NopaActions.hide" data-click-args="[&quot;eco-asset-modal&quot;]">انصراف</button>
+                  <button type="submit" class="lsv-pill"><i class="fa-solid fa-check"></i> ذخیره</button>
+                </div>
+              </footer>
+            </form>
           </div>
-          <div id="economy-settings"></div>
-          <input type="text" id="economy-note" maxlength="300" placeholder="دلیل تغییر (اختیاری)" class="u-w-full u-p-6-10 u-bg-surface-2 u-bd-border-strong u-r-6 u-c-text u-fs-12_5 u-mb-14">
-          <div class="u-flex u-gap-6 u-items-center u-mb-14">
-            <button type="button" class="btn-action" data-click="previewEconomy">محاسبه‌ی اثر</button>
-            <button type="button" class="btn-action btn-add" data-click="saveEconomy">ذخیره</button>
-          </div>
-          <div id="economy-preview" class="u-fs-12_5 u-c-accent-text u-lh-1_8 u-mb-14"></div>
-          <div class="u-c-text-soft u-fs-12 u-bold u-mb-5">تاریخچه‌ی تغییرات</div>
-          <div id="economy-history"></div>
         </div>
       </section>
 
+      <!-- TAB: کیف پول و لیگ. Bento of the league (caravans / people) with economy totals, Zarik by category, reward rules
+           and the latest transactions; one person's wallet page (circles = the people of the current list). Drawn by
+           js/features/rewards.js; styles in css/stations.css (.lst-*, .lsv-*, .crv-*, .wlt-*). -->
       <section id="rewards-tab" class="tab-panel" data-style="display: none;">
-        <div class="ledger-grid">
-          <!-- Adjustments and Analytics -->
-          <div>
-            <div class="panel-card glass u-mb-20">
-              <div class="u-flex u-justify-between u-items-center u-mb-16 u-wrap u-gap-10">
-                <div class="panel-title u-m-0"><i class="fa-solid fa-trophy u-c-accent-text u-ml-8"></i>مرکز لیگ و رتبه‌بندی جامع پلتفرم</div>
-                <div class="pill-nav u-flex u-gap-8 u-bg-fg-5 u-p-4 u-r-12 u-bd-fg-10">
-                  <button type="button" id="btn-league-caravans" class="page-btn u-bg-color-accent u-c-text u-fw-700 u-r-8" data-click="switchLeagueTab" data-click-args="[&quot;caravans&quot;]"><i class="fa-solid fa-users-rectangle u-ml-6"></i>لیگ کاروان‌ها</button>
-                  <button type="button" id="btn-league-individuals" class="page-btn u-bg-transparent u-c-text-secondary u-r-8" data-click="switchLeagueTab" data-click-args="[&quot;individuals&quot;]"><i class="fa-solid fa-user-graduate u-ml-6"></i>لیگ افراد و اعضا</button>
-                </div>
-              </div>
+        <div id="wlt-overview-view">
+          <div class="lms-head-actions u-flex u-justify-end u-items-center u-mb-20">
+            <div class="u-flex u-gap-10">
+              <button type="button" class="btn-action" data-click="openWalletPromo"><i class="fa-solid fa-gift"></i> زریک هدیه</button>
+              <button type="button" class="btn-primary u-bgc-primary" data-click="openWalletAdjust"><i class="fa-solid fa-plus"></i> تراکنش جدید</button>
+            </div>
+          </div>
 
-              <!-- Economy Overview Stats Bar -->
-              <div class="stats-grid u-cols-4 u-mb-16">
-                <div class="stat-card glass u-p-12-16">
-                  <div><div class="stat-label">کل زریک پلتفرم</div><div class="stat-value u-fs-lg u-c-accent-text" id="eco-zarik">0</div></div>
-                </div>
-                <div class="stat-card glass u-p-12-16">
-                  <div><div class="stat-label">کل کلاف</div><div class="stat-value u-fs-lg u-c-primary-text" id="eco-nakh">0</div></div>
-                </div>
-                <div class="stat-card glass u-p-12-16">
-                  <div><div class="stat-label">کل قالیچه</div><div class="stat-value u-fs-lg u-c-danger-text" id="eco-farsh">0</div></div>
-                </div>
-                <div class="stat-card glass u-p-12-16">
-                  <div><div class="stat-label">کل درفش</div><div class="stat-value u-fs-lg u-c-info-text" id="eco-beyragh">0</div></div>
-                </div>
-              </div>
-
-              <!-- Filter Toolbar -->
-              <div class="actions-header glass u-mb-16 u-p-12-16 u-flex u-wrap u-gap-10 u-items-center">
-                <div class="u-flex u-items-center u-gap-6">
-                  <span class="u-fs-xs u-c-text-secondary u-nowrap"><i class="fa-solid fa-arrow-down-wide-short"></i> مرتب‌سازی:</span>
-                  <select aria-label="مرتب‌سازی رتبه‌بندی" id="league-sort-by" class="select-ctrl u-minw-150" data-change="applyLeagueFilters">
-                    <option value="totalScore">کل امتیازات (جام زرین)</option>
+          <div class="lst-bento wlt-bento">
+            <div class="lst-tile lst-tile-stations glass">
+              <div class="lst-tile-head">
+                <h4 class="lst-tile-title"><i class="fa-solid fa-trophy"></i> لیگ و رتبه‌بندی <span class="lst-tile-sub" id="wlt-count-badge">برای دیدن کیف پول هر نفر بزنید</span></h4>
+                <div class="crv-filters">
+                  <div class="wlt-seg" role="tablist" aria-label="نوع لیگ">
+                    <button type="button" id="btn-league-caravans" class="wlt-seg-btn is-active" role="tab" aria-selected="true" data-click="switchLeagueTab" data-click-args="[&quot;caravans&quot;]"><i class="fa-solid fa-users-rectangle"></i> کاروان‌ها</button>
+                    <button type="button" id="btn-league-individuals" class="wlt-seg-btn" role="tab" aria-selected="false" data-click="switchLeagueTab" data-click-args="[&quot;individuals&quot;]"><i class="fa-solid fa-user-graduate"></i> افراد</button>
+                  </div>
+                  <div class="search-box">
+                    <i class="fa-solid fa-search"></i>
+                    <input aria-label="جستجو در رتبه‌بندی" type="search" id="league-search-input" class="input-ctrl" placeholder="نام، تلفن یا کاروان..." data-input="applyLeagueFilters">
+                  </div>
+                  <select aria-label="مرتب‌سازی رتبه‌بندی" id="league-sort-by" class="select-ctrl" data-change="applyLeagueFilters">
+                    <option value="totalScore">امتیاز کل</option>
                     <option value="zarik">زریک</option>
                     <option value="beyragh">درفش</option>
                     <option value="nakh">کلاف</option>
@@ -748,225 +813,234 @@
                     <option value="stars">ستاره‌ها و آزمون‌ها</option>
                     <option value="quizScore">نمره آزمون‌ها</option>
                     <option value="challengeScore">امتیاز چالش‌ها</option>
-                    <option value="progress">درصد پیشرفت دوره‌ها</option>
-                    <option value="wealth">ارزش دارایی‌های نقد</option>
+                    <option value="progress">پیشرفت دوره‌ها</option>
+                    <option value="wealth">ارزش دارایی‌ها</option>
                   </select>
-                </div>
-
-                <!-- Role Filter (for Individuals) -->
-                <div id="league-role-filter-box" class="u-items-center u-gap-6" data-style="display: none">
-                  <span class="u-fs-xs u-c-text-secondary u-nowrap"><i class="fa-solid fa-user-tag"></i> نقش:</span>
-                  <select id="league-role-filter" class="select-ctrl u-minw-120" data-change="applyLeagueFilters">
+                  <select aria-label="فیلتر نقش" id="league-role-filter" class="select-ctrl" data-change="applyLeagueFilters" data-style="display: none;">
                     <option value="all">همه نقش‌ها</option>
-                    <option value="student">فقط دانش‌آموزان</option>
-                    <option value="mentor">فقط راهبران / مربیان</option>
+                    <option value="student">دانش‌آموزان</option>
+                    <option value="mentor">راهبران</option>
+                  </select>
+                  <select aria-label="فیلتر کاروان" id="league-caravan-filter" class="select-ctrl" data-change="applyLeagueFilters">
+                    <option value="all">همه کاروان‌ها</option>
                   </select>
                 </div>
-
-                <!-- Caravan Filter -->
-                <div class="u-flex u-items-center u-gap-6">
-                  <span class="u-fs-xs u-c-text-secondary u-nowrap"><i class="fa-solid fa-tents"></i> کاروان:</span>
-                  <select aria-label="فیلتر کاروان" id="league-caravan-filter" class="select-ctrl u-minw-130" data-change="applyLeagueFilters">
-                    <option value="all">تمام کاروان‌ها</option>
-                  </select>
-                </div>
-
-                <!-- Search box -->
-                <div class="u-relative u-flex-1 u-minw-180">
-                  <input aria-label="جستجو در رتبه‌بندی" type="text" id="league-search-input" class="input-ctrl u-w-full u-pr-32" placeholder="جستجوی نام، تلفن یا کاروان..." data-input="debounceLeagueSearch">
-                  <i class="fa-solid fa-magnifying-glass u-absolute u-right-10 u-top-50p u-c-text-secondary u-fs-xs u-center-y"></i>
-                </div>
-
-                <!-- Export options -->
-                <div class="dropdown-wrapper u-inline-block u-relative">
-                  <button class="btn-action btn-export u-p-6-12"><i class="fa-solid fa-file-export"></i>خروجی <i class="fa-solid fa-caret-down"></i></button>
-                  <div class="dropdown-content">
-                    <a href="#" data-click="exportCurrentLeague" data-click-args="[&quot;excel&quot;]"><i class="fa-solid fa-file-excel"></i> اکسل (Excel)</a>
-                    <a href="#" data-click="exportCurrentLeague" data-click-args="[&quot;pdf&quot;]"><i class="fa-solid fa-file-pdf"></i> فایل (PDF)</a>
-                    <a href="#" data-click="exportCurrentLeague" data-click-args="[&quot;csv&quot;]"><i class="fa-solid fa-file-csv"></i> فایل (CSV)</a>
-                  </div>
-                </div>
               </div>
+              <div id="wlt-bento-list" class="crv-card-grid" aria-busy="true"></div>
+            </div>
 
-              <!-- VIEW 1: Caravans Leaderboard -->
-              <div id="league-caravans-container" class="u-maxw-100p u-overflow-hidden">
-                <div class="table-container u-mb-0 u-maxh-420 u-overflow-auto u-maxw-100p">
-                  <table class="data-table u-minw-780" id="caravans-leaderboard-table">
-                    <thead>
-                      <tr>
-                        <th class="u-w-60 u-text-center">رتبه</th>
-                        <th>نام کاروان</th>
-                        <th>راهبر</th>
-                        <th class="u-text-center">اعضا</th>
-                        <th class="u-c-accent-text">زریک</th>
-                        <th class="u-c-primary-text">کلاف</th>
-                        <th class="u-c-danger-text">قالیچه</th>
-                        <th class="u-c-info-text">درفش</th>
-                        <th class="u-c-accent-text">ستاره/آزمون</th>
-                        <th>امتیاز چالش</th>
-                        <th>پیشرفت کلاس</th>
-                        <th class="u-c-success-text u-bold">امتیاز کل</th>
-                        <th class="u-text-center">عملیات</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      <!-- Populated dynamically via loadCaravansLeaderboard() -->
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-
-              <!-- VIEW 2: Individuals Leaderboard -->
-              <div id="league-individuals-container" class="u-maxw-100p u-overflow-hidden" data-style="display: none">
-                <div class="table-container u-mb-0 u-maxh-420 u-overflow-auto u-maxw-100p">
-                  <table class="data-table u-minw-880" id="individuals-leaderboard-table">
-                    <thead class="u-pos-sticky u-top-0 u-z-10">
-                      <tr class="u-pos-sticky u-top-0">
-                        <th class="u-w-60 u-text-center">رتبه</th>
-                        <th>کاربر</th>
-                        <th>نقش</th>
-                        <th>کاروان</th>
-                        <th class="u-c-accent-text">زریک</th>
-                        <th class="u-c-primary-text">کلاف</th>
-                        <th class="u-c-danger-text">قالیچه</th>
-                        <th class="u-c-info-text">درفش</th>
-                        <th class="u-c-accent-text">ستاره‌ها</th>
-                        <th>نمره آزمون</th>
-                        <th>نمره چالش</th>
-                        <th>پیشرفت کلاس</th>
-                        <th class="u-c-success-text u-bold">امتیاز کل</th>
-                        <th class="u-text-center">عملیات</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      <!-- Populated dynamically via loadIndividualsLeaderboard() -->
-                    </tbody>
-                  </table>
-                </div>
+            <div class="lst-tile glass">
+              <h4 class="lst-tile-title"><i class="fa-solid fa-chart-simple"></i> موجودی کل پلتفرم</h4>
+              <div class="lst-mini-stats">
+                <div class="lst-mini-stat"><span class="stat-label">زریک</span><span class="stat-value u-c-accent-text" id="eco-zarik">-</span></div>
+                <div class="lst-mini-stat"><span class="stat-label">کلاف</span><span class="stat-value u-c-primary-text" id="eco-nakh">-</span></div>
+                <div class="lst-mini-stat"><span class="stat-label">قالیچه</span><span class="stat-value u-c-danger-text" id="eco-farsh">-</span></div>
+                <div class="lst-mini-stat"><span class="stat-label">درفش</span><span class="stat-value u-c-info-text" id="eco-beyragh">-</span></div>
               </div>
             </div>
 
+            <div class="lst-tile glass">
+              <h4 class="lst-tile-title"><i class="fa-solid fa-chart-pie"></i> زریک به تفکیک دسته</h4>
+              <div id="wlt-bento-dist"></div>
+            </div>
 
-            <div class="panel-card glass">
-              <div class="panel-title">ریزنمرات تراکنش‌ها</div>
-              <div class="actions-header glass u-mb-16 u-p-10-20">
-                <select aria-label="فیلتر دسته‌ی تراکنش" id="filter-ledger-cat" class="select-ctrl">
-                  <option value="">تمام دسته‌بندی‌ها</option>
-                  <option value="Quiz Rewards">جوایز آزمون</option>
-                  <option value="Skill Tasks">چالش مهارتی</option>
-                  <option value="Mentor Bonuses">پاداش مربی</option>
-                  <option value="Special Campaigns">کمپین ویژه</option>
-                </select>
-                <div class="dropdown-wrapper u-inline-block u-relative u-mr-auto">
-                  <button class="btn-action btn-export"><i class="fa-solid fa-file-export"></i>خروجی <i class="fa-solid fa-caret-down"></i></button>
-                  <div class="dropdown-content">
-                    <a href="#" data-click="exportData" data-click-args="[&quot;ledger&quot;,&quot;pdf&quot;]"><i class="fa-solid fa-file-pdf"></i> PDF</a>
-                    <a href="#" data-click="exportData" data-click-args="[&quot;ledger&quot;,&quot;excel&quot;]"><i class="fa-solid fa-file-excel"></i> Excel</a>
-                    <a href="#" data-click="exportData" data-click-args="[&quot;ledger&quot;,&quot;csv&quot;]"><i class="fa-solid fa-file-csv"></i> CSV</a>
-                  </div>
+            <div class="lst-tile glass">
+              <h4 class="lst-tile-title"><i class="fa-solid fa-bolt"></i> دسترسی سریع</h4>
+              <div class="lst-quick">
+                <button type="button" class="lst-quick-btn" data-click="openWalletAdjust"><i class="fa-solid fa-plus"></i> تراکنش جدید</button>
+                <button type="button" class="lst-quick-btn" data-click="openWalletPromo"><i class="fa-solid fa-gift"></i> زریک هدیه</button>
+                <button type="button" class="lst-quick-btn" data-click="exportCurrentLeague" data-click-args="[&quot;excel&quot;]"><i class="fa-solid fa-file-excel"></i> خروجی لیگ</button>
+                <button type="button" class="lst-quick-btn" data-click="loadWallet"><i class="fa-solid fa-sync"></i> بروزرسانی</button>
+              </div>
+            </div>
+
+            <div class="lst-tile glass">
+              <h4 class="lst-tile-title"><i class="fa-solid fa-crown"></i> ثروتمندترین‌ها</h4>
+              <div id="wlt-bento-top"></div>
+            </div>
+
+            <div class="lst-tile glass">
+              <h4 class="lst-tile-title"><i class="fa-solid fa-sliders"></i> قوانین پاداش</h4>
+              <div id="rule-list"></div>
+            </div>
+
+            <div class="lst-tile lst-tile-wide glass">
+              <div class="lst-tile-head">
+                <h4 class="lst-tile-title"><i class="fa-solid fa-receipt"></i> آخرین تراکنش‌های زریک</h4>
+                <div class="crv-filters">
+                  <select aria-label="فیلتر دسته‌ی تراکنش" id="filter-ledger-cat" class="select-ctrl" data-change="loadLedger">
+                    <option value="">همه دسته‌ها</option>
+                    <option value="Quiz Rewards">جوایز آزمون</option>
+                    <option value="Skill Tasks">چالش مهارتی</option>
+                    <option value="Mentor Bonuses">پاداش مربی</option>
+                    <option value="Special Campaigns">کمپین ویژه</option>
+                  </select>
+                  <button type="button" class="lsv-round lsv-round-sm" data-click="exportData" data-click-args="[&quot;ledger&quot;,&quot;excel&quot;]" title="خروجی اکسل" aria-label="خروجی اکسل"><i class="fa-solid fa-file-excel"></i></button>
                 </div>
               </div>
-              <div class="table-container">
-                <table class="data-table" id="ledger-data-table">
-                  <thead>
-                    <tr>
-                      <th>کاربر</th>
-                      <th>شماره همراه</th>
-                      <th>مقدار تراکنش</th>
-                      <th>دسته‌بندی</th>
-                      <th>دلیل تراکنش</th>
-                      <th>ثبت‌کننده</th>
-                      <th>زمان</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    <!-- Ledger rows -->
-                  </tbody>
-                </table>
-              </div>
+              <div id="wlt-bento-ledger"></div>
             </div>
           </div>
+        </div>
 
-          <!-- Adjust Zarik Utility Sidebar -->
-          <div>
-            <div class="panel-card glass">
-              <div class="panel-title">مدیریت تراکنش زریک</div>
-              <form id="zarik-adjust-form">
-                <div class="form-group">
-                  <label for="zarik-target-user">نام یا شناسه کاربر هدف</label>
-                  <select id="zarik-target-user" class="select-ctrl u-w-full" required>
-                    <option value="">انتخاب کاربر...</option>
-                  </select>
+        <!-- One person's wallet: circles are the people of the current league list -->
+        <div id="wlt-detail-view" data-style="display: none;">
+          <div class="lsv-head">
+            <button type="button" class="lsv-round" data-click="closeWalletView" title="بازگشت به لیگ" aria-label="بازگشت به لیگ"><i class="fa-solid fa-arrow-right"></i></button>
+            <h3 id="wlt-title">کیف پول</h3>
+            <span id="wlt-state"></span>
+          </div>
+          <section class="lsv-board wlt-board">
+            <header class="lsv-board-head">
+              <div class="lsv-board-title">
+                <h4>کیف پول و رتبه</h4>
+                <span id="wlt-sub"></span>
+              </div>
+              <div class="lsv-notch-wrap"><nav class="lsv-notch" id="wlt-circles" aria-label="افراد لیگ"></nav></div>
+              <div class="lsv-round-group">
+                <button type="button" class="lsv-round" data-click="adjustActiveWallet" title="تراکنش جدید" aria-label="تراکنش جدید"><i class="fa-solid fa-plus"></i></button>
+                <button type="button" class="lsv-round" data-click="promoActiveWallet" title="زریک هدیه" aria-label="زریک هدیه"><i class="fa-solid fa-gift"></i></button>
+                <button type="button" class="lsv-round" data-click="reportActiveWallet" title="گزارش کامل" aria-label="گزارش کامل"><i class="fa-solid fa-chart-line"></i></button>
+              </div>
+            </header>
+            <div class="lsv-flow crv-flow wlt-flow">
+              <div class="lsv-col crv-col-mentor">
+                <div class="lsv-col-card crv-mentor" id="wlt-info-card"></div>
+                <div class="lsv-col-label"><i class="fa-solid fa-id-card"></i> شناسنامه</div>
+              </div>
+              <div class="lsv-link" aria-hidden="true"></div>
+              <div class="lsv-col crv-col-assets">
+                <div class="lsv-col-card crv-assets-card" id="wlt-assets-card"></div>
+                <div class="lsv-col-label"><i class="fa-solid fa-wallet"></i> دارایی‌ها و امتیازها</div>
+              </div>
+              <div class="lsv-link" aria-hidden="true"></div>
+              <div class="lsv-col mnt-col-students">
+                <div class="lsv-col-card" id="wlt-ledger-card">
+                  <div class="crv-members-list" id="wlt-ledger-list"></div>
                 </div>
-                <div class="form-group">
-                  <label for="adj-asset-type">نوع دارایی</label>
-              <select id="adj-asset-type" class="select-ctrl u-w-full">
-                <option value="zarik">زریک (سکه)</option>
-                <option value="nakh">کلاف</option>
-                <option value="beyragh">درفش</option>
-                <option value="farsh">قالیچه</option>
-              </select>
-            </div>
-            <div class="form-group u-flex-1">
-              <label for="zarik-amount">مبلغ تغییر (مثبت یا منفی)</label>
-                  <input type="number" id="zarik-amount" class="input-ctrl" placeholder="مثال: ۲۰۰ یا -۱۰۰" required>
-                </div>
-                <div class="form-group">
-                  <label for="zarik-category">دسته‌بندی پاداش</label>
-                  <select id="zarik-category" class="select-ctrl u-w-full" required>
-                    <option value="Quiz Rewards">Quiz Rewards (آزمون)</option>
-                    <option value="Skill Tasks">Skill Tasks (چالش مهارتی)</option>
-                    <option value="Mentor Bonuses">Mentor Bonuses (پاداش مربی)</option>
-                    <option value="Special Campaigns">Special Campaigns (کمپین ویژه)</option>
-                  </select>
-                </div>
-                <div class="form-group">
-                  <label for="zarik-reason">دلیل تراکنش (پیوست سند حسابرسی)</label>
-                  <input type="text" id="zarik-reason" class="input-ctrl" placeholder="دلیل واریز/کسر..." required>
-                </div>
-                <button type="submit" class="btn-primary">اعمال تراکنش و ثبت لاگ</button>
-              </form>
-            </div>
-
-            <div class="panel-card glass u-mt-12">
-              <div class="panel-title">قوانین پاداش دینامیک</div>
-              <form id="reward-rules-form">
-                <div class="form-group">
-                  <label for="rule-key">کلید قانون (مثال: station_reward_zarik)</label>
-                  <input type="text" id="rule-key" class="input-ctrl" required>
-                </div>
-                <div class="form-group">
-                  <label for="rule-min">حداقل</label>
-                  <input type="number" id="rule-min" class="input-ctrl" required>
-                </div>
-                <div class="form-group">
-                  <label for="rule-max">حداکثر</label>
-                  <input type="number" id="rule-max" class="input-ctrl" required>
-                </div>
-                <button class="btn-primary" type="submit">ذخیره قانون</button>
-              </form>
-              <div class="u-mt-10">
-                <h5>قوانین فعلی</h5>
-                <ul id="rule-list" class="u-pl-12"></ul>
+                <div class="lsv-col-label"><i class="fa-solid fa-receipt"></i> تراکنش‌های زریک <span class="lsv-col-count" id="wlt-ledger-count">0</span></div>
               </div>
             </div>
-            
-            <div class="panel-card glass u-mt-20">
-              <div class="panel-title">تخصیص پروموشن زریک</div>
-              <p class="u-fs-xs u-c-text-muted u-mb-10">اعطای توکن هدیه به کاربران جهت کمپین‌های تبلیغاتی</p>
-              <form id="zarik-promo-form">
-                <div class="form-group">
-                  <input aria-label="شناسه کاربر" type="text" id="promo-target-user" class="input-ctrl" placeholder="شناسه کاربر" required>
+          </section>
+        </div>
+
+        <!-- New transaction (any asset) -->
+        <div id="wlt-adjust-modal" class="modal-overlay lse-overlay u-z-z-modal" data-style="display:none">
+          <div class="lse lse-sm">
+            <header class="lse-head lse-head-plain">
+              <div class="lse-id">
+                <span class="lse-id-icon is-accent"><i class="fa-solid fa-coins"></i></span>
+                <div class="lse-id-text"><h3 id="wlt-adjust-title">تراکنش جدید</h3><span>واریز یا کسر دارایی، با ثبت در لاگ حسابرسی</span></div>
+              </div>
+              <button type="button" class="lsv-round" data-click="NopaActions.hide" data-click-args="[&quot;wlt-adjust-modal&quot;]" title="بستن" aria-label="بستن"><i class="fa-solid fa-xmark"></i></button>
+            </header>
+            <form id="zarik-adjust-form" class="lse-form">
+              <div class="lse-body">
+                <section class="lse-card">
+                  <h4 class="lse-card-title"><i class="fa-solid fa-user"></i> کاربر و دارایی</h4>
+                  <label class="lse-field"><span>کاربر هدف <b class="lse-req">*</b></span>
+                    <select id="zarik-target-user" class="select-ctrl" required><option value="">انتخاب کاربر...</option></select>
+                  </label>
+                  <div class="lse-grid lse-grid-2">
+                    <label class="lse-field"><span>نوع دارایی</span>
+                      <select id="adj-asset-type" class="select-ctrl">
+                        <option value="zarik">زریک</option>
+                        <option value="nakh">کلاف</option>
+                        <option value="beyragh">درفش</option>
+                        <option value="farsh">قالیچه</option>
+                      </select>
+                    </label>
+                    <label class="lse-field"><span>مقدار <b class="lse-req">*</b> <small>مثبت یا منفی</small></span><input type="number" id="zarik-amount" class="input-ctrl" placeholder="مثال: ۲۰۰ یا -۱۰۰" required></label>
+                  </div>
+                </section>
+                <section class="lse-card">
+                  <h4 class="lse-card-title"><i class="fa-solid fa-file-lines"></i> سند</h4>
+                  <label class="lse-field"><span>دسته‌بندی <small>برای زریک</small></span>
+                    <select id="zarik-category" class="select-ctrl" required>
+                      <option value="Quiz Rewards">جوایز آزمون</option>
+                      <option value="Skill Tasks">چالش مهارتی</option>
+                      <option value="Mentor Bonuses">پاداش مربی</option>
+                      <option value="Special Campaigns">کمپین ویژه</option>
+                    </select>
+                  </label>
+                  <label class="lse-field"><span>دلیل تراکنش <b class="lse-req">*</b></span><input type="text" id="zarik-reason" class="input-ctrl" placeholder="دلیل واریز یا کسر..." required></label>
+                </section>
+              </div>
+              <footer class="lse-foot">
+                <span class="lse-foot-note"><i class="fa-solid fa-circle-info"></i> کاربر اعلان تغییر موجودی را می‌گیرد</span>
+                <div class="lse-foot-actions">
+                  <button type="button" class="lse-btn" data-click="NopaActions.hide" data-click-args="[&quot;wlt-adjust-modal&quot;]">انصراف</button>
+                  <button type="submit" class="lsv-pill"><i class="fa-solid fa-check"></i> اعمال تراکنش</button>
                 </div>
-                <div class="form-group">
-                  <input aria-label="تعداد زریک اهدایی" type="number" id="promo-amount" class="input-ctrl" placeholder="تعداد زریک اهدایی" required>
+              </footer>
+            </form>
+          </div>
+        </div>
+
+        <!-- Promotional Zarik -->
+        <div id="wlt-promo-modal" class="modal-overlay lse-overlay u-z-z-modal" data-style="display:none">
+          <div class="lse lse-sm">
+            <header class="lse-head lse-head-plain">
+              <div class="lse-id">
+                <span class="lse-id-icon is-accent"><i class="fa-solid fa-gift"></i></span>
+                <div class="lse-id-text"><h3>زریک هدیه</h3><span>اعطای زریک برای کمپین‌های تبلیغاتی (دسته‌ی کمپین ویژه)</span></div>
+              </div>
+              <button type="button" class="lsv-round" data-click="NopaActions.hide" data-click-args="[&quot;wlt-promo-modal&quot;]" title="بستن" aria-label="بستن"><i class="fa-solid fa-xmark"></i></button>
+            </header>
+            <form id="zarik-promo-form" class="lse-form">
+              <div class="lse-body">
+                <section class="lse-card">
+                  <h4 class="lse-card-title"><i class="fa-solid fa-gift"></i> هدیه</h4>
+                  <label class="lse-field"><span>کاربر <b class="lse-req">*</b></span>
+                    <select id="promo-target-user" class="select-ctrl" required><option value="">انتخاب کاربر...</option></select>
+                  </label>
+                  <div class="lse-grid lse-grid-2">
+                    <label class="lse-field"><span>تعداد زریک <b class="lse-req">*</b></span><input type="number" min="1" id="promo-amount" class="input-ctrl" required></label>
+                    <label class="lse-field"><span>توضیحات کمپین <b class="lse-req">*</b></span><input type="text" id="promo-reason" class="input-ctrl" required></label>
+                  </div>
+                </section>
+              </div>
+              <footer class="lse-foot">
+                <span class="lse-foot-note"><i class="fa-solid fa-circle-info"></i> در دفتر تراکنش‌ها ثبت می‌شود</span>
+                <div class="lse-foot-actions">
+                  <button type="button" class="lse-btn" data-click="NopaActions.hide" data-click-args="[&quot;wlt-promo-modal&quot;]">انصراف</button>
+                  <button type="submit" class="lsv-pill"><i class="fa-solid fa-gift"></i> اعطای زریک</button>
                 </div>
-                <div class="form-group">
-                  <input aria-label="توضیحات کمپین" type="text" id="promo-reason" class="input-ctrl" placeholder="توضیحات کمپین" required>
+              </footer>
+            </form>
+          </div>
+        </div>
+
+        <!-- Reward rule (new / edit) -->
+        <div id="wlt-rule-modal" class="modal-overlay lse-overlay u-z-z-modal" data-style="display:none">
+          <div class="lse lse-sm">
+            <header class="lse-head lse-head-plain">
+              <div class="lse-id">
+                <span class="lse-id-icon is-accent"><i class="fa-solid fa-sliders"></i></span>
+                <div class="lse-id-text"><h3 id="wlt-rule-title">قانون پاداش</h3><span>بازه‌ی مجاز پاداش برای یک کلید</span></div>
+              </div>
+              <button type="button" class="lsv-round" data-click="NopaActions.hide" data-click-args="[&quot;wlt-rule-modal&quot;]" title="بستن" aria-label="بستن"><i class="fa-solid fa-xmark"></i></button>
+            </header>
+            <form id="reward-rules-form" class="lse-form">
+              <div class="lse-body">
+                <section class="lse-card">
+                  <h4 class="lse-card-title"><i class="fa-solid fa-key"></i> قانون</h4>
+                  <label class="lse-field"><span>کلید <b class="lse-req">*</b> <small>مثال: station_reward_zarik</small></span><input type="text" id="rule-key" class="input-ctrl" dir="ltr" required></label>
+                  <div class="lse-grid lse-grid-2">
+                    <label class="lse-field"><span>حداقل <b class="lse-req">*</b></span><input type="number" id="rule-min" class="input-ctrl" required></label>
+                    <label class="lse-field"><span>حداکثر <b class="lse-req">*</b></span><input type="number" id="rule-max" class="input-ctrl" required></label>
+                  </div>
+                  <p class="lse-hint">با کلید تکراری، همان قانون به‌روزرسانی می‌شود.</p>
+                </section>
+              </div>
+              <footer class="lse-foot">
+                <span class="lse-foot-note"><i class="fa-solid fa-circle-info"></i> از همین لحظه اعمال می‌شود</span>
+                <div class="lse-foot-actions">
+                  <button type="button" class="lse-btn" data-click="NopaActions.hide" data-click-args="[&quot;wlt-rule-modal&quot;]">انصراف</button>
+                  <button type="submit" class="lsv-pill"><i class="fa-solid fa-check"></i> ذخیره قانون</button>
                 </div>
-                <button type="submit" class="btn-primary u-bgc-success">اعطای زریک</button>
-              </form>
-            </div>
+              </footer>
+            </form>
           </div>
         </div>
       </section>

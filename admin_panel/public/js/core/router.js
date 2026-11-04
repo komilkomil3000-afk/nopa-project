@@ -41,12 +41,12 @@
     'rewards-tab': {
       hashes: ['rewards'], group: 'economy', label: 'کیف پول و لیگ', icon: 'fa-solid fa-coins', section: 'rewards',
       title: 'کیف پول زریک', desc: 'مدیریت ترازنامه، جوایز فصلی و توزیع ثروت اقتصاد زریک',
-      load: () => { call('loadLedger'); call('loadZarikAnalytics'); call('loadAssetLeaderboard'); call('loadRewardRules'); },
+      load: () => call('loadWallet'),
     },
     'assets-tab': {
       hashes: ['assets'], group: 'economy', label: 'سرمایه‌ها', icon: 'fa-solid fa-scale-balanced', section: null,
       title: 'سرمایه‌ها', desc: 'نام دارایی‌ها، نرخ‌ها، جوایز و قوانین مالی اپ',
-      load: () => { call('loadAssetNames'); call('loadEconomy'); },
+      load: () => call('loadAssetsTab'),
     },
     'mentors-profile-tab': {
       hashes: ['mentors', 'mentors-profile', 'mentors-league'], group: 'mentors', label: 'پروفایل و شناسنامه', icon: 'fa-solid fa-id-card', section: 'mentors',
