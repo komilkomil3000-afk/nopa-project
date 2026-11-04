@@ -571,13 +571,30 @@ class ChatRepository extends ChangeNotifier {
 
   Future<bool> edit(ChatMessage message, String body) => _apply('PATCH', '/chat/messages/${message.id}', {'body': body});
   Future<bool> delete(ChatMessage message) => _apply('DELETE', '/chat/messages/${message.id}', null);
-  /// One reaction per person: choosing another takes the first one back (the server toggles by type).
+  /// One reaction per person, kept per user: choosing another replaces only one's own, never anyone else's.
+  /// The server does the same; the screen shows it at once, then takes the server's answer.
   Future<bool> react(ChatMessage message, String type) async {
-    final mine = message.reactions.where((r) => r['userId'] == _userId).map((r) => r['type'] as String).toSet();
-    for (final other in mine.where((t) => t != type)) {
-      await _apply('POST', '/chat/messages/${message.id}/reactions', {'type': other});
+    final list = _lists[_key(message.spaceId, message.threadRootId)];
+    final at = list?.indexWhere((m) => m.id == message.id) ?? -1;
+    if (at >= 0) {
+      final current = list![at];
+      final same = current.reactions.any((r) => r['userId'] == _userId && r['type'] == type);
+      final next = <Map<String, dynamic>>[
+        ...current.reactions.where((r) => r['userId'] != _userId),
+        if (!same) {'userId': _userId, 'type': type},
+      ];
+      list[at] = ChatMessage.fromJson({...current.raw, 'reactions': next});
+      notifyListeners();
     }
-    return _apply('POST', '/chat/messages/${message.id}/reactions', {'type': type});
+    final ok = await _apply('POST', '/chat/messages/${message.id}/reactions', {'type': type});
+    if (!ok && at >= 0) {
+      final i = list!.indexWhere((m) => m.id == message.id);
+      if (i >= 0) {
+        list[i] = message;
+        notifyListeners();
+      }
+    }
+    return ok;
   }
   Future<bool> togglePin(ChatMessage message) => _apply('POST', '/chat/messages/${message.id}/pin', {});
 

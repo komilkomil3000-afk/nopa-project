@@ -8,7 +8,7 @@ import { ChatActor, canSee, SpaceRef } from './access';
 import { isMentorRole } from '../../utils/roles';
 
 export const CHAT_FILES_DIR = process.env.CHAT_FILES_DIR || path.join(__dirname, '../../../chat-files');
-export const REACTION_TYPES = ['bravo', 'agree', 'idea', 'question', 'confused'];
+export const REACTION_TYPES = ['like', 'dislike', 'idea', 'flower', 'thanks', 'bravo', 'agree', 'question', 'confused']; // the first five are offered; the rest are kept for old reactions
 export const MAX_BODY = 4000;
 export const PAGE_SIZE = 40;
 const FILE_LINK_SECONDS = 60 * 60;

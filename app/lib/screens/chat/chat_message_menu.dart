@@ -2,8 +2,8 @@ import 'dart:async';
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart' hide Text;
-import 'package:nopa_app/core/theme/app_colors.dart';
 import 'package:nopa_app/core/theme/app_theme.dart';
+import 'package:nopa_app/screens/chat/chat_reaction_emoji.dart';
 import 'package:nopa_app/screens/chat/chat_theme.dart';
 import 'package:nopa_app/widgets/fa_text.dart';
 
@@ -202,7 +202,8 @@ class _Reactions extends StatelessWidget {
                       shape: BoxShape.circle,
                       color: myReactions.contains(entry.key) ? ChatTheme.accent.withValues(alpha: 0.45) : Colors.transparent,
                     ),
-                    child: Icon(entry.value.icon, color: myReactions.contains(entry.key) ? ChatTheme.ink : AppColors.buttonCamel, size: 24),
+                    alignment: Alignment.center,
+                    child: ChatReactionEmoji(type: entry.key, size: 24),
                   ),
                 ),
               ),

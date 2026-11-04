@@ -6,6 +6,7 @@ import 'package:nopa_app/core/theme/app_theme.dart';
 import 'package:nopa_app/models/chat_models.dart';
 import 'package:nopa_app/screens/chat/chat_cards.dart';
 import 'package:nopa_app/screens/chat/chat_format.dart';
+import 'package:nopa_app/screens/chat/chat_reaction_emoji.dart';
 import 'package:nopa_app/screens/chat/chat_theme.dart';
 import 'package:nopa_app/screens/chat/chat_waveform.dart';
 import 'package:nopa_app/screens/chat/chat_widgets.dart';
@@ -336,7 +337,7 @@ class _ChatMessageBubbleState extends State<ChatMessageBubble> {
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Icon(ChatTheme.reactions[entry.key]?.icon ?? Icons.star_rounded, size: 13, color: _mineLook ? ChatTheme.accent : ChatTheme.goldTitle),
+                    ChatReactionEmoji(type: entry.key, size: 13, animate: mineSet.contains(entry.key)),
                     const SizedBox(width: 3),
                     Text('${entry.value}', style: ChatTheme.caption.copyWith(color: _textColor)),
                     // A mentor's reaction wears the mentor's badge

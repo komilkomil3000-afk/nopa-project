@@ -436,7 +436,7 @@ class _Class1ScreenState extends State<StudentClass1Screen> {
   /// 3. Station Lore Header: Text on Left & Station Image Box on Right (No shadow, no bottom text, Home gradient border)
   Widget _buildStationLoreHeader() {
     const double cardWidth = 105.0;
-    const double cardHeight = 138.0;
+    const double cardHeight = 148.5; // A4 poster (1:1.414) at this width
     final String stationImage = _station?.imageUrl ?? '';
     final bool hasValidImg =
         stationImage.isNotEmpty &&
@@ -530,11 +530,15 @@ class _Class1ScreenState extends State<StudentClass1Screen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 const SizedBox(height: 2),
-                // Title (Smaller font size ~17.5 as requested)
+                // The station's own name (from the database), under the "منزلگاه اول" step indicator;
+                // same look as the "نگارستان" header
                 Text(
-                  ordinalTitle,
+                  Station.getPureName(
+                    _station?.orderIndex ?? StationNumbering.numberAt(_currentStationIndex + 1),
+                    ordinalTitle,
+                  ),
                   textAlign: TextAlign.right,
-                  style: AppTypography.h3,
+                  style: AppTypography.h3Strong,
                 ),
                 const SizedBox(height: 4),
 
@@ -713,7 +717,7 @@ class _Class1ScreenState extends State<StudentClass1Screen> {
       children: [
         // Heading
         const Text(
-          'نگارستان منزلگاه',
+          'نگارستان',
           textAlign: TextAlign.right,
           style: AppTypography.h3Strong,
         ),

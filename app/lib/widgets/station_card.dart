@@ -23,7 +23,7 @@ class StationCard extends StatelessWidget {
     final bool hasValidImg = resolvedImg.isNotEmpty && resolvedImg.startsWith('http') && !resolvedImg.contains('placeholder');
 
     return AspectRatio(
-      aspectRatio: 0.65,
+      aspectRatio: 0.57, // the poster area under it is A4 (1:1.414)
       child: TapExpander(child: GestureDetector(
         behavior: HitTestBehavior.opaque,
         onTap: onTap,
@@ -80,8 +80,7 @@ class StationCard extends StatelessWidget {
                               ? CachedNetworkImage(
                                   imageUrl: resolvedImg,
                                   fit: BoxFit.cover,
-                                  memCacheWidth: 400,
-                                  memCacheHeight: 400,
+                                  memCacheWidth: 400, // width only: the poster keeps its own ratio
                                   placeholder: (context, url) => Container(
                                     color: const Color(0xFF2E2E50),
                                     alignment: Alignment.center,
