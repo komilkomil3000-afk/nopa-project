@@ -21,7 +21,12 @@ function limiterKey(req: Request): string {
 
 export const apiLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 1000, // per signed-in user, or per IP for everything else
+  // The app syncs every few seconds and chat polls too: 1000 was used up in minutes, after which every call
+  // (reactions, sending, even the connection) failed with 429
+  max: 6000, // per signed-in user, or per IP for everything else
+  // Signed chat-file links (voice, images) are fetched by media players without a login: counted per IP, a
+  // shared mobile address would block them. The link itself is the credential.
+  skip: (req) => req.originalUrl.startsWith('/api/v1/chat/files/'),
   keyGenerator: limiterKey,
   standardHeaders: true,
   legacyHeaders: false,

@@ -288,7 +288,11 @@ class _ChallengesScreenState extends State<MentorChallengesScreen> {
 
                         const SizedBox(height: 20),
 
-                        ChallengeChatButton(challengeId: challenge['id']?.toString() ?? ''),
+                        Align(
+                          alignment: Alignment.centerRight,
+                          child: ChallengeChatButton(challengeId: challenge['id']?.toString() ?? ''),
+                        ),
+                        const SizedBox(height: 6),
 
                         // 2. Row: تیتر: | Title
                         Row(

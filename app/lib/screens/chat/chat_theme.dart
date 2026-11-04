@@ -96,7 +96,8 @@ class ChatTheme {
   static const LinearGradient otherStroke = LinearGradient(
     begin: Alignment.centerLeft,
     end: Alignment.centerRight,
-    colors: [Color(0xFF7FCBA3), Color(0xFF8AD3AE)],
+    stops: [0.0, 0.5, 1.0],
+    colors: [Color(0xFF2F5A43), Color(0xFF8AD3AE), Color(0xFF2F5A43)],
   );
   static const LinearGradient otherFillGradient = LinearGradient(
     begin: Alignment.centerLeft,
@@ -119,7 +120,7 @@ class ChatTheme {
     'like': (emoji: '👍', label: 'تایید'),
     'dislike': (emoji: '👎', label: 'مخالف'),
     'idea': (emoji: '💡', label: 'ایده'),
-    'flower': (emoji: '🌹', label: 'گل'),
+    'flower': (emoji: '🌸', label: 'گل'),
     'thanks': (emoji: '🙏', label: 'ممنون'),
   };
 

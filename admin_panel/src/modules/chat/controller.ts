@@ -390,3 +390,12 @@ export async function serveFile(req: AuthRequest, res: Response) {
     res.status(500).json({ error: 'خطا در دریافت فایل' });
   }
 }
+
+/** A fresh signed link for a file the caller may see: saved copies of a message carry links that have expired. */
+export const attachmentLink = handler(async (req, res, actor) => {
+  const attachment = await prisma.chatAttachment.findUnique({ where: { id: req.params.id }, select: { id: true, messageId: true } });
+  if (!attachment || !attachment.messageId) throw new ChatError(404, 'فایل یافت نشد');
+  const { message } = await requireMessage(actor, attachment.messageId);
+  if (message.deletedAt) throw new ChatError(404, 'فایل یافت نشد');
+  res.json({ url: signFileUrl(attachment.id) });
+});

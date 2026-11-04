@@ -207,7 +207,7 @@ class _HomeScreenState extends State<StudentHomeScreen> {
             ),
           ),
         ),
-        const SizedBox(height: 10),
+        const SizedBox(height: 8),
         SizedBox(
           height: 44,
           child: Directionality(
@@ -443,7 +443,7 @@ class _HomeScreenState extends State<StudentHomeScreen> {
                   ),
                 ),
               ),
-              const SizedBox(height: 10),
+              const SizedBox(height: 8),
               SizedBox(
                 height: 264,
                 child: _stations.isEmpty

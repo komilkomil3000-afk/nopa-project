@@ -8,6 +8,7 @@ import 'package:nopa_app/core/constants/api_constants.dart';
 import 'package:nopa_app/models/chat_models.dart';
 import 'package:nopa_app/screens/chat/chat_cards.dart';
 import 'package:nopa_app/screens/chat/chat_theme.dart';
+import 'package:nopa_app/services/api_service.dart';
 import 'package:nopa_app/services/chat_repository.dart';
 import 'package:nopa_app/widgets/app_toast.dart';
 import 'package:nopa_app/widgets/fa_text.dart';
@@ -490,6 +491,26 @@ class _InterGroupSectionState extends State<InterGroupSection> {
     }
   }
 
+  /// "پرسش از داور" goes to the admin / head arbiter's support tickets, not to a mentor's chat.
+  Future<void> _askAdmin() async {
+    final text = _question.text.trim();
+    if (text.isEmpty) {
+      AppToast.error(context, 'متن پرسش را بنویسید.');
+      return;
+    }
+    final ticket = await HttpApiService().createTicket(
+      category: 'پرسش از داور',
+      subject: 'پرسش از داور (چالش ${widget.challengeId}): $text',
+    );
+    if (!mounted) return;
+    if (ticket == null) {
+      AppToast.error(context, 'ارسال پرسش انجام نشد. دوباره تلاش کنید.');
+      return;
+    }
+    _question.clear();
+    AppToast.success(context, 'پرسش شما برای داور ارشد (مدیر) ارسال شد.');
+  }
+
   Future<void> _submit(String method, String path, Map<String, dynamic> body, String done) async {
     final res = await _chat.api(method, path, body: body);
     if (!mounted) return;
@@ -514,10 +535,7 @@ class _InterGroupSectionState extends State<InterGroupSection> {
           ChatButton(
             label: 'ارسال پرسش',
             primary: false,
-            onPressed: () async {
-              await _submit('POST', '$_base/question', {'body': _question.text}, 'پرسش ارسال شد؛ پاسخ برای همه‌ی کاروان‌ها منتشر می‌شود.');
-              _question.clear();
-            },
+            onPressed: _askAdmin,
           ),
         ],
       );

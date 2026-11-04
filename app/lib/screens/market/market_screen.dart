@@ -308,7 +308,7 @@ class _MarketScreenState extends State<MarketScreen> {
 
                       // Title in center
                       const Text(
-                        'ثبت درخواست مبادله',
+                        'انجام مبادله',
                         style: AppTypography.h2,
                       ),
                     ],
@@ -384,7 +384,7 @@ class _MarketScreenState extends State<MarketScreen> {
 
                   // Description text
                   Text(
-                    'درخواست شما پس از ثبت برای راهبر ارسال شده و در صورت تایید، خرید شما اعمال میشود. شما میتوانید با راهبر خود در ارتباط باشید.',
+                    'مبادله‌ی شما بلافاصله پس از تایید انجام می‌شود و اطلاعات آن برای راهبر شما ارسال خواهد شد. نیازی به تایید راهبر نیست.',
                     textAlign: TextAlign.justify,
                     style: AppTypography.caption.copyWith(color: Color(0xFFB3AFD0)),
                   ),
@@ -417,7 +417,7 @@ class _MarketScreenState extends State<MarketScreen> {
                           }
                         },
                         child: Text(
-                          'ارسال',
+                          'انجام مبادله',
                           style: AppTypography.h3Strong.copyWith(color: AppColors.buttonCamel),
                         ),
                       ),
@@ -563,7 +563,7 @@ class _MarketScreenState extends State<MarketScreen> {
             ),
           ),
         ),
-        const SizedBox(height: 12),
+        const SizedBox(height: 8),
         SizedBox(
           height: 145,
           child: Directionality(
@@ -718,7 +718,7 @@ class _MarketScreenState extends State<MarketScreen> {
             ),
           ),
         ),
-        const SizedBox(height: 12),
+        const SizedBox(height: 8),
         SizedBox(
           height: 44,
           child: Directionality(
@@ -1603,7 +1603,7 @@ class _MarketScreenState extends State<MarketScreen> {
             ),
           ),
         ),
-        const SizedBox(height: 12),
+        const SizedBox(height: 8),
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 18.0),
           child: Container(
@@ -1660,7 +1660,7 @@ class _MarketScreenState extends State<MarketScreen> {
 
                           // 2. Description text
                           Text(
-                            'پس از تعیین مقدار مبادله، ثبت درخواست را بزنید تا درخواست شما برای مربی ارسال شود. درصورت تایید مربی مبادله شما نهایی خواهد شد.',
+                            'پس از تعیین مقدار مبادله، دکمه‌ی انجام مبادله را بزنید. مبادله بلافاصله انجام می‌شود و اطلاعات آن برای راهبر ارسال می‌شود؛ نیازی به تایید راهبر نیست.',
                             textAlign: TextAlign.justify,
                             style: AppTypography.caption.copyWith(color: Color(0xFFC7C5DD)),
                           ),
@@ -1680,7 +1680,7 @@ class _MarketScreenState extends State<MarketScreen> {
                               const SizedBox(width: 10),
                               Expanded(
                                 child: _buildInteractiveActionButton(
-                                  text: 'ثبت درخواست',
+                                  text: 'انجام مبادله',
                                   isActive: _activeActionButton == 1,
                                   strokeBorderColor: AppColors.buttonCamel,
                                   onTap: _submitExchangeRequest,
@@ -1706,7 +1706,7 @@ class _MarketScreenState extends State<MarketScreen> {
                               Padding(
                                 padding: EdgeInsets.only(left: 6.0, top: 2.0),
                                 child: Text(
-                                  'پس از تعیین مقدار مبادله، ثبت درخواست را بزنید تا درخواست شما برای مربی ارسال شود. درصورت تایید مربی مبادله شما نهایی خواهد شد.',
+                                  'پس از تعیین مقدار مبادله، دکمه‌ی انجام مبادله را بزنید. مبادله بلافاصله انجام می‌شود و اطلاعات آن برای راهبر ارسال می‌شود؛ نیازی به تایید راهبر نیست.',
                                   textAlign: TextAlign.justify,
                                   style: AppTypography.caption.copyWith(color: Color(0xFFC7C5DD)),
                                 ),
@@ -1725,7 +1725,7 @@ class _MarketScreenState extends State<MarketScreen> {
                                   const SizedBox(width: 8),
                                   Expanded(
                                     child: _buildInteractiveActionButton(
-                                      text: 'ثبت درخواست',
+                                      text: 'انجام مبادله',
                                       isActive: _activeActionButton == 1,
                                       strokeBorderColor: AppColors.buttonCamel,
                                       onTap: _submitExchangeRequest,
@@ -2013,7 +2013,7 @@ class _MarketScreenState extends State<MarketScreen> {
             ),
           ),
         ),
-        const SizedBox(height: 14),
+        const SizedBox(height: 8),
 
         // 2. Tab switcher (shared segmented style)
         Padding(

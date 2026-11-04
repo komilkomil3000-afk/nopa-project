@@ -1478,7 +1478,6 @@ class _ChallengesScreenState extends State<StudentChallengesScreen> {
           )),
 
           // 2. Expanded Area: Opens on Click and Shows Description + Details + Participate Button
-          if (isExpanded) ChallengeChatButton(challengeId: id),
           if (isExpanded)
             Container(
               decoration: BoxDecoration(
@@ -1560,7 +1559,15 @@ class _ChallengesScreenState extends State<StudentChallengesScreen> {
 
                       const SizedBox(width: 8),
 
-                      // Left: Participate Button (دکمه شرکت)
+                      // Left: chat entry (small) stacked above the Participate Button (دکمه شرکت)
+                      IntrinsicWidth(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            ChallengeChatButton(challengeId: id),
+                            if (Provider.of<AppRepository>(context, listen: false).currentUser.chatEnabled)
+                              const SizedBox(height: 6),
                       TapExpander(child: GestureDetector(
                         onTap: () => _showSubmissionDialog(item),
                         child: Container(
@@ -1588,6 +1595,9 @@ class _ChallengesScreenState extends State<StudentChallengesScreen> {
                           ),
                         ),
                       )),
+                          ],
+                        ),
+                      ),
                     ],
                   ),
                 ],

@@ -66,6 +66,7 @@ router.get('/spaces/:id/members/:userId', memberProfile as any);
 router.patch('/messages/:id', chat.editMessage as any);
 router.delete('/messages/:id', chat.deleteMessage as any);
 router.post('/messages/:id/reactions', chat.toggleReaction as any);
+router.get('/attachments/:id/link', chat.attachmentLink as any);
 router.post('/messages/:id/pin', chat.togglePin as any);
 router.post('/uploads', sendLimiter as any, upload as any, chat.uploadFile as any);
 

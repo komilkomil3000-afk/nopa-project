@@ -428,7 +428,7 @@ class _MentorHomeScreenState extends State<MentorHomeScreen> {
             ),
           ),
         ),
-        const SizedBox(height: 10),
+        const SizedBox(height: 8),
         SizedBox(
           height: 44,
           child: Directionality(
@@ -609,7 +609,7 @@ class _MentorHomeScreenState extends State<MentorHomeScreen> {
             ),
           ),
         ),
-        const SizedBox(height: 10),
+        const SizedBox(height: 8),
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16),
           child: Directionality(

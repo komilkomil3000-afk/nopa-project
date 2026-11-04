@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart' hide Text;
 import 'package:nopa_app/core/schedule_utils.dart';
+import 'package:nopa_app/core/theme/app_colors.dart';
 import 'package:nopa_app/models/chat_models.dart';
 import 'package:nopa_app/screens/chat/chat_theme.dart';
 import 'package:nopa_app/widgets/fa_text.dart';
@@ -42,6 +43,30 @@ String chatDateText(dynamic value) {
 
 const Map<String, String> topicStatusLabels = {'open': 'باز', 'closed': 'بسته', 'paid': 'پرداخت‌شده'};
 
+/// Open / closed mark of a challenge: vivid green when open, muted grey otherwise.
+class ChallengeStatusBadge extends StatelessWidget {
+  final String status;
+  const ChallengeStatusBadge({super.key, required this.status});
+
+  @override
+  Widget build(BuildContext context) {
+    final open = status == 'open';
+    final base = open ? AppColors.emerald : Colors.grey;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 2),
+      decoration: BoxDecoration(
+        color: base.withValues(alpha: open ? 0.85 : 0.25),
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: base),
+      ),
+      child: Text(
+        topicStatusLabels[status] ?? status,
+        style: ChatTheme.caption.copyWith(color: open ? Colors.white : Colors.grey.shade300, fontWeight: FontWeight.bold, fontSize: 10.5),
+      ),
+    );
+  }
+}
+
 /// A challenge in a conversation: its type, station, creator, deadline and reward.
 class ChallengeCard extends StatelessWidget {
   final ChatMessage message;
@@ -75,7 +100,7 @@ class ChallengeCard extends StatelessWidget {
             children: [
               ChatChip(label: meta['tag']?.toString() ?? 'چالش', color: tagColor),
               const Spacer(),
-              ChatChip(label: topicStatusLabels[status] ?? status, color: status == 'open' ? ChatTheme.accent : ChatTheme.muted),
+              ChallengeStatusBadge(status: status),
             ],
           ),
           const SizedBox(height: 8),
