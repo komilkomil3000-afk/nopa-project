@@ -1,4 +1,5 @@
 import dotenv from 'dotenv';
+import { cleanupUserActivityLog } from './services/userLog';
 import app from './app';
 import prisma from './config/db';
 import { assertSecretsConfigured } from './config/secrets';
@@ -38,7 +39,8 @@ async function runAuditLogCleanup() {
     const others = await prisma.auditLog.deleteMany({
       where: { action: { not: 'USER_LOGIN' }, createdAt: { lt: daysAgo(AUDIT_LOG_RETENTION_DAYS) } }
     });
-    console.log(`[AuditLog TTL] Purged ${logins.count} login logs and ${others.count} other logs.`);
+    const activity = await cleanupUserActivityLog();
+    console.log(`[AuditLog TTL] Purged ${logins.count} login logs, ${others.count} other logs and ${activity} app activity log rows.`);
   } catch (error) {
     console.error('AuditLog TTL cleanup failed:', error);
   }

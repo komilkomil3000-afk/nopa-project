@@ -1685,9 +1685,13 @@ class HttpApiService {
 
   /// Reports [seconds] the app was open in the foreground (added to today's usage on the server) and how many
   /// times it was [opens]ed since the last report.
-  /// [area] is the part of the app in use now (chat | video | other, or away when it went to the background);
-  /// [chatSeconds] / [videoSeconds] are the parts of [seconds] spent in the chat and with a video playing.
-  Future<bool> pingAppUsage(int seconds, {int opens = 0, int chatSeconds = 0, int videoSeconds = 0, String? area}) async {
+  /// [area] is the part of the app on screen (home | academy | station | challenges | market | profile | chat |
+  /// other, or away when it went to the background) and [playing] whether a video plays now;
+  /// [areas] splits [seconds] among the parts of the app; [chatSeconds] / [videoSeconds] are the parts of [seconds]
+  /// spent in the chat and with a video playing; [events] are the parts of the app entered since the last report
+  /// (the person's activity log in the panel).
+  Future<bool> pingAppUsage(int seconds, {int opens = 0, int chatSeconds = 0, int videoSeconds = 0, String? area,
+      bool playing = false, Map<String, int> areas = const {}, List<Map<String, dynamic>> events = const []}) async {
     try {
       final res = await _post(
         Uri.parse('$baseUrl/usage/ping'),
@@ -1698,6 +1702,9 @@ class HttpApiService {
           if (chatSeconds > 0) 'chatSeconds': chatSeconds,
           if (videoSeconds > 0) 'videoSeconds': videoSeconds,
           'area': ?area,
+          if (playing) 'playing': true,
+          if (areas.isNotEmpty) 'areas': areas,
+          if (events.isNotEmpty) 'events': events,
         }),
       );
       return res.statusCode == 200;
@@ -1705,6 +1712,29 @@ class HttpApiService {
       debugPrint('pingAppUsage error: $e');
     }
     return false;
+  }
+
+  /// How a station video is being watched (services/video_watch_tracker.dart): the ranges really played and the
+  /// playing time since the last report. Returns what the server has in all (merged ranges, watched fraction).
+  Future<Map<String, dynamic>?> reportVideoWatch(Map<String, dynamic> body) async {
+    try {
+      final res = await _post(Uri.parse('$baseUrl/usage/video'), headers: _getHeaders(), body: jsonEncode(body));
+      if (res.statusCode == 200) return (await parseJsonAsync(res.body)) as Map<String, dynamic>?;
+    } catch (e) {
+      debugPrint('reportVideoWatch error: $e');
+    }
+    return null;
+  }
+
+  /// What of a station video was really watched so far (on any device).
+  Future<Map<String, dynamic>?> getVideoWatch(String clipId) async {
+    try {
+      final res = await _get(Uri.parse('$baseUrl/usage/video/${Uri.encodeComponent(clipId)}'), headers: _getHeaders());
+      if (res.statusCode == 200) return (await parseJsonAsync(res.body)) as Map<String, dynamic>?;
+    } catch (e) {
+      debugPrint('getVideoWatch error: $e');
+    }
+    return null;
   }
 
   /// The signed-in user's challenge participation and time in the app (for the report card).

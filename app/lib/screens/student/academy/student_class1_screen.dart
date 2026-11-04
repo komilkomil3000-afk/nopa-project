@@ -1,4 +1,5 @@
 import 'package:nopa_app/widgets/tap_expander.dart';
+import 'package:nopa_app/services/video_watch_tracker.dart';
 import 'package:nopa_app/core/theme/app_colors.dart';
 import 'package:nopa_app/widgets/bottom_nav_bar.dart';
 import 'package:nopa_app/core/constants/app_routes.dart';
@@ -72,12 +73,9 @@ class _Class1ScreenState extends State<StudentClass1Screen> {
     }
   }
 
-  void _onAnimationProgress(String key, Duration position, Duration duration) {
-    if (duration.inMilliseconds <= 0 || _watchedAnimations.contains(key)) {
-      return;
-    }
-    if (position.inMilliseconds <
-        duration.inMilliseconds * _animUnlockThreshold) {
+  /// [fraction] is the share of the animation really watched (seeking ahead does not count).
+  void _onAnimationWatched(String key, double fraction) {
+    if (_watchedAnimations.contains(key) || fraction < _animUnlockThreshold) {
       return;
     }
     setState(() => _watchedAnimations.add(key));
@@ -92,9 +90,20 @@ class _Class1ScreenState extends State<StudentClass1Screen> {
 
   String _animKey(Map<String, dynamic> clip) => '${clip['id']}';
 
+  // this page is part «منزلگاه‌ها» of the app (the panel's stats and the person's activity log)
+  Object? _areaToken;
+
+  void _noteStationArea() {
+    final st = _station;
+    if (_areaToken == null || st == null) return;
+    final n = st.orderIndex.toString().split('').map((c) => '۰۱۲۳۴۵۶۷۸۹'[int.tryParse(c) ?? 0]).join();
+    AppRepository().updateArea(_areaToken!, label: 'منزلگاه $n${st.title.isNotEmpty ? ' («${st.title}»)' : ''}', refId: st.id);
+  }
+
   @override
   void initState() {
     super.initState();
+    _areaToken = AppRepository().pushArea('station');
     if (widget.initialStation != null) {
       _station = widget.initialStation;
       _currentStationIndex = StationNumbering.indexOfNumber(
@@ -119,6 +128,7 @@ class _Class1ScreenState extends State<StudentClass1Screen> {
 
   @override
   void dispose() {
+    AppRepository().popArea(_areaToken);
     _videoPageController.dispose();
     super.dispose();
   }
@@ -212,6 +222,7 @@ class _Class1ScreenState extends State<StudentClass1Screen> {
           _allClips = clipsList;
           _currentClipIndex = 0;
         });
+        _noteStationArea();
         if (_videoPageController.hasClients) {
           _videoPageController.jumpToPage(0);
         }
@@ -750,8 +761,14 @@ class _Class1ScreenState extends State<StudentClass1Screen> {
                   url: videoUrl,
                   title: title,
                   coverImageUrl: poster,
-                  onProgress: (pos, dur) =>
-                      _onAnimationProgress(_animKey(clip), pos, dur),
+                  watch: VideoWatchInfo(
+                    kind: 'gallery',
+                    clipId: clip['id']?.toString() ?? '',
+                    stationId: _station?.id ?? '',
+                    title: title,
+                  ),
+                  onWatchedFraction: (f) =>
+                      _onAnimationWatched(_animKey(clip), f),
                 ),
               );
             },

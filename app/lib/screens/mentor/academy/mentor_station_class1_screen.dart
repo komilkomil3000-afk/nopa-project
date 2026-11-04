@@ -1,4 +1,5 @@
 import 'package:nopa_app/widgets/tap_expander.dart';
+import 'package:nopa_app/services/video_watch_tracker.dart';
 import 'package:nopa_app/widgets/safe_avatar.dart';
 import '../../../widgets/nopa_modal_shell.dart';
 import 'package:nopa_app/widgets/nopa_pill_tabs.dart';
@@ -767,6 +768,12 @@ class _MentorStationScreenState extends State<MentorStationClass1Screen> {
                     url: videoUrl,
                     title: title,
                     coverImageUrl: poster,
+                    watch: VideoWatchInfo(
+                      kind: 'gallery',
+                      clipId: clip['id']?.toString() ?? '',
+                      stationId: _stations[_selectedStationIndex]['id']?.toString() ?? '',
+                      title: title,
+                    ),
                   ),
                 );
               },

@@ -15,6 +15,7 @@ import 'package:nopa_app/core/theme/app_theme.dart';
 import 'package:nopa_app/core/theme/app_colors.dart';
 import 'package:nopa_app/services/api_service.dart';
 import 'package:nopa_app/widgets/nopa_inline_video_player.dart';
+import 'package:nopa_app/services/video_watch_tracker.dart';
 import 'package:nopa_app/widgets/app_scaffold.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -193,8 +194,18 @@ class _Class2ScreenState extends State<StudentClass2Screen> {
     _nextPartCountdown.value = null;
   }
 
+  // this page is part «منزلگاه‌ها» of the app (the panel's stats and the person's activity log)
+  final Object _areaToken = AppRepository().pushArea('station');
+
+  void _noteStationArea() {
+    if (_stationNumber <= 0 && _stationTitle.isEmpty) return;
+    AppRepository().updateArea(_areaToken,
+        label: 'جلسات منزلگاه ${_toFarsiDigit(_stationNumber)}${_stationTitle.isNotEmpty ? ' («$_stationTitle»)' : ''}', refId: _stationId);
+  }
+
   @override
   void dispose() {
+    AppRepository().popArea(_areaToken);
     _nextPartTimer?.cancel();
     _nextPartCountdown.dispose();
     super.dispose();
@@ -352,6 +363,7 @@ class _Class2ScreenState extends State<StudentClass2Screen> {
         _stationCount = stations.length;
         _stationTitle = shown['title']?.toString() ?? '';
         _stationNumber = (shown['orderIndex'] as num?)?.toInt() ?? StationNumbering.numberAt(sIndex + 1);
+        _noteStationArea();
       }
 
       // The tabs are always built from the station's current categories, so a category renamed, added,
@@ -510,21 +522,44 @@ class _Class2ScreenState extends State<StudentClass2Screen> {
   }
 
   void _onVideoProgress(Duration position, Duration duration) {
-    final pos = position.inMilliseconds;
-    final dur = duration.inMilliseconds;
     _reportRealDuration(duration);
-    if (dur > 0 && pos >= dur * _quizUnlockThreshold) {
-      final session = _activeSession;
-      if (session == null) return;
-      // Keyed by session + clip id so the skill and media tabs never share a tick
-      final key = _passedKey(session, _currentClipIndex);
-      if (!_unlockedQuizzes.contains(key)) {
-        setState(() {
-          _unlockedQuizzes.add(key);
-        });
-        _recordClipWatched(session, _currentClipIndex);
-      }
-    }
+  }
+
+  // Share of each clip really watched (key: _passedKey), from the player's watch tracking.
+  final Map<String, double> _watchedFractions = {};
+
+  /// The player reports the share of the clip really watched: ranges skipped by seeking are not counted and
+  /// watching the same part again counts once (services/video_watch_tracker.dart). The quiz opens at 90 %.
+  void _onWatchedFraction(Map<String, dynamic> session, int clipIndex, double fraction) {
+    // Keyed by session + clip id so the skill and media tabs never share a tick
+    final key = _passedKey(session, clipIndex);
+    _watchedFractions[key] = fraction;
+    if (fraction < _quizUnlockThreshold || _unlockedQuizzes.contains(key)) return;
+    setState(() {
+      _unlockedQuizzes.add(key);
+    });
+    _recordClipWatched(session, clipIndex);
+  }
+
+  /// What the player needs to track the watching of the clip on screen.
+  VideoWatchInfo? _watchInfo() {
+    final session = _activeSession;
+    if (session == null) return null;
+    final clips = session['videoClips'] as List? ?? [];
+    if (_currentClipIndex >= clips.length) return null;
+    final clipId = clips[_currentClipIndex]['id']?.toString() ?? '';
+    final category = _categories.firstWhere(
+      (c) => c.sessions.any((s) => s['id'] == session['id']),
+      orElse: () => _currentCategory ?? const StationCategory(id: '', title: '', index: 0, sessions: []),
+    );
+    return VideoWatchInfo(
+      kind: 'session',
+      clipId: clipId,
+      stationId: _stationId,
+      sessionId: session['id']?.toString() ?? '',
+      trackType: category.trackType,
+      title: _currentPlayingTitle,
+    );
   }
 
   /// The player knows a clip's real length: show it in the list and tell the server once.
@@ -605,6 +640,15 @@ class _Class2ScreenState extends State<StudentClass2Screen> {
     // The quiz can be taken only once; after that it is review-only on demand
     final session = _activeSession;
     if (session != null && _isAnswered(session, _currentClipIndex)) return;
+    // reaching the end by seeking does not open the quiz: 90 % of the video must really be watched
+    if (session != null) {
+      final key = _passedKey(session, _currentClipIndex);
+      if (!_unlockedQuizzes.contains(key) && !_passedQuizzes.contains(key)) {
+        final pct = ((_watchedFractions[key] ?? 0) * 100).floor();
+        AppToast.info(context, 'برای باز شدن آزمونک باید دست‌کم ۹۰٪ فیلم را واقعاً ببینید (جلو زدن حساب نمی‌شود). تا الان ${_toFarsiDigit(pct)}٪ دیده‌اید.');
+        return;
+      }
+    }
     setState(() {
       _isMiniQuizShowing = true;
     });
@@ -700,6 +744,7 @@ class _Class2ScreenState extends State<StudentClass2Screen> {
   /// 2. Video Player Card (دقیقاً مشابه باکس پخش ویدیو در کلاس1 برای انیمیشن باید ببینید)
   Widget _buildVideoPlayerCard() {
     final url = _currentVideoUrl;
+    final clipIndex = _currentClipIndex;
     return NopaInlineVideoPlayer(
       key: ValueKey('class2_video_${_videoSessionToken}_$url'),
       videoUrl: url,
@@ -708,6 +753,11 @@ class _Class2ScreenState extends State<StudentClass2Screen> {
       autoPlay: url.isNotEmpty && _playRequested,
       onProgress: _onVideoProgress,
       onEnded: _onVideoEnded,
+      watch: _watchInfo(),
+      onWatchedFraction: (f) {
+        final session = _activeSession;
+        if (session != null) _onWatchedFraction(session, clipIndex, f);
+      },
       nextPartCountdown: _nextPartCountdown,
     );
   }
@@ -1056,7 +1106,8 @@ class _Class2ScreenState extends State<StudentClass2Screen> {
                                     if (isQuizUnlocked) {
                                       _showPartMiniQuiz(cIndex);
                                     } else {
-                                      AppToast.info(context, 'برای باز شدن آزمون، حداقل ۹۰٪ ویدیو را مشاهده کنید');
+                                      final pct = ((_watchedFractions[_passedKey(session, cIndex)] ?? 0) * 100).floor();
+                                      AppToast.info(context, 'برای باز شدن آزمون، دست‌کم ۹۰٪ ویدیو را واقعاً ببینید (جلو زدن حساب نمی‌شود)${pct > 0 ? '؛ تا الان ${_toFarsiDigit(pct)}٪' : ''}.');
                                     }
                                   },
                                   child: Container(

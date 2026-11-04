@@ -2,7 +2,8 @@ import { Response } from 'express';
 import { AuthRequest } from '../middleware/auth';
 import prisma from '../config/db';
 import { addActivity } from '../services/activity';
-import { AppArea, logLiveEvent, markAppAway, touchApp } from '../services/liveActivity';
+import { logLiveEvent, markAppAway, parseArea, touchApp } from '../services/liveActivity';
+import { APP_AREAS, isAppSection, logUserEvents, UserLogEntry } from '../services/userLog';
 import { CATEGORY_ORDER_BY, trackTypeFor } from '../utils/stationCategories';
 
 export async function createMentorChallenge(req: AuthRequest, res: Response) {
@@ -165,26 +166,54 @@ export function tehranDay(d: Date): string {
 }
 
 /** The app reports the seconds it was open in the foreground; they are added to today's row (capped per call).
- *  Newer app versions send it every ~15 s (also a heartbeat for «online now») with the part of the app it is in
- *  (area: chat | video | other | away) and how many of the seconds were spent in the chat and watching videos. */
+ *  Newer app versions send it every ~15 s (also a heartbeat for «online now») with:
+ *    area      the part of the app on screen (services/userLog.ts APP_AREAS) or "away" (went to the background)
+ *    playing   a video is playing now
+ *    areas     { part: seconds } how the seconds were spent among the parts of the app
+ *    chatSeconds / videoSeconds   seconds in the chat / with any video playing (older versions send only these)
+ *    events    [{ type: "enter", area, label, refId, at }] parts of the app entered since the last report (the
+ *              person's activity log in the panel) */
 export async function recordAppUsage(req: AuthRequest, res: Response) {
   try {
-    const seconds = Math.max(0, Math.min(300, Math.round(Number(req.body?.seconds) || 0)));
+    const body = req.body || {};
+    const seconds = Math.max(0, Math.min(300, Math.round(Number(body.seconds) || 0)));
     // times the app was opened (or came back after a while) since the last report; sent by newer app versions
-    const opens = Math.max(0, Math.min(20, Math.round(Number(req.body?.opens) || 0)));
-    const chatSeconds = Math.max(0, Math.min(seconds, Math.round(Number(req.body?.chatSeconds) || 0)));
-    const videoSeconds = Math.max(0, Math.min(seconds, Math.round(Number(req.body?.videoSeconds) || 0)));
-    const rawArea = typeof req.body?.area === 'string' ? req.body.area : '';
-    const area = (['chat', 'video', 'other', 'away'] as AppArea[]).includes(rawArea as AppArea) ? rawArea as AppArea : undefined;
+    const opens = Math.max(0, Math.min(20, Math.round(Number(body.opens) || 0)));
+    const chatSeconds = Math.max(0, Math.min(seconds, Math.round(Number(body.chatSeconds) || 0)));
+    const videoSeconds = Math.max(0, Math.min(seconds, Math.round(Number(body.videoSeconds) || 0)));
+    const { area, playing } = parseArea(body.area, body.playing);
     const userId = req.user!.id;
+
+    // seconds per part of the app (never more than the reported seconds in all)
+    const areas: [string, number][] = [];
+    if (body.areas && typeof body.areas === 'object') {
+      let left = seconds;
+      for (const k of APP_AREAS) {
+        const v = Math.max(0, Math.min(left, Math.round(Number(body.areas[k]) || 0)));
+        if (v > 0) { areas.push([k, v]); left -= v; }
+      }
+    }
+
+    const events: UserLogEntry[] = [];
+    if (opens > 0) events.push({ type: 'open', label: 'اپ را باز کرد' });
+    if (Array.isArray(body.events)) {
+      for (const e of body.events.slice(0, 40)) {
+        if (!e || e.type !== 'enter' || !isAppSection(e.area)) continue;
+        events.push({ type: 'enter', area: e.area, refId: e.refId, label: e.label, at: e.at ? new Date(e.at) : undefined });
+      }
+    }
+    if (area === 'away') events.push({ type: 'away', label: 'از اپ بیرون رفت' });
+    void logUserEvents(userId, events);
+
     if (opens > 0) logLiveEvent(userId, 'open');
-    if (area === 'away') markAppAway(userId); else touchApp(userId, area);
+    if (area === 'away') markAppAway(userId); else touchApp(userId, area, playing);
     if (opens > 0) await addActivity(userId, 'open', opens);
     if (seconds === 0) return res.json({ ok: true });
     await Promise.all([
       addActivity(userId, 'app', seconds),
       chatSeconds ? addActivity(userId, 'chat', chatSeconds) : null,
       videoSeconds ? addActivity(userId, 'appvideo', videoSeconds) : null,
+      ...areas.map(([k, v]) => addActivity(userId, 'area', v, k)),
     ]);
     const day = tehranDay(new Date());
     await prisma.userUsageDay.upsert({

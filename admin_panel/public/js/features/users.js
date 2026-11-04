@@ -788,6 +788,15 @@ window.nopaPresenceSlot = function(userId) {
 window.nopaPersonChart = function(host, where, userId) {
   if (!host || !window.NopaActivity) return;
   NopaActivity.render(host, `${where}:chart`, { params: { userId: String(userId) }, title: 'نمودار فعالیت' });
+  // the detailed log of what the person did in the app, right under the chart (js/ui/activity-log.js)
+  if (!window.NopaActivityLog) return;
+  let logHost = host.nextElementSibling;
+  if (!logHost || !logHost.classList.contains('nal-host')) {
+    logHost = document.createElement('div');
+    logHost.className = 'nal-host';
+    host.after(logHost);
+  }
+  NopaActivityLog.render(logHost, userId);
 };
 
 // ---- the site picture ----

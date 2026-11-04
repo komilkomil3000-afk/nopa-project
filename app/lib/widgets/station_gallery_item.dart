@@ -3,6 +3,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:nopa_app/core/constants/api_constants.dart';
 import 'package:nopa_app/widgets/nopa_inline_video_player.dart';
+import 'package:nopa_app/services/video_watch_tracker.dart';
 
 /// One entry of a station's gallery: a picture (tap to enlarge) or a video, decided by the file extension.
 class StationGalleryItem extends StatelessWidget {
@@ -11,12 +12,20 @@ class StationGalleryItem extends StatelessWidget {
   final String? coverImageUrl;
   final void Function(Duration position, Duration duration)? onProgress;
 
+  /// Which gallery video this is (its watching is tracked, services/video_watch_tracker.dart).
+  final VideoWatchInfo? watch;
+
+  /// The share of the video really watched so far (0..1).
+  final void Function(double fraction)? onWatchedFraction;
+
   const StationGalleryItem({
     super.key,
     required this.url,
     required this.title,
     this.coverImageUrl,
     this.onProgress,
+    this.watch,
+    this.onWatchedFraction,
   });
 
   static const _imageExts = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp', 'heic'];
@@ -81,6 +90,8 @@ class StationGalleryItem extends StatelessWidget {
         title: title,
         coverImageUrl: coverImageUrl,
         onProgress: onProgress,
+        watch: watch,
+        onWatchedFraction: onWatchedFraction,
       );
     }
     final resolved = ApiConstants.resolveImageUrl(url);

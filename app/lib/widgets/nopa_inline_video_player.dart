@@ -9,6 +9,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import '../services/aparat_service.dart';
 import '../services/audio_exclusivity_service.dart';
 import '../services/app_state_repository.dart';
+import '../services/video_watch_tracker.dart';
 import '../core/theme/app_theme.dart';
 import '../core/constants/api_constants.dart';
 
@@ -99,6 +100,13 @@ class NopaInlineVideoPlayer extends StatefulWidget {
   /// Countdown to the next part, drawn over the player (also in fullscreen).
   final ValueNotifier<NextPartCountdown?>? nextPartCountdown;
 
+  /// A station video (class part or gallery): how it is really watched is tracked and reported
+  /// (services/video_watch_tracker.dart).
+  final VideoWatchInfo? watch;
+
+  /// The share of the video really watched so far (seeking does not count, repeats count once), 0..1.
+  final void Function(double fraction)? onWatchedFraction;
+
   const NopaInlineVideoPlayer({
     super.key,
     required this.videoUrl,
@@ -108,6 +116,8 @@ class NopaInlineVideoPlayer extends StatefulWidget {
     this.onProgress,
     this.onEnded,
     this.nextPartCountdown,
+    this.watch,
+    this.onWatchedFraction,
   });
 
   @override
@@ -128,6 +138,20 @@ class _NopaInlineVideoPlayerState extends State<NopaInlineVideoPlayer> {
   AparatVideoInfo? _aparatInfo;
   String? _selectedQuality;
   double _playbackSpeed = 1.0;
+  VideoWatchTracker? _tracker;
+
+  void _closeTracker() {
+    _tracker?.close();
+    _tracker = null;
+  }
+
+  void _ensureTracker() {
+    final w = widget.watch;
+    if (_tracker != null || w == null || !w.isValid) return;
+    _tracker = VideoWatchTracker(w, onFraction: (f) {
+      if (mounted) widget.onWatchedFraction?.call(f);
+    });
+  }
 
   @override
   void initState() {
@@ -140,7 +164,8 @@ class _NopaInlineVideoPlayerState extends State<NopaInlineVideoPlayer> {
   @override
   void didUpdateWidget(covariant NopaInlineVideoPlayer oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (oldWidget.videoUrl != widget.videoUrl) {
+    if (oldWidget.videoUrl != widget.videoUrl || oldWidget.watch?.clipId != widget.watch?.clipId) {
+      _closeTracker();
       _disposeController();
       setState(() {
         _isInitialized = false;
@@ -168,6 +193,7 @@ class _NopaInlineVideoPlayerState extends State<NopaInlineVideoPlayer> {
       });
     }
     _controlsTimer?.cancel();
+    _closeTracker();
     _disposeController();
     super.dispose();
   }
@@ -193,6 +219,7 @@ class _NopaInlineVideoPlayerState extends State<NopaInlineVideoPlayer> {
     if (!mounted || _controller == null) return;
     final value = _controller!.value;
     if (value.isInitialized && value.duration > Duration.zero) {
+      _tracker?.tick(position: value.position, duration: value.duration, playing: value.isPlaying, speed: value.playbackSpeed);
       widget.onProgress?.call(value.position, value.duration);
       // Some platforms stop a few ms short of the exact duration
       final atEnd = value.position >= value.duration - const Duration(milliseconds: 400);
@@ -291,6 +318,7 @@ class _NopaInlineVideoPlayerState extends State<NopaInlineVideoPlayer> {
         return;
       }
 
+      _ensureTracker();
       newController.addListener(_videoListener);
       AudioExclusivityService.registerVideoController(newController);
       await newController.setPlaybackSpeed(_playbackSpeed);

@@ -15,8 +15,9 @@ export function tehranSlot(d: Date = new Date()): { day: string; hour: number } 
 }
 
 // app = foreground seconds, open = times opened, video = class video seconds (server side, refId = ClassSession),
-// chat = seconds in the chat screens, appvideo = seconds any video played in the app (reported by the app)
-export type ActivityKind = 'app' | 'open' | 'video' | 'chat' | 'appvideo';
+// chat = seconds in the chat screens, appvideo = seconds any video played in the app (reported by the app),
+// gvideo = station gallery video seconds (refId = Station), area = seconds in one part of the app (refId = the part)
+export type ActivityKind = 'app' | 'open' | 'video' | 'chat' | 'appvideo' | 'gvideo' | 'area';
 
 export async function addActivity(userId: string, kind: ActivityKind, value: number, refId = ''): Promise<void> {
   const v = Math.round(value);

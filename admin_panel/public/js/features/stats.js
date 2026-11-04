@@ -17,6 +17,7 @@
   const KPIS = [
     ['appSeconds', 'زمان حضور در اپ', 'fa-mobile-screen', 'seconds', 'kpi--brand', 'app'],
     ['chatSeconds', 'حضور در فضای چت', 'fa-comments', 'seconds', 'kpi--purple', 'chat'],
+    ['stationSeconds', 'حضور در منزلگاه‌ها', 'fa-map-location-dot', 'seconds', 'kpi--emerald', 'station'],
     ['videoSeconds', 'زمان تماشای فیلم‌ها', 'fa-circle-play', 'seconds', 'kpi--pink', 'video'],
     ['otherSeconds', 'زمان در بقیه بخش‌ها', 'fa-shapes', 'seconds', 'kpi--blue', 'other'],
     ['onlineNow', 'آنلاین همین الان', 'fa-signal', 'count', 'kpi--sky', 'active'],
@@ -33,26 +34,42 @@
     onlineNow: 'اپ همین حالا روی گوشی‌شان باز است',
     logins: 'ورود به حساب در اپ (بدون پنل مدیریت)',
     opens: 'اجرای اپ یا برگشتن به آن پس از یک دقیقه',
+    videoSeconds: 'پخش فیلم جلسات و نگارستان منزلگاه‌ها، با همه تکرارها',
+    stationSeconds: 'مدت باز بودن صفحه‌های منزلگاه، جدا از زمان پخش فیلم',
+    otherSeconds: 'حضور در اپ منهای چت و منزلگاه‌ها',
   };
   const CARAVAN_BY = [['appSeconds', 'حضور در اپ', 'seconds'], ['videoSeconds', 'تماشای فیلم', 'seconds'], ['activeMembers', 'اعضای فعال', 'count']];
-  const PEOPLE_BY = [['appSeconds', 'حضور در اپ', 'seconds'], ['chatSeconds', 'چت', 'seconds'], ['videoSeconds', 'فیلم', 'seconds'], ['otherSeconds', 'بقیه بخش‌ها', 'seconds'], ['opens', 'باز کردن اپ', 'count'], ['logins', 'لاگین', 'count'], ['messages', 'پیام', 'count']];
+  const PEOPLE_BY = [['appSeconds', 'حضور در اپ', 'seconds'], ['chatSeconds', 'چت', 'seconds'], ['stationSeconds', 'منزلگاه‌ها', 'seconds'], ['videoSeconds', 'فیلم', 'seconds'], ['otherSeconds', 'بقیه بخش‌ها', 'seconds'], ['opens', 'باز کردن اپ', 'count'], ['logins', 'لاگین', 'count'], ['messages', 'پیام', 'count']];
   const HOURS_BY = [['seconds', 'زمان حضور'], ['users', 'تعداد افراد']];
   const TABLE_COLS = [
-    ['appSeconds', 'حضور در اپ', 'seconds'], ['chatSeconds', 'چت', 'seconds'], ['videoSeconds', 'فیلم', 'seconds'],
-    ['otherSeconds', 'بقیه', 'seconds'], ['opens', 'باز کردن', 'count'], ['logins', 'لاگین', 'count'], ['messages', 'پیام', 'count'],
+    ['appSeconds', 'حضور در اپ', 'seconds'], ['chatSeconds', 'چت', 'seconds'], ['stationSeconds', 'منزلگاه‌ها', 'seconds'],
+    ['videoSeconds', 'فیلم', 'seconds'], ['otherSeconds', 'بقیه', 'seconds'], ['opens', 'باز کردن', 'count'], ['logins', 'لاگین', 'count'], ['messages', 'پیام', 'count'],
   ];
+  // the parts of the app (services/userLog.ts APP_AREAS on the server)
   const AREA = {
+    home: ['در خانه', 'fa-house', 'is-other'],
+    academy: ['در آموزگاه', 'fa-graduation-cap', 'is-other'],
+    station: ['در منزلگاه‌ها', 'fa-map-location-dot', 'is-video'],
+    challenges: ['در چالش‌ها', 'fa-trophy', 'is-other'],
+    market: ['در بازار', 'fa-store', 'is-other'],
+    profile: ['در پروفایل', 'fa-id-badge', 'is-other'],
     chat: ['در فضای چت', 'fa-comments', 'is-chat'],
-    video: ['در حال تماشای ویدیو', 'fa-circle-play', 'is-video'],
     other: ['در بخش‌های دیگر اپ', 'fa-shapes', 'is-other'],
   };
+  const AREA_NAMES = { home: 'خانه', academy: 'آموزگاه', station: 'منزلگاه‌ها', challenges: 'چالش‌ها', market: 'بازار', profile: 'پروفایل', chat: 'چت', other: 'سایر' };
   const EVENT = {
+    home: ['به خانه رفت', 'fa-house', 'is-other'],
+    academy: ['وارد آموزگاه شد', 'fa-graduation-cap', 'is-other'],
+    station: ['وارد منزلگاه شد', 'fa-map-location-dot', 'is-video'],
+    challenges: ['وارد چالش‌ها شد', 'fa-trophy', 'is-other'],
+    market: ['وارد بازار شد', 'fa-store', 'is-other'],
+    profile: ['وارد پروفایل شد', 'fa-id-badge', 'is-other'],
     open: ['اپ را باز کرد', 'fa-door-open', 'is-open'],
     login: ['وارد حساب شد (لاگین)', 'fa-right-to-bracket', 'is-login'],
     logout: ['از حساب خارج شد', 'fa-right-from-bracket', 'is-away'],
     away: ['از اپ بیرون رفت', 'fa-moon', 'is-away'],
     chat: ['وارد فضای چت شد', 'fa-comments', 'is-chat'],
-    video: ['شروع به تماشای ویدیو کرد', 'fa-circle-play', 'is-video'],
+    video: ['شروع به تماشای فیلم کرد', 'fa-circle-play', 'is-video'],
     other: ['به بخش‌های دیگر اپ رفت', 'fa-shapes', 'is-other'],
   };
 
@@ -88,7 +105,7 @@
     set('sts-kpis', KPIS.map(([k, label, icon, unit, cls]) => {
       let sub = esc(d ? d.rangeLabel : '');
       if (totals && k === 'activeUsers') sub += ` · از ${faNum(totals.people)} نفر`;
-      if (totals && k === 'onlineNow') sub = d.onlineAreas ? `چت ${faNum(d.onlineAreas.chat)} · ویدیو ${faNum(d.onlineAreas.video)} · سایر ${faNum(d.onlineAreas.other)}` : 'همین الان';
+      if (totals && k === 'onlineNow') sub = d.onlineAreas ? `چت ${faNum(d.onlineAreas.chat)} · منزلگاه ${faNum(d.onlineAreas.station)} · سایر ${faNum(d.onlineAreas.other)} · فیلم ${faNum(d.onlineAreas.video)}` : 'همین الان';
       const val = totals ? (k === 'avgSeconds' ? (totals.activeUsers ? totals.appSeconds / totals.activeUsers : 0) : totals[k]) : 0;
       const on = st.kpi === k;
       return `
@@ -135,7 +152,9 @@
   }
 
   function paintSplit(t) {
-    const parts = [['chatSeconds', 'فضای چت', 'is-chat'], ['videoSeconds', 'تماشای ویدیو', 'is-video'], ['otherSeconds', 'بقیه بخش‌ها', 'is-other']];
+    // chat + station pages + the rest = the time in the app; watching videos is shown on its own (it happens on the station pages)
+    const parts = [['chatSeconds', 'فضای چت', 'is-chat'], ['stationSeconds', 'منزلگاه‌ها', 'is-video'], ['otherSeconds', 'بقیه بخش‌ها', 'is-other']];
+    const areas = st.data && st.data.areaTotals ? Object.entries(st.data.areaTotals).filter(([k, v]) => v > 0 && k !== 'chat' && k !== 'station').sort((a, b) => b[1] - a[1]) : [];
     const total = Math.max(1, parts.reduce((s, [k]) => s + (t[k] || 0), 0));
     const pct = k => Math.round(((t[k] || 0) / total) * 100);
     set('sts-split', `
@@ -145,7 +164,8 @@
       <ul class="sts-split-list">
         ${parts.map(([k, l, c]) => `<li class="${c}"><i></i><span>${l}</span><b>${esc(short(t[k]))}</b><em>${faNum(pct(k))}٪</em></li>`).join('')}
       </ul>
-      <p class="sts-split-foot">چت ${faNum(t.messages)} پیام · ${faNum(t.opens)} بار باز کردن اپ · ${faNum(t.logins)} لاگین</p>`);
+      ${areas.length ? `<p class="sts-split-foot">بقیه بخش‌ها: ${areas.map(([k, v]) => `${esc(AREA_NAMES[k] || k)} ${esc(short(v))}`).join(' · ')}</p>` : ''}
+      <p class="sts-split-foot">تماشای فیلم (جلسات و نگارستان) ${esc(short(t.videoSeconds))} · چت ${faNum(t.messages)} پیام · ${faNum(t.opens)} بار باز کردن اپ · ${faNum(t.logins)} لاگین</p>`);
   }
 
   function paintOnline(d) {
@@ -156,7 +176,7 @@
       return `<li><button type="button" class="sts-live-row" data-click="viewUserDetails" data-click-args="${esc(JSON.stringify([o.id]))}">
         ${avatar(o)}
         <span class="sts-live-body"><strong>${esc(o.name)}</strong>
-          <small class="sts-area ${cls}"><i class="fa-solid ${icon}"></i> ${label} · ${esc(clock(o.areaSeconds))}</small></span>
+          <small class="sts-area ${cls}"><i class="fa-solid ${icon}"></i> ${label} · ${esc(clock(o.areaSeconds))}${o.playing ? ' · <i class="fa-solid fa-circle-play"></i> در حال تماشای فیلم' : ''}</small></span>
         <span class="sts-live-time" title="مدت حضور در اپ از آخرین ورود">${esc(clock(o.sessionSeconds))}</span>
       </button></li>`;
     }).join('')}</ul>` : '<div class="lsv-col-empty">الان کسی در اپ نیست.</div>');
@@ -215,7 +235,7 @@
     })), { unit: cUnit, click: 'stsPickCaravan', empty: 'کاروانی پیدا نشد.' }));
 
     set('sts-stations', NopaBars.rank(d.stations.map(s => ({
-      key: s.id, label: s.title, value: s.videoSeconds, sub: `${faNum(s.viewers)} بیننده · ${faNum(s.classes)} کلاس دیده‌شده`,
+      key: s.id, label: s.title, value: s.videoSeconds, sub: `${faNum(s.viewers)} بیننده · ${faNum(s.classes)} کلاس دیده‌شده${s.gallerySeconds ? ` · نگارستان ${nopaDuration(s.gallerySeconds)}` : ''}`,
     })), { unit: 'seconds', click: 'stsPickStation', empty: 'در این بازه فیلمی دیده نشده است.' }));
     set('sts-classes', NopaBars.rank(d.classes.map(c => ({
       key: c.id, label: c.title, value: c.videoSeconds, sub: [c.station, c.category, `${faNum(c.viewers)} بیننده`].filter(Boolean).join(' · '),
@@ -226,7 +246,7 @@
     set('sts-people', NopaBars.rank(d.topUsers.slice().sort((a, b) => b[pKey] - a[pKey]).filter(u => u[pKey] > 0).slice(0, 15).map(u => ({
       key: u.id, label: u.name, value: u[pKey],
       avatarHtml: avatar(u),
-      sub: [u.caravanName ? `کاروان ${u.caravanName}` : '', `حضور ${short(u.appSeconds)}`, `چت ${short(u.chatSeconds)}`, `فیلم ${short(u.videoSeconds)}`, `${faNum(u.opens)} بار باز کردن`, `${faNum(u.logins)} لاگین`].filter(Boolean).join(' · '),
+      sub: [u.caravanName ? `کاروان ${u.caravanName}` : '', `حضور ${short(u.appSeconds)}`, `چت ${short(u.chatSeconds)}`, `منزلگاه ${short(u.stationSeconds)}`, `فیلم ${short(u.videoSeconds)}`, `${faNum(u.opens)} بار باز کردن`, `${faNum(u.logins)} لاگین`].filter(Boolean).join(' · '),
     })), { unit: pUnit, click: 'viewUserDetails', empty: 'در این بازه فعالیتی ثبت نشده است.' }));
   }
 
@@ -264,7 +284,7 @@
     NopaActivity.render($('sts-main-chart'), 'sts:main', {
       metricTitle: true,
       params: { caravanId: st.caravanId, role: st.role, stationId: st.stationId },
-      metrics: ['app', 'chat', 'video', 'other', 'opens', 'logins', 'active', 'messages', 'challenges', 'quizzes'],
+      metrics: ['app', 'chat', 'station', 'video', 'other', 'opens', 'logins', 'active', 'messages', 'challenges', 'quizzes'],
       metric: kpiMetric(st.kpi),
       range: st.range,
     });

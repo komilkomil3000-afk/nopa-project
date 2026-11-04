@@ -115,6 +115,12 @@ class MainScreenState extends State<AppShell> {
     final Widget chatTab = chatEnabled ? const ChatHomeScreen() : const SizedBox.shrink();
     // the panel's «آمار» counts the time spent in the chat
     AppRepository().chatTabVisible = chatEnabled && _currentIndex == AppTabs.chat;
+    // ...and the time / visits of each part of the app (a mentor's academy tab is the station page itself)
+    const tabAreas = {
+      AppTabs.home: 'home', AppTabs.academy: 'academy', AppTabs.challenges: 'challenges',
+      AppTabs.market: 'market', AppTabs.profile: 'profile', AppTabs.chat: 'chat',
+    };
+    AppRepository().setTabArea(userRole.isMentorLike && _currentIndex == AppTabs.academy ? 'station' : (tabAreas[_currentIndex] ?? 'other'));
 
     final List<Widget> screens = userRole.isMentorLike
         ? [

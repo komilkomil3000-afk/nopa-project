@@ -16,6 +16,7 @@
     app: { label: 'زمان حضور در اپ', icon: 'fa-mobile-screen' },
     video: { label: 'زمان تماشای فیلم‌ها', icon: 'fa-circle-play' },
     chat: { label: 'زمان حضور در چت', icon: 'fa-comments' },
+    station: { label: 'زمان حضور در منزلگاه‌ها', icon: 'fa-map-location-dot' },
     other: { label: 'زمان در بقیه بخش‌ها', icon: 'fa-shapes' },
     opens: { label: 'دفعات باز کردن اپ', icon: 'fa-door-open' },
     logins: { label: 'تعداد لاگین در اپ', icon: 'fa-right-to-bracket' },
@@ -24,14 +25,15 @@
     challenges: { label: 'ارسال پاسخ چالش', icon: 'fa-trophy' },
     quizzes: { label: 'آزمون‌های داده‌شده', icon: 'fa-spell-check' },
   };
-  const PERSON_METRICS = ['app', 'video', 'opens', 'messages', 'challenges', 'quizzes'];
+  const PERSON_METRICS = ['app', 'video', 'station', 'chat', 'other', 'opens', 'logins', 'messages', 'challenges', 'quizzes'];
   const RANGES = [['today', 'امروز'], ['week', 'هفته جاری'], ['month', 'ماه جاری'], ['all', 'تمام مدت']];
   const NOTE = {
     opens: 'از نسخه جدید اپ ثبت می‌شود.',
-    video: 'تفکیک ساعتی و روزانه از این نسخه ثبت می‌شود.',
+    video: 'پخش فیلم جلسات و نگارستان منزلگاه‌ها، با همه تکرارها (هر بار و هر مقدار که پخش شد).',
+    station: 'مدت باز بودن صفحه‌های منزلگاه در اپ، جدا از زمان پخش فیلم؛ از نسخه جدید اپ ثبت می‌شود.',
     active: 'در «تمام مدت»، شلوغ‌ترین روز هر ماه.',
     chat: 'از نسخه جدید اپ ثبت می‌شود.',
-    other: 'حضور در اپ منهای زمان چت و تماشای ویدیو.',
+    other: 'حضور در اپ منهای زمان چت و منزلگاه‌ها.',
     logins: 'فقط ورود به حساب در اپ موبایل؛ ورودهای پنل مدیریت شمرده نمی‌شوند.',
   };
 

@@ -104,15 +104,76 @@ class AppRepository extends ChangeNotifier with WidgetsBindingObserver {
   void chatScreenOpened() { _chatScreensOpen++; _noteAreaChange(); }
   void chatScreenClosed() { if (_chatScreensOpen > 0) _chatScreensOpen--; _noteAreaChange(); }
 
-  String get _usageArea {
-    if (isMediaPlaying) return 'video';
-    if (_chatScreensOpen > 0 || chatTabVisible) return 'chat';
-    return 'other';
+  // ---- the part of the app on screen (the panel's «آمار» and the person's activity log) ----
+  // Parts: home | academy | station | challenges | market | profile | chat | other. The shell sets the part of the
+  // bottom tab on screen; screens pushed over it (the station pages) push their own part while they are open.
+  String _tabArea = 'home';
+  final List<_AreaEntry> _areaStack = [];
+  // seconds per part not yet reported, and the parts entered since the last report (the activity log)
+  final Map<String, int> _usagePendingAreas = {};
+  final List<Map<String, dynamic>> _pendingAreaEvents = [];
+  String _lastLoggedArea = '';
+
+  /// The part of the app on screen now.
+  String get currentArea {
+    if (_chatScreensOpen > 0) return 'chat';
+    if (_areaStack.isNotEmpty) return _areaStack.last.area;
+    if (chatTabVisible) return 'chat';
+    return _tabArea;
   }
+
+  String get _currentAreaLabel => _chatScreensOpen == 0 && _areaStack.isNotEmpty ? _areaStack.last.label : '';
+  String get _currentAreaRef => _chatScreensOpen == 0 && _areaStack.isNotEmpty ? _areaStack.last.refId : '';
+
+  /// The shell: the bottom tab on screen changed.
+  void setTabArea(String area) {
+    if (_tabArea == area) return;
+    _tabArea = area;
+    scheduleMicrotask(_noteAreaChange);
+  }
+
+  /// A screen of a part of the app opened over the tabs (e.g. a station page); returns the token for
+  /// [updateArea] / [popArea]. [label] names it in the activity log ("منزلگاه ۳").
+  Object pushArea(String area, {String label = '', String refId = ''}) {
+    final e = _AreaEntry(area, label, refId);
+    _areaStack.add(e);
+    scheduleMicrotask(_noteAreaChange);
+    return e;
+  }
+
+  /// The screen of [token] now shows something else (e.g. the next station).
+  void updateArea(Object token, {required String label, String refId = ''}) {
+    if (token is! _AreaEntry || (token.label == label && token.refId == refId)) return;
+    token.label = label;
+    token.refId = refId;
+    scheduleMicrotask(_noteAreaChange);
+  }
+
+  void popArea(Object? token) {
+    if (token == null) return;
+    _areaStack.remove(token);
+    scheduleMicrotask(_noteAreaChange);
+  }
+
+  String get _usageArea => currentArea;
   String? _lastReportedArea;
 
   void _noteAreaChange() {
-    if (_appInForeground && _apiService.isAuthenticated && _usageArea != _lastReportedArea) _flushUsage(force: true);
+    if (!_appInForeground || !_apiService.isAuthenticated) return;
+    // one row in the activity log for each part of the app entered
+    final logKey = '$currentArea|$_currentAreaLabel|$_currentAreaRef';
+    if (logKey != _lastLoggedArea) {
+      _lastLoggedArea = logKey;
+      _pendingAreaEvents.add({
+        'type': 'enter',
+        'area': currentArea,
+        if (_currentAreaLabel.isNotEmpty) 'label': _currentAreaLabel,
+        if (_currentAreaRef.isNotEmpty) 'refId': _currentAreaRef,
+        'at': DateTime.now().toUtc().toIso8601String(),
+      });
+      if (_pendingAreaEvents.length > 40) _pendingAreaEvents.removeRange(0, _pendingAreaEvents.length - 40);
+    }
+    if ('$_usageArea|$isMediaPlaying' != _lastReportedArea || _pendingAreaEvents.isNotEmpty) _flushUsage(force: true);
   }
 
   /// Sends the gathered time. [force] sends even without new seconds (a heartbeat / a change of area); [away] tells
@@ -126,13 +187,26 @@ class AppRepository extends ChangeNotifier with WidgetsBindingObserver {
     final video = sending == 0 ? 0 : _usagePendingVideo.clamp(0, sending);
     final opens = _usagePendingOpens;
     final area = away ? 'away' : _usageArea;
+    final playing = !away && isMediaPlaying;
+    final areas = sending == 0 ? <String, int>{} : Map<String, int>.from(_usagePendingAreas);
+    final events = List<Map<String, dynamic>>.from(_pendingAreaEvents);
     try {
-      if (await _apiService.pingAppUsage(sending, opens: opens, chatSeconds: chat, videoSeconds: video, area: area)) {
+      if (await _apiService.pingAppUsage(sending, opens: opens, chatSeconds: chat, videoSeconds: video, area: area,
+          playing: playing, areas: areas, events: events)) {
         _usagePendingSeconds -= sending;
         _usagePendingChat = (_usagePendingChat - chat).clamp(0, 1 << 30);
         _usagePendingVideo = (_usagePendingVideo - video).clamp(0, 1 << 30);
         _usagePendingOpens -= opens;
-        _lastReportedArea = area;
+        areas.forEach((k, v) {
+          final left = (_usagePendingAreas[k] ?? 0) - v;
+          if (left > 0) {
+            _usagePendingAreas[k] = left;
+          } else {
+            _usagePendingAreas.remove(k);
+          }
+        });
+        _pendingAreaEvents.removeRange(0, events.length.clamp(0, _pendingAreaEvents.length));
+        _lastReportedArea = away ? 'away' : '$area|$playing';
       }
     } catch (_) {
     } finally {
@@ -157,8 +231,11 @@ class AppRepository extends ChangeNotifier with WidgetsBindingObserver {
         _usagePendingSeconds += step;
         final area = _usageArea;
         if (area == 'chat') _usagePendingChat += step;
-        if (area == 'video') _usagePendingVideo += step;
-        if (_usagePendingSeconds >= _heartbeatSeconds || area != _lastReportedArea) _flushUsage(force: true);
+        if (isMediaPlaying) _usagePendingVideo += step;
+        _usagePendingAreas[area] = (_usagePendingAreas[area] ?? 0) + step;
+        if (_usagePendingSeconds >= _heartbeatSeconds || '$area|$isMediaPlaying' != _lastReportedArea || _pendingAreaEvents.isNotEmpty) {
+          _flushUsage(force: true);
+        }
       }
       // One request round at a time (a slow network must not pile up requests) and none while in background.
       if (_pollInFlight || !_appInForeground || !_apiService.isAuthenticated) return;
@@ -797,3 +874,10 @@ class AppRepository extends ChangeNotifier with WidgetsBindingObserver {
   }
 }
 
+/// A screen of one part of the app pushed over the tabs (AppRepository.pushArea).
+class _AreaEntry {
+  _AreaEntry(this.area, this.label, this.refId);
+  final String area;
+  String label;
+  String refId;
+}

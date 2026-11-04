@@ -2959,3 +2959,18 @@ button.nbr-rank-row:hover { background: rgb(var(--primary-rgb) / 0.08); }
   .nac-summary { grid-template-columns: minmax(0, 1fr); }
   .nac-type, .nac-type .select-ctrl { width: 100%; min-width: 0; }
 }
+
+/* a person's activity log in the app (js/ui/activity-log.js), under the person's activity chart */
+.nal-host { margin-top: 14px; }
+.nal .chm-chips { margin-bottom: 10px; }
+.nal-body { max-height: 520px; overflow-y: auto; }
+.nal-list .nal-day { display: block; padding: 12px 4px 4px; border: 0; font-size: var(--text-xs); font-weight: 800; color: var(--text-muted); }
+.nal-list li b { font-weight: 800; }
+.nal-more { margin: 10px auto 0; display: flex; }
+.nal-videos { margin-bottom: 12px; border-radius: 14px; background: rgb(var(--primary-rgb) / 0.05); padding: 8px 10px; }
+.nal-videos summary { cursor: pointer; font-weight: 800; font-size: var(--text-sm); display: flex; align-items: center; gap: 8px; }
+.nal-videos .sts-table-wrap { margin-top: 8px; }
+.nal-kind { display: block; font-size: var(--text-xs); color: var(--text-muted); }
+.nal-pct { display: inline-block; width: 54px; height: 6px; border-radius: 99px; background: rgb(var(--primary-rgb) / 0.12); overflow: hidden; vertical-align: middle; }
+.nal-pct i { display: block; height: 100%; background: #F59E0B; }
+.nal-pct.is-done i { background: #10B981; }

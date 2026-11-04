@@ -71,7 +71,7 @@ import {
   getLogs 
 } from '../controllers/notificationController';
 import { getDashboardAnalytics } from '../controllers/analyticsController';
-import { getStatsOverview, getStatsSeries } from '../controllers/statsController';
+import { getStatsOverview, getStatsSeries, getUserActivityLog } from '../controllers/statsController';
 import { getMentors, createOrUpdateMentor, grantFiveStars } from '../controllers/mentorController';
 import { getPendingDocuments, approveDocument, rejectDocument, getMentorHistory, assignCaravans } from '../controllers/mentorController';
 import { createOrUpdateStudent, adjustBalance, adjustLevelFrame } from '../controllers/studentController';
@@ -217,6 +217,7 @@ router.get('/notifications/logs', getLogs as any);
 router.get('/analytics', getDashboardAnalytics as any);
 router.get('/analytics/stats/series', getStatsSeries as any);
 router.get('/analytics/stats/overview', getStatsOverview as any);
+router.get('/analytics/stats/user-log', getUserActivityLog as any);
 
 // 7. System Audit Logs & Export Center
 router.get('/audit/logs', getAuditLogs as any);

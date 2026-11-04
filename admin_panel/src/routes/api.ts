@@ -1,4 +1,6 @@
 import { Router } from 'express';
+import { activityLogMiddleware } from '../middleware/activityLog';
+import { getVideoWatch, reportVideoWatch } from '../controllers/videoWatchController';
 import { authenticateJWT, authorizeRoles } from '../middleware/auth';
 import { requireSection } from '../middleware/adminAccess';
 import { authLimiter, smsProtectionMiddleware } from '../middleware/rateLimit';
@@ -39,6 +41,8 @@ import {
 import adminRouter from './admin';
 
 const router = Router();
+// the person's activity log of the mobile app (picture / profile changes, answers ...), middleware/activityLog.ts
+router.use(activityLogMiddleware);
 
 // A. Auth & User Profile Routes
 router.use('/auth', authLimiter);
@@ -148,6 +152,8 @@ router.get('/mentor/tickets/:id', authenticateJWT as any, authorizeRoles('mentor
 router.post('/mentor/tickets/:id/messages', authenticateJWT as any, authorizeRoles('mentor', 'admin') as any, replyMentorTicket as any);
 router.post('/mentor/messages', authenticateJWT as any, authorizeRoles('mentor', 'SUPER_MENTOR', 'admin') as any, sendMentorMessage as any);
 router.post('/usage/ping', authenticateJWT as any, recordAppUsage as any);
+router.post('/usage/video', authenticateJWT as any, reportVideoWatch as any);
+router.get('/usage/video/:clipId', authenticateJWT as any, getVideoWatch as any);
 router.get('/usage/me', authenticateJWT as any, getMyActivityStats as any);
 router.get('/mentor/caravan-progress', authenticateJWT as any, authorizeRoles('mentor', 'SUPER_MENTOR', 'admin') as any, getMentorCaravanProgress as any);
 

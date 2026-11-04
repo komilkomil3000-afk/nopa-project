@@ -69,6 +69,8 @@ model User {
   submissions                  Submission[]
   usageDays                    UserUsageDay[]
   activityHours                UserActivityHour[]
+  videoWatches                 VideoWatch[]
+  activityLogs                 UserActivityLog[]
   quizSubmissions              QuizSubmission[] @relation("StudentQuizSubmissions")
   quizReviews                  QuizSubmission[] @relation("MentorQuizReviews")
   formSubmissions              FormSubmission[]
@@ -631,6 +633,9 @@ model UserUsageDay {
 //   kind "app"   value = seconds the app was in the foreground
 //   kind "open"  value = times the app was opened / brought back after a while
 //   kind "video" value = seconds of class video played; refId = ClassSession id
+//   kind "gvideo" value = seconds of a station gallery (نگارستان) video played; refId = Station id
+//   kind "chat"  value = seconds in the chat; kind "area" value = seconds in one part of the app, refId = the part
+//                (home | academy | station | challenges | market | profile | chat | other)
 model UserActivityHour {
   id        String   @id @default(uuid())
   userId    String
@@ -645,6 +650,50 @@ model UserActivityHour {
 
   @@unique([userId, day, hour, kind, refId])
   @@index([day, kind])
+}
+
+// How one person watched one video of a station (a class part or a gallery video), from the app's player:
+//   segments        merged [start, end] second ranges really played (seeking does not count) -> coveredSeconds
+//   playSeconds     all the time it played, repeats included; plays = times it was started
+model VideoWatch {
+  id              String   @id @default(uuid())
+  userId          String
+  clipId          String
+  kind            String   // "session" (VideoClip of a ClassSession) | "gallery" (StationAnimation)
+  stationId       String   @default("")
+  sessionId       String   @default("")
+  title           String   @default("")
+  durationSeconds Int      @default(0)
+  segments        Json     @default("[]")
+  coveredSeconds  Int      @default(0)
+  playSeconds     Int      @default(0)
+  plays           Int      @default(0)
+  createdAt       DateTime @default(now())
+  lastWatchedAt   DateTime @default(now())
+
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, clipId])
+  @@index([stationId])
+  @@index([userId, lastWatchedAt])
+}
+
+// What a person did in the mobile app, one row per action, shown on the person's page in the panel
+// (entered a part of the app, watched a video, changed the picture / profile, sent a challenge answer ...).
+model UserActivityLog {
+  id        String   @id @default(uuid())
+  userId    String
+  type      String   // enter | open | login | logout | video | avatar | profile | password | challenge | quiz | ticket | exchange ...
+  area      String   @default("")
+  refId     String   @default("")
+  label     String   @default("")
+  seconds   Int      @default(0)
+  createdAt DateTime @default(now())
+
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
+  @@index([createdAt])
 }
 
 model SessionWatchRecord {
