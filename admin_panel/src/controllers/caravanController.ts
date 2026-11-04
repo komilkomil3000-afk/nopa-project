@@ -348,7 +348,7 @@ export async function getCaravans(req: AuthRequest, res: Response) {
     let caravans = await prisma.caravan.findMany({
       where: whereClause,
       include: {
-        mentor: { select: { id: true, name: true, phoneNumber: true } },
+        mentor: { select: { id: true, name: true, phoneNumber: true, avatarUrl: true } },
         members: {
           where: { isDeleted: false, role: 'student' },
           select: {
@@ -374,7 +374,7 @@ export async function getCaravans(req: AuthRequest, res: Response) {
       caravans = await prisma.caravan.findMany({
         where: { isDeleted: false },
         include: {
-          mentor: { select: { id: true, name: true, phoneNumber: true } },
+          mentor: { select: { id: true, name: true, phoneNumber: true, avatarUrl: true } },
           members: {
             where: { isDeleted: false, role: 'student' },
             select: {
