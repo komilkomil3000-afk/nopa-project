@@ -32,12 +32,23 @@
   };
   const CASE_STATUS = { open: 'باز', reviewing: 'در بررسی', resolved: 'حل‌شده' };
   const ROLE_LABELS = { admin: 'مدیر', sub_admin: 'ادمین', mentor: 'راهبر', super_mentor: 'راهبر ارشد', channel_manager: 'مسئول کانال' };
+  // Tag colours the server accepts (light enough for the app's dark surfaces, topics.ts isReadableColor)
+  const TAG_COLORS = ['#9292E2', '#DFB690', '#6EE7B7', '#7DD3FC', '#F9A8D4', '#FCA5A5', '#FDE68A', '#C4B5FD'];
+  // Voice messages, as in the app (chat_voice_composer.dart): at most a minute, at least 0.8s, 40 bars in the file name
+  const VOICE_MAX_MS = 60000;
+  const VOICE_MIN_MS = 800;
+  const VOICE_BARS = 40;
+  const VOICE_RATE = 16000;
+  const PEAK_ALPHABET = '0123456789abcdefghijklmnopqrstuvwxyz';
 
   const st = {
     inited: false, manage: false, spaces: [], cases: [], filter: 'all', text: '',
     active: null,        // { kind: 'space' | 'case', id, meta }
     messages: [], hasOlder: false, reply: null, edit: null, files: [], sending: false,
     timer: null, inboxTimer: null, loadingToken: 0, stickBottom: true, unseen: 0, templates: null, signature: '',
+    thread: null,        // the message whose conversation is open, or null for the main stream
+    view: null,          // { tagId } or { stationId } with its label: the stream filter
+    staffTags: {}, tags: null, people: null, mentions: [], rec: null, audio: null, playing: null,
   };
 
   const api = (url, opts) => NopaApi.json(url, opts);
@@ -180,6 +191,7 @@
     $('chm-pins-toggle').hidden = isCase() || st.manage;
     $('chm-mute-toggle').hidden = isCase() || st.manage;
     $('chm-search-toggle').hidden = isCase() || st.manage;
+    $('chm-filter-toggle').hidden = isCase() || st.manage;
     if (isCase()) {
       const c = a.meta;
       $('chm-head-avatar').outerHTML = avatar(c.user, 'fa-headset').replace('class="chm-avatar', 'id="chm-head-avatar" class="chm-avatar');
@@ -205,7 +217,7 @@
     if (isCase()) { if (st.active.meta.status === 'resolved') reason = 'این پرونده بسته شده است.'; }
     else {
       const s = curSpace();
-      if (s && !st.manage && !s.canPost && !s.canReply) reason = 'در این گفتگو فقط می‌توانید بخوانید.';
+      if (s && !st.manage && (st.thread ? !s.canReply : (!s.canPost && !s.canReply))) reason = 'در این گفتگو فقط می‌توانید بخوانید.';
     }
     notice.hidden = !reason;
     notice.textContent = reason;
@@ -215,9 +227,12 @@
     // Scheduling and templates are for channels and groups, not for private conversations or a support case
     const s = curSpace();
     const channel = !isCase() && s && !['direct', 'support'].includes(s.type);
-    $('chm-sched-toggle').hidden = !channel;
+    $('chm-sched-toggle').hidden = !channel || !!st.thread;
     $('chm-templates').hidden = isCase() ? false : !channel;
-    if (!channel) clearSchedule();
+    $('chm-mic').hidden = isCase();
+    $('chm-attach').hidden = isCase();
+    $('chm-poll-btn').hidden = !channel || !!st.thread || st.manage || !(s && s.canModerate);
+    if (!channel || st.thread) clearSchedule();
   }
 
   function messageHtml(m, prev) {
@@ -231,12 +246,27 @@
     const role = m.sender ? ROLE_LABELS[String(m.sender.role).toLowerCase()] : '';
     const att = (m.attachments || []).map(a => {
       if (a.kind === 'image') return `<img src="${esc(a.url)}" alt="${esc(a.name)}" loading="lazy" data-zoom="${esc(a.url)}">`;
-      if (a.kind === 'audio') return `<audio controls preload="none" src="${esc(a.url)}"></audio>`;
+      if (a.kind === 'audio') return voiceHtml(a);
       if (a.kind === 'video') return `<video controls preload="none" src="${esc(a.url)}"></video>`;
       return `<a class="chm-file" href="${esc(a.url)}" target="_blank" rel="noopener"><i class="fa-solid fa-file-arrow-down"></i>${esc(a.name)}</a>`;
     }).join('');
-    const poll = m.kind === 'poll' && m.meta && Array.isArray(m.meta.options)
-      ? `<div class="chm-poll">${m.meta.options.map((o, i) => `<span class="chm-poll-opt">${esc(typeof o === 'string' ? o : (o.text || ''))} · ${esc(fa((m.pollVotes || []).filter(v => v.option === i).length))}</span>`).join('')}</div>` : '';
+    let poll = '';
+    if (m.kind === 'poll' && m.meta && Array.isArray(m.meta.options)) {
+      const votes = m.pollVotes || [];
+      const mineVote = (votes.find(v => v.userId === me().id) || {}).option;
+      poll = `<div class="chm-poll">${m.meta.options.map((o, i) => {
+        const n = votes.filter(v => v.option === i).length;
+        const pct = votes.length ? Math.round((n / votes.length) * 100) : 0;
+        return `<button type="button" class="chm-poll-opt${mineVote === i ? ' is-mine' : ''}" data-vote="${i}" data-mid="${esc(m.id)}"${st.manage ? ' disabled' : ''}>
+          <span class="chm-poll-fill" data-pct="${pct}"></span><span class="chm-poll-label">${mineVote === i ? '<i class="fa-solid fa-circle-check"></i>' : ''}${esc(typeof o === 'string' ? o : (o.text || ''))}</span><span class="chm-poll-n">${esc(fa(n))}</span></button>`;
+      }).join('')}<span class="chm-poll-total">${esc(fa(votes.length))} رأی</span></div>`;
+    }
+    const tagList = (m.tags || []).concat((st.staffTags[m.id] || []).map(t => ({ ...t, staff: true })));
+    const tags = tagList.length ? `<div class="chm-tags">${tagList.map(t => `<span class="chm-tag${t.staff ? ' is-staff' : ''}" data-color="${esc(t.color)}"><span class="chm-tag-dot"></span>${esc(t.name)}${t.staff ? '<i class="fa-solid fa-eye-slash" title="فقط راهبران"></i>' : ''}</span>`).join('')}</div>` : '';
+    const threadOpen = !st.thread && !isCase() && !st.manage && (m.threadOpen || m.threadReplies > 0);
+    const thread = threadOpen ? `<button type="button" class="chm-thread-link" data-thread="${esc(m.id)}">
+        <span class="chm-thread-faces">${(m.threadPeople || []).map(p => avatar(p, null, ' is-xs')).join('')}</span>
+        <i class="fa-solid fa-comments"></i>${m.threadReplies ? `${esc(fa(m.threadReplies))} پاسخ` : 'ورود به گفتگو'}<i class="fa-solid fa-chevron-left"></i></button>` : '';
     const grouped = {};
     (m.reactions || []).forEach(r => { (grouped[r.type] = grouped[r.type] || []).push(r.userId); });
     const reactions = Object.keys(grouped).map(type => `<button type="button" class="chm-react-chip${grouped[type].includes(me().id) ? ' is-mine' : ''}" data-react="${esc(type)}" data-mid="${esc(m.id)}" title="${esc((REACTIONS[type] || [])[1] || type)}"><i class="fa-solid ${(REACTIONS[type] || ['fa-face-smile'])[0]}"></i>${esc(fa(grouped[type].length))}</button>`).join('');
@@ -244,15 +274,16 @@
     const body = m.deleted
       ? '<p class="chm-text is-deleted">این پیام حذف شده است</p>'
       : (m.body ? `<p class="chm-text">${esc(m.body)}</p>` : '');
-    const showName = !mine && !sameAuthor && m.sender;
+    const showName = !mine && !sameAuthor && m.sender && !m.botKey;
     return `<div class="${cls}" data-id="${esc(m.id)}">
       ${!mine && !system && m.sender ? (sameAuthor ? '<span class="chm-avatar is-sm chm-ghost" aria-hidden="true"></span>' : avatar(m.sender, null, ' is-sm')) : ''}
       <div class="chm-bubble">
         ${showName ? `<div class="chm-sender">${esc(m.sender.name)}${role ? `<span class="chm-role">${esc(role)}</span>` : ''}</div>` : ''}
         ${m.botKey ? '<div class="chm-sender"><i class="fa-solid fa-robot"></i>ربات نپا</div>' : ''}
-        ${reply}${att ? `<div class="chm-att">${att}</div>` : ''}${body}${poll}
+        ${reply}${att ? `<div class="chm-att">${att}</div>` : ''}${body}${poll}${tags}
         ${reactions ? `<div class="chm-react">${reactions}</div>` : ''}
-        <div class="chm-meta">${m.pinned ? '<i class="fa-solid fa-thumbtack"></i>' : ''}${m.edited ? '<span>ویرایش‌شده</span>' : ''}<span>${esc(clock(m.createdAt))}</span></div>
+        <div class="chm-meta">${m.best ? '<span class="chm-best"><i class="fa-solid fa-award"></i>بهترین پاسخ</span>' : ''}${m.pinned ? '<i class="fa-solid fa-thumbtack"></i>' : ''}${m.edited ? '<span>ویرایش‌شده</span>' : ''}<span>${esc(clock(m.createdAt))}</span></div>
+        ${thread}
       </div>
       ${m.deleted || isCase() ? '' : `<button type="button" class="chm-more" data-more="${esc(m.id)}" aria-label="گزینه‌های پیام" aria-haspopup="menu"><i class="fa-solid fa-ellipsis"></i></button>`}
     </div>`;
@@ -262,14 +293,18 @@
     opts = opts || {};
     const box = $('chm-stream');
     const prevTop = box.scrollHeight - box.scrollTop;
-    let html = st.hasOlder ? '<button type="button" class="chm-pill-btn chm-older" id="chm-older"><i class="fa-solid fa-arrow-up"></i>پیام‌های قدیمی‌تر</button>' : '';
+    let html = '';
+    // In a thread the message it hangs under leads, then its replies
+    if (st.thread) html += `<div class="chm-thread-root">${messageHtml(st.thread, null)}</div><div class="chm-day">${st.messages.length ? `${esc(fa(st.messages.length))} پاسخ` : 'هنوز پاسخی نیامده است'}</div>`;
+    html += st.hasOlder ? '<button type="button" class="chm-pill-btn chm-older" id="chm-older"><i class="fa-solid fa-arrow-up"></i>پیام‌های قدیمی‌تر</button>' : '';
     let lastDay = '';
     st.messages.forEach((m, i) => {
       const day = new Date(m.createdAt).toDateString();
-      if (day !== lastDay) { html += `<div class="chm-day">${esc(dayLabel(m.createdAt))}</div>`; lastDay = day; }
+      if (day !== lastDay && !st.thread) { html += `<div class="chm-day">${esc(dayLabel(m.createdAt))}</div>`; lastDay = day; }
       html += messageHtml(m, day === (i && new Date(st.messages[i - 1].createdAt).toDateString()) ? st.messages[i - 1] : null);
     });
-    box.innerHTML = html || '<div class="chm-state">هنوز پیامی ارسال نشده است.</div>';
+    box.innerHTML = html || `<div class="chm-state">${st.view ? 'پیامی با این فیلتر پیدا نشد.' : 'هنوز پیامی ارسال نشده است.'}</div>`;
+    paint(box);
     if (opts.keepOffset) box.scrollTop = box.scrollHeight - prevTop;
     else if (opts.bottom || st.stickBottom) {
       box.scrollTop = box.scrollHeight;
@@ -291,7 +326,15 @@
     $('chm-jump-count').textContent = st.unseen ? fa(st.unseen) : '';
   }
 
-  const signatureOf = list => list.map(m => `${m.id}|${m.deleted ? 1 : 0}|${m.edited ? 1 : 0}|${m.pinned ? 1 : 0}|${(m.reactions || []).length}|${m.threadReplies || 0}`).join(',');
+  const signatureOf = list => list.map(m => `${m.id}|${m.deleted ? 1 : 0}|${m.edited ? 1 : 0}|${m.pinned ? 1 : 0}|${m.best ? 1 : 0}|${(m.reactions || []).length}|${(m.pollVotes || []).length}|${(m.tags || []).length}|${(st.staffTags[m.id] || []).length}|${m.threadReplies || 0}`).join(',');
+
+  // Inline style attributes are blocked by the panel's CSP: colours and widths go through the CSSOM
+  function paint(root) {
+    root.querySelectorAll('[data-color]').forEach(el => el.style.setProperty('--tag', el.dataset.color));
+    root.querySelectorAll('[data-pct]').forEach(el => { el.style.width = `${el.dataset.pct}%`; });
+    root.querySelectorAll('[data-peak]').forEach(el => { el.style.height = `${Math.round(Number(el.dataset.peak) * 100)}%`; });
+    if (st.playing) syncVoice();
+  }
 
   async function fetchMessages(beforeSeq) {
     const a = st.active;
@@ -302,27 +345,24 @@
       const rows = await api(`${MANAGE}/spaces/${a.id}/messages`);
       return { list: rows.slice().reverse(), more: false };
     }
-    const data = await api(`${CHAT}/spaces/${a.id}/messages${beforeSeq ? `?beforeSeq=${beforeSeq}` : ''}`);
+    const q = new URLSearchParams();
+    if (beforeSeq) q.set('beforeSeq', beforeSeq);
+    if (st.thread) q.set('threadRootId', st.thread.id);
+    if (st.view && st.view.tagId) q.set('tagId', st.view.tagId);
+    if (st.view && st.view.stationId) q.set('stationId', st.view.stationId);
+    const data = await api(`${CHAT}/spaces/${a.id}/messages${q.toString() ? `?${q}` : ''}`);
+    Object.assign(st.staffTags, data.staffTags || {});
+    // Tags taken off a message no longer come back in staffTags: clear them for the messages of this page
+    data.messages.forEach(m => { if (!(data.staffTags || {})[m.id]) delete st.staffTags[m.id]; });
     return { list: data.messages, more: data.messages.length >= PAGE };
   }
 
-  async function openConversation(kind, id) {
-    const meta = kind === 'case' ? st.cases.find(c => c.id === id) : st.spaces.find(s => s.id === id);
-    if (!meta) return;
-    st.active = { kind, id, meta };
-    st.reply = null; st.edit = null; st.files = []; st.messages = []; st.hasOlder = false; st.stickBottom = true; st.unseen = 0; st.signature = '';
+  // Reloads the stream from scratch (a thread opened or closed, a filter chosen)
+  async function reloadStream() {
     const token = ++st.loadingToken;
-    closeMenu();
-    $('chm-empty').hidden = true;
-    $('chm-conv').hidden = false;
-    $('chm-searchbar').hidden = true;
-    $('chm-search-text').value = '';
-    $('chm-input').value = '';
-    autosize();
-    renderContext(); renderFiles();
-    setState('conv');
-    setHead();
-    renderList();
+    st.messages = []; st.hasOlder = false; st.stickBottom = true; st.unseen = 0; st.signature = '';
+    renderBars();
+    updateComposerAccess();
     $('chm-stream').innerHTML = streamSkeleton();
     try {
       const { list, more } = await fetchMessages();
@@ -334,7 +374,52 @@
       if (token !== st.loadingToken) return;
       $('chm-stream').innerHTML = `<div class="chm-state">${esc(e.message || 'خطا در دریافت پیام‌ها')}</div>`;
     }
+  }
+
+  // The thread bar and the filter bar under the header
+  function renderBars() {
+    $('chm-threadbar').hidden = !st.thread;
+    if (st.thread) $('chm-thread-title').textContent = (st.thread.body || 'پیام').slice(0, 80);
+    $('chm-filterbar').hidden = !st.view;
+    if (st.view) $('chm-filter-label').textContent = st.view.label;
+    $('chm-filter-toggle').classList.toggle('is-on', !!st.view);
+    $('chm-input').placeholder = st.thread ? 'پاسخ در این گفتگو...' : 'پیام خود را بنویسید...';
+  }
+
+  async function openConversation(kind, id) {
+    const meta = kind === 'case' ? st.cases.find(c => c.id === id) : st.spaces.find(s => s.id === id);
+    if (!meta) return;
+    if (st.rec) cancelRecording();
+    st.active = { kind, id, meta };
+    st.reply = null; st.edit = null; st.files = []; st.thread = null; st.view = null;
+    st.staffTags = {}; st.tags = null; st.people = null; st.mentions = [];
+    closeMenu();
+    $('chm-empty').hidden = true;
+    $('chm-conv').hidden = false;
+    $('chm-searchbar').hidden = true;
+    $('chm-search-text').value = '';
+    $('chm-input').value = '';
+    autosize();
+    renderContext(); renderFiles();
+    setState('conv');
+    setHead();
+    renderList();
+    await reloadStream();
     startPolling();
+  }
+
+  function enterThread(id) {
+    const m = st.messages.find(x => x.id === id);
+    if (!m) return;
+    closeMenu();
+    st.thread = m; st.reply = null; st.edit = null;
+    renderContext();
+    reloadStream();
+  }
+  function exitThread() {
+    st.thread = null; st.reply = null;
+    renderContext();
+    reloadStream();
   }
 
   async function loadOlder() {
@@ -457,18 +542,20 @@
       } else if (isCase()) {
         await post(`/api/v1/admin/support-cases/${st.active.id}/reply`, { body });
         st.active.meta.status = st.active.meta.status === 'open' ? 'reviewing' : st.active.meta.status;
-      } else if (st.manage || sendAt) {
+      } else if ((st.manage || sendAt) && !st.thread) {
         if (sendAt && attachmentIds.length) throw new Error('پیام زمان‌بندی‌شده فعلاً پیوست نمی‌پذیرد');
         const r = await post(`${MANAGE}/publish`, { spaceId: st.active.id, body, attachmentIds, sendAt: sendAt ? new Date(sendAt).toISOString() : undefined });
         if (r.scheduled) showToast('پیام زمان‌بندی شد و در زمان مقرر منتشر می‌شود.', 'success');
       } else {
+        const mentions = st.mentions.filter(p => body.includes(`@${p.name}`)).map(p => p.id);
         const r = await post(`${CHAT}/spaces/${st.active.id}/messages`, {
-          body, attachmentIds, replyToId: st.reply ? st.reply.id : undefined, clientMessageId: `p${Date.now()}${Math.random().toString(36).slice(2, 8)}`,
+          body, attachmentIds, mentions, replyToId: st.reply ? st.reply.id : undefined, threadRootId: st.thread ? st.thread.id : undefined,
+          clientMessageId: `p${Date.now()}${Math.random().toString(36).slice(2, 8)}`,
         });
         if (r && r.command) showToast(typeof r.result === 'string' ? r.result : 'دستور اجرا شد.', 'success');
       }
       input.value = '';
-      st.reply = null; st.edit = null; st.files = [];
+      st.reply = null; st.edit = null; st.files = []; st.mentions = [];
       clearSchedule(); autosize(); renderContext(); renderFiles();
       st.stickBottom = true;
       await refreshActive({ force: true });
@@ -486,6 +573,7 @@
   function closeMenu() {
     const menu = $('chm-menu');
     menu.hidden = true;
+    menu.dataset.mode = '';
     document.querySelectorAll('.chm-more.is-open').forEach(b => b.classList.remove('is-open'));
   }
 
@@ -510,13 +598,24 @@
     const mine = !!(m.sender && m.sender.id === me().id);
     const moderator = st.manage || !!(s && s.canModerate);
     const canWrite = !!(s && (s.canPost || s.canReply)) && !st.manage;
+    const tagger = !st.manage && !!(s && s.canTag);
+    const privateChat = !!(s && ['direct', 'support'].includes(s.type));
+    const isRoot = st.thread && st.thread.id === m.id;
     const items = [];
-    if (canWrite) items.push(['reply', 'fa-reply', 'پاسخ']);
+    if (canWrite && (st.thread ? s.canReply : true)) items.push(['reply', 'fa-reply', 'پاسخ']);
+    if (!st.thread && !st.manage && (m.threadOpen || m.threadReplies > 0)) items.push(['thread', 'fa-comments', 'ورود به گفتگو']);
+    if (!st.thread && !st.manage && moderator && !m.threadOpen && !m.threadReplies && !privateChat && !m.threadRootId) items.push(['openThread', 'fa-comment-medical', 'باز کردن گفتگو زیر این پیام']);
     if (m.body) items.push(['copy', 'fa-copy', 'کپی متن']);
     if (mine && m.body && !st.manage && m.kind !== 'card') items.push(['edit', 'fa-pen', 'ویرایش']);
     if (moderator && !st.manage) items.push(['pin', 'fa-thumbtack', m.pinned ? 'برداشتن سنجاق' : 'سنجاق کردن']);
+    if (tagger) {
+      items.push(['tag', 'fa-tag', 'برچسب']);
+      items.push(['best', 'fa-award', m.best ? 'برداشتن «بهترین پاسخ»' : 'بهترین پاسخ']);
+      items.push(['evidence', 'fa-circle-check', 'شاهد امتیاز (روشن/خاموش)']);
+    }
     if (moderator && !mine && m.sender) items.push(['mute', 'fa-volume-xmark', 'بی‌صدا تا یک ساعت']);
-    if (mine || moderator) items.push(['delete', 'fa-trash', 'حذف', true]);
+    if (!mine && m.sender && !st.manage && s && s.type !== 'direct') items.push(['report', 'fa-flag', 'گزارش تخلف', true]);
+    if ((mine || moderator) && !isRoot) items.push(['delete', 'fa-trash', 'حذف', true]);
     const menu = $('chm-menu');
     menu.innerHTML = (st.manage ? '' : `<div class="chm-menu-react">${Object.keys(REACTIONS).map(k => `<button type="button" data-mreact="${k}" title="${esc(REACTIONS[k][1])}" aria-label="${esc(REACTIONS[k][1])}"><i class="fa-solid ${REACTIONS[k][0]}"></i></button>`).join('')}</div>`) +
       items.map(it => `<button type="button" class="chm-menu-item${it[3] ? ' is-danger' : ''}" role="menuitem" data-mact="${it[0]}"><i class="fa-solid ${it[1]}"></i>${esc(it[2])}</button>`).join('');
@@ -534,6 +633,21 @@
       else if (act === 'edit') { st.edit = m; st.reply = null; $('chm-input').value = m.body; autosize(); renderContext(); $('chm-input').focus(); }
       else if (act === 'copy') { await navigator.clipboard.writeText(m.body); showToast('متن کپی شد.', 'success'); }
       else if (act === 'pin') { await post(`${CHAT}/messages/${id}/pin`); await refreshActive({ force: true }); }
+      else if (act === 'thread') { enterThread(id); }
+      else if (act === 'openThread') { await post(`${CHAT}/messages/${id}/mark`, { mark: 'thread' }); await refreshActive({ force: true }); enterThread(id); }
+      else if (act === 'best' || act === 'evidence') {
+        const r = await post(`${CHAT}/messages/${id}/mark`, { mark: act });
+        const on = (r.marks || []).includes(act);
+        showToast(act === 'best' ? (on ? 'به‌عنوان بهترین پاسخ نشان شد.' : 'نشان بهترین پاسخ برداشته شد.') : (on ? 'شاهد امتیاز ثبت شد.' : 'شاهد امتیاز برداشته شد.'), 'success');
+        await refreshActive({ force: true });
+      }
+      else if (act === 'tag') { await showTagPicker(id, $('chm-stream').querySelector(`[data-more="${CSS.escape(id)}"]`) || $('chm-filter-toggle')); }
+      else if (act === 'report') {
+        const reason = window.prompt('دلیل گزارش این پیام را بنویسید (اختیاری)', '');
+        if (reason === null) return;
+        await post(`${CHAT}/messages/${id}/report`, { reason });
+        showToast('گزارش ثبت شد و به مدیران می‌رسد.', 'success');
+      }
       else if (act === 'mute') { await post(`${CHAT}/spaces/${m.spaceId}/members/${m.sender.id}/mute`, { minutes: 60 }); showToast(`${m.sender.name} تا یک ساعت نمی‌تواند پیام بفرستد.`, 'success'); }
       else if (act === 'delete') {
         if (!(await NopaConfirm('این پیام برای همه حذف می‌شود. ادامه می‌دهید؟'))) return;
@@ -624,6 +738,406 @@
     placeMenu($('chm-templates'));
   }
 
+  // ---------- tags ----------
+  async function loadTags(force) {
+    const s = curSpace();
+    if (!s) return [];
+    if (st.tags && !force) return st.tags;
+    st.tags = await api(`${CHAT}/spaces/${s.id}/tags`);
+    return st.tags;
+  }
+
+  const tagChip = t => `<span class="chm-tag" data-color="${esc(t.color)}"><span class="chm-tag-dot"></span>${esc(t.name)}${t.visibility === 'staff' ? '<i class="fa-solid fa-eye-slash" title="فقط راهبران"></i>' : ''}</span>`;
+
+  async function showTagPicker(id, anchor) {
+    const m = st.messages.concat(st.thread ? [st.thread] : []).find(x => x.id === id);
+    if (!m) return;
+    let tags;
+    try { tags = await loadTags(); } catch (e) { showToast(e.message || 'خطا در دریافت برچسب‌ها', 'error'); return; }
+    const on = new Set((m.tags || []).concat(st.staffTags[m.id] || []).map(t => t.id));
+    const s = curSpace();
+    const menu = $('chm-menu');
+    menu.innerHTML = `<div class="chm-menu-head">برچسب پیام</div><div class="chm-menu-list">${tags.map(t => `
+      <div class="chm-menu-row"><button type="button" class="chm-menu-item" data-mtag="${esc(t.id)}"><i class="fa-solid ${on.has(t.id) ? 'fa-square-check' : 'fa-square'}"></i>${tagChip(t)}${t.spaceId ? '' : '<span class="chm-menu-hint">همگانی</span>'}</button>
+      ${s && s.canModerate ? `<button type="button" class="chm-icon-btn is-sm" data-mtagdel="${esc(t.id)}" title="بایگانی برچسب" aria-label="بایگانی برچسب"><i class="fa-solid fa-box-archive"></i></button>` : ''}</div>`).join('') || '<div class="chm-state">هنوز برچسبی ساخته نشده است.</div>'}</div>
+      <button type="button" class="chm-menu-item is-accent" data-mtagnew="1"><i class="fa-solid fa-plus"></i>برچسب تازه</button>`;
+    menu.dataset.mid = id;
+    paint(menu);
+    placeMenu(anchor);
+  }
+
+  function showTagForm(id, anchor) {
+    const role = String(me().role || '').toLowerCase();
+    const menu = $('chm-menu');
+    menu.innerHTML = `<form class="chm-form" id="chm-tag-form">
+      <div class="chm-menu-head">برچسب تازه</div>
+      <input type="text" id="chm-tag-name" maxlength="30" placeholder="نام برچسب" required>
+      <div class="chm-swatches" role="radiogroup" aria-label="رنگ برچسب">${TAG_COLORS.map((c, i) => `<button type="button" class="chm-swatch${i ? '' : ' is-on'}" role="radio" aria-checked="${!i}" data-swatch="${c}" data-color="${c}" aria-label="${c}"></button>`).join('')}</div>
+      <label class="chm-check"><input type="checkbox" id="chm-tag-staff">فقط راهبران و مدیران ببینند</label>
+      ${['admin', 'sub_admin', 'channel_manager'].includes(role) ? '<label class="chm-check"><input type="checkbox" id="chm-tag-global">برای همه‌ی گفتگوها (همگانی)</label>' : ''}
+      <button type="submit" class="chm-pill-btn is-primary"><i class="fa-solid fa-check"></i>ساخت و افزودن به پیام</button>
+    </form>`;
+    menu.dataset.mid = id;
+    paint(menu);
+    placeMenu(anchor);
+    $('chm-tag-name').focus();
+  }
+
+  async function createTag(id) {
+    const s = curSpace();
+    const name = $('chm-tag-name').value.trim();
+    if (!name || !s) return;
+    const swatch = $('chm-menu').querySelector('.chm-swatch.is-on');
+    const global = $('chm-tag-global');
+    try {
+      const tag = await post(`${CHAT}/spaces/${s.id}/tags`, {
+        name, color: swatch ? swatch.dataset.swatch : TAG_COLORS[0],
+        visibility: $('chm-tag-staff').checked ? 'staff' : 'public', global: !!(global && global.checked),
+      });
+      st.tags = null;
+      if (id) await post(`${CHAT}/messages/${id}/tags`, { tagId: tag.id });
+      closeMenu();
+      showToast('برچسب ساخته شد.', 'success');
+      await refreshActive({ force: true });
+    } catch (e) { showToast(e.message || 'خطا در ساخت برچسب', 'error'); }
+  }
+
+  async function toggleTag(id, tagId) {
+    try {
+      await post(`${CHAT}/messages/${id}/tags`, { tagId });
+      await refreshActive({ force: true });
+      const anchor = $('chm-stream').querySelector(`[data-more="${CSS.escape(id)}"]`);
+      if (anchor) showTagPicker(id, anchor); else closeMenu();
+    } catch (e) { showToast(e.message || 'خطا در برچسب‌گذاری', 'error'); }
+  }
+
+  async function archiveTag(tagId, id) {
+    if (!(await NopaConfirm('این برچسب بایگانی می‌شود و دیگر قابل انتخاب نیست. ادامه می‌دهید؟'))) return;
+    try {
+      await api(`${CHAT}/tags/${tagId}`, { method: 'DELETE' });
+      st.tags = null;
+      const anchor = $('chm-stream').querySelector(`[data-more="${CSS.escape(id)}"]`);
+      if (anchor) showTagPicker(id, anchor); else closeMenu();
+    } catch (e) { showToast(e.message || 'خطا در بایگانی برچسب', 'error'); }
+  }
+
+  // ---------- stream filter: by tag or by station ----------
+  async function showFilterMenu() {
+    const s = curSpace();
+    if (!s) return;
+    let tags = [];
+    let stations = [];
+    try { [tags, stations] = await Promise.all([loadTags(), api(`${CHAT}/spaces/${s.id}/stations`).catch(() => [])]); } catch (e) { /* show what we have */ }
+    const menu = $('chm-menu');
+    menu.innerHTML = `<div class="chm-menu-list">
+      <button type="button" class="chm-menu-item" data-mview=""><i class="fa-solid fa-layer-group"></i>همه‌ی پیام‌ها</button>
+      ${tags.length ? '<div class="chm-menu-head">برچسب‌ها</div>' : ''}
+      ${tags.map(t => `<button type="button" class="chm-menu-item${st.view && st.view.tagId === t.id ? ' is-current' : ''}" data-mview="tag" data-vid="${esc(t.id)}" data-vlabel="${esc(t.name)}">${tagChip(t)}</button>`).join('')}
+      ${stations.length ? '<div class="chm-menu-head">منزلگاه‌ها</div>' : ''}
+      ${stations.map(x => `<button type="button" class="chm-menu-item${st.view && st.view.stationId === x.id ? ' is-current' : ''}" data-mview="station" data-vid="${esc(x.id)}" data-vlabel="${esc(x.title)}"><i class="fa-solid fa-signs-post"></i>${esc(x.title)}</button>`).join('')}
+      ${!tags.length && !stations.length ? '<div class="chm-state">هنوز برچسب یا منزلگاهی در این گفتگو نیست.</div>' : ''}
+    </div>`;
+    menu.dataset.mid = '';
+    paint(menu);
+    placeMenu($('chm-filter-toggle'));
+  }
+
+  function setView(kind, id, label) {
+    closeMenu();
+    st.view = kind === 'tag' ? { tagId: id, label: `برچسب: ${label}` } : (kind === 'station' ? { stationId: id, label: `منزلگاه: ${label}` } : null);
+    reloadStream();
+  }
+
+  // ---------- voice: player ----------
+  function peaksOf(a) {
+    const match = /~([0-9a-z]{16,64})\.[A-Za-z0-9]+$/.exec(a.name || '');
+    if (match) return match[1].split('').map(c => PEAK_ALPHABET.indexOf(c) / (PEAK_ALPHABET.length - 1));
+    // Same stand-in shape as the app (ChatWaveform.pseudoPeaks) for voices recorded without bars
+    let state = String(a.id).split('').reduce((h, c) => ((h ^ c.charCodeAt(0)) * 16777619) & 0x7fffffff, 2166136261 & 0x7fffffff) || 1;
+    let previous = 0.5;
+    return Array.from({ length: VOICE_BARS }, () => {
+      state = (state * 1103515245 + 12345) & 0x7fffffff;
+      previous = Math.min(1, Math.max(0, previous * 0.55 + ((state % 1000) / 1000) * 0.45));
+      return 0.18 + previous * 0.82;
+    });
+  }
+
+  function voiceHtml(a) {
+    return `<div class="chm-voice" data-aid="${esc(a.id)}" data-src="${esc(a.url)}">
+      <button type="button" class="chm-voice-play" data-play="${esc(a.id)}" aria-label="پخش پیام صوتی"><i class="fa-solid fa-play"></i></button>
+      <div class="chm-wave" data-seek="${esc(a.id)}" role="slider" aria-label="جای پخش" tabindex="0">${peaksOf(a).map(p => `<span data-peak="${Math.max(0.08, Math.min(1, p)).toFixed(2)}"></span>`).join('')}</div>
+      <span class="chm-voice-time" data-vtime="${esc(a.id)}">صوت</span></div>`;
+  }
+
+  const mmss = sec => { const s = Math.max(0, Math.round(sec || 0)); return `${fa(Math.floor(s / 60))}:${fa(s % 60).padStart(2, '۰')}`; };
+
+  function syncVoice() {
+    document.querySelectorAll('.chm-voice').forEach(box => {
+      const on = st.playing && st.playing.id === box.dataset.aid;
+      const audio = on ? st.audio : null;
+      const btn = box.querySelector('.chm-voice-play i');
+      btn.className = `fa-solid ${audio && !audio.paused ? 'fa-pause' : 'fa-play'}`;
+      box.classList.toggle('is-playing', !!(audio && !audio.paused));
+      const ratio = audio && audio.duration ? audio.currentTime / audio.duration : 0;
+      const bars = box.querySelectorAll('.chm-wave span');
+      bars.forEach((b, i) => b.classList.toggle('is-played', on && i < Math.round(ratio * bars.length)));
+      const time = box.querySelector('.chm-voice-time');
+      if (audio && isFinite(audio.duration)) time.textContent = audio.paused && !audio.currentTime ? mmss(audio.duration) : mmss(audio.currentTime);
+    });
+  }
+
+  function playVoice(id, seekRatio) {
+    const box = document.querySelector(`.chm-voice[data-aid="${CSS.escape(id)}"]`);
+    if (!box) return;
+    if (!st.playing || st.playing.id !== id) {
+      if (st.audio) st.audio.pause();
+      const audio = new Audio(box.dataset.src);
+      audio.addEventListener('timeupdate', syncVoice);
+      audio.addEventListener('loadedmetadata', syncVoice);
+      audio.addEventListener('pause', syncVoice);
+      audio.addEventListener('play', syncVoice);
+      audio.addEventListener('ended', () => { audio.currentTime = 0; syncVoice(); });
+      audio.addEventListener('error', () => showToast('پخش این پیام صوتی ممکن نشد.', 'error'));
+      st.audio = audio;
+      st.playing = { id };
+    }
+    const audio = st.audio;
+    if (typeof seekRatio === 'number') {
+      const go = () => { audio.currentTime = seekRatio * audio.duration; audio.play().catch(() => {}); };
+      if (audio.duration) go(); else audio.addEventListener('loadedmetadata', go, { once: true });
+      return;
+    }
+    if (audio.paused) audio.play().catch(() => showToast('پخش این پیام صوتی ممکن نشد.', 'error'));
+    else audio.pause();
+  }
+
+  // ---------- voice: recorder (WAV, which every player in the app and the browsers can play) ----------
+  function encodeWav(samples, rate) {
+    const buffer = new ArrayBuffer(44 + samples.length * 2);
+    const v = new DataView(buffer);
+    const text = (o, s) => { for (let i = 0; i < s.length; i++) v.setUint8(o + i, s.charCodeAt(i)); };
+    text(0, 'RIFF'); v.setUint32(4, 36 + samples.length * 2, true); text(8, 'WAVE'); text(12, 'fmt ');
+    v.setUint32(16, 16, true); v.setUint16(20, 1, true); v.setUint16(22, 1, true); v.setUint32(24, rate, true);
+    v.setUint32(28, rate * 2, true); v.setUint16(32, 2, true); v.setUint16(34, 16, true); text(36, 'data');
+    v.setUint32(40, samples.length * 2, true);
+    for (let i = 0; i < samples.length; i++) {
+      const s = Math.max(-1, Math.min(1, samples[i]));
+      v.setInt16(44 + i * 2, s < 0 ? s * 0x8000 : s * 0x7fff, true);
+    }
+    return new Blob([buffer], { type: 'audio/wav' });
+  }
+
+  function downsample(chunks, from, to) {
+    const length = chunks.reduce((a, c) => a + c.length, 0);
+    const all = new Float32Array(length);
+    let offset = 0;
+    chunks.forEach(c => { all.set(c, offset); offset += c.length; });
+    if (from === to) return all;
+    const ratio = from / to;
+    const out = new Float32Array(Math.floor(length / ratio));
+    for (let i = 0; i < out.length; i++) {
+      const start = Math.floor(i * ratio);
+      const end = Math.min(length, Math.floor((i + 1) * ratio));
+      let sum = 0;
+      for (let j = start; j < end; j++) sum += all[j];
+      out[i] = sum / Math.max(1, end - start);
+    }
+    return out;
+  }
+
+  function barsOf(levels, bars) {
+    if (!levels.length) return Array(bars).fill(0.08);
+    const top = Math.max(0.05, ...levels);
+    return Array.from({ length: bars }, (_, i) => {
+      const from = Math.floor((i * levels.length) / bars);
+      const to = Math.max(from + 1, Math.ceil(((i + 1) * levels.length) / bars));
+      let peak = 0;
+      for (let j = from; j < Math.min(to, levels.length); j++) peak = Math.max(peak, levels[j]);
+      return Math.max(0.08, Math.min(1, peak / top));
+    });
+  }
+
+  function renderRecording() {
+    const r = st.rec;
+    $('chm-rec').hidden = !r;
+    $('chm-composer').hidden = !!r || !!$('chm-notice').textContent;
+    if (!r) return;
+    const ms = r.stopped ? r.duration : Date.now() - r.start;
+    $('chm-rec-time').textContent = mmss(ms / 1000);
+    $('chm-rec').classList.toggle('is-stopped', !!r.stopped);
+    $('chm-rec-stop').innerHTML = r.stopped ? `<i class="fa-solid ${r.preview && !r.preview.paused ? 'fa-pause' : 'fa-play'}"></i>` : '<i class="fa-solid fa-stop"></i>';
+    $('chm-rec-stop').setAttribute('aria-label', r.stopped ? 'پیش‌شنود' : 'توقف ضبط');
+    const live = r.levels.slice(-VOICE_BARS);
+    const shown = r.stopped ? r.peaks : Array(VOICE_BARS - live.length).fill(0.06).concat(live.map(l => Math.max(0.08, Math.min(1, l * 2.2))));
+    const wave = $('chm-rec-wave');
+    if (wave.children.length !== VOICE_BARS) wave.innerHTML = Array(VOICE_BARS).fill('<span></span>').join('');
+    Array.from(wave.children).forEach((b, i) => { b.style.height = `${Math.round(shown[i] * 100)}%`; });
+  }
+
+  async function startRecording() {
+    if (!st.active || isCase()) return;
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia || !(window.AudioContext || window.webkitAudioContext)) {
+      showToast('مرورگر شما ضبط صدا را پشتیبانی نمی‌کند.', 'error');
+      return;
+    }
+    let stream;
+    try {
+      stream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true, channelCount: 1 } });
+    } catch (e) {
+      showToast('دسترسی به میکروفون داده نشد.', 'error');
+      return;
+    }
+    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    const source = ctx.createMediaStreamSource(stream);
+    const proc = ctx.createScriptProcessor(4096, 1, 1);
+    const r = { stream, ctx, source, proc, chunks: [], levels: [], start: Date.now(), stopped: false };
+    proc.onaudioprocess = e => {
+      if (r.stopped) return;
+      const data = e.inputBuffer.getChannelData(0);
+      r.chunks.push(new Float32Array(data));
+      let peak = 0;
+      for (let i = 0; i < data.length; i++) { const a = Math.abs(data[i]); if (a > peak) peak = a; }
+      r.levels.push(peak);
+    };
+    source.connect(proc);
+    proc.connect(ctx.destination); // the processor only runs when it is connected; its output stays silent
+    r.timer = setInterval(() => {
+      if (Date.now() - r.start >= VOICE_MAX_MS) { stopRecording(); showToast('حداکثر زمان پیام صوتی یک دقیقه است.', 'info'); }
+      renderRecording();
+    }, 120);
+    st.rec = r;
+    closeMenu();
+    renderRecording();
+  }
+
+  function stopRecording() {
+    const r = st.rec;
+    if (!r || r.stopped) return r;
+    r.stopped = true;
+    r.duration = Date.now() - r.start;
+    clearInterval(r.timer);
+    try { r.source.disconnect(); r.proc.disconnect(); } catch (e) { /* already gone */ }
+    r.stream.getTracks().forEach(t => t.stop());
+    const rate = r.ctx.sampleRate;
+    r.ctx.close().catch(() => {});
+    r.peaks = barsOf(r.levels, VOICE_BARS);
+    r.blob = encodeWav(downsample(r.chunks, rate, Math.min(VOICE_RATE, rate)), Math.min(VOICE_RATE, rate));
+    r.chunks = [];
+    renderRecording();
+    return r;
+  }
+
+  function cancelRecording() {
+    const r = st.rec;
+    if (!r) return;
+    stopRecording();
+    if (r.preview) { r.preview.pause(); URL.revokeObjectURL(r.preview.src); }
+    st.rec = null;
+    renderRecording();
+  }
+
+  function togglePreview() {
+    const r = st.rec;
+    if (!r) return;
+    if (!r.stopped) { stopRecording(); return; }
+    if (!r.preview) {
+      r.preview = new Audio(URL.createObjectURL(r.blob));
+      ['play', 'pause', 'ended'].forEach(ev => r.preview.addEventListener(ev, renderRecording));
+    }
+    if (r.preview.paused) r.preview.play().catch(() => {}); else r.preview.pause();
+  }
+
+  async function sendRecording() {
+    const r = stopRecording();
+    if (!r) return;
+    if (r.duration < VOICE_MIN_MS) { showToast('پیام صوتی خیلی کوتاه است.', 'info'); cancelRecording(); return; }
+    const stamp = Date.now();
+    const file = new File([r.blob], `voice-${stamp}~${r.peaks.map(p => PEAK_ALPHABET[Math.round(p * (PEAK_ALPHABET.length - 1))]).join('')}.wav`, { type: 'audio/wav' });
+    const btn = $('chm-rec-send');
+    btn.disabled = true;
+    try {
+      await uploadFiles([file]);
+      if (!st.files.some(f => f.name === file.name && f.id)) return; // the upload failed and said why
+      if (r.preview) { r.preview.pause(); URL.revokeObjectURL(r.preview.src); }
+      st.rec = null;
+      renderRecording();
+      await send();
+    } finally {
+      btn.disabled = false;
+    }
+  }
+
+  // ---------- mentions: "@" in the composer lists the people of the conversation ----------
+  async function checkMention() {
+    const input = $('chm-input');
+    const s = curSpace();
+    if (!s || st.manage || isCase()) return;
+    const before = input.value.slice(0, input.selectionStart);
+    const match = /(^|\s)@([^\s@]{0,30})$/.exec(before);
+    if (!match) { if ($('chm-menu').dataset.mode === 'mention') closeMenu(); return; }
+    if (!st.people) {
+      try { st.people = await api(`${CHAT}/spaces/${s.id}/people`); } catch (e) { st.people = []; }
+    }
+    const q = match[2];
+    const rows = st.people.filter(p => p.id !== me().id && (!q || p.name.includes(q))).slice(0, 8);
+    if (!rows.length) { closeMenu(); return; }
+    const menu = $('chm-menu');
+    menu.innerHTML = `<div class="chm-menu-head">نام بردن از</div><div class="chm-menu-list">${rows.map(p => `<button type="button" class="chm-menu-item" data-mention="${esc(p.id)}">${avatar(p, null, ' is-xs')}${esc(p.name)}<span class="chm-menu-hint">${esc(ROLE_LABELS[String(p.role).toLowerCase()] || '')}</span></button>`).join('')}</div>`;
+    menu.dataset.mid = '';
+    menu.dataset.mode = 'mention';
+    placeMenu($('chm-composer'));
+  }
+
+  function pickMention(id) {
+    const p = (st.people || []).find(x => x.id === id);
+    const input = $('chm-input');
+    if (!p) return;
+    const pos = input.selectionStart;
+    const before = input.value.slice(0, pos).replace(/@([^\s@]{0,30})$/, `@${p.name} `);
+    input.value = before + input.value.slice(pos);
+    input.setSelectionRange(before.length, before.length);
+    if (!st.mentions.some(x => x.id === p.id)) st.mentions.push({ id: p.id, name: p.name });
+    closeMenu();
+    autosize();
+    input.focus();
+  }
+
+  // ---------- poll: the app's "/نظرسنجی سؤال | گزینه | گزینه" command, from a small form ----------
+  function showPollForm() {
+    const menu = $('chm-menu');
+    menu.innerHTML = `<form class="chm-form" id="chm-poll-form">
+      <div class="chm-menu-head">نظرسنجی تازه</div>
+      <input type="text" id="chm-poll-q" maxlength="200" placeholder="پرسش" required>
+      ${[1, 2, 3, 4].map(i => `<input type="text" class="chm-poll-o" maxlength="80" placeholder="گزینه ${fa(i)}"${i < 3 ? ' required' : ''}>`).join('')}
+      <span class="chm-menu-hint">دست‌کم دو گزینه؛ گزینه‌های خالی کنار گذاشته می‌شوند.</span>
+      <button type="submit" class="chm-pill-btn is-primary"><i class="fa-solid fa-square-poll-vertical"></i>انتشار نظرسنجی</button>
+    </form>`;
+    menu.dataset.mid = '';
+    menu.dataset.mode = 'form';
+    placeMenu($('chm-poll-btn'));
+    $('chm-poll-q').focus();
+  }
+
+  async function publishPoll() {
+    const q = $('chm-poll-q').value.trim().replace(/\|/g, '/');
+    const options = Array.from(document.querySelectorAll('.chm-poll-o')).map(i => i.value.trim().replace(/\|/g, '/')).filter(Boolean);
+    if (!q || options.length < 2) { showToast('پرسش و دست‌کم دو گزینه لازم است.', 'info'); return; }
+    try {
+      const r = await post(`${CHAT}/spaces/${st.active.id}/messages`, { body: `/نظرسنجی ${q} | ${options.join(' | ')}`, attachmentIds: [] });
+      closeMenu();
+      showToast(r && r.command && typeof r.result === 'string' ? r.result : 'نظرسنجی منتشر شد.', 'success');
+      st.stickBottom = true;
+      await refreshActive({ force: true });
+    } catch (e) { showToast(e.message || 'خطا در انتشار نظرسنجی', 'error'); }
+  }
+
+  async function vote(id, option) {
+    try {
+      await post(`${CHAT}/messages/${id}/vote`, { option });
+      await refreshActive({ force: true });
+    } catch (e) { showToast(e.message || 'خطا در ثبت رأی', 'error'); }
+  }
+
   // ---------- new private conversation ----------
   async function openContacts() {
     const box = $('chm-contacts');
@@ -694,6 +1208,14 @@
     $('chm-stream').addEventListener('click', e => {
       const more = e.target.closest('[data-more]');
       if (more) { e.stopPropagation(); openMessageMenu(more.dataset.more, more); return; }
+      const play = e.target.closest('[data-play]');
+      if (play) { playVoice(play.dataset.play); return; }
+      const seek = e.target.closest('[data-seek]');
+      if (seek) { const r = seek.getBoundingClientRect(); playVoice(seek.dataset.seek, Math.min(1, Math.max(0, (r.right - e.clientX) / r.width))); return; }
+      const voteBtn = e.target.closest('[data-vote]');
+      if (voteBtn) { vote(voteBtn.dataset.mid, Number(voteBtn.dataset.vote)); return; }
+      const th = e.target.closest('[data-thread]');
+      if (th) { enterThread(th.dataset.thread); return; }
       const rc = e.target.closest('[data-react]');
       if (rc) { react(rc.dataset.mid, rc.dataset.react); return; }
       const go = e.target.closest('[data-goto]');
@@ -710,10 +1232,27 @@
       const a = e.target.closest('[data-mact]');
       const g = e.target.closest('[data-mgoto]');
       const t = e.target.closest('[data-mtpl]');
+      const tg = e.target.closest('[data-mtag]');
+      const tgDel = e.target.closest('[data-mtagdel]');
+      const tgNew = e.target.closest('[data-mtagnew]');
+      const sw = e.target.closest('[data-swatch]');
+      const vw = e.target.closest('[data-mview]');
+      const mn = e.target.closest('[data-mention]');
+      if (sw) { $('chm-menu').querySelectorAll('.chm-swatch').forEach(b => { const on = b === sw; b.classList.toggle('is-on', on); b.setAttribute('aria-checked', String(on)); }); return; }
+      if (tgDel) { archiveTag(tgDel.dataset.mtagdel, mid); return; }
+      if (tg) { toggleTag(mid, tg.dataset.mtag); return; }
+      if (tgNew) { showTagForm(mid, $('chm-stream').querySelector(`[data-more="${CSS.escape(mid)}"]`) || $('chm-filter-toggle')); return; }
+      if (vw) { setView(vw.dataset.mview, vw.dataset.vid, vw.dataset.vlabel); return; }
+      if (mn) { pickMention(mn.dataset.mention); return; }
       if (r) react(mid, r.dataset.mreact);
       else if (a) messageAction(mid, a.dataset.mact);
       else if (g) { closeMenu(); gotoMessage(g.dataset.mgoto); }
       else if (t) { const tpl = st.templates[Number(t.dataset.mtpl)]; closeMenu(); if (tpl) { $('chm-input').value = tpl.body; autosize(); $('chm-input').focus(); } }
+    });
+    $('chm-menu').addEventListener('submit', e => {
+      e.preventDefault();
+      if (e.target.id === 'chm-tag-form') createTag($('chm-menu').dataset.mid);
+      else if (e.target.id === 'chm-poll-form') publishPoll();
     });
     document.addEventListener('click', closeMenu);
     document.addEventListener('keydown', e => { if (e.key === 'Escape') { closeMenu(); if (st.reply || st.edit) { st.reply = null; st.edit = null; renderContext(); } } });
@@ -721,8 +1260,21 @@
     $('chm-stream').addEventListener('scroll', closeMenu, { passive: true });
 
     $('chm-composer').addEventListener('submit', e => { e.preventDefault(); send(); });
-    $('chm-input').addEventListener('input', autosize);
-    $('chm-input').addEventListener('keydown', e => { if (e.key === 'Enter' && !e.shiftKey && !e.isComposing) { e.preventDefault(); send(); } });
+    $('chm-input').addEventListener('input', () => { autosize(); checkMention(); });
+    $('chm-mic').addEventListener('click', startRecording);
+    $('chm-rec-cancel').addEventListener('click', cancelRecording);
+    $('chm-rec-stop').addEventListener('click', togglePreview);
+    $('chm-rec-send').addEventListener('click', sendRecording);
+    $('chm-poll-btn').addEventListener('click', e => { e.stopPropagation(); showPollForm(); });
+    $('chm-filter-toggle').addEventListener('click', e => { e.stopPropagation(); showFilterMenu(); });
+    $('chm-filter-clear').addEventListener('click', () => setView(null));
+    $('chm-thread-back').addEventListener('click', exitThread);
+    $('chm-input').addEventListener('keydown', e => {
+      if (e.key !== 'Enter' || e.shiftKey || e.isComposing) return;
+      e.preventDefault();
+      const first = $('chm-menu').dataset.mode === 'mention' && !$('chm-menu').hidden && $('chm-menu').querySelector('[data-mention]');
+      if (first) pickMention(first.dataset.mention); else send();
+    });
     $('chm-attach').addEventListener('click', () => $('chm-file').click());
     $('chm-file').addEventListener('change', e => { uploadFiles(e.target.files); e.target.value = ''; });
     $('chm-files').addEventListener('click', e => { const b = e.target.closest('[data-rmfile]'); if (b) { st.files.splice(Number(b.dataset.rmfile), 1); renderFiles(); } });

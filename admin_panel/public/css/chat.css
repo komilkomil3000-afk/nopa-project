@@ -32,6 +32,15 @@
 .chm-view-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--danger); }
 .chm-view-dot[hidden] { display: none; }
 
+/* Everyone else's bubble: a soft sage / jade, a muted green between the panel's lavender and camel, with deep
+   green ink. The same in both themes (like the app's camel bubble), so it always reads as "the other side". */
+:root {
+  --chm-other-fill: linear-gradient(to left, #AFD6C0, #8FC2A6);
+  --chm-other-stroke: linear-gradient(to right, #4F8268, #D6EFE1, #4F8268);
+  --chm-other-ink: #102E1F;
+  --chm-other-title: #1D573A;
+}
+
 /* ---------- Layout ---------- */
 .chm {
   --chm-h: clamp(520px, calc(100vh - 230px), 860px);
@@ -294,14 +303,15 @@
 }
 .chm-msg.is-other .chm-bubble {
   border-end-end-radius: 6px;
-  background: linear-gradient(to left, #DDB48C, #CE9F74) padding-box, linear-gradient(to right, #8A6038, #EBC9A0, #8A6038) border-box;
-  color: #2A1B10;
+  background: var(--chm-other-fill) padding-box, var(--chm-other-stroke) border-box;
+  color: var(--chm-other-ink);
 }
-.chm-msg.is-bot .chm-bubble { background: rgb(var(--info-rgb) / 0.12) padding-box, linear-gradient(to right, rgb(var(--info-rgb) / 0.3), rgb(var(--info-rgb) / 0.7), rgb(var(--info-rgb) / 0.3)) border-box; color: var(--text); }
+.chm-msg.is-bot .chm-bubble { background: linear-gradient(rgb(var(--info-rgb) / 0.16), rgb(var(--info-rgb) / 0.16)) padding-box, linear-gradient(to right, rgb(var(--info-rgb) / 0.3), rgb(var(--info-rgb) / 0.7), rgb(var(--info-rgb) / 0.3)) border-box; color: var(--text); }
 .chm-msg.is-deleted .chm-bubble { opacity: 0.6; }
 .chm-msg.is-best .chm-bubble { box-shadow: 0 0 0 2px rgb(var(--success-rgb) / 0.5); }
-.chm-sender { display: flex; align-items: center; gap: 6px; margin-bottom: 2px; font-size: 11px; font-weight: 800; color: #6A3B12; }
+.chm-sender { display: flex; align-items: center; gap: 6px; margin-bottom: 2px; font-size: 11px; font-weight: 800; color: var(--chm-other-title); }
 .chm-msg.is-mine .chm-sender { color: var(--primary-text); }
+.chm-msg.is-bot .chm-sender { color: var(--info-text); }
 .chm-role { padding: 0 7px; border-radius: 999px; font-size: 9.5px; background: rgb(0 0 0 / 0.12); }
 .chm-text { margin: 0; font-size: 12.5px; line-height: 1.85; white-space: pre-wrap; overflow-wrap: anywhere; }
 .chm-text.is-deleted { font-style: italic; opacity: 0.8; }
@@ -343,8 +353,136 @@
 .chm-att img { display: block; max-width: min(260px, 100%); max-height: 220px; border-radius: 12px; cursor: zoom-in; object-fit: cover; }
 .chm-att audio, .chm-att video { max-width: 100%; border-radius: 12px; }
 .chm-file { display: inline-flex; align-items: center; gap: 8px; padding: 6px 10px; border-radius: 12px; background: rgb(0 0 0 / 0.12); color: inherit; font-size: 11px; text-decoration: none; }
-.chm-poll { display: flex; flex-direction: column; gap: 4px; margin-top: 4px; font-size: 11.5px; }
-.chm-poll-opt { padding: 5px 10px; border-radius: 10px; background: rgb(0 0 0 / 0.12); }
+.chm-poll { display: flex; flex-direction: column; gap: 5px; margin-top: 6px; min-width: 220px; font-size: 11.5px; }
+.chm-poll-opt {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  overflow: hidden;
+  padding: 6px 12px;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  background: rgb(0 0 0 / 0.1);
+  color: inherit;
+  font: inherit;
+  text-align: start;
+  cursor: pointer;
+}
+.chm-poll-opt:disabled { cursor: default; }
+.chm-poll-opt.is-mine { border-color: currentColor; font-weight: 800; }
+.chm-poll-fill { position: absolute; inset-block: 0; inset-inline-start: 0; width: 0; background: rgb(var(--primary-rgb) / 0.28); transition: width 0.4s ease; }
+.chm-msg.is-other .chm-poll-fill { background: rgb(29 87 58 / 0.22); }
+.chm-poll-label, .chm-poll-n { position: relative; display: inline-flex; align-items: center; gap: 6px; }
+.chm-poll-total { font-size: 10px; opacity: 0.7; }
+
+/* Tags on a message, and the same chip in menus (--tag is set from data-color by the script) */
+.chm-tags { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 6px; }
+.chm-tag {
+  --tag: #9292E2;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 2px 9px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--tag) 24%, transparent);
+  border: 1px solid color-mix(in srgb, var(--tag) 55%, transparent);
+  color: inherit;
+  font-size: 10.5px;
+  font-weight: 700;
+}
+.chm-tag-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--tag); }
+.chm-tag i { font-size: 9px; opacity: 0.7; }
+.chm-tag.is-staff { border-style: dashed; }
+.chm-best { display: inline-flex; align-items: center; gap: 4px; padding: 0 8px; border-radius: 999px; background: rgb(var(--success-rgb) / 0.2); font-weight: 800; }
+
+/* The way into the conversation under a message */
+.chm-thread-link {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+  margin-top: 6px;
+  padding: 5px 10px;
+  border: none;
+  border-radius: 999px;
+  background: rgb(0 0 0 / 0.1);
+  color: inherit;
+  font: inherit;
+  font-size: 11px;
+  font-weight: 800;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+.chm-thread-link:hover { background: rgb(0 0 0 / 0.18); }
+.chm-thread-link .fa-chevron-left { margin-inline-start: auto; font-size: 9px; }
+.chm-thread-faces { display: inline-flex; }
+.chm-thread-faces .chm-avatar + .chm-avatar { margin-inline-start: -6px; }
+.chm-avatar.is-xs { width: 20px; height: 20px; font-size: 9px; border: 1.5px solid var(--surface); }
+.chm-thread-root { display: flex; flex-direction: column; padding-bottom: 4px; }
+.chm-thread-root .chm-msg { max-width: 92%; }
+.chm-threadbar, .chm-filterbar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 10px 16px 0;
+  padding: 5px 6px 5px 14px;
+  border-radius: 999px;
+  background: rgb(var(--primary-rgb) / 0.14);
+  color: var(--primary-text);
+  font-size: 11.5px;
+  animation: chmIn 0.2s ease both;
+}
+.chm-threadbar span, .chm-filterbar span { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.chm-threadbar b { color: var(--app-card-title); }
+.chm-filterbar { background: rgb(var(--accent-rgb) / 0.14); color: var(--accent-text); }
+.chm-threadbar[hidden], .chm-filterbar[hidden] { display: none; }
+
+/* Voice message: play button and the 40 bars the app draws (the peaks travel in the file name) */
+.chm-voice { display: flex; align-items: center; gap: 8px; min-width: 220px; padding: 4px 2px; }
+.chm-voice-play {
+  flex: 0 0 auto;
+  width: 34px;
+  height: 34px;
+  border: none;
+  border-radius: 50%;
+  background: currentColor;
+  cursor: pointer;
+  transition: transform 0.15s ease;
+}
+.chm-voice-play i { color: var(--surface); font-size: 12px; }
+.chm-msg.is-other .chm-voice-play i { color: #AFD6C0; }
+.chm-voice-play:hover { transform: scale(1.06); }
+.chm-wave { flex: 1; display: flex; align-items: center; gap: 2px; height: 28px; min-width: 120px; cursor: pointer; }
+.chm-wave span { flex: 1; min-width: 2px; height: 20%; border-radius: 999px; background: currentColor; opacity: 0.35; transition: opacity 0.15s ease, height 0.12s ease; }
+.chm-wave span.is-played { opacity: 1; }
+.chm-voice-time { flex: 0 0 auto; min-width: 34px; font-size: 10.5px; font-weight: 700; opacity: 0.8; text-align: end; }
+
+/* Recording bar, in place of the composer while recording */
+.chm-rec {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px;
+  border: 1px solid rgb(var(--danger-rgb) / 0.45);
+  border-radius: 26px;
+  background: var(--surface-2);
+  color: var(--text);
+  animation: chmIn 0.2s ease both;
+}
+.chm-rec[hidden] { display: none; }
+.chm-rec.is-stopped { border-color: var(--border-strong); }
+.chm-rec-dot { width: 10px; height: 10px; border-radius: 50%; background: var(--danger); animation: chmPulse 1s ease-in-out infinite; }
+.chm-rec.is-stopped .chm-rec-dot { animation: none; background: var(--text-faint); }
+.chm-rec-time { min-width: 38px; font-size: 12px; font-weight: 800; font-variant-numeric: tabular-nums; }
+.chm-rec .chm-wave { color: var(--primary-text); cursor: default; }
+.chm-rec .chm-wave span { opacity: 0.85; }
+.chm-icon-btn.is-danger { color: var(--danger-text); }
+.chm-icon-btn.is-danger:hover { background: rgb(var(--danger-rgb) / 0.18); }
+.chm-icon-btn.is-sm { width: 26px; height: 26px; font-size: 11px; }
+.chm-mic:hover { color: var(--danger-text); }
+@keyframes chmPulse { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.4; transform: scale(0.8); } }
 .chm-system { padding: 4px 14px; border-radius: 999px; background: rgb(var(--fg-rgb) / 0.08); color: var(--text-muted); font-size: 11px; text-align: center; }
 
 .chm-more {
@@ -397,6 +535,8 @@
   background: var(--surface-2);
   transition: border-color 0.15s ease, box-shadow 0.15s ease;
 }
+.chm-composer[hidden], .chm-pinbar[hidden], .chm-jump[hidden] { display: none; }
+.chm-icon-btn[hidden] { display: none; }
 .chm-composer:focus-within { border-color: var(--app-card-accent); box-shadow: 0 0 0 3px rgb(var(--primary-rgb) / 0.18); }
 .chm-composer textarea {
   flex: 1;
@@ -476,6 +616,29 @@
 .chm-menu-item:hover { background: rgb(var(--fg-rgb) / 0.07); }
 .chm-menu-item.is-danger, .chm-menu-item.is-danger i { color: var(--danger-text); }
 .chm-menu-list { max-height: 280px; overflow-y: auto; min-width: 260px; }
+.chm-menu-head { padding: 6px 12px 4px; font-size: 10.5px; font-weight: 800; color: var(--text-muted); }
+.chm-menu-row { display: flex; align-items: center; gap: 4px; }
+.chm-menu-row .chm-menu-item { flex: 1; }
+.chm-menu-hint { margin-inline-start: auto; font-size: 10px; color: var(--text-faint); }
+.chm-menu-item.is-accent, .chm-menu-item.is-accent i { color: var(--accent-text); }
+.chm-menu-item.is-current { background: rgb(var(--primary-rgb) / 0.16); }
+.chm-form { display: flex; flex-direction: column; gap: 8px; min-width: 260px; padding: 4px; }
+.chm-form input[type="text"] {
+  padding: 8px 14px;
+  border: 1px solid var(--border-strong);
+  border-radius: 999px;
+  background: var(--surface-2);
+  color: var(--text);
+  font: inherit;
+  font-size: 12px;
+  outline: none;
+}
+.chm-form input[type="text"]:focus { border-color: var(--app-card-accent); }
+.chm-check { display: flex; align-items: center; gap: 8px; font-size: 11.5px; color: var(--text-soft); }
+.chm-swatches { display: flex; flex-wrap: wrap; gap: 6px; padding: 2px; }
+.chm-swatch { --tag: #9292E2; width: 24px; height: 24px; border: 2px solid transparent; border-radius: 50%; background: var(--tag); cursor: pointer; }
+.chm-swatch.is-on { border-color: var(--text); box-shadow: 0 0 0 2px var(--surface); }
+.chm-pill-btn.is-primary { justify-content: center; padding: 8px 14px; background: var(--gold-gradient); color: #2A1B10; }
 
 /* ---------- Loading: same shimmer as the stations and challenges skeletons ---------- */
 .chm-skel { pointer-events: none; }
@@ -499,7 +662,7 @@
 @keyframes chmIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
 @keyframes chmPop { from { opacity: 0; transform: scale(0.94); } to { opacity: 1; transform: none; } }
 @media (prefers-reduced-motion: reduce) {
-  .chm-row, .chm-msg, .chm-conv, .chm-menu, .chm-contacts, .chm-context, .chm-sched { animation: none; }
+  .chm-row, .chm-msg, .chm-conv, .chm-menu, .chm-contacts, .chm-context, .chm-sched, .chm-rec, .chm-threadbar, .chm-filterbar, .chm-rec-dot { animation: none; }
   .chm-skel .chm-skel-avatar::after, .chm-skel .lst-skel-line::after, .chm-skel-bubble::after { animation: none; }
 }
 
@@ -510,5 +673,149 @@
   .chm[data-state="conv"] .chm-side { display: none; }
   .chm-back { display: inline-flex; }
   .chm-msg { max-width: 92%; }
-  .chm-head-tools .chm-icon-btn:not(#chm-search-toggle):not(#chm-refresh) { display: none; }
+  .chm-head-tools .chm-icon-btn:not(#chm-search-toggle):not(#chm-filter-toggle) { display: none; }
+  .chm-voice { min-width: 180px; }
+}
+
+/* ---------- Chat management bento (chat-settings.js, chat-ops.js): the stations tab's tiles and modals ---------- */
+.chs-bento { animation: chmIn 0.28s ease both; }
+.chs-scroll { max-height: 300px; overflow-y: auto; scrollbar-width: thin; }
+.chs-side { flex: 0 0 auto; font-size: var(--text-2xs, 0.7rem); color: var(--text-muted); white-space: nowrap; }
+.chs-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.chs-act {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border: 1px solid var(--border-strong);
+  border-radius: 50%;
+  background: transparent;
+  color: var(--text-soft);
+  font-size: 11px;
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+}
+.chs-act:hover { background: rgb(var(--primary-rgb) / 0.12); border-color: rgb(var(--primary-rgb) / 0.6); color: var(--text); }
+.chs-act.is-danger:hover { background: rgb(var(--danger-rgb) / 0.14); border-color: rgb(var(--danger-rgb) / 0.6); color: var(--danger-text); }
+.chs-edit[hidden] { display: none; }
+
+/* Shimmer while a tile loads, the same sweep as the stations tiles */
+.chs-skel .lst-skel-row { position: relative; overflow: hidden; }
+.chs-skel .lst-skel-row::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(100deg, transparent 20%, rgb(var(--fg-rgb) / 0.08) 50%, transparent 80%);
+  background-size: 200% 100%;
+  animation: lstShimmer 1.2s linear infinite;
+}
+
+/* Mode tile: three large choices; the one in use takes its status colour */
+.chs-modes { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+.chs-mode {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 14px 8px;
+  border: 1.2px solid transparent;
+  border-radius: 22px;
+  background: var(--app-card-fill) padding-box, var(--app-card-stroke-soft) border-box;
+  color: var(--text-soft);
+  font: inherit;
+  cursor: pointer;
+  text-align: center;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+.chs-mode i { font-size: 1.2rem; color: var(--text-muted); }
+.chs-mode strong { font-size: var(--text-sm, 0.9rem); color: var(--app-card-title); }
+.chs-mode span { font-size: var(--text-2xs, 0.7rem); color: var(--text-muted); }
+.chs-mode:hover:not(:disabled) { transform: translateY(-2px); box-shadow: var(--app-card-shadow); }
+.chs-mode:disabled { cursor: default; }
+.chs-mode:disabled:not([aria-checked="true"]) { opacity: 0.55; }
+.chs-mode[aria-checked="true"][data-chs-mode="off"] { background: linear-gradient(rgb(var(--danger-rgb) / 0.14), rgb(var(--danger-rgb) / 0.14)) padding-box, linear-gradient(to right, rgb(var(--danger-rgb) / 0.3), var(--danger), rgb(var(--danger-rgb) / 0.3)) border-box; }
+.chs-mode[aria-checked="true"][data-chs-mode="pilot"] { background: linear-gradient(rgb(var(--accent-rgb) / 0.16), rgb(var(--accent-rgb) / 0.16)) padding-box, linear-gradient(to right, rgb(var(--accent-rgb) / 0.3), var(--accent), rgb(var(--accent-rgb) / 0.3)) border-box; }
+.chs-mode[aria-checked="true"][data-chs-mode="on"] { background: linear-gradient(rgb(var(--success-rgb) / 0.14), rgb(var(--success-rgb) / 0.14)) padding-box, linear-gradient(to right, rgb(var(--success-rgb) / 0.3), var(--success), rgb(var(--success-rgb) / 0.3)) border-box; }
+.chs-mode[aria-checked="true"][data-chs-mode="off"] i { color: var(--danger-text); }
+.chs-mode[aria-checked="true"][data-chs-mode="pilot"] i { color: var(--accent-text); }
+.chs-mode[aria-checked="true"][data-chs-mode="on"] i { color: var(--success-text); }
+.chs-mode-note { font-size: var(--text-xs, 0.78rem); color: var(--text-soft); line-height: 1.9; }
+.chs-mode-readonly { font-size: var(--text-2xs, 0.7rem); color: var(--text-muted); }
+.chs-mode-readonly[hidden] { display: none; }
+.chs-perm-head { font-size: var(--text-2xs, 0.7rem); color: var(--text-muted); }
+.chs-perm-list { max-height: 170px; overflow-y: auto; }
+.chs-perm-list .lst-list-item { padding: 6px 10px; }
+
+/* Caravan analytics: a meter of the active share */
+.chs-stat-row { flex-wrap: wrap; }
+.chs-meter { flex: 0 0 80px; height: 6px; border-radius: 999px; background: rgb(var(--fg-rgb) / 0.08); overflow: hidden; }
+.chs-meter span { display: block; height: 100%; width: 0; background: var(--success); border-radius: inherit; transition: width 0.4s ease; }
+
+/* Modals: checkbox lists and switches */
+.chs-modal-search { min-width: 0; }
+.chs-modal-search .input-ctrl { width: 100%; }
+.chs-checks { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+.chs-checks.is-switches { grid-template-columns: minmax(0, 1fr); }
+.chs-check {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  background: var(--surface-2);
+  color: var(--text-soft);
+  font-size: var(--text-xs, 0.78rem);
+  cursor: pointer;
+  transition: border-color 0.15s ease, background 0.15s ease;
+}
+.chs-check[hidden] { display: none; }
+.chs-check:hover { border-color: rgb(var(--primary-rgb) / 0.5); }
+.chs-check:has(input:checked) { border-color: rgb(var(--primary-rgb) / 0.55); background: rgb(var(--primary-rgb) / 0.1); color: var(--text); }
+.chs-check input[type="checkbox"] { accent-color: var(--primary); width: 16px; height: 16px; flex: 0 0 auto; }
+.chs-check > span { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.chs-check small { font-size: var(--text-2xs, 0.7rem); color: var(--text-muted); }
+/* A checkbox drawn as a pill switch */
+.chs-check input.chs-switch {
+  appearance: none;
+  -webkit-appearance: none;
+  position: relative;
+  width: 38px;
+  height: 22px;
+  margin: 0;
+  border-radius: 999px;
+  background: rgb(var(--fg-rgb) / 0.16);
+  cursor: pointer;
+  transition: background 0.18s ease;
+}
+.chs-check input.chs-switch::after {
+  content: "";
+  position: absolute;
+  top: 3px;
+  inset-inline-start: 3px;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--on-fill);
+  box-shadow: 0 1px 3px rgb(0 0 0 / 0.3);
+  transition: inset-inline-start 0.18s ease;
+}
+.chs-check input.chs-switch:checked { background: var(--success); }
+.chs-check input.chs-switch:checked::after { inset-inline-start: 19px; }
+.chs-check input.chs-switch:focus-visible { outline: 2px solid var(--app-card-accent); outline-offset: 2px; }
+.chs-words { display: flex; flex-wrap: wrap; gap: 6px; }
+.chs-word { display: inline-flex; align-items: center; gap: 6px; padding: 3px 4px 3px 12px; border-radius: 999px; background: rgb(var(--danger-rgb) / 0.14); color: var(--danger-text); font-size: var(--text-xs, 0.78rem); font-weight: 700; }
+.chs-word button { width: 20px; height: 20px; border: none; border-radius: 50%; background: rgb(var(--danger-rgb) / 0.2); color: inherit; font-size: 9px; cursor: pointer; }
+.chs-templates { display: flex; flex-direction: column; gap: 10px; }
+.chs-template { display: flex; flex-direction: column; gap: 6px; padding: 10px; border: 1px solid var(--border); border-radius: 18px; background: var(--surface-2); }
+#chs-group-members-card[hidden] { display: none; }
+
+@media (max-width: 640px) {
+  .chs-modes, .chs-checks { grid-template-columns: minmax(0, 1fr); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .chs-bento, .chs-skel .lst-skel-row::after { animation: none; }
+  .chs-mode { transition: none; }
 }
