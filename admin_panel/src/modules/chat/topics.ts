@@ -20,7 +20,7 @@ async function cardMeta(c: Challenge) {
     category: c.category,
     tag: CATEGORY_LABELS[c.category] || 'درون‌گروهی',
     title: c.title,
-    description: c.description.slice(0, 300),
+    description: c.description.slice(0, 3000),
     stationTitle: station?.title || null,
     creatorName: creator?.role === 'admin' ? 'مدیر سیستم' : (creator?.name || 'راهبر'),
     creatorRole: creator?.role ?? 'mentor',

@@ -173,6 +173,7 @@ class _ChatTopicInfoScreenState extends State<ChatTopicInfoScreen> {
                     ChatChip(label: meta['tag']?.toString() ?? 'چالش'),
                     ChatChip(label: topicStatusLabels[_status] ?? _status, color: ChatTheme.accent),
                   ]),
+                  if ((meta['description'] ?? '').toString().isNotEmpty) Padding(padding: const EdgeInsets.only(top: 6), child: Text(meta['description'].toString(), style: ChatTheme.body)),
                   if (meta['reward'] != null) Padding(padding: const EdgeInsets.only(top: 6), child: Text('جایزه: ${meta['reward']}', style: ChatTheme.caption)),
                   const SizedBox(height: 14),
                   if (_interGroup) InterGroupSection(challengeId: _challengeId, mentor: widget.moderator, spaceId: widget.spaceId),
@@ -247,7 +248,19 @@ class _ChatTopicInfoScreenState extends State<ChatTopicInfoScreen> {
           ChatButton(label: 'خروجی', primary: false, onPressed: _export),
         ],
       ),
-      const SizedBox(height: 14),
+      const SizedBox(height: 10),
+      if (!_legacy)
+        Padding(
+          padding: const EdgeInsets.only(bottom: 10),
+          child: Text(
+            status == 'open'
+                ? 'مرحله‌ی ۱: چالش را ببندید. مرحله‌ی ۲: برای هر شرکت‌کننده یکی از وضعیت‌های پرچمدار، فعال، نیمه‌فعال، همراه یا خسته را انتخاب کنید. مرحله‌ی ۳: «تأیید و پرداخت» پاداش‌ها را بر اساس درصد هر وضعیت می‌دهد.'
+                : status == 'closed'
+                    ? 'وضعیت مشارکت هر نفر را انتخاب کنید و «تأیید و پرداخت» را بزنید؛ پاداش هر نفر به درصد وضعیتش داده می‌شود.'
+                    : 'پاداش‌ها پرداخت شده است. برای تغییر، از «اصلاح» کنار هر نفر استفاده کنید.',
+            style: ChatTheme.caption.copyWith(fontSize: 13),
+          ),
+        ),
       if (_legacy) Padding(padding: const EdgeInsets.only(bottom: 10), child: Text('این چالش زریکی است و از صفحه‌ی بررسی پاسخ‌ها پرداخت می‌شود.', style: ChatTheme.caption.copyWith(fontSize: 13))),
       if (_rows.isEmpty) Text('هنوز کسی در این چالش شرکت نکرده است.', style: ChatTheme.caption.copyWith(fontSize: 13)),
       for (final row in _rows) _evaluationRow(row, status),

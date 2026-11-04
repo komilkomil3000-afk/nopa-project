@@ -602,7 +602,8 @@ class _ChatConversationScreenState extends State<ChatConversationScreen> {
                           Column(
                             children: [
                               // With the keyboard open the conversation needs every pixel
-                              if (widget.threadRoot != null && MediaQuery.viewInsetsOf(context).bottom == 0) _threadOrigin(),
+                              // The challenge brief stays in view; a plain thread's origin gives way to the keyboard
+              if (widget.threadRoot != null && (widget.threadRoot!.kind == 'challenge' || MediaQuery.viewInsetsOf(context).bottom == 0)) _threadOrigin(),
                               if (space?.type == 'support') _caseBar(),
                               Expanded(child: _list(messages, space, myId)),
                             ],
@@ -737,19 +738,41 @@ class _ChatConversationScreenState extends State<ChatConversationScreen> {
         ),
       );
 
+  /// The top of a thread. For a challenge it carries the whole brief, not just the title.
   Widget _threadOrigin() {
     final root = widget.threadRoot!;
+    final meta = root.meta ?? const {};
+    final isChallenge = root.kind == 'challenge';
+    final title = meta['title']?.toString() ?? (root.body.isEmpty ? 'فایل' : root.body);
+    final description = (meta['description'] ?? '').toString().trim();
+    final status = _rootStatus() ?? root.topicStatus ?? 'open';
+    final facts = <String>[
+      if (isChallenge && (meta['stationTitle'] ?? '').toString().isNotEmpty) 'منزلگاه: ${meta['stationTitle']}',
+      if (isChallenge && (meta['creatorName'] ?? '').toString().isNotEmpty) 'سازنده: ${meta['creatorName']}',
+      if (isChallenge && meta['startDate'] != null) 'شروع: ${chatDateText(meta['startDate'])}',
+      if (isChallenge && meta['dueDate'] != null) 'مهلت: ${chatDateText(meta['dueDate'])}',
+      if (isChallenge && meta['reward'] != null) 'جایزه: ${meta['reward']}',
+    ];
     return Container(
       width: double.infinity,
+      constraints: BoxConstraints(maxHeight: MediaQuery.sizeOf(context).height * 0.34),
       margin: const EdgeInsets.fromLTRB(ChatTheme.gutter, 10, ChatTheme.gutter, 4),
       padding: const EdgeInsets.all(10),
       decoration: ChatTheme.card(highlighted: true),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(root.meta?['tag']?.toString() ?? root.senderName, style: ChatTheme.caption.copyWith(color: ChatTheme.accent)),
-          Text(root.meta?['title']?.toString() ?? (root.body.isEmpty ? 'فایل' : root.body), style: ChatTheme.body, maxLines: 2, overflow: TextOverflow.ellipsis),
-        ],
+      child: SingleChildScrollView(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(children: [
+              Expanded(child: Text(meta['tag']?.toString() ?? root.senderName, style: ChatTheme.caption.copyWith(color: ChatTheme.accent))),
+              if (isChallenge) ChatChip(label: topicStatusLabels[status] ?? status, color: status == 'open' ? ChatTheme.accent : ChatTheme.text),
+            ]),
+            const SizedBox(height: 2),
+            Text(title, style: ChatTheme.title.copyWith(fontSize: 15)),
+            if (description.isNotEmpty) Padding(padding: const EdgeInsets.only(top: 6), child: Text(description, style: ChatTheme.body)),
+            for (final f in facts) Padding(padding: const EdgeInsets.only(top: 3), child: Text(f, style: ChatTheme.caption)),
+          ],
+        ),
       ),
     );
   }
