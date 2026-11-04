@@ -1,141 +1,140 @@
-// مدیریت چت tab. The super admin controls the switch and the channel manager's access;
-// a channel manager sees what they may do. Classic script: load order is set in index.html.
+// مدیریت چت tab, settings side: the chat switch (header and the mode tile are one control), the pilot caravans and
+// the channel manager's access. The super admin changes them; everyone else sees them read-only.
+// Classic script: load order is set in index.html.
+
+const chsEl = id => document.getElementById(id);
+
+window.chsCloseModal = function(el) {
+  const modal = el && el.closest ? el.closest('.modal-overlay') : chsEl(el);
+  if (modal) modal.style.display = 'none';
+};
+
+// Search inside a modal's checkbox list
+window.chsFilterChecks = function(text, listId) {
+  const q = String(text || '').trim();
+  chsEl(listId).querySelectorAll('.chs-check').forEach(row => { row.hidden = !!q && !row.textContent.includes(q); });
+};
 
 window.loadChatSettings = async function() {
-  const adminBox = document.getElementById('chat-settings-admin');
-  const managerBox = document.getElementById('chat-settings-manager');
-  if (!adminBox) return;
-
-  window.loadChatSpaces();
-  if (!isSuperAdminUser()) {
-    adminBox.style.display = 'none';
-    managerBox.style.display = 'block';
-    return;
-  }
-
-  let data;
-  try {
-    data = await NopaApi.json('/api/v1/admin/chat-settings');
-  } catch (e) {
-    showToast(e.message || 'خطا در دریافت تنظیمات چت', 'error');
-    return;
-  }
-  document.querySelectorAll('input[name="chat-mode"]').forEach(r => { r.checked = r.value === data.mode; });
-  document.getElementById('chat-pilot-caravans').innerHTML = data.caravans.map(c => `
-    <label class="u-flex u-gap-6 u-items-center u-fs-12_5 u-c-text">
-      <input type="checkbox" class="chat-pilot-caravan" value="${esc(c.id)}" ${data.pilotCaravanIds.includes(c.id) ? 'checked' : ''}>${esc(c.name)}
-    </label>`).join('') || '<div class="u-fs-12_5 u-c-text-muted">هنوز کاروانی ساخته نشده است.</div>';
-  document.getElementById('chat-manager-permissions').innerHTML = Object.keys(data.permissionLabels).map(key => `
-    <label class="u-flex u-gap-6 u-items-center u-fs-12_5 u-c-text">
-      <input type="checkbox" class="chat-manager-permission" value="${esc(key)}" ${data.permissions[key] ? 'checked' : ''}>${esc(data.permissionLabels[key])}
-    </label>`).join('');
+  if (!chsEl('chat-manage-pane')) return;
+  await NopaChatSwitch.refresh(true);
 };
 
-window.saveChatSettings = async function() {
-  const checked = selector => Array.from(document.querySelectorAll(`${selector}:checked`)).map(el => el.value);
-  const permissions = {};
-  document.querySelectorAll('.chat-manager-permission').forEach(el => { permissions[el.value] = el.checked; });
+// The endpoint stores the whole setting: every change sends the mode, the pilot list and the access together
+async function saveChatSetting(patch, message) {
+  const state = NopaChatSwitch.state();
+  if (!state) return false;
+  const next = { mode: state.mode, pilotCaravanIds: state.pilotCaravanIds, permissions: state.permissions, ...patch };
   try {
-    await NopaApi.json('/api/v1/admin/chat-settings', {
-      method: 'PUT',
-      body: JSON.stringify({
-        mode: checked('input[name="chat-mode"]')[0],
-        pilotCaravanIds: checked('.chat-pilot-caravan'),
-        permissions,
-      }),
-    });
-    showToast('تنظیمات چت ذخیره شد و تا چند ثانیه در اپ اعمال می‌شود.', 'success');
-    if (window.NopaChatSwitch) NopaChatSwitch.refresh();
+    await NopaApi.json('/api/v1/admin/chat-settings', { method: 'PUT', body: JSON.stringify(next) });
+    showToast(message || 'تنظیمات چت ذخیره شد و تا چند ثانیه در اپ اعمال می‌شود.', 'success');
+    await NopaChatSwitch.refresh(true);
+    return true;
   } catch (e) {
     showToast(e.message || 'خطا در ذخیره تنظیمات چت', 'error');
+    return false;
   }
-};
+}
 
-const CHAT_SPACE_LABELS = {
-  announcements: 'کانال اعلانات', public: 'کانال همگانی', mentors: 'اتاق راهبران',
-  caravan: 'گروه کاروان', challenges: 'گروه چالش‌ها', media: 'گروه رسانه‌ای',
-};
-
-window.loadChatSpaces = async function() {
-  const box = document.getElementById('chat-spaces-list');
-  try {
-    const spaces = await NopaApi.json('/api/v1/admin/chat-manage/spaces');
-    box.innerHTML = spaces.map(s => `
-      <div class="u-flex u-gap-6 u-items-center u-mb-5">
-        <span class="u-flex-1 u-fs-12_5 u-c-text">${esc(CHAT_SPACE_LABELS[s.type] || s.title)}${s.caravanName ? ` · ${esc(s.caravanName)}` : ''}</span>
-        <span class="u-fs-11 u-c-text-muted">${esc(String(s.messageCount))} پیام</span>
-        <button type="button" class="btn-action u-p-5-10 u-fs-11 u-pointer" data-click="openChatSpace" data-click-args="${esc(JSON.stringify([String(s.id)]))}">مشاهده</button>
-      </div>`).join('') || '<div class="u-fs-12_5 u-c-text-muted">هنوز فضایی ساخته نشده است. فضاها با اولین ورود کاربران به چت ساخته می‌شوند.</div>';
-  } catch (e) {
-    box.textContent = e.message || 'خطا در دریافت فضاها';
+function renderChatSettingTiles(state) {
+  const admin = isSuperAdminUser();
+  document.querySelectorAll('#chs-pilot-tile .chs-edit, #chs-perm-tile .chs-edit').forEach(b => { b.hidden = !admin; });
+  chsEl('chs-mode-readonly').hidden = admin;
+  if (!state) {
+    chsEl('chs-pilot-summary').innerHTML = `<div class="lst-empty">${admin ? 'تنظیمات دریافت نشد.' : 'این تنظیمات را مدیر کل تعیین می‌کند.'}</div>`;
+    chsEl('chs-perm-summary').innerHTML = '';
+    return;
   }
+  const pilots = state.caravans.filter(c => state.pilotCaravanIds.includes(c.id));
+  chsEl('chs-pilot-summary').innerHTML = pilots.length
+    ? `<div class="chs-chips">${pilots.map(c => `<span class="lst-chip lst-chip-scheduled">${esc(c.name)}</span>`).join('')}</div>`
+    : '<div class="lst-empty">هنوز کاروانی انتخاب نشده است. حالت آزمایشی بدون کاروان روشن نمی‌شود.</div>';
+  const keys = Object.keys(state.permissionLabels || {});
+  const on = keys.filter(k => state.permissions[k]);
+  chsEl('chs-perm-summary').innerHTML = `
+    <div class="chs-perm-head"><span>${on.length.toLocaleString('fa-IR')} از ${keys.length.toLocaleString('fa-IR')} دسترسی فعال</span></div>
+    <div class="lst-bar" aria-hidden="true"><span class="lst-bar-active" data-chs-width="${keys.length ? Math.round((on.length / keys.length) * 100) : 0}"></span></div>
+    <ul class="lst-list chs-perm-list">${keys.map(k => `<li class="lst-list-item"><i class="fa-solid ${state.permissions[k] ? 'fa-circle-check u-c-success-text' : 'fa-circle-xmark u-c-text-faint'}"></i><span class="lst-grow">${esc(state.permissionLabels[k])}</span></li>`).join('')}</ul>`;
+  chsEl('chs-perm-summary').querySelectorAll('[data-chs-width]').forEach(el => { el.style.width = `${el.dataset.chsWidth}%`; });
+}
+
+// ---- pilot caravans modal ----
+window.chsOpenPilotModal = function() {
+  const state = NopaChatSwitch.state();
+  if (!state) return;
+  chsEl('chs-pilot-list').innerHTML = state.caravans.map(c => `
+    <label class="chs-check"><input type="checkbox" value="${esc(c.id)}" ${state.pilotCaravanIds.includes(c.id) ? 'checked' : ''} data-change="chsCountPilot"><span>${esc(c.name)}</span></label>`).join('')
+    || '<div class="lst-empty">هنوز کاروانی ساخته نشده است.</div>';
+  window.chsCountPilot();
+  NopaModal.open('chs-pilot-modal');
+};
+window.chsCountPilot = function() {
+  const n = chsEl('chs-pilot-list').querySelectorAll('input:checked').length;
+  chsEl('chs-pilot-count').innerHTML = `<i class="fa-solid fa-flask"></i> ${n.toLocaleString('fa-IR')} کاروان انتخاب شده`;
+};
+window.chsSavePilot = async function(event) {
+  event.preventDefault();
+  const ids = Array.from(chsEl('chs-pilot-list').querySelectorAll('input:checked')).map(el => el.value);
+  const state = NopaChatSwitch.state();
+  if (state && state.mode === 'pilot' && !ids.length) { showToast('در حالت آزمایشی دست‌کم یک کاروان لازم است.', 'info'); return; }
+  if (await saveChatSetting({ pilotCaravanIds: ids }, 'کاروان‌های آزمایشی ذخیره شدند.')) window.chsCloseModal('chs-pilot-modal');
 };
 
-window.openChatSpace = async function(spaceId) {
-  const box = document.getElementById('chat-space-messages');
-  box.dataset.spaceId = spaceId;
-  try {
-    const messages = await NopaApi.json(`/api/v1/admin/chat-manage/spaces/${spaceId}/messages`);
-    box.innerHTML = messages.map(m => `
-      <div class="u-flex u-gap-6 u-items-center u-mb-5 u-fs-12_5 u-c-text">
-        <span class="u-flex-1">${esc(m.sender ? m.sender.name : 'سیستم')}: ${m.deleted ? 'این پیام حذف شده است' : esc(m.body || 'فایل')}</span>
-        ${m.deleted ? '' : `<button type="button" class="btn-action u-p-5-10 u-fs-11 u-pointer" data-click="deleteChatMessage" data-click-args="${esc(JSON.stringify([String(m.id)]))}">حذف</button>`}
-        ${m.sender && !m.deleted ? `<button type="button" class="btn-action u-p-5-10 u-fs-11 u-pointer" data-click="muteChatMember" data-click-args="${esc(JSON.stringify([String(spaceId), String(m.sender.id), 60]))}">بی‌صدا</button>` : ''}
-      </div>`).join('') || '<div class="u-fs-12_5 u-c-text-muted">پیامی وجود ندارد.</div>';
-  } catch (e) {
-    showToast(e.message || 'خطا در دریافت پیام‌ها', 'error');
-  }
+// ---- channel manager access modal ----
+window.chsOpenPermModal = function() {
+  const state = NopaChatSwitch.state();
+  if (!state) return;
+  chsEl('chs-perm-list').innerHTML = Object.keys(state.permissionLabels).map(key => `
+    <label class="chs-check"><span>${esc(state.permissionLabels[key])}</span><input type="checkbox" class="chs-switch" value="${esc(key)}" ${state.permissions[key] ? 'checked' : ''}></label>`).join('');
+  NopaModal.open('chs-perm-modal');
+};
+window.chsSavePerms = async function(event) {
+  event.preventDefault();
+  const permissions = {};
+  chsEl('chs-perm-list').querySelectorAll('input').forEach(el => { permissions[el.value] = el.checked; });
+  if (await saveChatSetting({ permissions }, 'دسترسی مسئول کانال ذخیره شد.')) window.chsCloseModal('chs-perm-modal');
 };
 
-window.deleteChatMessage = async function(id) {
-  if (!(await NopaConfirm('این پیام برای همه حذف می‌شود. ادامه می‌دهید؟'))) return;
-  try {
-    await NopaApi.json(`/api/v1/admin/chat-manage/messages/${id}`, { method: 'DELETE' });
-    window.openChatSpace(document.getElementById('chat-space-messages').dataset.spaceId);
-  } catch (e) {
-    showToast(e.message || 'خطا در حذف پیام', 'error');
-  }
-};
-
-// ---- Header toolbar switch (super admin): the chat state at a glance, switched from any page ----
+// ---- the chat switch: header dropdown and the mode tile, one state ----
 window.NopaChatSwitch = (function () {
   const MODE_LABELS = { off: 'خاموش', pilot: 'آزمایشی', on: 'روشن' };
   const $ = id => document.getElementById(id);
   let state = null; // last GET /admin/chat-settings
   let busy = false;
 
-  function render() {
-    const dot = $('chat-switch-dot');
-    const btn = $('btn-chat-switch');
-    const note = $('chat-switch-note');
-    if (!dot || !btn) return;
-    const mode = state ? state.mode : 'unknown';
-    dot.dataset.mode = mode;
-    const label = state ? `چت: ${MODE_LABELS[mode]}` : 'وضعیت چت';
-    btn.setAttribute('aria-label', label);
-    btn.title = label;
-    document.querySelectorAll('.chat-switch-mode').forEach(b => {
-      b.setAttribute('aria-checked', String(!!state && b.dataset.chatMode === mode));
-      b.disabled = busy;
-    });
-    if (!note) return;
-    if (!state) { note.textContent = 'وضعیت چت دریافت نشد.'; return; }
+  function note() {
+    if (!state) return 'وضعیت چت دریافت نشد.';
     const pilotNames = state.caravans.filter(c => state.pilotCaravanIds.includes(c.id)).map(c => c.name);
-    note.textContent = {
+    return {
       off: 'چت برای هیچ کاربری در اپ نمایش داده نمی‌شود. پیام‌ها پاک نمی‌شوند.',
       pilot: `فقط ادمین‌ها، راهبران، مسئول کانال و ${pilotNames.length.toLocaleString('fa-IR')} کاروان آزمایشی چت را می‌بینند${pilotNames.length ? `: ${pilotNames.join('، ')}` : ''}.`,
       on: 'چت برای همه کاربران اپ فعال است.',
     }[state.mode];
   }
 
-  // Mirror the header state into the radios of the chat tab when it is open
-  function syncTabRadios() {
-    if (!state) return;
-    document.querySelectorAll('input[name="chat-mode"]').forEach(r => { r.checked = r.value === state.mode; });
+  function render() {
+    const mode = state ? state.mode : 'unknown';
+    const admin = typeof isSuperAdminUser === 'function' && isSuperAdminUser();
+    const dot = $('chat-switch-dot');
+    const btn = $('btn-chat-switch');
+    if (dot && btn) {
+      dot.dataset.mode = mode;
+      const label = state ? `چت: ${MODE_LABELS[mode]}` : 'وضعیت چت';
+      btn.setAttribute('aria-label', label);
+      btn.title = label;
+    }
+    document.querySelectorAll('.chat-switch-mode, .chs-mode').forEach(b => {
+      b.setAttribute('aria-checked', String(!!state && (b.dataset.chatMode || b.dataset.chsMode) === mode));
+      b.disabled = busy || !admin;
+    });
+    if ($('chat-switch-note')) $('chat-switch-note').textContent = note();
+    if ($('chs-mode-note')) $('chs-mode-note').textContent = state ? note() : (admin ? 'وضعیت چت دریافت نشد.' : 'وضعیت چت را مدیر کل تعیین می‌کند.');
+    if ($('chs-mode-tile')) renderChatSettingTiles(state);
   }
 
-  async function refresh() {
-    if (!(typeof isSuperAdminUser === 'function' && isSuperAdminUser())) return;
+  async function refresh(force) {
+    if (!(typeof isSuperAdminUser === 'function' && isSuperAdminUser())) { state = null; render(); return; }
+    if (state && !force) { render(); return; }
     try {
       state = await NopaApi.json('/api/v1/admin/chat-settings');
     } catch (e) {
@@ -152,25 +151,19 @@ window.NopaChatSwitch = (function () {
     $('chat-switch-dropdown').hidden = true;
   }
 
-  function openChatTab(preselectMode) {
+  function openChatTab(thenPilot) {
     closeDropdown();
     NopaRouter.switchTab('chat-tab', true);
-    if (preselectMode) {
-      // The tab loads its settings asynchronously; select the mode once they are in
-      setTimeout(() => {
-        const radio = document.querySelector(`input[name="chat-mode"][value="${preselectMode}"]`);
-        if (radio) radio.checked = true;
-        const box = $('chat-pilot-caravans');
-        if (box) box.scrollIntoView({ behavior: 'smooth', block: 'center' });
-      }, 600);
-    }
+    const manage = document.querySelector('.chm-view[data-chm-view="manage"]');
+    if (manage) manage.click();
+    if (thenPilot) setTimeout(() => window.chsOpenPilotModal(), 400);
   }
 
   async function setMode(mode) {
     if (busy || !state || state.mode === mode) return;
     if (mode === 'pilot' && state.pilotCaravanIds.length === 0) {
       showToast('برای حالت آزمایشی ابتدا کاروان‌های آزمایشی را انتخاب و ذخیره کنید.', 'info');
-      openChatTab('pilot');
+      openChatTab(true);
       return;
     }
     const question = {
@@ -182,17 +175,15 @@ window.NopaChatSwitch = (function () {
     busy = true;
     render();
     try {
-      // The endpoint stores the whole setting: keep the pilot list and the channel manager's access as they are
       await NopaApi.json('/api/v1/admin/chat-settings', {
         method: 'PUT',
         body: JSON.stringify({ mode, pilotCaravanIds: state.pilotCaravanIds, permissions: state.permissions }),
       });
       state = { ...state, mode };
-      syncTabRadios();
       showToast(`چت ${MODE_LABELS[mode]} شد و تا چند ثانیه در اپ اعمال می‌شود.`, 'success');
     } catch (e) {
       showToast(e.message || 'خطا در تغییر وضعیت چت', 'error');
-      await refresh();
+      await refresh(true);
     } finally {
       busy = false;
       render();
@@ -201,23 +192,24 @@ window.NopaChatSwitch = (function () {
 
   function applyRole() {
     const menu = $('chat-switch-menu');
-    if (!menu) return;
     const allowed = typeof isSuperAdminUser === 'function' && isSuperAdminUser();
-    menu.hidden = !allowed;
-    if (allowed) refresh();
-    else closeDropdown();
+    if (menu) menu.hidden = !allowed;
+    if (allowed) refresh(true);
+    else { closeDropdown(); render(); }
   }
 
   function init() {
-    const menu = $('chat-switch-menu');
-    if (!menu) return;
-    menu.querySelectorAll('.chat-switch-mode').forEach(b => b.addEventListener('click', e => {
+    document.querySelectorAll('.chat-switch-mode').forEach(b => b.addEventListener('click', e => {
       e.stopPropagation();
       setMode(b.dataset.chatMode);
     }));
-    $('btn-chat-switch-manage').addEventListener('click', () => openChatTab());
-    // The generic header-menu toggle (js/layout/topnav.js) opens the dropdown; fetch fresh state on open
-    $('btn-chat-switch').addEventListener('click', () => { if (menu.classList.contains('is-open')) refresh(); });
+    document.querySelectorAll('.chs-mode').forEach(b => b.addEventListener('click', () => setMode(b.dataset.chsMode)));
+    const menu = $('chat-switch-menu');
+    if (menu) {
+      $('btn-chat-switch-manage').addEventListener('click', () => openChatTab());
+      // The generic header-menu toggle (js/layout/topnav.js) opens the dropdown; fetch fresh state on open
+      $('btn-chat-switch').addEventListener('click', () => { if (menu.classList.contains('is-open')) refresh(true); });
+    }
     window.addEventListener('nopa:accesschange', applyRole);
     applyRole();
   }
@@ -225,5 +217,5 @@ window.NopaChatSwitch = (function () {
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);
   else init();
 
-  return { refresh };
+  return { refresh, state: () => state, setMode };
 })();

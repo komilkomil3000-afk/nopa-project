@@ -1480,7 +1480,7 @@
       <section id="chat-tab" class="tab-panel" data-style="display: none;">
         <div class="chm-views" role="tablist" aria-label="بخش‌های چت">
           <button type="button" class="chm-view is-active" role="tab" aria-selected="true" data-chm-view="messenger"><i class="fa-solid fa-comments"></i>گفتگوها</button>
-          <button type="button" class="chm-view" role="tab" aria-selected="false" data-chm-view="manage"><i class="fa-solid fa-sliders"></i>مدیریت چت</button>
+          <button type="button" class="chm-view" role="tab" aria-selected="false" data-chm-view="manage"><i class="fa-solid fa-sliders"></i>مدیریت چت<span class="chm-view-dot" id="chm-reports-dot" hidden></span></button>
         </div>
 
         <!-- Messenger (js/features/chat-messenger.js): inbox on one side, the open conversation on the other -->
@@ -1516,11 +1516,20 @@
                     <button type="button" class="chm-pill-btn is-ok" id="chm-case-resolve"><i class="fa-solid fa-circle-check"></i>بستن پرونده</button>
                   </span>
                   <button type="button" class="chm-icon-btn" id="chm-search-toggle" title="جستجو در گفتگو" aria-label="جستجو در گفتگو"><i class="fa-solid fa-magnifying-glass"></i></button>
+                  <button type="button" class="chm-icon-btn" id="chm-filter-toggle" title="فیلتر برچسب و منزلگاه" aria-label="فیلتر برچسب و منزلگاه"><i class="fa-solid fa-filter"></i></button>
                   <button type="button" class="chm-icon-btn" id="chm-pins-toggle" title="پیام‌های سنجاق‌شده" aria-label="پیام‌های سنجاق‌شده"><i class="fa-solid fa-thumbtack"></i></button>
                   <button type="button" class="chm-icon-btn" id="chm-mute-toggle" title="بی‌صدا کردن اعلان" aria-label="بی‌صدا کردن اعلان"><i class="fa-solid fa-bell"></i></button>
                   <button type="button" class="chm-icon-btn" id="chm-refresh" title="بازخوانی" aria-label="بازخوانی"><i class="fa-solid fa-rotate"></i></button>
                 </div>
               </header>
+              <div class="chm-threadbar" id="chm-threadbar" hidden>
+                <button type="button" class="chm-pill-btn" id="chm-thread-back"><i class="fa-solid fa-arrow-right"></i>بازگشت</button>
+                <i class="fa-solid fa-comments"></i><span>گفتگو زیر پیام: <b id="chm-thread-title"></b></span>
+              </div>
+              <div class="chm-filterbar" id="chm-filterbar" hidden>
+                <i class="fa-solid fa-filter"></i><span id="chm-filter-label"></span>
+                <button type="button" class="chm-icon-btn is-sm" id="chm-filter-clear" aria-label="حذف فیلتر"><i class="fa-solid fa-xmark"></i></button>
+              </div>
               <div class="chm-searchbar" id="chm-searchbar" hidden>
                 <label class="search-box chm-search"><i class="fa-solid fa-magnifying-glass"></i><input type="search" id="chm-search-text" placeholder="جستجو در پیام‌های این گفتگو (حداقل ۲ حرف)" autocomplete="off"></label>
               </div>
@@ -1540,11 +1549,21 @@
                   <input type="datetime-local" id="chm-sched-at" aria-label="زمان انتشار">
                   <button type="button" class="chm-icon-btn" id="chm-sched-clear" aria-label="حذف زمان‌بندی"><i class="fa-solid fa-xmark"></i></button>
                 </div>
+                <div class="chm-rec" id="chm-rec" hidden>
+                  <button type="button" class="chm-icon-btn is-danger" id="chm-rec-cancel" title="حذف ضبط" aria-label="حذف ضبط"><i class="fa-solid fa-trash"></i></button>
+                  <span class="chm-rec-dot" aria-hidden="true"></span>
+                  <span class="chm-rec-time" id="chm-rec-time">۰:۰۰</span>
+                  <div class="chm-wave is-live" id="chm-rec-wave" aria-hidden="true"></div>
+                  <button type="button" class="chm-icon-btn" id="chm-rec-stop" aria-label="توقف ضبط"><i class="fa-solid fa-stop"></i></button>
+                  <button type="button" class="chm-send" id="chm-rec-send" aria-label="ارسال پیام صوتی"><i class="fa-solid fa-paper-plane"></i></button>
+                </div>
                 <form class="chm-composer" id="chm-composer" autocomplete="off">
                   <button type="button" class="chm-icon-btn" id="chm-attach" title="پیوست فایل" aria-label="پیوست فایل"><i class="fa-solid fa-paperclip"></i></button>
                   <button type="button" class="chm-icon-btn" id="chm-templates" title="قالب‌های پیام" aria-label="قالب‌های پیام"><i class="fa-solid fa-bolt"></i></button>
                   <button type="button" class="chm-icon-btn" id="chm-sched-toggle" title="زمان‌بندی" aria-label="زمان‌بندی"><i class="fa-regular fa-clock"></i></button>
-                  <textarea id="chm-input" rows="1" maxlength="4000" placeholder="پیام خود را بنویسید..." aria-label="متن پیام"></textarea>
+                  <button type="button" class="chm-icon-btn" id="chm-poll-btn" title="نظرسنجی" aria-label="نظرسنجی"><i class="fa-solid fa-square-poll-vertical"></i></button>
+                  <textarea id="chm-input" rows="1" maxlength="4000" placeholder="پیام خود را بنویسید..." aria-label="متن پیام (با @ از کسی نام ببرید)"></textarea>
+                  <button type="button" class="chm-icon-btn chm-mic" id="chm-mic" title="ضبط پیام صوتی" aria-label="ضبط پیام صوتی"><i class="fa-solid fa-microphone"></i></button>
                   <button type="submit" class="chm-send" id="chm-send" aria-label="ارسال"><i class="fa-solid fa-paper-plane"></i></button>
                   <input type="file" id="chm-file" multiple hidden>
                 </form>
@@ -1554,71 +1573,211 @@
           <div class="chm-menu" id="chm-menu" hidden role="menu"></div>
         </div>
 
+        <!-- Chat management (js/features/chat-settings.js + chat-ops.js): the bento of the stations / challenges tabs.
+             The chat switch here and in the header are one control (NopaChatSwitch); viewing, deleting and publishing
+             messages live in the messenger, so this page only holds what the messenger does not. -->
         <div id="chat-manage-pane" hidden>
-        <div id="chat-settings-admin" class="panel-card glass u-maxw-760">
-          <div class="panel-title"><i class="fa-solid fa-comments u-c-primary-text u-ml-8"></i>وضعیت چت</div>
-          <div class="u-fs-12_5 u-c-text-muted u-m-6-0-16 u-lh-1_8">
-            با خاموش کردن چت، تب آن از اپ حذف می‌شود و پروفایل به نوار پایین برمی‌گردد. پیام‌ها پاک نمی‌شوند.
+          <div class="lst-bento chs-bento">
+            <div class="lst-tile lst-tile-wide glass chs-tile-mode" id="chs-mode-tile">
+              <div class="lst-tile-head">
+                <h4 class="lst-tile-title"><i class="fa-solid fa-power-off"></i> وضعیت چت <span class="lst-tile-sub">همان کلید نوار بالا؛ تا چند ثانیه در اپ اعمال می‌شود و پیام‌ها پاک نمی‌شوند</span></h4>
+              </div>
+              <div class="chs-modes" role="radiogroup" aria-label="وضعیت چت">
+                <button type="button" class="chs-mode" role="radio" aria-checked="false" data-chs-mode="off"><i class="fa-solid fa-power-off"></i><strong>خاموش</strong><span>تب چت از اپ برداشته می‌شود</span></button>
+                <button type="button" class="chs-mode" role="radio" aria-checked="false" data-chs-mode="pilot"><i class="fa-solid fa-flask"></i><strong>آزمایشی</strong><span>کادر و کاروان‌های آزمایشی</span></button>
+                <button type="button" class="chs-mode" role="radio" aria-checked="false" data-chs-mode="on"><i class="fa-solid fa-circle-check"></i><strong>روشن</strong><span>برای همه‌ی کاربران اپ</span></button>
+              </div>
+              <div class="chs-mode-note" id="chs-mode-note">در حال بارگذاری...</div>
+              <div class="chs-mode-readonly" id="chs-mode-readonly" hidden><i class="fa-solid fa-lock"></i> تغییر وضعیت چت و دسترسی‌ها فقط با مدیر کل است.</div>
+            </div>
+
+            <div class="lst-tile glass">
+              <h4 class="lst-tile-title"><i class="fa-solid fa-chart-simple"></i> آمار کلی</h4>
+              <div class="lst-mini-stats">
+                <div class="lst-mini-stat"><span class="stat-label">فضاها</span><span class="stat-value u-c-primary-text" id="chs-stat-spaces">-</span></div>
+                <div class="lst-mini-stat"><span class="stat-label">پیام‌ها</span><span class="stat-value u-c-success-text" id="chs-stat-messages">-</span></div>
+                <div class="lst-mini-stat"><span class="stat-label">گزارش باز</span><span class="stat-value u-c-danger-text" id="chs-stat-reports">-</span></div>
+                <div class="lst-mini-stat"><span class="stat-label">زمان‌بندی‌شده</span><span class="stat-value u-c-accent-text" id="chs-stat-scheduled">-</span></div>
+              </div>
+            </div>
+
+            <div class="lst-tile glass">
+              <h4 class="lst-tile-title"><i class="fa-solid fa-bolt"></i> دسترسی سریع</h4>
+              <div class="lst-quick">
+                <button type="button" class="lst-quick-btn" data-click="chsOpenMessenger"><i class="fa-solid fa-comments"></i> گفتگوها و انتشار</button>
+                <button type="button" class="lst-quick-btn" data-click="chsOpenGroupModal"><i class="fa-solid fa-people-group"></i> گروه جدید</button>
+                <button type="button" class="lst-quick-btn" data-click="chsOpenBotsModal"><i class="fa-solid fa-robot"></i> ربات‌ها و قالب‌ها</button>
+                <button type="button" class="lst-quick-btn" data-click="loadChatOps"><i class="fa-solid fa-sync"></i> بروزرسانی</button>
+              </div>
+            </div>
+
+            <div class="lst-tile glass" id="chs-pilot-tile">
+              <div class="lst-tile-head">
+                <h4 class="lst-tile-title"><i class="fa-solid fa-flask"></i> کاروان‌های آزمایشی</h4>
+                <button type="button" class="lse-btn chs-edit" data-click="chsOpenPilotModal"><i class="fa-solid fa-pen"></i> انتخاب</button>
+              </div>
+              <div id="chs-pilot-summary"></div>
+            </div>
+
+            <div class="lst-tile glass" id="chs-perm-tile">
+              <div class="lst-tile-head">
+                <h4 class="lst-tile-title"><i class="fa-solid fa-user-shield"></i> دسترسی مسئول کانال</h4>
+                <button type="button" class="lse-btn chs-edit" data-click="chsOpenPermModal"><i class="fa-solid fa-pen"></i> ویرایش</button>
+              </div>
+              <div id="chs-perm-summary"></div>
+            </div>
+
+            <div class="lst-tile lst-tile-wide glass">
+              <div class="lst-tile-head">
+                <h4 class="lst-tile-title"><i class="fa-solid fa-flag"></i> گزارش‌های تخلف <span class="lst-tile-sub">پیام‌های گزارش‌شده در کانال‌ها و گروه‌ها</span></h4>
+              </div>
+              <div id="chat-reports-list" class="chs-scroll"></div>
+            </div>
+
+            <div class="lst-tile lst-tile-wide glass">
+              <div class="lst-tile-head">
+                <h4 class="lst-tile-title"><i class="fa-solid fa-people-group"></i> گروه‌های رسانه‌ای</h4>
+                <button type="button" class="lse-btn" data-click="chsOpenGroupModal"><i class="fa-solid fa-plus"></i> گروه جدید</button>
+              </div>
+              <div id="chat-groups-list" class="chs-scroll"></div>
+            </div>
+
+            <div class="lst-tile lst-tile-wide glass">
+              <div class="lst-tile-head">
+                <h4 class="lst-tile-title"><i class="fa-solid fa-chart-column"></i> مشارکت کاروان‌ها <span class="lst-tile-sub">اعضای فعال، پیام‌ها و میانگین کلاف</span></h4>
+              </div>
+              <div id="chat-analytics" class="chs-scroll"></div>
+            </div>
+
+            <div class="lst-tile lst-tile-wide glass">
+              <h4 class="lst-tile-title"><i class="fa-solid fa-circle-question"></i> منزلگاه‌های پرابهام</h4>
+              <div id="chat-confusion" class="chs-scroll"></div>
+            </div>
+
+            <div class="lst-tile lst-tile-wide glass">
+              <h4 class="lst-tile-title"><i class="fa-regular fa-clock"></i> پیام‌های زمان‌بندی‌شده</h4>
+              <div id="chat-scheduled" class="chs-scroll"></div>
+            </div>
           </div>
-          <div class="u-flex u-gap-10 u-mb-14">
-            <label class="u-flex u-gap-6 u-items-center u-fs-12_5 u-c-text"><input type="radio" name="chat-mode" value="off">خاموش</label>
-            <label class="u-flex u-gap-6 u-items-center u-fs-12_5 u-c-text"><input type="radio" name="chat-mode" value="pilot">آزمایشی</label>
-            <label class="u-flex u-gap-6 u-items-center u-fs-12_5 u-c-text"><input type="radio" name="chat-mode" value="on">روشن</label>
-          </div>
-          <div class="u-c-text-soft u-fs-12 u-bold u-mb-5">کاروان‌های حالت آزمایشی</div>
-          <div class="u-fs-12 u-c-text-muted u-mb-5">در حالت آزمایشی، ادمین‌ها، راهبران، مسئول کانال و این کاروان‌ها چت را می‌بینند.</div>
-          <div id="chat-pilot-caravans" class="u-grid u-cols-2 u-gap-12 u-mb-14"></div>
-          <div class="u-c-text-soft u-fs-12 u-bold u-mb-5">دسترسی‌های مسئول کانال و گروه‌ها</div>
-          <div id="chat-manager-permissions" class="u-grid u-cols-2 u-gap-12 u-mb-14"></div>
-          <button type="button" class="btn-action btn-add" data-click="saveChatSettings">ذخیره</button>
         </div>
-        <div id="chat-settings-manager" class="panel-card glass u-maxw-760" data-style="display: none;">
-          <div class="panel-title"><i class="fa-solid fa-comments u-c-primary-text u-ml-8"></i>مدیریت چت</div>
-          <div class="u-fs-12_5 u-c-text-muted u-m-6-0-16 u-lh-1_8">ابزارهای مدیریت کانال‌ها و گروه‌ها پس از راه‌اندازی چت در این صفحه نمایش داده می‌شوند.</div>
-        </div>
-        <div class="panel-card glass u-maxw-760 u-mt-15">
-          <div class="panel-title"><i class="fa-solid fa-layer-group u-c-primary-text u-ml-8"></i>فضاهای چت</div>
-          <div class="u-fs-12 u-c-text-muted u-mb-5">گفتگوهای خصوصی از این بخش در دسترس نیستند.</div>
-          <div id="chat-spaces-list"></div>
-          <div id="chat-space-messages" class="u-mt-15"></div>
-        </div>
-        <div class="panel-card glass u-maxw-760 u-mt-15">
-          <div class="panel-title"><i class="fa-solid fa-people-group u-c-primary-text u-ml-8"></i>گروه‌های رسانه‌ای</div>
-          <div id="chat-groups-list" class="u-mb-14"></div>
-          <div class="u-flex u-gap-6 u-items-center u-mb-14">
-            <input type="text" id="chat-group-title" maxlength="60" placeholder="نام گروه" class="u-flex-1 u-p-6-10 u-bg-surface-2 u-bd-border-strong u-r-6 u-c-text u-fs-12_5">
-            <select id="chat-group-caravan" class="select-ctrl"></select>
-            <button type="button" class="btn-action btn-add" data-click="createChatGroup">ساخت گروه</button>
-          </div>
-          <div id="chat-group-members"></div>
-        </div>
-        <div class="panel-card glass u-maxw-760 u-mt-15">
-          <div class="panel-title"><i class="fa-solid fa-paper-plane u-c-primary-text u-ml-8"></i>انتشار و زمان‌بندی</div>
-          <select id="chat-publish-space" class="select-ctrl u-mb-14"></select>
-          <select id="chat-template" class="select-ctrl u-mb-14" data-change="applyChatTemplate"></select>
-          <textarea id="chat-publish-body" rows="3" maxlength="4000" placeholder="متن پیام" class="u-w-full u-p-6-10 u-bg-surface-2 u-bd-border-strong u-r-6 u-c-text u-fs-12_5 u-mb-5"></textarea>
-          <input type="datetime-local" id="chat-publish-at" class="u-p-6-10 u-bg-surface-2 u-bd-border-strong u-r-6 u-c-text u-fs-12_5 u-mb-5">
-          <input type="file" id="chat-publish-file" class="u-fs-12 u-mb-5">
-          <div class="u-fs-12 u-c-text-muted u-mb-5">زمان را خالی بگذارید تا پیام فوراً منتشر شود.</div>
-          <button type="button" class="btn-action btn-add" data-click="publishChatMessage">انتشار</button>
-          <div class="u-c-text-soft u-fs-12 u-bold u-mb-5 u-mt-15">قالب‌های پیام (هر خط: عنوان | متن)</div>
-          <textarea id="chat-templates-edit" rows="3" class="u-w-full u-p-6-10 u-bg-surface-2 u-bd-border-strong u-r-6 u-c-text u-fs-12_5 u-mb-5"></textarea>
-          <button type="button" class="btn-action" data-click="saveChatTemplates">ذخیره‌ی قالب‌ها</button>
-        </div>
-        <div class="panel-card glass u-maxw-760 u-mt-15">
-          <div class="panel-title"><i class="fa-solid fa-flag u-c-primary-text u-ml-8"></i>گزارش‌های تخلف</div>
-          <div id="chat-reports-list"></div>
-        </div>
-        <div class="panel-card glass u-maxw-760 u-mt-15">
-          <div class="panel-title"><i class="fa-solid fa-robot u-c-primary-text u-ml-8"></i>ربات‌ها</div>
-          <div id="chat-bots-list"></div>
-        </div>
-        <div class="panel-card glass u-maxw-760 u-mt-15">
-          <div class="panel-title"><i class="fa-solid fa-chart-column u-c-primary-text u-ml-8"></i>مشارکت و ابهام</div>
-          <div id="chat-analytics"></div>
-        </div>
-        </div>
+
       </section>
+
+        <!-- Chat management modals -->
+        <div class="modal-overlay lse-overlay u-z-z-modal" id="chs-pilot-modal" data-style="display: none">
+          <form class="lse lse-sm" data-submit="chsSavePilot" data-submit-args="[&quot;$event&quot;]">
+            <header class="lse-head lse-head-plain">
+              <div class="lse-id">
+                <span class="lse-id-icon is-accent"><i class="fa-solid fa-flask"></i></span>
+                <div class="lse-id-text"><h3>کاروان‌های آزمایشی</h3><span>در حالت آزمایشی، کادر و این کاروان‌ها چت را در اپ می‌بینند</span></div>
+              </div>
+              <button type="button" class="lsv-round" data-click="chsCloseModal" data-click-args="[&quot;chs-pilot-modal&quot;]" title="بستن" aria-label="بستن"><i class="fa-solid fa-xmark"></i></button>
+            </header>
+            <div class="lse-body">
+              <label class="search-box chs-modal-search"><i class="fa-solid fa-search"></i><input type="search" class="input-ctrl" placeholder="جستجوی کاروان..." data-input="chsFilterChecks" data-input-args="[&quot;$value&quot;, &quot;chs-pilot-list&quot;]"></label>
+              <div class="chs-checks" id="chs-pilot-list"></div>
+            </div>
+            <footer class="lse-foot">
+              <span class="lse-foot-note" id="chs-pilot-count"></span>
+              <div class="lse-foot-actions">
+                <button type="button" class="lse-btn" data-click="chsCloseModal" data-click-args="[&quot;chs-pilot-modal&quot;]">انصراف</button>
+                <button type="submit" class="lsv-pill"><i class="fa-solid fa-check"></i> ذخیره</button>
+              </div>
+            </footer>
+          </form>
+        </div>
+
+        <div class="modal-overlay lse-overlay u-z-z-modal" id="chs-perm-modal" data-style="display: none">
+          <form class="lse lse-sm" data-submit="chsSavePerms" data-submit-args="[&quot;$event&quot;]">
+            <header class="lse-head lse-head-plain">
+              <div class="lse-id">
+                <span class="lse-id-icon is-accent"><i class="fa-solid fa-user-shield"></i></span>
+                <div class="lse-id-text"><h3>دسترسی مسئول کانال</h3><span>آنچه مسئول کانال در پنل و اپ می‌تواند انجام دهد</span></div>
+              </div>
+              <button type="button" class="lsv-round" data-click="chsCloseModal" data-click-args="[&quot;chs-perm-modal&quot;]" title="بستن" aria-label="بستن"><i class="fa-solid fa-xmark"></i></button>
+            </header>
+            <div class="lse-body"><div class="chs-checks is-switches" id="chs-perm-list"></div></div>
+            <footer class="lse-foot">
+              <span class="lse-foot-note"><i class="fa-solid fa-circle-info"></i> برای همه‌ی مسئولان کانال اعمال می‌شود</span>
+              <div class="lse-foot-actions">
+                <button type="button" class="lse-btn" data-click="chsCloseModal" data-click-args="[&quot;chs-perm-modal&quot;]">انصراف</button>
+                <button type="submit" class="lsv-pill"><i class="fa-solid fa-check"></i> ذخیره</button>
+              </div>
+            </footer>
+          </form>
+        </div>
+
+        <div class="modal-overlay lse-overlay u-z-z-modal" id="chs-bots-modal" data-style="display: none">
+          <form class="lse lse-sm chs-bots" data-submit="chsSaveBots" data-submit-args="[&quot;$event&quot;]">
+            <header class="lse-head lse-head-plain">
+              <div class="lse-id">
+                <span class="lse-id-icon is-accent"><i class="fa-solid fa-robot"></i></span>
+                <div class="lse-id-text"><h3>ربات‌ها و قالب‌ها</h3><span>روشن و خاموش کردن ربات‌ها، واژه‌های ممنوع و قالب‌های پیام</span></div>
+              </div>
+              <button type="button" class="lsv-round" data-click="chsCloseModal" data-click-args="[&quot;chs-bots-modal&quot;]" title="بستن" aria-label="بستن"><i class="fa-solid fa-xmark"></i></button>
+            </header>
+            <div class="lse-body">
+              <section class="lse-card">
+                <h4 class="lse-card-title"><i class="fa-solid fa-toggle-on"></i> ربات‌ها</h4>
+                <div class="chs-checks is-switches" id="chs-bots-list"></div>
+              </section>
+              <section class="lse-card">
+                <h4 class="lse-card-title"><i class="fa-solid fa-ban"></i> واژه‌های ممنوع <small class="lse-hint">ربات نظارت پیام‌های شامل این واژه‌ها را نمی‌پذیرد</small></h4>
+                <div class="chs-words" id="chs-words"></div>
+                <div class="lse-inline">
+                  <input type="text" class="input-ctrl" id="chs-word-input" maxlength="40" placeholder="واژه را بنویسید و Enter بزنید" data-modal-nodirty data-keydown="chsWordKey" data-keydown-args="[&quot;$event&quot;]">
+                  <button type="button" class="lse-btn" data-click="chsAddWord"><i class="fa-solid fa-plus"></i> افزودن</button>
+                </div>
+              </section>
+              <section class="lse-card">
+                <div class="lse-card-row">
+                  <h4 class="lse-card-title"><i class="fa-solid fa-bolt"></i> قالب‌های پیام <small class="lse-hint">در گفتگوها با دکمه‌ی صاعقه درج می‌شوند</small></h4>
+                  <button type="button" class="lse-btn lse-btn-dashed" data-click="chsAddTemplate"><i class="fa-solid fa-plus"></i> قالب تازه</button>
+                </div>
+                <div class="chs-templates" id="chs-templates"></div>
+              </section>
+            </div>
+            <footer class="lse-foot">
+              <span class="lse-foot-note"><i class="fa-solid fa-circle-info"></i> همه‌ی ربات‌ها با یک ذخیره ثبت می‌شوند</span>
+              <div class="lse-foot-actions">
+                <button type="button" class="lse-btn" data-click="chsCloseModal" data-click-args="[&quot;chs-bots-modal&quot;]">انصراف</button>
+                <button type="submit" class="lsv-pill"><i class="fa-solid fa-check"></i> ذخیره</button>
+              </div>
+            </footer>
+          </form>
+        </div>
+
+        <div class="modal-overlay lse-overlay u-z-z-modal" id="chs-group-modal" data-style="display: none">
+          <div class="lse lse-sm">
+            <header class="lse-head lse-head-plain">
+              <div class="lse-id">
+                <span class="lse-id-icon is-accent"><i class="fa-solid fa-people-group"></i></span>
+                <div class="lse-id-text"><h3 id="chs-group-title">گروه جدید</h3><span id="chs-group-sub">گروه رسانه‌ای، با کاروان یا بدون آن</span></div>
+              </div>
+              <button type="button" class="lsv-round" data-click="chsCloseModal" data-click-args="[&quot;chs-group-modal&quot;]" title="بستن" aria-label="بستن"><i class="fa-solid fa-xmark"></i></button>
+            </header>
+            <div class="lse-body">
+              <form class="lse-card" id="chs-group-form" data-submit="chsSaveGroup" data-submit-args="[&quot;$event&quot;]">
+                <div class="lse-grid lse-grid-2">
+                  <label class="lse-field"><span>نام گروه <b class="lse-req">*</b></span><input type="text" id="chat-group-title" class="input-ctrl" maxlength="60" placeholder="مثال: گروه عکاسی" required></label>
+                  <label class="lse-field"><span>کاروان <small>اختیاری</small></span><select id="chat-group-caravan" class="select-ctrl"></select></label>
+                </div>
+                <div class="lse-card-row">
+                  <span class="lse-hint" id="chs-group-hint">پس از ساخت، اعضا را همین‌جا اضافه کنید.</span>
+                  <button type="submit" class="lsv-pill" id="chs-group-save"><i class="fa-solid fa-check"></i> ساخت گروه</button>
+                </div>
+              </form>
+              <section class="lse-card" id="chs-group-members-card" hidden>
+                <h4 class="lse-card-title"><i class="fa-solid fa-users"></i> اعضا <small class="lse-hint" id="chs-group-count"></small></h4>
+                <div class="lse-inline">
+                  <select id="chat-group-add" class="select-ctrl" aria-label="افزودن عضو"></select>
+                  <button type="button" class="lse-btn" data-click="chsAddMember"><i class="fa-solid fa-user-plus"></i> افزودن</button>
+                </div>
+                <div id="chat-group-members" class="chs-scroll"></div>
+              </section>
+            </div>
+          </div>
+        </div>
 
       <!-- PLACEHOLDER TABS FOR NEW SECTIONS -->
       <!-- Mentors -->
