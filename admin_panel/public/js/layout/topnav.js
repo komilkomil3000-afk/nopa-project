@@ -2,7 +2,7 @@
 // - Groups with several tabs open a dropdown; a group with a single tab is a direct link.
 // - Sub admins only see tabs whose section they were granted: NopaNav.applyAccess({ all, sections }).
 // - Below NAV_BREAKPOINT the groups move into a slide-in panel (hamburger).
-// - Section search ("/" or Ctrl+K), "needs attention" bell, user menu.
+// - Section search ("/" or Ctrl+K), bell (own messages, newest support messages, "needs attention"), user menu.
 (function () {
   const NAV_BREAKPOINT = 1180; // keep in sync with css/layout.css
   const ATTENTION_REFRESH_MS = 2 * 60 * 1000;
@@ -166,18 +166,65 @@
     searchResults = [];
   }
 
-  // ---- attention bell ---------------------------------------------------------------------
-  async function refreshAttention() {
-    if (!window.NopaAttention || !NopaAuth.getToken()) return;
-    const items = await NopaAttention.fetch(sectionAllowed);
-    const total = items.reduce((s, i) => s + (i.count || 0), 0);
+  // ---- bell: own messages (js/core/inbox.js) + newest support messages + review queues ------
+  let attentionTotal = 0;
+  const INBOX_SHOWN = 8;
+  const SUPPORT_SHOWN = 5;
+  const faNum = n => Number(n).toLocaleString('fa-IR');
+  const when = v => { try { return new Date(v).toLocaleString('fa-IR', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }); } catch (_) { return ''; } };
+
+  function renderBadge() {
+    const unread = window.NopaInbox ? NopaInbox.state.unread : 0;
+    const total = attentionTotal + unread;
     const badge = $('attention-badge');
     if (badge) {
       badge.hidden = total === 0;
-      badge.textContent = total > 99 ? '99+' : String(total);
+      badge.textContent = total > 99 ? '99+' : faNum(total);
     }
     const btn = $('btn-attention');
-    if (btn) btn.setAttribute('aria-label', total ? `${total} مورد نیازمند رسیدگی` : 'موردی برای رسیدگی نیست');
+    if (btn) btn.setAttribute('aria-label', total ? `${faNum(total)} اعلان و مورد نیازمند رسیدگی` : 'اعلان یا موردی برای رسیدگی نیست');
+  }
+
+  function renderInbox() {
+    if (!window.NopaInbox) return;
+    const { items, unread } = NopaInbox.state;
+    const list = $('inbox-list');
+    if (list) {
+      list.innerHTML = items.length
+        ? items.slice(0, INBOX_SHOWN).map(n => `<li><button type="button" class="inbox-item${n.isRead ? '' : ' is-unread'}" data-inbox-id="${esc(n.id)}">
+            <span class="inbox-item-head"><strong>${esc(n.title || 'پیام')}</strong><time>${esc(when(n.createdAt))}</time></span>
+            <span class="inbox-item-text">${esc(n.message || '')}</span></button></li>`).join('')
+        : '<li class="attention-empty">پیامی برای شما نیامده است</li>';
+    }
+    const all = $('inbox-read-all');
+    if (all) all.hidden = !unread;
+    const perm = $('inbox-permission');
+    if (perm) perm.hidden = NopaInbox.permission() !== 'default';
+    renderBadge();
+  }
+
+  function renderSupport(items) {
+    const recent = items
+      .filter(i => i.recent && i.recent.length)
+      .reduce((all, i) => all.concat(i.recent.map(r => Object.assign({ tab: i.tab, icon: i.icon }, r))), [])
+      .sort((a, b) => new Date(b.at || 0) - new Date(a.at || 0))
+      .slice(0, SUPPORT_SHOWN);
+    const block = $('support-recent-block');
+    if (block) block.hidden = !recent.length;
+    const list = $('support-recent-list');
+    if (list) {
+      list.innerHTML = recent.map(r => `<li><a href="${hrefOf(r.tab)}" data-tab="${esc(r.tab)}" class="inbox-item is-unread">
+          <span class="inbox-item-head"><strong><i class="${esc(r.icon)}"></i> ${esc(r.who || 'ناشناس')}</strong><time>${esc(when(r.at))}</time></span>
+          <span class="inbox-item-text">${esc(String(r.text || '').slice(0, 140))}</span></a></li>`).join('');
+    }
+  }
+
+  async function refreshAttention() {
+    if (!window.NopaAttention || !NopaAuth.getToken()) return;
+    const items = await NopaAttention.fetch(sectionAllowed);
+    attentionTotal = items.reduce((s, i) => s + (i.count || 0), 0);
+    renderBadge();
+    renderSupport(items);
     const list = $('attention-list');
     if (list) {
       list.innerHTML = items.length
@@ -192,6 +239,7 @@
     clearInterval(attentionTimer);
     refreshAttention();
     attentionTimer = setInterval(refreshAttention, ATTENTION_REFRESH_MS);
+    if (window.NopaInbox) NopaInbox.start();
   }
 
   // ---- hide on scroll down, show on any scroll up ------------------------------------------
@@ -307,15 +355,21 @@
       menu.querySelector('[aria-expanded]').addEventListener('click', e => {
         e.stopPropagation();
         const opened = toggleHeaderMenu(menu);
-        if (opened && menu.id === 'attention-menu') refreshAttention();
+        if (opened && menu.id === 'attention-menu') { refreshAttention(); if (window.NopaInbox) NopaInbox.refresh(); }
       });
     });
-    $('attention-list').addEventListener('click', e => {
+    $('attention-dropdown').addEventListener('click', e => {
+      const own = e.target.closest('[data-inbox-id]');
+      // stopPropagation: the list re-renders, and a detached target would read as a click outside the menu
+      if (own) { e.stopPropagation(); NopaInbox.markRead(own.dataset.inboxId); return; }
       const link = e.target.closest('a[data-tab]');
       if (!link || e.ctrlKey || e.metaKey) return;
       e.preventDefault();
       go(link.dataset.tab);
     });
+    $('inbox-read-all').addEventListener('click', e => { e.stopPropagation(); NopaInbox.markAllRead(); });
+    $('inbox-permission').addEventListener('click', e => { e.stopPropagation(); NopaInbox.askPermission().then(renderInbox); });
+    if (window.NopaInbox) NopaInbox.onChange(renderInbox);
 
     // Search
     const input = $('nav-search-input');

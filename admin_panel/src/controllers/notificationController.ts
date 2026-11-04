@@ -139,6 +139,51 @@ export async function markNotificationAsRead(req: AuthRequest, res: Response) {
   }
 }
 
+// Types that are broadcasts or app-only reminders, not a message to this person (the panel's inbox skips them)
+const NOT_PERSONAL = ['news', 'profile_completion'];
+
+/**
+ * The signed-in person's own messages, light enough to poll (the panel's bell polls it every 30s).
+ * Unlike GET /notifications it has no side effects (no news sync).
+ */
+export async function getInbox(req: AuthRequest, res: Response) {
+  try {
+    if (!req.user) {
+      return res.status(401).json({ error: 'کاربر احراز هویت نشده است' });
+    }
+    const where = { userId: req.user.id, type: { notIn: NOT_PERSONAL } };
+    const [unreadCount, items] = await Promise.all([
+      prisma.notification.count({ where: { ...where, isRead: false } }),
+      prisma.notification.findMany({
+        where,
+        orderBy: { createdAt: 'desc' },
+        take: 20,
+        select: { id: true, title: true, message: true, type: true, isRead: true, createdAt: true },
+      }),
+    ]);
+    res.json({ unreadCount, items });
+  } catch (error) {
+    console.error('getInbox error:', error);
+    res.status(500).json({ error: 'خطایی در دریافت اعلان‌ها رخ داد' });
+  }
+}
+
+export async function markInboxRead(req: AuthRequest, res: Response) {
+  try {
+    if (!req.user) {
+      return res.status(401).json({ error: 'کاربر احراز هویت نشده است' });
+    }
+    const { count } = await prisma.notification.updateMany({
+      where: { userId: req.user.id, isRead: false, type: { notIn: NOT_PERSONAL } },
+      data: { isRead: true },
+    });
+    res.json({ updated: count });
+  } catch (error) {
+    console.error('markInboxRead error:', error);
+    res.status(500).json({ error: 'خطایی در به‌روزرسانی وضعیت اعلان رخ داد' });
+  }
+}
+
 export async function broadcastNotification(req: AuthRequest, res: Response) {
   try {
     const { targetAudience, channel, titleTpl, messageTpl, caravanId } = req.body;

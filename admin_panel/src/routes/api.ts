@@ -17,7 +17,7 @@ import { getForms, submitForm } from '../controllers/formController';
 import { getCalendarEvents } from '../controllers/calendarController';
 import { getCaravanLeague, getWealthiestLeague, getMentorLeague } from '../controllers/leagueController';
 import { evaluateMentor } from '../controllers/evaluationController';
-import { getNotifications, markNotificationAsRead } from '../controllers/notificationController';
+import { getInbox, getNotifications, markInboxRead, markNotificationAsRead } from '../controllers/notificationController';
 import { getMentorAnalytics } from '../controllers/analyticsController';
 import { getNews } from '../controllers/newsController';
 import { getBanners } from '../controllers/bannerController';
@@ -87,6 +87,8 @@ router.get('/mentors/notes/:studentId', authenticateJWT as any, getPrivateNotes 
 
 // F. Notifications Routes
 router.get('/notifications', authenticateJWT as any, getNotifications as any);
+router.get('/notifications/inbox', authenticateJWT as any, getInbox as any);
+router.post('/notifications/inbox/read', authenticateJWT as any, markInboxRead as any);
 router.patch('/notifications/:id/read', authenticateJWT as any, markNotificationAsRead as any);
 
 // G. Public/Misc Routes

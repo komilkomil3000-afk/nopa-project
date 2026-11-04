@@ -1,6 +1,6 @@
 // Nopa Admin PWA service worker
 // Strategy: network-first for the shell, never cache API calls (live, sensitive data).
-const CACHE = 'nopa-admin-v21';
+const CACHE = 'nopa-admin-v22';
 const SCOPE_PREFIX = '/admin';
 
 self.addEventListener('install', () => {
@@ -37,5 +37,18 @@ self.addEventListener('fetch', (event) => {
       .catch(() =>
         caches.match(req).then((cached) => cached || (req.mode === 'navigate' ? caches.match('/admin/') : undefined))
       )
+  );
+});
+
+// A click on a message notification (js/core/inbox.js): bring the panel forward with the bell open
+self.addEventListener('notificationclick', (event) => {
+  event.notification.close();
+  event.waitUntil(
+    self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((list) => {
+      const panel = list.find((c) => new URL(c.url).pathname.startsWith(SCOPE_PREFIX));
+      if (!panel) return self.clients.openWindow(SCOPE_PREFIX + '/');
+      panel.postMessage({ type: 'nopa:open-inbox' });
+      return panel.focus();
+    })
   );
 });

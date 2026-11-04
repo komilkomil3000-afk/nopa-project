@@ -231,10 +231,20 @@
           </div>
 
           <div class="header-menu" id="attention-menu">
-            <button type="button" class="btn-icon header-btn" id="btn-attention" aria-haspopup="true" aria-expanded="false" aria-label="موارد نیازمند رسیدگی">
+            <button type="button" class="btn-icon header-btn" id="btn-attention" aria-haspopup="true" aria-expanded="false" aria-label="اعلان‌ها و موارد نیازمند رسیدگی">
               <i class="fa-solid fa-bell"></i><span class="header-badge" id="attention-badge" hidden>0</span>
             </button>
-            <div class="header-dropdown" id="attention-dropdown" hidden>
+            <div class="header-dropdown inbox-dropdown" id="attention-dropdown" hidden>
+              <!-- Filled by js/layout/topnav.js: the person's own messages (js/core/inbox.js), the newest support messages, the review queues -->
+              <button type="button" class="inbox-permission" id="inbox-permission" hidden>
+                <i class="fa-solid fa-bell"></i><span><strong>نمایش اعلان روی سیستم</strong><small>پیام‌های جدید حتی وقتی پنل باز نیست روی دستگاهتان نشان داده شود</small></span>
+              </button>
+              <div class="header-dropdown-title inbox-head">پیام‌های شما <button type="button" class="inbox-read-all" id="inbox-read-all" hidden>خواندن همه</button></div>
+              <ul class="attention-list inbox-list" id="inbox-list"><li class="attention-empty">در حال بارگذاری...</li></ul>
+              <div id="support-recent-block" hidden>
+                <div class="header-dropdown-title">پیام‌های پشتیبانی</div>
+                <ul class="attention-list inbox-list" id="support-recent-list"></ul>
+              </div>
               <div class="header-dropdown-title">نیازمند رسیدگی</div>
               <ul class="attention-list" id="attention-list"><li class="attention-empty">در حال بارگذاری...</li></ul>
             </div>
@@ -4628,6 +4638,7 @@
     <script src="js/ui/flip.js"></script>
     <script src="js/ui/lightbox.js"></script>
     <script src="js/core/attention.js"></script>
+    <script src="js/core/inbox.js"></script>
     <script src="js/layout/topnav.js"></script>
     <script src="js/layout/landing.js"></script>
     <script src="js/features/dashboard.js"></script>

@@ -1519,6 +1519,36 @@ button, select, input, a {
   #nopa-toast-container { left: 16px; right: 16px; bottom: 16px; max-width: none; }
 }
 
+/* New personal messages when system notifications are off (js/core/inbox.js): top left, desktop only, 3 at most */
+#nopa-inbox-popups {
+  position: fixed;
+  left: 20px;
+  top: 76px; /* below the header */
+  z-index: var(--z-toast);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  width: min(360px, calc(100vw - 40px));
+  pointer-events: none;
+}
+.inbox-popup { cursor: pointer; transform: translateY(-12px); }
+.inbox-popup.show { transform: translateY(0); }
+.inbox-popup .nopa-toast-icon { color: var(--accent-text); }
+.inbox-popup .nopa-toast-body { display: flex; flex-direction: column; gap: 2px; color: var(--text); }
+.inbox-popup .nopa-toast-body strong { font-weight: 800; }
+.inbox-popup .nopa-toast-body span {
+  font-weight: 500;
+  color: var(--text-soft);
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.inbox-popup .nopa-toast-close { color: var(--text-muted); }
+@media (max-width: 767px) {
+  #nopa-inbox-popups { display: none; }
+}
+
 button, input, select, textarea { font-family: inherit; }
 .font-en { font-family: var(--font-en); }
 
