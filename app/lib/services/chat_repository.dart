@@ -33,6 +33,12 @@ class ChatRepository extends ChangeNotifier {
   List<ChatSpace> spaces = [];
   bool loadingSpaces = false;
   bool connected = false;
+
+  /// The last HTTP call to the chat API got an answer: chat works (by polling) even when the socket is refused.
+  bool serverReachable = false;
+
+  /// What the user sees as "connected": the live socket, or the HTTP fallback answering.
+  bool get online => connected || serverReachable;
   final Map<String, List<ChatMessage>> _lists = {};
   final Map<String, List<Map<String, dynamic>>> _staffTags = {};
   bool _foreground = true;
@@ -135,6 +141,7 @@ class ChatRepository extends ChangeNotifier {
     _socket = null;
     _userId = null;
     connected = false;
+    serverReachable = false;
     spaces = [];
     _lists.clear();
     _typing.clear();
@@ -197,6 +204,7 @@ class ChatRepository extends ChangeNotifier {
     notifyListeners();
     final res = await _api.chatCall('GET', '/chat/spaces');
     loadingSpaces = false;
+    serverReachable = res != null && res.statusCode < 500;
     if (res != null && res.statusCode == 200) {
       final data = jsonDecode(res.body) as List;
       spaces = data.map((s) => ChatSpace.fromJson(Map<String, dynamic>.from(s as Map))).toList();

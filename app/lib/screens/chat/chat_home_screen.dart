@@ -88,7 +88,7 @@ class _ChatHomeScreenState extends State<ChatHomeScreen> {
           child: Column(
             children: [
               _ChatHeader(
-                connected: chat.connected,
+                connected: chat.online,
                 filter: _filter,
                 onFilter: _selectFilter,
               ),
@@ -261,8 +261,10 @@ class _ChatHeader extends StatelessWidget {
                       style: AppTypography.logo.copyWith(color: ChatTheme.ink),
                     ),
                   ),
+                  // RTL inside this LTR row, so the dots of "درحال اتصال..." sit on the left
                   Text(
-                    connected ? 'گفتگوها' : 'درحال اتصال...',
+                    connected ? 'شما متصل هستید' : 'درحال اتصال...',
+                    textDirection: TextDirection.rtl,
                     style: AppTypography.h3,
                   ),
                   if (scaffold?.hasDrawer ?? false)

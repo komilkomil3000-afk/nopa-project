@@ -2,5 +2,16 @@ node_modules
 dist
 .git
 .env
+.env.*
 *.log
 prisma/dev.db*
+# User data and local-only material must never enter an image
+uploads
+chat-files
+tests
+loadtest
+docs
+supabase
+deploy
+del.txt
+*.md

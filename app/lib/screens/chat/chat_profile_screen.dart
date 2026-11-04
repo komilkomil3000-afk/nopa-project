@@ -418,7 +418,7 @@ class _ProfileScaffold extends StatelessWidget {
                     builder: (context, _) => ChatHeaderTitle(
                       avatar: const SizedBox.shrink(),
                       title: title,
-                      subtitle: chat.connected ? '' : 'درحال اتصال...',
+                      subtitle: chat.online ? '' : 'درحال اتصال...',
                     ),
                   ),
                 ),

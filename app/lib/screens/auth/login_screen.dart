@@ -271,6 +271,7 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
                         ),
                         trailing: Text(
                           item.code,
+                          textDirection: TextDirection.ltr,
                           style: AppTypography.h3Strong.copyWith(color: isSelected ? AppColors.accentGoldEnd : const Color(0xFF8E889D)),
                         ),
                         onTap: () {
@@ -975,6 +976,8 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
                 children: [
                   Text(
                     _selectedCountry.code,
+                    // LTR so the plus sits on the left: +98, not 98+
+                    textDirection: TextDirection.ltr,
                     style: AppTypography.h3,
                   ),
                   const SizedBox(width: 4),

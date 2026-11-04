@@ -1,0 +1,1 @@
+"nopa_lt" "lt_only_password"

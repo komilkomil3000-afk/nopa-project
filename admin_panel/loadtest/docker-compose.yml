@@ -1,0 +1,193 @@
+# Nopa load-test sandbox. Fully isolated: its own Postgres (named volume), PgBouncer, Redis and backend.
+# Nothing here knows the production DB address; seed/cleanup/k6 also refuse any *.nopa-app.ir target.
+#
+#   cd admin_panel/loadtest
+#   docker compose up -d --build          # postgres, pgbouncer, redis, migrate (one-shot), backend
+#   docker compose run --rm seed          # sandbox users, caravans, stations, chat history -> ./out/
+#   docker compose run --rm k6            # 50 -> 500 concurrent users, p95 < 400 ms
+#   docker compose run --rm cleanup       # delete sandbox rows, keep schema + migrations
+#   docker compose down -v                # throw the whole sandbox away
+#
+# Resource budget below mimics a 2 vCPU / 4 GB VPS split between app and DB. Production actually runs
+# the backend and the DB on separate servers: to mirror that, raise postgres to that server's size.
+# Run k6 from another machine (BASE_URL=...) when you need clean numbers: on the same host it competes for CPU.
+
+name: nopa-loadtest
+
+x-lt-secrets: &lt-secrets
+  # Test-only values. Never reuse them anywhere else.
+  JWT_SECRET: lt-only-access-secret-4f9c2a71d8e6b305c1a7
+  JWT_REFRESH_SECRET: lt-only-refresh-secret-9b2e7d14a6c8f053e2d9
+
+x-lt-db: &lt-db
+  # The backend goes through PgBouncer (transaction mode), like production's pooler on :6543.
+  DATABASE_URL: postgresql://nopa_lt:lt_only_password@pgbouncer:6543/nopa_loadtest?pgbouncer=true&connection_limit=${LT_PRISMA_CONNECTIONS:-10}&pool_timeout=${LT_PRISMA_POOL_TIMEOUT:-10}
+  # Migrations and seeding go straight to Postgres
+  DIRECT_URL: postgresql://nopa_lt:lt_only_password@postgres:5432/nopa_loadtest
+
+x-lt-tool-db: &lt-tool-db
+  DATABASE_URL: postgresql://nopa_lt:lt_only_password@postgres:5432/nopa_loadtest
+  DIRECT_URL: postgresql://nopa_lt:lt_only_password@postgres:5432/nopa_loadtest
+  LOADTEST_SANDBOX: "1"
+
+services:
+  postgres:
+    image: postgres:15.8-alpine
+    environment:
+      POSTGRES_USER: nopa_lt
+      POSTGRES_PASSWORD: lt_only_password
+      POSTGRES_DB: nopa_loadtest
+    command:
+      - postgres
+      - -c
+      - max_connections=100
+      - -c
+      - shared_buffers=384MB
+      - -c
+      - effective_cache_size=1GB
+      - -c
+      - work_mem=4MB
+      - -c
+      - maintenance_work_mem=64MB
+      - -c
+      - random_page_cost=1.1
+      # Find the slow queries afterwards (see README, "Reading the results")
+      - -c
+      - shared_preload_libraries=pg_stat_statements
+      - -c
+      - pg_stat_statements.track=all
+      - -c
+      - log_min_duration_statement=250
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    ports:
+      - "127.0.0.1:55432:5432"   # loopback only, for psql / inspection
+    shm_size: 256mb
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U nopa_lt -d nopa_loadtest"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+    deploy:
+      resources:
+        limits: { cpus: "1.0", memory: 1536M }
+
+  pgbouncer:
+    build:
+      context: ./pgbouncer
+      dockerfile_inline: |
+        FROM alpine:3.20
+        RUN apk add --no-cache pgbouncer && (id pgb >/dev/null 2>&1 || adduser -D -H pgb)
+        USER pgb
+        CMD ["pgbouncer", "/etc/pgbouncer/pgbouncer.ini"]
+    volumes:
+      - ./pgbouncer/pgbouncer.ini:/etc/pgbouncer/pgbouncer.ini:ro
+      - ./pgbouncer/userlist.txt:/etc/pgbouncer/userlist.txt:ro
+    depends_on:
+      postgres: { condition: service_healthy }
+    healthcheck:
+      test: ["CMD-SHELL", "nc -z 127.0.0.1 6543"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+    deploy:
+      resources:
+        limits: { cpus: "0.25", memory: 64M }
+
+  redis:
+    # Provisioned for the scale-out path (shared rate-limit store + Socket.IO adapter, see README §3).
+    # The backend does NOT use Redis today; it keeps that state in process memory.
+    image: redis:7.2.5-alpine
+    command: ["redis-server", "--maxmemory", "192mb", "--maxmemory-policy", "allkeys-lru", "--save", "", "--appendonly", "no"]
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+    deploy:
+      resources:
+        limits: { cpus: "0.25", memory: 256M }
+
+  migrate:
+    build: { context: .., dockerfile: Dockerfile, target: migrator }
+    environment:
+      <<: *lt-tool-db
+    depends_on:
+      postgres: { condition: service_healthy }
+    restart: "no"
+
+  backend:
+    build: { context: .., dockerfile: Dockerfile, target: runner }
+    init: true
+    environment:
+      <<: [*lt-db, *lt-secrets]
+      NODE_ENV: production
+      PORT: "5000"
+      NODE_OPTIONS: --max-old-space-size=512
+      # Trust X-Forwarded-For from the private Docker network, so each k6 virtual user gets its own client IP
+      # (as real phones do) instead of all sharing one budget in the per-IP auth limiter.
+      TRUST_PROXY: uniquelocal
+      CHAT_FILES_DIR: /data/chat-files
+    volumes:
+      - chatfiles:/data/chat-files
+      - uploads:/app/uploads
+    ports:
+      - "127.0.0.1:5050:5000"
+    depends_on:
+      migrate: { condition: service_completed_successfully }
+      pgbouncer: { condition: service_healthy }
+      redis: { condition: service_healthy }
+    deploy:
+      resources:
+        # One Node process (PM2 fork mode in production) can only use one core anyway
+        limits: { cpus: "1.0", memory: 768M }
+
+  # ---- tools (run on demand) ----
+  seed:
+    profiles: ["tools"]
+    build: { context: .., dockerfile: Dockerfile, target: migrator }
+    working_dir: /app
+    command: ["node", "loadtest/seed.js"]
+    environment:
+      <<: [*lt-tool-db, *lt-secrets]
+      LT_STUDENTS: ${LT_STUDENTS:-600}
+      LT_LOGIN_USERS: ${LT_LOGIN_USERS:-100}
+      LT_STATIONS: ${LT_STATIONS:-8}
+      LT_CHAT_MESSAGES: ${LT_CHAT_MESSAGES:-300}
+    volumes:
+      - ./:/app/loadtest
+    depends_on:
+      migrate: { condition: service_completed_successfully }
+
+  cleanup:
+    profiles: ["tools"]
+    build: { context: .., dockerfile: Dockerfile, target: migrator }
+    working_dir: /app
+    command: ["node", "loadtest/cleanup.js"]
+    environment:
+      <<: *lt-tool-db
+    volumes:
+      - ./:/app/loadtest
+    depends_on:
+      postgres: { condition: service_healthy }
+
+  k6:
+    profiles: ["tools"]
+    image: grafana/k6:0.54.0
+    command: ["run", "/scripts/k6/nopa-load.js"]
+    environment:
+      BASE_URL: ${BASE_URL:-http://backend:5000}
+      POLL_SECONDS: ${POLL_SECONDS:-15}
+      MAX_VUS: ${MAX_VUS:-500}
+    volumes:
+      - ./:/scripts
+    depends_on:
+      backend: { condition: service_healthy }
+    deploy:
+      resources:
+        limits: { cpus: "1.0", memory: 1G }
+
+volumes:
+  pgdata:
+  chatfiles:
+  uploads:
