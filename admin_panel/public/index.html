@@ -1094,128 +1094,135 @@
         </div>
       </section>
 
-      <!-- TAB 4: CARAVANS & MENTORS -->
+      <!-- TAB 4: CARAVANS & MENTORS
+           Like the stations tab: a bento overview of all caravans, and one caravan's page (circles of the caravans in the
+           notch, the leader's card linked to the members' card). Drawn by js/features/caravans.js; styles in css/stations.css. -->
       <section id="caravans-tab" class="tab-panel" data-style="display: none;">
-        <div class="u-flex u-justify-between u-items-center u-mb-20">
-          <h3>مدیریت و فهرست کاروان‌ها</h3>
-          <div class="u-flex u-gap-10">
-            <button id="btn-create-caravan" class="btn-primary u-bgc-success" data-click="openCaravanWizard"><i class="fa-solid fa-plus"></i> ساخت کاروان جدید</button>
-          </div>
-        </div>
+        <!-- The chosen caravan (read by the member / mentor modals) -->
+        <select id="target-caravan-picker" aria-label="انتخاب کاروان" hidden>
+          <option value="">-- لطفاً یک کاروان انتخاب کنید --</option>
+        </select>
 
-        <div class="actions-header glass u-mb-20 u-flex u-wrap u-gap-15 u-items-center u-justify-between">
-          <div class="u-flex u-gap-10 u-items-center u-flex-1 u-minw-300">
-            <input aria-label="جستجوی کاروان‌ها" type="text" id="caravan-search-input" class="input-ctrl u-flex-1" placeholder="جستجو نام کاروان، مربی یا کد..." data-input="renderCaravansTable">
-            <select aria-label="مرتب‌سازی کاروان‌ها" id="caravan-sort-select" class="select-ctrl" data-change="renderCaravansTable">
-              <option value="newest">جدیدترین کاروان‌ها</option>
-              <option value="most_members">بیشترین اعضا</option>
-              <option value="highest_zarik">بالاترین ثروت (زریک)</option>
-              <option value="highest_progress">بیشترین درصد پیشرفت</option>
-            </select>
-            <select aria-label="فیلتر راهبر" id="caravan-mentor-filter" class="select-ctrl" data-change="renderCaravansTable">
-              <option value="all">همه مربیان</option>
-              <!-- Populated dynamically -->
-            </select>
-          </div>
-          <div class="dropdown-wrapper u-inline-block u-relative">
-            <button class="btn-action btn-export"><i class="fa-solid fa-file-export"></i>خروجی <i class="fa-solid fa-caret-down"></i></button>
-            <div class="dropdown-content">
-              <a href="#" data-click="exportData" data-click-args="[&quot;caravans&quot;,&quot;pdf&quot;]"><i class="fa-solid fa-file-pdf"></i> خروجی پی‌دی‌اف</a>
-              <a href="#" data-click="exportData" data-click-args="[&quot;caravans&quot;,&quot;excel&quot;]"><i class="fa-solid fa-file-excel"></i> خروجی اکسل</a>
-              <a href="#" data-click="exportData" data-click-args="[&quot;caravans&quot;,&quot;csv&quot;]"><i class="fa-solid fa-file-csv"></i> CSV</a>
+        <div id="crv-overview-view">
+          <div class="lms-head-actions u-flex u-justify-end u-items-center u-mb-20">
+            <div class="u-flex u-gap-10">
+              <button id="btn-create-caravan" type="button" class="btn-primary u-bgc-primary" data-click="openCaravanWizard"><i class="fa-solid fa-plus"></i> ساخت کاروان جدید</button>
             </div>
           </div>
-        </div>
 
-        <div class="table-container glass caravans-table-scroll-container u-maxh-420 u-scroll-y u-scroll-x u-overscroll-contain u-relative u-r-12">
-          <table class="data-table" id="caravan-performance-table">
-            <thead class="u-pos-sticky u-top-0 u-z-10 u-bg-surface u-shadow-pop-sm">
-              <tr>
-                <th class="u-bg-surface">نام کاروان</th>
-                <th class="u-bg-surface">راهبر(ان)</th>
-                <th class="u-bg-surface">اعضا / ظرفیت</th>
-                <th class="u-bg-surface">مجموع ثروت (زریک)</th>
-                <th class="u-bg-surface">درصد پیشرفت مسیر</th>
-                <th class="u-bg-surface">عملیات</th>
-              </tr>
-            </thead>
-            <tbody>
-              <!-- Populated by JS -->
-            </tbody>
-          </table>
-        </div>
+          <div class="lst-bento crv-bento">
+            <div class="lst-tile lst-tile-stations glass">
+              <div class="lst-tile-head">
+                <h4 class="lst-tile-title"><i class="fa-solid fa-compass"></i> همه کاروان‌ها <span class="lst-tile-sub">برای ورود به صفحه کاروان بزنید</span></h4>
+                <div class="crv-filters">
+                  <div class="search-box">
+                    <i class="fa-solid fa-search"></i>
+                    <input aria-label="جستجوی کاروان‌ها" type="text" id="caravan-search-input" class="input-ctrl" placeholder="نام کاروان، راهبر یا کد..." data-input="renderCaravansTable">
+                  </div>
+                  <select aria-label="مرتب‌سازی کاروان‌ها" id="caravan-sort-select" class="select-ctrl" data-change="renderCaravansTable">
+                    <option value="newest">ترتیب نام</option>
+                    <option value="most_members">بیشترین اعضا</option>
+                    <option value="highest_zarik">بالاترین ثروت (زریک)</option>
+                    <option value="highest_progress">بیشترین پیشرفت</option>
+                  </select>
+                  <select aria-label="فیلتر راهبر" id="caravan-mentor-filter" class="select-ctrl" data-change="renderCaravansTable">
+                    <option value="all">همه راهبران</option>
+                  </select>
+                </div>
+              </div>
+              <div id="crv-bento-caravans" class="crv-card-grid" aria-busy="true"></div>
+            </div>
 
-        <h3 class="u-mb-20 u-mt-40">مدیریت و جزئیات کاروان</h3>
-        <div class="panel-card glass u-mb-20 u-p-20">
-          <!-- Caravan Selector -->
-          <div class="u-mb-20">
-            <label for="target-caravan-picker" class="u-c-text-secondary u-fs-sm">انتخاب کاروان:</label>
-            <select id="target-caravan-picker" class="select-ctrl u-w-full u-maxw-400 u-mt-6 u-fs-md u-bold">
-              <option value="">-- لطفاً یک کاروان انتخاب کنید --</option>
-              <!-- Populated dynamically -->
-            </select>
-          </div>
-          
-          <!-- Caravan Overview Cards -->
-          <div class="u-grid u-cols-fit-160 u-gap-12 u-mb-20">
-            <div class="u-bg-fg-5 u-p-14 u-r-10 u-text-center u-bd-fg-6">
-              <div class="u-c-text-secondary u-fs-xs u-mb-6"><i class="fa-solid fa-chalkboard-user u-c-primary-text"></i> راهبر اختصاصی</div>
-              <div class="u-flex u-justify-center u-items-center">
-                <span id="cw-mentor-name" class="u-c-primary-text u-bold u-fs-md">-</span>
-                <button id="btn-change-caravan-mentor" type="button" data-click="openChangeCaravanMentorModal" class="u-bg-transparent u-bd-none u-c-text-muted u-pointer u-fs-sm u-mr-8" title="تغییر راهبر"><i class="fa-solid fa-pen-to-square"></i></button>
+            <div class="lst-tile glass">
+              <h4 class="lst-tile-title"><i class="fa-solid fa-chart-simple"></i> آمار کلی</h4>
+              <div class="lst-mini-stats">
+                <div class="lst-mini-stat"><span class="stat-label">کاروان‌ها</span><span class="stat-value u-c-primary-text" id="crv-stat-caravans">-</span></div>
+                <div class="lst-mini-stat"><span class="stat-label">اعضا</span><span class="stat-value u-c-success-text" id="crv-stat-members">-</span></div>
+                <div class="lst-mini-stat"><span class="stat-label">زریک کل</span><span class="stat-value u-c-accent-text" id="crv-stat-zarik">-</span></div>
+                <div class="lst-mini-stat"><span class="stat-label">میانگین پیشرفت</span><span class="stat-value u-c-info-text" id="crv-stat-progress">-</span></div>
               </div>
             </div>
-            <div class="u-bg-accent-6 u-p-14 u-r-10 u-text-center u-bd-accent-20">
-              <div class="u-c-text-secondary u-fs-xs u-mb-6"><i class="fa-solid fa-coins u-c-accent-text"></i> مجموع زریک اعضا</div>
-              <div id="caravan-detail-zarik" class="u-c-accent-text u-bold u-fs-md">0 <i class="fa-solid fa-coins"></i></div>
-            </div>
-            <div class="u-bg-primary-6 u-p-14 u-r-10 u-text-center u-bd-primary-20">
-              <div class="u-c-text-secondary u-fs-xs u-mb-6"><i class="fa-solid fa-flag u-c-primary-text"></i> مجموع درفش</div>
-              <div id="caravan-detail-derafsh" class="u-c-primary-text u-bold u-fs-md">0 <i class="fa-solid fa-flag"></i></div>
-            </div>
-            <div class="u-bg-success-6 u-p-14 u-r-10 u-text-center u-bd-success-20">
-              <div class="u-c-text-secondary u-fs-xs u-mb-6"><i class="fa-solid fa-layer-group u-c-success-text"></i> مجموع کلاف</div>
-              <div id="caravan-detail-nokh" class="u-c-success-text u-bold u-fs-md">0 <i class="fa-solid fa-layer-group"></i></div>
-            </div>
-            <div class="u-bg-primary-6 u-p-14 u-r-10 u-text-center u-bd-primary-20">
-              <div class="u-c-text-secondary u-fs-xs u-mb-6"><i class="fa-solid fa-rug u-c-primary-text"></i> مجموع قالیچه</div>
-              <div id="caravan-detail-farsh" class="u-c-primary-text u-bold u-fs-md">0 <i class="fa-solid fa-rug"></i></div>
-            </div>
-            <div class="u-bg-fg-5 u-p-14 u-r-10 u-text-center u-bd-fg-6">
-              <div class="u-c-text-secondary u-fs-xs u-mb-6"><i class="fa-solid fa-route u-c-success-text"></i> پیشرفت مسیر</div>
-              <div id="caravan-detail-milestones" class="u-c-color-success u-bold u-fs-md">0%</div>
-            </div>
-          </div>
 
-          <!-- Dynamic Roster Table -->
-          <div class="u-flex u-justify-between u-items-center u-mb-12">
-            <h4 class="u-c-text u-fs-md u-bold u-m-0">اعضای کاروان و سرمایه‌های فردی</h4>
-            <button id="btn-open-add-member-modal" type="button" data-click="openAddMemberToCaravanModal" class="btn-primary u-bg-success u-c-white u-p-8-16 u-fs-sm u-bold u-r-8 u-bd-none u-pointer">
-              + افزودن عضو جدید به کاروان
-            </button>
-          </div>
-          <div class="u-scroll-x">
-            <table class="u-w-full u-text-right u-collapse-collapse u-fs-sm">
-              <thead>
-                <tr class="u-bb-border-strong u-c-text-muted">
-                  <th class="u-p-12-10">شناسه</th>
-                  <th class="u-p-12-10">نام عضو</th>
-                  <th class="u-p-12-10">شماره تماس</th>
-                  <th class="u-p-12-10 u-c-accent-text"><i class="fa-solid fa-coins"></i> زریک</th>
-                  <th class="u-p-12-10 u-c-primary-text"><i class="fa-solid fa-flag"></i> درفش</th>
-                  <th class="u-p-12-10 u-c-success-text"><i class="fa-solid fa-layer-group"></i> کلاف</th>
-                  <th class="u-p-12-10 u-c-primary-text"><i class="fa-solid fa-rug"></i> قالیچه</th>
-                  <th class="u-p-12-10">عملیات</th>
-                </tr>
-              </thead>
-              <tbody id="caravan-roster-body">
-                <tr class="nopa-table-state is-empty"><td colspan="8"><i class="fa-solid fa-inbox"></i><div>کاروانی انتخاب نشده است.</div></td></tr>
-              </tbody>
-            </table>
+            <div class="lst-tile glass">
+              <h4 class="lst-tile-title"><i class="fa-solid fa-users-viewfinder"></i> وضعیت ظرفیت</h4>
+              <div id="crv-bento-capacity"></div>
+            </div>
+
+            <div class="lst-tile glass">
+              <h4 class="lst-tile-title"><i class="fa-solid fa-bolt"></i> دسترسی سریع</h4>
+              <div class="lst-quick">
+                <button type="button" class="lst-quick-btn" data-click="openCaravanWizard"><i class="fa-solid fa-plus"></i> کاروان جدید</button>
+                <button type="button" class="lst-quick-btn" data-click="loadCaravansTab"><i class="fa-solid fa-sync"></i> بروزرسانی</button>
+                <button type="button" class="lst-quick-btn" data-click="exportData" data-click-args="[&quot;caravans&quot;,&quot;excel&quot;]"><i class="fa-solid fa-file-excel"></i> خروجی اکسل</button>
+                <button type="button" class="lst-quick-btn" data-click="exportData" data-click-args="[&quot;caravans&quot;,&quot;pdf&quot;]"><i class="fa-solid fa-file-pdf"></i> خروجی پی‌دی‌اف</button>
+                <button type="button" class="lst-quick-btn" data-click="exportData" data-click-args="[&quot;caravans&quot;,&quot;csv&quot;]"><i class="fa-solid fa-file-csv"></i> خروجی CSV</button>
+              </div>
+            </div>
+
+            <div class="lst-tile glass">
+              <h4 class="lst-tile-title"><i class="fa-solid fa-ranking-star"></i> ثروتمندترین کاروان‌ها</h4>
+              <div id="crv-bento-top"></div>
+            </div>
+
+            <div class="lst-tile glass">
+              <h4 class="lst-tile-title"><i class="fa-solid fa-chalkboard-user"></i> راهبران کاروان‌ها</h4>
+              <div id="crv-bento-mentors"></div>
+            </div>
+
+            <div class="lst-tile lst-tile-wide glass">
+              <h4 class="lst-tile-title"><i class="fa-solid fa-list-check"></i> نیازمند توجه</h4>
+              <div id="crv-bento-health"></div>
+            </div>
           </div>
         </div>
-      </section>
 
+        <!-- One caravan's page -->
+        <div id="caravan-detail-view" data-style="display: none;">
+          <div class="lsv-head" id="crv-head">
+            <button type="button" class="lsv-round" data-click="closeCaravanView" title="بازگشت به همه کاروان‌ها" aria-label="بازگشت به همه کاروان‌ها"><i class="fa-solid fa-arrow-right"></i></button>
+            <h3 id="crv-title">کاروان</h3>
+            <span id="crv-state"></span>
+          </div>
+          <section class="lsv-board crv-board">
+            <header class="lsv-board-head">
+              <div class="lsv-board-title">
+                <h4>راهبر و اعضای کاروان</h4>
+                <span id="crv-sub"></span>
+              </div>
+              <div class="lsv-notch-wrap"><nav class="lsv-notch" id="crv-circles" aria-label="کاروان‌ها"></nav></div>
+              <div class="lsv-round-group">
+                <button type="button" class="lsv-round" data-click="openRenameActiveCaravan" title="تغییر نام کاروان" aria-label="تغییر نام کاروان"><i class="fa-solid fa-pen"></i></button>
+                <button id="btn-change-caravan-mentor" type="button" class="lsv-round" title="تغییر راهبر" aria-label="تغییر راهبر"><i class="fa-solid fa-user-pen"></i></button>
+                <button type="button" class="lsv-round lsv-round-danger" data-click="deleteActiveCaravan" title="حذف کاروان" aria-label="حذف کاروان"><i class="fa-solid fa-trash"></i></button>
+              </div>
+            </header>
+            <div class="lsv-flow crv-flow">
+              <div class="lsv-col crv-col-mentor">
+                <div class="lsv-col-card crv-mentor" id="crv-mentor-card"></div>
+                <div class="lsv-col-label"><i class="fa-solid fa-chalkboard-user"></i> راهبر کاروان</div>
+              </div>
+              <div class="lsv-link" aria-hidden="true"></div>
+              <div class="lsv-col crv-col-members">
+                <div class="lsv-col-card" id="crv-members-card">
+                  <div class="crv-members-list" id="caravan-roster-body"></div>
+                </div>
+                <div class="lsv-col-label"><i class="fa-solid fa-users"></i> اعضای کاروان و سرمایه‌های فردی <span class="lsv-col-count" id="crv-members-count">0</span></div>
+              </div>
+              <div class="lsv-link" aria-hidden="true"></div>
+              <div class="lsv-col crv-col-assets">
+                <div class="lsv-col-card crv-assets-card" id="crv-totals">
+                  <div class="crv-asset is-accent"><span class="crv-asset-icon"><i class="fa-solid fa-coins"></i></span><span class="crv-asset-text"><small>مجموع زریک اعضا</small><strong id="caravan-detail-zarik">0</strong></span></div>
+                  <div class="crv-asset is-primary"><span class="crv-asset-icon"><i class="fa-solid fa-flag"></i></span><span class="crv-asset-text"><small>مجموع درفش</small><strong id="caravan-detail-derafsh">0</strong></span></div>
+                  <div class="crv-asset is-success"><span class="crv-asset-icon"><i class="fa-solid fa-layer-group"></i></span><span class="crv-asset-text"><small>مجموع کلاف</small><strong id="caravan-detail-nokh">0</strong></span></div>
+                  <div class="crv-asset is-info"><span class="crv-asset-icon"><i class="fa-solid fa-rug"></i></span><span class="crv-asset-text"><small>مجموع قالیچه</small><strong id="caravan-detail-farsh">0</strong></span></div>
+                  <div class="crv-asset is-progress"><span class="crv-asset-icon"><i class="fa-solid fa-route"></i></span><span class="crv-asset-text"><small>پیشرفت مسیر</small><strong id="caravan-detail-milestones">0٪</strong></span></div>
+                </div>
+                <div class="lsv-col-label"><i class="fa-solid fa-sack-dollar"></i> سرمایه و پیشرفت کاروان</div>
+              </div>
+            </div>
+          </section>
+        </div>
+      </section>
 
       <!-- TAB 6: AUDIT LOGS -->
       <section id="audit-tab" class="tab-panel" data-style="display: none;">
@@ -2742,55 +2749,90 @@
       </div>
     </div>
 
-    <!-- Caravan Builder Wizard Modal -->
-    <div id="caravan-wizard-modal" class="modal-overlay" data-style="display:none;">
-      <div class="modal-content glass u-maxw-800">
-        <div class="modal-header">
-          <h3>ساخت کاروان جدید</h3>
-          <button aria-label="بستن" class="modal-close" data-click="closeCaravanWizard">&times;</button>
-        </div>
-        <form id="caravan-wizard-form" data-submit="submitCaravan" data-submit-args="[&quot;$event&quot;]">
-          <div class="u-p-16">
-            <div class="form-group">
-              <label for="cw-name">نام کاروان</label>
-              <input type="text" id="cw-name" class="input-ctrl" required>
-            </div>
-            <div class="form-group u-flex u-gap-10">
-              <div class="u-flex-1">
-                <label for="cw-capacity">سقف ظرفیت اعضا</label>
-                <input type="number" id="cw-capacity" class="input-ctrl">
-              </div>
-            </div>
-            <div class="form-group">
-              <label for="cw-mentor-search">تعیین راهبر کاروان</label>
-              <input type="text" id="cw-mentor-search" class="input-ctrl" placeholder="جستجوی نام یا موبایل راهبر..." autocomplete="off">
-              <input type="hidden" id="cw-mentor-id" required>
-              <div id="cw-mentor-results" class="u-maxh-150 u-scroll-y u-bg-bg-card u-r-8 u-mt-6"></div>
-            </div>
-            <div class="form-group">
-              <label for="cw-description">توضیحات و اهداف</label>
-              <textarea id="cw-description" class="input-ctrl" rows="3"></textarea>
-            </div>
-            <div class="form-group">
-              <label for="cw-social-link">لینک کانال / گروه اجتماعی کاروان</label>
-              <input type="text" id="cw-social-link" class="input-ctrl" placeholder="https://t.me/nopa_caravan">
-            </div>
-            <div class="form-group">
-              <label for="cw-student-search">افزودن اعضا (جستجو بر اساس نام، موبایل یا کد NP)</label>
-              <input type="text" id="cw-student-search" class="input-ctrl" placeholder="نام، موبایل یا کد کاربر را وارد کنید..." autocomplete="off">
-              <div id="cw-student-results" class="u-maxh-150 u-scroll-y u-bg-bg-card u-r-8 u-mt-6"></div>
-              
-              <div class="u-mt-16">
-                <strong>اعضای اضافه‌شده (<span id="cw-pending-count">0</span>):</strong>
-                <ul id="cw-pending-members" class="u-list-none u-p-0 u-flex u-wrap u-gap-10 u-mt-10">
-                  <!-- Pending members render here -->
-                </ul>
-              </div>
+    <!-- Caravan builder: steps like the station editor's create mode (css/stations.css .lse-*; js/features/caravans.js) -->
+    <div id="caravan-wizard-modal" class="modal-overlay lse-overlay u-z-z-modal" data-style="display:none;">
+      <div class="lse lse-editor crv-wizard">
+        <header class="lse-head">
+          <div class="lse-id">
+            <span class="lse-id-icon is-accent"><i class="fa-solid fa-plus"></i></span>
+            <div class="lse-id-text">
+              <h3>کاروان جدید</h3>
+              <span>مشخصات، راهبر و اعضا را در چند گام تعیین کنید</span>
             </div>
           </div>
-          <div class="modal-footer u-p-16">
-            <button type="submit" class="btn-primary u-w-full">ایجاد کاروان</button>
+          <nav class="lse-tabs" aria-label="گام‌های ساخت کاروان">
+            <button type="button" class="lse-tab lse-step is-active" data-crv-step="info" data-click="crvWizardGo" data-click-args="[&quot;info&quot;]"><span class="lse-step-num">۱</span>مشخصات</button>
+            <button type="button" class="lse-tab lse-step" data-crv-step="mentor" data-click="crvWizardGo" data-click-args="[&quot;mentor&quot;]" disabled><span class="lse-step-num">۲</span>راهبر</button>
+            <button type="button" class="lse-tab lse-step" data-crv-step="members" data-click="crvWizardGo" data-click-args="[&quot;members&quot;]" disabled><span class="lse-step-num">۳</span>اعضا</button>
+            <button type="button" class="lse-tab lse-step" data-crv-step="review" data-click="crvWizardGo" data-click-args="[&quot;review&quot;]" disabled><span class="lse-step-num">۴</span>مرور و ثبت</button>
+          </nav>
+          <button type="button" class="lsv-round" data-click="closeCaravanWizard" title="بستن" aria-label="بستن"><i class="fa-solid fa-xmark"></i></button>
+        </header>
+
+        <form id="caravan-wizard-form" class="lse-form" novalidate data-submit="submitCaravan" data-submit-args="[&quot;$event&quot;]">
+          <div class="lse-body">
+            <div class="crv-pane is-active" data-crv-pane="info">
+              <section class="lse-card">
+                <h4 class="lse-card-title"><i class="fa-solid fa-circle-info"></i> مشخصات کاروان</h4>
+                <div class="lse-grid lse-grid-2">
+                  <label class="lse-field">
+                    <span>نام کاروان <b class="lse-req">*</b></span>
+                    <input type="text" id="cw-name" class="input-ctrl" placeholder="مثال: کاروان ستاره" required>
+                  </label>
+                  <label class="lse-field">
+                    <span>سقف ظرفیت اعضا <small>اختیاری</small></span>
+                    <input type="number" id="cw-capacity" class="input-ctrl" min="1" placeholder="۲۵">
+                  </label>
+                </div>
+                <label class="lse-field">
+                  <span>توضیحات و اهداف</span>
+                  <textarea id="cw-description" class="input-ctrl" rows="4" placeholder="هدف و برنامه این کاروان..."></textarea>
+                </label>
+                <label class="lse-field">
+                  <span>لینک کانال / گروه اجتماعی کاروان <small>اختیاری</small></span>
+                  <input type="text" id="cw-social-link" class="input-ctrl" dir="ltr" placeholder="https://t.me/nopa_caravan">
+                </label>
+              </section>
+            </div>
+
+            <div class="crv-pane" data-crv-pane="mentor">
+              <section class="lse-card">
+                <h4 class="lse-card-title"><i class="fa-solid fa-chalkboard-user"></i> راهبر کاروان <b class="lse-req">*</b></h4>
+                <p class="lse-hint">نام، شماره همراه یا کد راهبر را بنویسید و از فهرست انتخاب کنید.</p>
+                <label class="search-box crv-modal-search"><i class="fa-solid fa-search"></i><input type="text" id="cw-mentor-search" class="input-ctrl" placeholder="جستجوی نام یا موبایل راهبر..." autocomplete="off" aria-label="جستجوی راهبر"></label>
+                <input type="hidden" id="cw-mentor-id">
+                <div id="cw-mentor-picked" class="crv-picked"></div>
+                <div id="cw-mentor-results" class="crv-results"></div>
+              </section>
+            </div>
+
+            <div class="crv-pane" data-crv-pane="members">
+              <section class="lse-card">
+                <div class="lse-card-row">
+                  <h4 class="lse-card-title"><i class="fa-solid fa-users"></i> اعضای کاروان <small class="lsv-col-count" id="cw-pending-count">0</small></h4>
+                  <span class="lse-hint">اختیاری؛ بعداً هم با «+» در صفحه کاروان اضافه می‌شوند</span>
+                </div>
+                <label class="search-box crv-modal-search"><i class="fa-solid fa-search"></i><input type="text" id="cw-student-search" class="input-ctrl" placeholder="نام، موبایل یا کد NP دانش‌آموز..." autocomplete="off" aria-label="جستجوی دانش‌آموز"></label>
+                <div id="cw-student-results" class="crv-results"></div>
+                <ul id="cw-pending-members" class="crv-chips"></ul>
+              </section>
+            </div>
+
+            <div class="crv-pane" data-crv-pane="review">
+              <section class="lse-card">
+                <h4 class="lse-card-title"><i class="fa-solid fa-list-check"></i> مرور کاروان</h4>
+                <dl class="lse-dl" id="cw-review"></dl>
+              </section>
+            </div>
           </div>
+          <footer class="lse-foot">
+            <span class="lse-foot-note" id="cw-foot-note"><i class="fa-solid fa-circle-info"></i> گام ۱ از ۴</span>
+            <div class="lse-foot-actions">
+              <button type="button" class="lse-btn" id="cw-btn-back" data-click="crvWizardStep" data-click-args="[&quot;-1&quot;]"><i class="fa-solid fa-arrow-right"></i> قبلی</button>
+              <button type="button" class="lsv-pill" id="cw-btn-next" data-click="crvWizardStep" data-click-args="[&quot;1&quot;]">بعدی <i class="fa-solid fa-arrow-left"></i></button>
+              <button type="submit" class="lsv-pill" id="cw-btn-submit"><i class="fa-solid fa-check"></i> ایجاد کاروان</button>
+            </div>
+          </footer>
         </form>
       </div>
     </div>
@@ -3034,99 +3076,93 @@
     </div>
   </div>
 
-  <!-- Add Member To Caravan Modal -->
-  <div id="add-member-to-caravan-modal" class="modal-overlay u-z-z-mobile-nav" data-style="display:none">
-    <div class="modal-content glass u-maxw-600 u-w-90p u-p-24 u-r-16 u-bg-surface-2 u-bd-fg-10">
-      <div class="u-flex u-justify-between u-items-center u-mb-20">
-        <h3 class="u-c-text u-fs-md u-bold u-m-0"><i class="fa-solid fa-user-plus u-c-success-text"></i> افزودن عضو جدید به کاروان</h3>
-        <button aria-label="بستن" type="button" class="modal-close" data-click="closeAddMemberToCaravanModal">&times;</button>
-      </div>
-
-      <div class="form-group u-mb-16">
-        <label for="modal-add-member-caravan-picker" class="u-block u-c-text-muted u-fs-xs u-mb-6">انتخاب کاروان مقصد:</label>
-        <select id="modal-add-member-caravan-picker" class="select-ctrl u-w-full u-p-10-14 u-bg-surface u-bd-border-strong u-r-8 u-c-text u-fs-sm u-bold">
-          <option value="">-- انتخاب کاروان --</option>
-        </select>
-      </div>
-
-      <div class="form-group u-mb-12">
-        <label for="input-search-candidate-member" class="u-block u-c-text-muted u-fs-xs u-mb-6">جستجوی دانش‌آموز (نام، شماره تماس یا شناسه):</label>
-        <input type="text" id="input-search-candidate-member" class="input-ctrl u-w-full u-p-10-14 u-bg-surface u-bd-border-strong u-r-8 u-c-text u-fs-sm" placeholder="نام، شماره همراه یا شناسه دانش‌آموز..." data-input="searchCandidateMembers" data-input-args="[&quot;$value&quot;]">
-      </div>
-
-      <div class="u-flex u-justify-between u-items-center u-mb-10 u-fs-xs">
-        <span class="u-c-text-soft u-fw-600"><i class="fa-solid fa-graduation-cap u-c-primary-text"></i> لیست دانش‌آموزان:</span>
-        <label class="u-flex u-items-center u-gap-6 u-pointer u-c-text-muted u-fs-2xs">
+  <!-- Add Member To Caravan Modal (station-editor look: css/stations.css .lse-*) -->
+  <div id="add-member-to-caravan-modal" class="modal-overlay lse-overlay u-z-z-mobile-nav" data-style="display:none">
+    <div class="lse lse-sm crv-modal-tall">
+      <header class="lse-head lse-head-plain">
+        <div class="lse-id">
+          <span class="lse-id-icon is-accent"><i class="fa-solid fa-user-plus"></i></span>
+          <div class="lse-id-text"><h3>افزودن عضو به کاروان</h3><span>دانش‌آموزان را علامت بزنید و یک‌جا اضافه کنید</span></div>
+        </div>
+        <button type="button" class="lsv-round" data-click="closeAddMemberToCaravanModal" title="بستن" aria-label="بستن"><i class="fa-solid fa-xmark"></i></button>
+      </header>
+      <div class="lse-body">
+        <label class="lse-field">
+          <span>کاروان مقصد</span>
+          <select id="modal-add-member-caravan-picker" class="select-ctrl">
+            <option value="">-- انتخاب کاروان --</option>
+          </select>
+        </label>
+        <label class="search-box crv-modal-search"><i class="fa-solid fa-search"></i><input type="text" id="input-search-candidate-member" class="input-ctrl" placeholder="نام، شماره همراه یا شناسه دانش‌آموز..." aria-label="جستجوی دانش‌آموز" data-input="searchCandidateMembers" data-input-args="[&quot;$value&quot;]"></label>
+        <label class="crv-check">
           <input type="checkbox" id="chk-candidate-unassigned-only" checked data-change="searchCandidateMembersFromInput">
           فقط دانش‌آموزان بدون کاروان
         </label>
-      </div>
-
-      <div id="candidate-members-list" class="u-maxh-240 u-scroll-y u-bg-shade-20 u-r-8 u-p-8 u-mb-16 u-bd-fg-5">
-        <p class="u-text-center u-c-text-faint u-fs-xs u-m-10-0">در حال بارگذاری دانش‌آموزان...</p>
-      </div>
-
-      <div class="u-flex u-justify-between u-items-center u-bt-fg-10 u-pt-16">
-        <div class="u-bg-success-20 u-c-success-text u-p-6-12 u-r-12 u-fs-xs u-bold">
-          تعداد انتخاب شده: <span id="add-member-selected-count">0</span> نفر
-        </div>
-        <div class="u-flex u-gap-10">
-          <button type="button" data-click="closeAddMemberToCaravanModal" class="btn-action u-p-8-16 u-fs-sm u-bold u-r-8 u-pointer">
-            انصراف
-          </button>
-          <button type="button" data-click="confirmBulkAddUsersToCaravan" class="btn-primary u-bg-success u-c-white u-p-8-16 u-fs-sm u-bold u-r-8 u-bd-none u-pointer">
-            افزودن افراد انتخاب‌شده به کاروان
-          </button>
+        <div id="candidate-members-list" class="crv-results crv-results-tall">
+          <div class="lse-empty lse-empty-sm">در حال بارگذاری دانش‌آموزان...</div>
         </div>
       </div>
+      <footer class="lse-foot">
+        <span class="lse-foot-note"><i class="fa-solid fa-user-check"></i> انتخاب‌شده: <strong id="add-member-selected-count">0</strong> نفر</span>
+        <div class="lse-foot-actions">
+          <button type="button" class="lse-btn" data-click="closeAddMemberToCaravanModal">انصراف</button>
+          <button type="button" class="lsv-pill" data-click="confirmBulkAddUsersToCaravan"><i class="fa-solid fa-check"></i> افزودن به کاروان</button>
+        </div>
+      </footer>
     </div>
   </div>
 
   <!-- Rename Caravan Modal (تغییر نام کاروان) -->
-  <div id="rename-caravan-modal" class="modal-overlay u-z-z-mobile-nav" data-style="display:none">
-    <div class="modal-content glass u-maxw-440 u-w-90p u-p-24 u-r-16 u-bg-surface-2 u-bd-success-35 u-shadow-pop-lg">
-      <div class="u-flex u-justify-between u-items-center u-mb-20 u-bb-fg-8 u-pb-12">
-        <h3 class="u-c-text u-fs-md u-bold u-m-0 u-flex u-items-center u-gap-8">
-          <i class="fa-solid fa-pen-to-square u-c-success-text"></i> ویرایش و تغییر نام کاروان
-        </h3>
-        <button aria-label="بستن" type="button" class="modal-close" data-click="closeRenameCaravanModal">&times;</button>
+  <div id="rename-caravan-modal" class="modal-overlay lse-overlay u-z-z-mobile-nav" data-style="display:none">
+    <div class="lse lse-sm">
+      <header class="lse-head lse-head-plain">
+        <div class="lse-id">
+          <span class="lse-id-icon is-accent"><i class="fa-solid fa-pen"></i></span>
+          <div class="lse-id-text"><h3>تغییر نام کاروان</h3><span>نام تازه در اپ و پنل نمایش داده می‌شود</span></div>
+        </div>
+        <button type="button" class="lsv-round" data-click="closeRenameCaravanModal" title="بستن" aria-label="بستن"><i class="fa-solid fa-xmark"></i></button>
+      </header>
+      <div class="lse-body">
+        <input type="hidden" id="rename-caravan-id" value="">
+        <label class="lse-field">
+          <span>نام جدید کاروان <b class="lse-req">*</b></span>
+          <input type="text" id="rename-caravan-name-input" class="input-ctrl" placeholder="نام کاروان را وارد کنید..." data-keydown="NopaActions.onEnter" data-keydown-args="[&quot;$event&quot;,&quot;saveNewCaravanName&quot;]">
+        </label>
       </div>
-      <input type="hidden" id="rename-caravan-id" value="">
-      <div class="form-group u-mb-16">
-        <label for="rename-caravan-name-input" class="u-block u-c-text-muted u-fs-sm u-mb-8">نام جدید کاروان:</label>
-        <input type="text" id="rename-caravan-name-input" class="input-ctrl u-w-full u-border-box u-p-10-14 u-bg-surface u-bd-border-strong u-r-8 u-c-text u-fs-base u-bold" placeholder="نام کاروان را وارد کنید..." data-keydown="NopaActions.onEnter" data-keydown-args="[&quot;$event&quot;,&quot;saveNewCaravanName&quot;]">
-      </div>
-      <div class="u-flex u-justify-end u-gap-10 u-mt-20">
-        <button type="button" data-click="closeRenameCaravanModal" class="btn-action u-p-8-16 u-fs-sm u-bold u-r-8 u-pointer u-bg-fg-8 u-bd-none u-c-text-soft">
-          انصراف
-        </button>
-        <button type="button" id="btn-save-caravan-name" data-click="saveNewCaravanName" class="btn-primary u-bg-grad-success u-c-white u-p-8-20 u-fs-sm u-bold u-r-8 u-bd-none u-pointer u-inline-flex u-items-center u-gap-6">
-          <i class="fa-solid fa-check"></i> ذخیره نام جدید
-        </button>
-      </div>
+      <footer class="lse-foot">
+        <span class="lse-foot-note"></span>
+        <div class="lse-foot-actions">
+          <button type="button" class="lse-btn" data-click="closeRenameCaravanModal">انصراف</button>
+          <button type="button" id="btn-save-caravan-name" class="lsv-pill" data-click="saveNewCaravanName"><i class="fa-solid fa-check"></i> ذخیره نام جدید</button>
+        </div>
+      </footer>
     </div>
   </div>
 
-  <div id="change-caravan-mentor-modal" class="modal-overlay u-z-z-mobile-nav" data-style="display:none">
-    <div class="modal-content glass u-maxw-420 u-w-90p u-p-24 u-r-16 u-bg-surface-2 u-bd-fg-10">
-      <div class="u-flex u-justify-between u-items-center u-mb-20">
-        <h3 class="u-c-text u-fs-md u-bold u-m-0"><i class="fa-solid fa-user-gear u-c-primary-text"></i> تغییر راهبر کاروان</h3>
-        <button aria-label="بستن" type="button" class="modal-close" data-click="closeChangeCaravanMentorModal">&times;</button>
+  <div id="change-caravan-mentor-modal" class="modal-overlay lse-overlay u-z-z-mobile-nav" data-style="display:none">
+    <div class="lse lse-sm">
+      <header class="lse-head lse-head-plain">
+        <div class="lse-id">
+          <span class="lse-id-icon is-accent"><i class="fa-solid fa-user-pen"></i></span>
+          <div class="lse-id-text"><h3>تغییر راهبر کاروان</h3><span>راهبر جدید به گفتگوها و گزارش‌های کاروان دسترسی می‌گیرد</span></div>
+        </div>
+        <button type="button" class="lsv-round" data-click="closeChangeCaravanMentorModal" title="بستن" aria-label="بستن"><i class="fa-solid fa-xmark"></i></button>
+      </header>
+      <div class="lse-body">
+        <label class="lse-field">
+          <span>راهبر جدید</span>
+          <select id="cw-mentor-select" class="select-ctrl">
+            <option value="">در حال بارگذاری راهبران...</option>
+          </select>
+        </label>
       </div>
-      <div class="form-group u-mb-16">
-        <label for="cw-mentor-select" class="u-block u-c-text-muted u-fs-xs u-mb-6">انتخاب راهبر جدید:</label>
-        <select id="cw-mentor-select" class="select-ctrl u-w-full u-p-10-14 u-bg-surface u-bd-border-strong u-r-8 u-c-text u-fs-sm u-bold">
-          <option value="">در حال بارگذاری راهبران...</option>
-        </select>
-      </div>
-      <div class="u-flex u-justify-end u-gap-10 u-mt-20">
-        <button type="button" data-click="closeChangeCaravanMentorModal" class="btn-action u-p-8-16 u-fs-sm u-bold u-r-8 u-pointer">
-          انصراف
-        </button>
-        <button type="button" data-click="updateCaravanMentor" class="btn-primary u-bg-info u-c-white u-p-8-16 u-fs-sm u-bold u-r-8 u-bd-none u-pointer">
-          ذخیره تغییرات
-        </button>
-      </div>
+      <footer class="lse-foot">
+        <span class="lse-foot-note"></span>
+        <div class="lse-foot-actions">
+          <button type="button" class="lse-btn" data-click="closeChangeCaravanMentorModal">انصراف</button>
+          <button type="button" class="lsv-pill" data-click="updateCaravanMentor"><i class="fa-solid fa-check"></i> ذخیره تغییرات</button>
+        </div>
+      </footer>
     </div>
   </div>
 

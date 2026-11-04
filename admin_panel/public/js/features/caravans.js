@@ -3,133 +3,301 @@
 // load order is set in index.html.
 
 // 4. CARAVANS & MENTORS
-// 4. CARAVANS & MENTORS
+// Like the stations tab: a bento overview of all caravans (#crv-overview-view) and one caravan's page
+// (#caravan-detail-view, see "CARAVAN PAGE" below). Styles: css/stations.css (.lst-*, .lsv-*, .crv-*).
 window.caravansData = [];
+window.crvActiveCaravanId = null;
 
 async function loadCaravansTab() {
+  window.crvSetLoading(true);
   try {
     const res = await request('/api/v1/admin/caravans');
     if (!res.ok) {
       console.warn('Failed to load /api/v1/admin/caravans');
-      return NopaTable.error(document.querySelector('#caravan-performance-table tbody'), 'خطا در دریافت کاروان‌ها');
+      crvShowError('خطا در دریافت کاروان‌ها');
+      return;
     }
     const data = await res.json();
     window.caravansData = Array.isArray(data) ? data : (data.caravans || data.data || []);
-    
+
     // Populate Mentor Filter
     const mentorSelect = document.getElementById('caravan-mentor-filter');
     if (mentorSelect) {
+      const current = mentorSelect.value;
       const mentors = new Set(window.caravansData.map(c => c.mentor?.name || c.mentorName || '-').filter(n => n !== '-'));
-      mentorSelect.innerHTML = '<option value="all">همه مربیان</option>';
-      mentors.forEach(m => {
-        mentorSelect.innerHTML += `<option value="${esc(m)}">${esc(m)}</option>`;
-      });
+      mentorSelect.innerHTML = '<option value="all">همه راهبران</option>' +
+        Array.from(mentors).map(m => `<option value="${esc(m)}">${esc(m)}</option>`).join('');
+      if (current && Array.from(mentorSelect.options).some(o => o.value === current)) mentorSelect.value = current;
     }
 
-    // Populate Caravan Picker
+    // Populate Caravan Picker (the chosen caravan, read by the member / mentor modals)
     const caravanPicker = document.getElementById('target-caravan-picker');
     if (caravanPicker) {
       const currentVal = caravanPicker.value;
-      caravanPicker.innerHTML = '<option value="">-- لطفاً یک کاروان انتخاب کنید --</option>';
-      window.caravansData.forEach(c => {
-        caravanPicker.innerHTML += `<option value="${c.id}">${esc(c.name)}</option>`;
-      });
-      caravanPicker.onchange = window.loadSelectedCaravanDetails;
-      
-      if (currentVal && window.caravansData.some(c => c.id === currentVal)) {
-        caravanPicker.value = currentVal;
-      } else if (!caravanPicker.value && window.caravansData.length > 0) {
-        caravanPicker.value = window.caravansData[0].id;
-      }
-      window.loadSelectedCaravanDetails();
+      caravanPicker.innerHTML = '<option value="">-- لطفاً یک کاروان انتخاب کنید --</option>' +
+        window.caravansData.map(c => `<option value="${esc(c.id)}">${esc(c.name)}</option>`).join('');
+      if (currentVal && window.caravansData.some(c => c.id === currentVal)) caravanPicker.value = currentVal;
     }
 
+    window.crvSetLoading(false);
     renderCaravansTable();
+
+    // The open caravan page follows the new data; a deleted caravan sends it back to the overview
+    if (window.crvActiveCaravanId) {
+      if (window.caravansData.some(c => String(c.id) === String(window.crvActiveCaravanId))) {
+        if (caravanPicker) caravanPicker.value = window.crvActiveCaravanId;
+        window.loadSelectedCaravanDetails();
+      } else {
+        window.closeCaravanView();
+      }
+    }
   } catch (err) {
     console.error('loadCaravansTab error:', err);
-    NopaTable.error(document.querySelector('#caravan-performance-table tbody'), 'خطا در دریافت کاروان‌ها');
+    crvShowError('خطا در دریافت کاروان‌ها');
   }
 }
+window.loadCaravansTab = loadCaravansTab;
+
+function crvShowError(text) {
+  window.crvSetLoading(false);
+  const grid = document.getElementById('crv-bento-caravans');
+  if (grid) grid.innerHTML = `<div class="lst-empty"><i class="fa-solid fa-triangle-exclamation lst-warn"></i> ${esc(text)}</div>`;
+}
+
+// ---- numbers of one caravan (list rows carry their students; details carry wealth) ----
+function crvMembersOf(c) {
+  return c.membersList || c.members || [];
+}
+function crvMemberCount(c) {
+  return c._count?.members ?? (crvMembersOf(c).length || c.memberCount || 0);
+}
+function crvCapacity(c) {
+  return Number(c.capacityLimit ?? c.capacity ?? 25) || 25;
+}
+function crvZarikOf(c) {
+  const members = crvMembersOf(c);
+  if (members.length) return members.reduce((n, m) => n + Number(m.zarikBalance ?? m.zarik ?? 0), 0);
+  return Number(c.assets?.zarik ?? c.totalWealth ?? c.wealth?.zarik ?? 0);
+}
+function crvProgressOf(c) {
+  return Math.round(Number(c.overallProgress ?? c.progress ?? 0)) || 0;
+}
+function crvMentorName(c) {
+  return c.mentor?.name || (c.mentorName && c.mentorName !== 'فاقد راهبر' ? c.mentorName : '');
+}
+function crvArgs(...a) {
+  return esc(JSON.stringify(a.map(String)));
+}
+function crvFa(n) {
+  return Number(n || 0).toLocaleString('fa-IR');
+}
+function crvInitial(name) {
+  return esc(String(name || '؟').trim().charAt(0) || '؟');
+}
+// A round picture (avatar / cover); without one, or when it fails to load, the name's first letter
+function crvAvatar(url, name, cls) {
+  const src = String(url || '').trim();
+  return src
+    ? `<span class="${cls}"><img src="${esc(src)}" alt="" loading="lazy" data-error="lmsImageFallback" data-error-args='["$this", "${crvInitial(name)}"]'></span>`
+    : `<span class="${cls}">${crvInitial(name)}</span>`;
+}
+function crvStatusChip(c) {
+  return c.status === 'suspended'
+    ? '<span class="lst-chip lst-chip-locked"><i class="fa-solid fa-pause"></i> تعلیق‌شده</span>'
+    : '<span class="lst-chip lst-chip-active"><i class="fa-solid fa-circle-check"></i> فعال</span>';
+}
+
+// ==================== OVERVIEW (BENTO) ====================
 
 window.renderCaravansTable = function() {
-  const tbody = document.querySelector('#caravan-performance-table tbody') || document.getElementById('caravans-tbody');
-  if (!tbody) return;
+  const draw = () => crvDrawBento();
+  const overview = document.getElementById('crv-overview-view');
+  if (window.NopaFlip && overview) window.NopaFlip.render(overview, draw); else draw();
+};
 
-  if (!window.caravansData || window.caravansData.length === 0) {
-    NopaTable.empty(tbody, 'هیچ کاروانی یافت نشد.');
-    return;
-  }
-
+function crvDrawBento() {
+  const all = window.caravansData || [];
   const searchQuery = (document.getElementById('caravan-search-input')?.value || '').toLowerCase().trim();
   const sortBy = document.getElementById('caravan-sort-select')?.value || 'newest';
   const mentorFilter = document.getElementById('caravan-mentor-filter')?.value || 'all';
 
-  let filtered = window.caravansData.filter(c => {
-    const mName = c.mentor?.name || c.mentorName || '-';
+  const filtered = all.filter(c => {
+    const mName = crvMentorName(c);
     const cName = c.name || c.title || '';
-    const matchesSearch = !searchQuery || 
-                          cName.toLowerCase().includes(searchQuery) || 
+    const matchesSearch = !searchQuery ||
+                          cName.toLowerCase().includes(searchQuery) ||
                           mName.toLowerCase().includes(searchQuery) ||
                           (c.id && c.id.toLowerCase().includes(searchQuery));
     const matchesMentor = mentorFilter === 'all' || mName === mentorFilter;
     return matchesSearch && matchesMentor;
   });
+  if (sortBy === 'most_members') filtered.sort((a, b) => crvMemberCount(b) - crvMemberCount(a));
+  else if (sortBy === 'highest_zarik') filtered.sort((a, b) => crvZarikOf(b) - crvZarikOf(a));
+  else if (sortBy === 'highest_progress') filtered.sort((a, b) => crvProgressOf(b) - crvProgressOf(a));
 
-  if (sortBy === 'most_members') {
-    filtered.sort((a, b) => (b._count?.members || b.membersList?.length || b.memberCount || 0) - (a._count?.members || a.membersList?.length || a.memberCount || 0));
-  } else if (sortBy === 'highest_zarik') {
-    filtered.sort((a, b) => (b.assets?.zarik || b.totalWealth || b.wealth?.zarik || 0) - (a.assets?.zarik || a.totalWealth || a.wealth?.zarik || 0));
-  } else if (sortBy === 'highest_progress') {
-    filtered.sort((a, b) => (b.overallProgress || b.progress || 0) - (a.overallProgress || a.progress || 0));
+  // ---- all caravans: one card each, then a "new caravan" card ----
+  const grid = document.getElementById('crv-bento-caravans');
+  if (grid) {
+    const cards = filtered.map(c => {
+      const count = crvMemberCount(c);
+      const cap = crvCapacity(c);
+      const fill = Math.min(100, Math.round(count / cap * 100));
+      const mentor = crvMentorName(c);
+      const faces = crvMembersOf(c).slice(0, 4).map(m => crvAvatar(m.avatarUrl, m.name, 'crv-face')).join('');
+      const more = count > 4 ? `<span class="crv-face crv-face-more">+${crvFa(count - 4)}</span>` : '';
+      return `
+        <button type="button" class="crv-card" data-anim-key="cv:${esc(c.id)}" data-click="openCaravanView" data-click-args="${crvArgs(c.id)}" title="ورود به ${esc(c.name || '')}">
+          <span class="crv-card-top">
+            ${crvAvatar(c.coverImageUrl, c.name, 'crv-card-cover')}
+            <span class="crv-card-name"><strong>${esc(c.name || c.title || '')}</strong>${crvStatusChip(c)}</span>
+          </span>
+          <span class="crv-card-mentor">
+            ${crvAvatar(c.mentor?.avatarUrl, mentor || '؟', 'crv-face')}
+            <span>${mentor ? esc(mentor) : '<em>بدون راهبر</em>'}</span>
+          </span>
+          <span class="crv-card-cap">
+            <span>ظرفیت</span><strong>${crvFa(count)} / ${crvFa(cap)}</strong>
+          </span>
+          <span class="lst-bar"><span class="${fill >= 100 ? 'lst-bar-locked' : fill >= 80 ? 'lst-bar-scheduled' : 'lst-bar-active'}" data-style="width:${fill}%"></span></span>
+          <span class="crv-card-foot">
+            <span class="crv-faces">${faces}${more}</span>
+            <span class="crv-card-nums">
+              <span class="u-c-accent-text"><i class="fa-solid fa-coins"></i> ${crvFa(crvZarikOf(c))}</span>
+              <span class="u-c-success-text"><i class="fa-solid fa-route"></i> ${crvFa(crvProgressOf(c))}٪</span>
+            </span>
+          </span>
+        </button>`;
+    });
+    if (!searchQuery && mentorFilter === 'all') {
+      cards.push(`
+        <button type="button" class="crv-card crv-card-add" data-anim-key="cv-add" data-click="openCaravanWizard" title="ساخت کاروان جدید">
+          <span class="lsv-round lsv-round-lg"><i class="fa-solid fa-plus"></i></span>
+          <span>کاروان جدید</span>
+        </button>`);
+    } else if (!filtered.length) {
+      cards.push('<div class="lst-empty" data-anim-key="cv-empty">کاروانی با این مشخصات یافت نشد.</div>');
+    }
+    grid.innerHTML = cards.join('');
+    grid.setAttribute('aria-busy', 'false');
   }
 
-  tbody.innerHTML = '';
-  if (filtered.length === 0) {
-    NopaTable.empty(tbody, 'کاروانی با این مشخصات یافت نشد.');
-    return;
+  // ---- stats ----
+  const totalMembers = all.reduce((n, c) => n + crvMemberCount(c), 0);
+  const totalZarik = all.reduce((n, c) => n + crvZarikOf(c), 0);
+  const avgProgress = all.length ? Math.round(all.reduce((n, c) => n + crvProgressOf(c), 0) / all.length) : 0;
+  const setStat = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = v; };
+  setStat('crv-stat-caravans', crvFa(all.length));
+  setStat('crv-stat-members', crvFa(totalMembers));
+  setStat('crv-stat-zarik', crvFa(totalZarik));
+  setStat('crv-stat-progress', `${crvFa(avgProgress)}٪`);
+
+  // ---- capacity ----
+  const capEl = document.getElementById('crv-bento-capacity');
+  if (capEl) {
+    const counts = { open: 0, near: 0, full: 0 };
+    all.forEach(c => {
+      const r = crvMemberCount(c) / crvCapacity(c);
+      counts[r >= 1 ? 'full' : r >= 0.8 ? 'near' : 'open']++;
+    });
+    const total = all.length || 1;
+    const pct = k => (counts[k] / total * 100).toFixed(1);
+    capEl.innerHTML = `
+      <div class="lst-bar">
+        <span class="lst-bar-active" data-style="width:${pct('open')}%"></span>
+        <span class="lst-bar-scheduled" data-style="width:${pct('near')}%"></span>
+        <span class="lst-bar-locked" data-style="width:${pct('full')}%"></span>
+      </div>
+      <div class="lst-legend">
+        <div class="lst-legend-row"><span><span class="lst-dot lst-dot-active"></span>جای خالی دارد</span><strong>${crvFa(counts.open)}</strong></div>
+        <div class="lst-legend-row"><span><span class="lst-dot lst-dot-scheduled"></span>نزدیک به تکمیل</span><strong>${crvFa(counts.near)}</strong></div>
+        <div class="lst-legend-row"><span><span class="lst-dot lst-dot-locked"></span>تکمیل ظرفیت</span><strong>${crvFa(counts.full)}</strong></div>
+      </div>`;
   }
 
-  filtered.forEach(c => {
-    const memberCount = c._count?.members ?? c.membersList?.length ?? c.memberCount ?? 0;
-    const capacity = c.capacityLimit ?? c.capacity ?? 50;
-    const totalZarik = (c.assets?.zarik ?? c.totalWealth ?? c.wealth?.zarik ?? 0).toLocaleString();
-    const progress = c.overallProgress ?? c.progress ?? 0;
-    const mentorDisplay = c.mentor?.name || c.mentorName || 'بدون راهبر';
+  // ---- richest caravans ----
+  const topEl = document.getElementById('crv-bento-top');
+  if (topEl) {
+    const top = all.slice().sort((a, b) => crvZarikOf(b) - crvZarikOf(a)).slice(0, 4);
+    topEl.innerHTML = top.length
+      ? `<ul class="lst-list">${top.map((c, i) => `
+          <li class="lst-list-item lst-clickable" role="button" tabindex="0" data-click="openCaravanView" data-click-args="${crvArgs(c.id)}">
+            <span class="crv-rank">${crvFa(i + 1)}</span>
+            <span class="lst-grow"><strong>${esc(c.name || '')}</strong></span>
+            <span class="u-c-accent-text"><i class="fa-solid fa-coins"></i> ${crvFa(crvZarikOf(c))}</span>
+          </li>`).join('')}</ul>`
+      : '<div class="lst-empty">هنوز کاروانی ساخته نشده است.</div>';
+  }
 
-    const tr = document.createElement('tr');
-    tr.innerHTML = `
-      <td><strong>${esc(c.name || c.title)}</strong></td>
-      <td><span class="badge badge-student">${esc(mentorDisplay)}</span></td>
-      <td>${memberCount} / ${capacity}</td>
-      <td>
-        <span class="u-c-accent-text"><i class="fa-solid fa-coins"></i> ${totalZarik}</span>
-      </td>
-      <td>
-        <div class="u-flex u-justify-between u-fs-xs u-mb-6">
-          <span>${progress}%</span>
-        </div>
-        <div class="progress-bar-container u-m-0 u-h-6">
-          <div class="progress-bar-fill" data-style="width: ${progress}%"></div>
-        </div>
-      </td>
-      <td>
-        <div class="u-flex u-gap-6 u-wrap">
-          <button class="page-btn btn-view u-p-4-8 u-fs-2xs u-bg-primary u-c-white u-r-6 u-bd-none u-pointer" data-click="selectCaravanForManagement" data-click-args="${esc(JSON.stringify([String(c.id)]))}" title="مشاهده کاروان">
-            <i class="fa-solid fa-eye"></i> مشاهده
-          </button>
-          <button class="page-btn u-p-4-8 u-fs-2xs u-bg-success u-c-white u-r-6 u-bd-none u-pointer" data-click="openRenameCaravanModal" data-click-args="${esc(JSON.stringify([String(c.id), String(c.name || '')]))}" title="تغییر نام کاروان">
-            <i class="fa-solid fa-pen-to-square"></i> تغییر نام
-          </button>
-          <button class="page-btn u-p-4-8 u-fs-2xs u-bg-info u-c-white u-r-6 u-bd-none u-pointer" data-click="openChangeCaravanMentorModalForCaravan" data-click-args="${esc(JSON.stringify([String(c.id)]))}" title="تغییر راهبر">
-            <i class="fa-solid fa-user-gear"></i> تغییر راهبر
-          </button>
-          <button class="page-btn u-p-4-8 u-fs-2xs u-bg-danger u-c-white u-r-6 u-bd-none u-pointer" data-click="deleteCaravanRecord" data-click-args="${esc(JSON.stringify([String(c.id), String(c.name || '')]))}" title="حذف کاروان">
-            <i class="fa-solid fa-trash"></i> حذف
-          </button>
-        </div>
-      </td>
-    `;
-    tbody.appendChild(tr);
+  // ---- mentors ----
+  const mentorsEl = document.getElementById('crv-bento-mentors');
+  if (mentorsEl) {
+    const byMentor = new Map();
+    all.forEach(c => {
+      const name = crvMentorName(c);
+      if (!name) return;
+      const rec = byMentor.get(name) || { caravans: 0, members: 0, avatarUrl: c.mentor?.avatarUrl };
+      rec.caravans++;
+      rec.members += crvMemberCount(c);
+      byMentor.set(name, rec);
+    });
+    const rows = Array.from(byMentor.entries()).sort((a, b) => b[1].members - a[1].members).slice(0, 4);
+    mentorsEl.innerHTML = rows.length
+      ? `<ul class="lst-list">${rows.map(([name, r]) => `
+          <li class="lst-list-item">
+            ${crvAvatar(r.avatarUrl, name, 'lst-avatar')}
+            <span class="lst-grow"><strong>${esc(name)}</strong></span>
+            <span>${crvFa(r.caravans)} کاروان · ${crvFa(r.members)} عضو</span>
+          </li>`).join('')}</ul>`
+      : '<div class="lst-empty">هنوز راهبری به کاروان‌ها تخصیص داده نشده است.</div>';
+  }
+
+  // ---- what needs attention ----
+  const healthEl = document.getElementById('crv-bento-health');
+  if (healthEl) {
+    const issues = [];
+    all.forEach(c => {
+      const problems = [];
+      if (!crvMentorName(c)) problems.push('بدون راهبر');
+      if (!crvMemberCount(c)) problems.push('بدون عضو');
+      else if (crvMemberCount(c) >= crvCapacity(c)) problems.push('ظرفیت تکمیل');
+      if (c.status === 'suspended') problems.push('تعلیق‌شده');
+      if (problems.length) issues.push({ c, problems });
+    });
+    healthEl.innerHTML = issues.length
+      ? `<ul class="lst-list">${issues.slice(0, 5).map(({ c, problems }) => `
+          <li class="lst-list-item lst-clickable" role="button" tabindex="0" data-click="openCaravanView" data-click-args="${crvArgs(c.id)}">
+            <i class="fa-solid fa-triangle-exclamation lst-warn"></i>
+            <span class="lst-grow"><strong>${esc(c.name || '')}</strong>: ${esc(problems.join('، '))}</span>
+          </li>`).join('')}</ul>`
+      : '<div class="lst-empty"><i class="fa-solid fa-circle-check u-c-success-text"></i> همه کاروان‌ها راهبر و عضو دارند.</div>';
+  }
+}
+
+// ==================== LOADING SHIMMER ====================
+// Like the stations tab: a light band sweeps over each bento tile until the caravans arrive. On the first load
+// the tiles hold skeletons; a refresh keeps the current content under the shimmer.
+window.crvSetLoading = function(on) {
+  const overview = document.getElementById('crv-overview-view');
+  if (!overview) return;
+  overview.querySelectorAll('.lst-bento > .lst-tile').forEach(t => t.classList.toggle('is-loading', on));
+  const grid = document.getElementById('crv-bento-caravans');
+  if (grid) grid.setAttribute('aria-busy', on ? 'true' : 'false');
+  if (!on || (window.caravansData || []).length) return;
+
+  if (grid) {
+    grid.innerHTML = Array.from({ length: 6 }, () => `
+      <div class="crv-card lst-skel" aria-hidden="true">
+        <span class="crv-card-top"><span class="crv-card-cover"></span><span class="crv-card-name"><span class="lst-skel-line"></span><span class="lst-skel-line lst-skel-chip"></span></span></span>
+        <span class="lst-skel-line lst-skel-short"></span>
+        <span class="lst-skel-line"></span>
+        <span class="lst-skel-line lst-skel-short"></span>
+      </div>`).join('');
+  }
+  const lines = n => `<div class="lst-skel-lines" aria-hidden="true">${'<span class="lst-skel-row"></span>'.repeat(n)}</div>`;
+  const fill = { 'crv-bento-capacity': lines(3), 'crv-bento-top': lines(3), 'crv-bento-mentors': lines(3), 'crv-bento-health': lines(3) };
+  Object.keys(fill).forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.innerHTML = fill[id];
   });
 };
 
@@ -220,6 +388,7 @@ window.executeRenameCaravan = async function(id, newName) {
       if (typeof window.renderCaravansTable === 'function') {
         window.renderCaravansTable();
       }
+      if (window.crvActiveCaravanId) window.loadSelectedCaravanDetails();
 
       // Update picker dropdown if present
       const picker = document.getElementById('target-caravan-picker');
@@ -238,22 +407,10 @@ window.executeRenameCaravan = async function(id, newName) {
   }
 };
 
-window.selectCaravanForManagement = function(id) {
-  const picker = document.getElementById('target-caravan-picker');
-  if (picker) {
-    picker.value = id;
-    if (window.loadSelectedCaravanDetails) {
-      window.loadSelectedCaravanDetails();
-    }
-    const detailsSection = picker.closest('.panel-card');
-    if (detailsSection) {
-      detailsSection.scrollIntoView({ behavior: NopaMotion.scrollBehavior() });
-    }
-  }
-};
-
 window.openChangeCaravanMentorModalForCaravan = function(id) {
-  window.selectCaravanForManagement(id);
+  // the mentor modal reads the chosen caravan from the picker
+  const picker = document.getElementById('target-caravan-picker');
+  if (picker) picker.value = String(id);
   if (window.openChangeCaravanMentorModal) {
     window.openChangeCaravanMentorModal();
   }
@@ -560,108 +717,263 @@ window.setAccountStatus = async function(userId, status) {
   }
 };
 
-window.loadSelectedCaravanDetails = async function() {
+// ==================== CARAVAN PAGE ====================
+// Like a station page: the caravans as circles in the board's notch, the leader's card linked to the members'
+// card (a "+" row adds members), then the caravan's totals. Switching caravans draws at once from the list
+// data; the leader's card and the totals shimmer until the caravan's details arrive (kept for next time).
+const crvDetailCache = new Map();
+window.crvRenderedCaravanId = null;
+
+// The station page's fade-out; if the animation never finishes (a paused background tab) it still moves on
+function crvFadeOut(el, next) {
+  let done = false;
+  const once = () => { if (!done) { done = true; next(); } };
+  if (typeof lmsFadeOut === 'function') lmsFadeOut(el, once); else once();
+  setTimeout(once, 400);
+}
+
+window.openCaravanView = function(caravanId) {
+  const overview = document.getElementById('crv-overview-view');
   const picker = document.getElementById('target-caravan-picker');
-  if (!picker) return;
-  const cId = picker.value;
-  
-  const mentorEl = document.getElementById('cw-mentor-name');
-  const zarikEl = document.getElementById('caravan-detail-zarik');
-  const derafshEl = document.getElementById('caravan-detail-derafsh');
-  const nokhEl = document.getElementById('caravan-detail-nokh');
-  const farshEl = document.getElementById('caravan-detail-farsh');
-  const milestonesEl = document.getElementById('caravan-detail-milestones');
-  const rosterBody = document.getElementById('caravan-roster-body');
+  window.crvActiveCaravanId = String(caravanId);
+  if (picker) picker.value = String(caravanId);
+  crvFadeOut(overview, () => {
+    window.loadSelectedCaravanDetails();
+    document.getElementById('caravans-tab')?.scrollIntoView({ block: 'start', behavior: NopaMotion.scrollBehavior() });
+  });
+};
 
-  if (!zarikEl || !milestonesEl || !rosterBody) return;
+window.closeCaravanView = function() {
+  const view = document.getElementById('caravan-detail-view');
+  const overview = document.getElementById('crv-overview-view');
+  window.crvActiveCaravanId = null;
+  window.crvRenderedCaravanId = null;
+  crvFadeOut(view, () => {
+    if (window.crvActiveCaravanId) return; // another caravan was opened meanwhile
+    if (view) view.style.display = 'none';
+    if (overview) {
+      overview.style.display = '';
+      if (window.NopaFlip) window.NopaFlip.enter(overview.querySelectorAll(':scope > div:first-child, .lst-bento > .lst-tile'));
+    }
+  });
+};
 
-  if (!cId) {
-    if (mentorEl) mentorEl.innerText = '-';
-    zarikEl.innerHTML = '0 <i class="fa-solid fa-coins"></i>';
-    if (derafshEl) derafshEl.innerHTML = '0 <i class="fa-solid fa-flag"></i>';
-    if (nokhEl) nokhEl.innerHTML = '0 <i class="fa-solid fa-layer-group"></i>';
-    if (farshEl) farshEl.innerHTML = '0 <i class="fa-solid fa-rug"></i>';
-    milestonesEl.innerText = '0%';
-    NopaTable.empty(rosterBody, 'کاروانی انتخاب نشده است.');
-    return;
+window.selectCaravanCircle = function(caravanId) {
+  const picker = document.getElementById('target-caravan-picker');
+  if (picker) picker.value = String(caravanId);
+  window.crvActiveCaravanId = String(caravanId);
+  window.loadSelectedCaravanDetails();
+};
+
+// Old callers (the caravan drawer, other tabs) open a caravan's page through this
+window.selectCaravanForManagement = function(id) {
+  window.openCaravanView(id);
+};
+
+window.openRenameActiveCaravan = function() {
+  const c = (window.caravansData || []).find(x => String(x.id) === String(window.crvActiveCaravanId));
+  if (c) window.openRenameCaravanModal(String(c.id), String(c.name || ''));
+};
+
+window.deleteActiveCaravan = function() {
+  const c = (window.caravansData || []).find(x => String(x.id) === String(window.crvActiveCaravanId));
+  if (c) window.deleteCaravanRecord(String(c.id), String(c.name || ''));
+};
+
+function crvCaravanCircles(selectedId) {
+  return (window.caravansData || []).map(c => {
+    const active = String(c.id) === String(selectedId);
+    return `
+      <button type="button" class="lsv-circle${active ? ' is-active' : ''}" data-anim-key="c:${esc(c.id)}" data-click="selectCaravanCircle" data-click-args="${crvArgs(c.id)}" title="${esc(c.name)}"${active ? ' aria-current="true"' : ''}>
+        <span class="lsv-circle-main">
+          <span class="lsv-circle-img">${c.coverImageUrl ? `<img src="${esc(c.coverImageUrl)}" alt="" loading="lazy" data-error="lmsImageFallback" data-error-args='["$this", "${crvInitial(c.name)}"]'>` : `<span>${crvInitial(c.name)}</span>`}</span>
+          <span class="lsv-circle-badge ${c.status === 'suspended' ? 'lsv-state-locked' : 'lsv-state-active'}">${crvFa(crvMemberCount(c))}</span>
+        </span>
+        <span class="lsv-circle-name"><span>${esc(c.name)}</span></span>
+      </button>`;
+  }).join('') + `
+      <button type="button" class="lsv-circle lsv-circle-add" data-anim-key="c-add" data-click="openCaravanWizard" title="ساخت کاروان جدید" aria-label="ساخت کاروان جدید">
+        <span class="lsv-circle-main">
+          <span class="lsv-circle-img"><i class="fa-solid fa-plus"></i></span>
+          <span class="lsv-circle-badge lsv-state-add"><i class="fa-solid fa-plus"></i></span>
+        </span>
+        <span class="lsv-circle-name"><span>ساخت کاروان جدید</span></span>
+      </button>`;
+}
+
+// The leader's card; until the details arrive only the name is known and the rest shimmers
+function crvMentorCard(mentor, loading) {
+  if (!mentor || !mentor.name) {
+    return loading
+      ? '<span class="crv-mentor-photo lst-skel-avatar"></span><span class="lst-skel-line"></span><span class="lst-skel-line lst-skel-short"></span>'
+      : `<span class="crv-mentor-photo crv-mentor-none"><i class="fa-solid fa-user-slash"></i></span>
+         <strong class="crv-mentor-name">این کاروان راهبر ندارد</strong>
+         <button type="button" class="lsv-pill" data-click="openChangeCaravanMentorModal"><i class="fa-solid fa-user-plus"></i> تعیین راهبر</button>`;
   }
+  const facts = [
+    mentor.userCode ? `<span><i class="fa-solid fa-hashtag"></i> NP-${esc(mentor.userCode)}</span>` : '',
+    mentor.mentorLevel ? `<span><i class="fa-solid fa-medal"></i> ${esc(mentor.mentorLevel)}</span>` : '',
+    mentor.city ? `<span><i class="fa-solid fa-location-dot"></i> ${esc(mentor.city)}</span>` : '',
+    mentor.academicDegree ? `<span><i class="fa-solid fa-graduation-cap"></i> ${esc(mentor.academicDegree)}</span>` : ''
+  ].filter(Boolean).join('');
+  return `
+    ${crvAvatar(mentor.avatarUrl, mentor.name, 'crv-mentor-photo')}
+    <strong id="cw-mentor-name" class="crv-mentor-name">${esc(mentor.name)}</strong>
+    ${mentor.phoneNumber ? `<span class="crv-mentor-phone" dir="ltr">${esc(mentor.phoneNumber)}</span>` : ''}
+    ${loading
+      ? '<span class="lst-skel-line"></span><span class="lst-skel-line lst-skel-short"></span>'
+      : `${facts ? `<div class="lsv-facts crv-mentor-facts">${facts}</div>` : ''}
+         ${mentor.bio ? `<p class="crv-mentor-bio">${esc(mentor.bio)}</p>` : ''}`}`;
+}
 
-  let caravan = window.caravansData?.find(c => c.id === cId);
-  if (!caravan) {
-    try {
-      const res = await request(`/api/v1/admin/caravans/${cId}`);
-      if (res.ok) caravan = await res.json();
-    } catch (_) {}
-  }
-  if (!caravan) return;
+function crvMemberRow(m, caravanId) {
+  const name = m.name || m.user?.name || '-';
+  const phone = m.phoneNumber || m.user?.phoneNumber || '';
+  const code = m.userCode || m.user?.userCode;
+  const btn = (icon, title, click, a, extra = '') =>
+    `<button type="button" class="lsv-round lsv-round-sm${extra ? ' ' + extra : ''}" data-click="${click}" data-click-args="${a}" title="${title}" aria-label="${title}"><i class="${icon}"></i></button>`;
+  return `
+    <div class="lsv-row crv-member" data-anim-key="m:${esc(m.id)}">
+      ${crvAvatar(m.avatarUrl || m.user?.avatarUrl, name, 'lsv-row-avatar lsv-row-num')}
+      <span class="lsv-row-text">
+        <strong>${esc(name)}</strong>
+        <span>${code ? `NP-${esc(code)}` : ''}${code && phone ? ' · ' : ''}${phone ? `<bdi dir="ltr">${esc(phone)}</bdi>` : ''}</span>
+      </span>
+      <span class="crv-assets">
+        <span class="u-c-accent-text" title="زریک"><i class="fa-solid fa-coins"></i> ${crvFa(m.zarikBalance ?? m.zarik ?? m.assets?.zarik)}</span>
+        <span class="u-c-primary-text" title="درفش"><i class="fa-solid fa-flag"></i> ${crvFa(m.beyragh ?? m.derafsh ?? m.assets?.beyragh)}</span>
+        <span class="u-c-success-text" title="کلاف"><i class="fa-solid fa-layer-group"></i> ${crvFa(m.nakh ?? m.nokh ?? m.assets?.nakh)}</span>
+        <span class="u-c-primary-text" title="قالیچه"><i class="fa-solid fa-rug"></i> ${crvFa(m.farsh ?? m.assets?.farsh)}</span>
+      </span>
+      <span class="lsv-round-group crv-member-tools">
+        ${btn('fa-solid fa-id-card', 'جزئیات', 'viewStudentDetails', crvArgs(m.id))}
+        ${btn('fa-solid fa-pen', 'ویرایش', 'openUserModal', crvArgs(m.id, name, m.role || 'student', caravanId))}
+        ${btn('fa-solid fa-user-lock', 'تعلیق', 'setAccountStatus', crvArgs(m.id, 'SUSPENDED'))}
+        ${btn('fa-solid fa-user-minus', 'حذف از کاروان', 'removeMemberFromCaravan', crvArgs(caravanId, m.id, name), 'lsv-round-danger')}
+      </span>
+    </div>`;
+}
 
-  if (mentorEl) {
-    mentorEl.innerText = caravan.mentorName || caravan.mentor?.name || 'فاقد راهبر';
-  }
+// Draws the caravan page; detail = the caravan's details (leader, wealth, progress) or null while they load
+function crvPaint(caravan, detail) {
+  const cId = String(caravan.id);
+  const loading = !detail;
+  const members = crvMembersOf(caravan).length ? crvMembersOf(caravan) : (detail?.membersList || []);
+  const mentor = detail?.mentor || caravan.mentor || null;
+  const set = (id, fn) => { const el = document.getElementById(id); if (el) fn(el); };
 
-  const members = caravan.membersList || caravan.members || [];
+  set('crv-title', el => { el.textContent = caravan.name || 'کاروان'; });
+  set('crv-state', el => { el.innerHTML = crvStatusChip(caravan); });
+  set('crv-sub', el => { el.textContent = `${crvFa(members.length)} / ${crvFa(crvCapacity(caravan))} عضو · راهبر: ${crvMentorName(caravan) || 'ندارد'}`; });
+  set('crv-circles', el => { el.innerHTML = crvCaravanCircles(cId); });
+  set('crv-mentor-card', el => {
+    el.innerHTML = crvMentorCard(mentor, loading);
+    el.classList.toggle('is-loading', loading);
+  });
+  set('crv-members-count', el => { el.textContent = crvFa(members.length); });
+  set('caravan-roster-body', el => {
+    const addRow = `
+      <button type="button" class="lsv-row lsv-row-add crv-member" data-anim-key="m-add" data-click="openAddMemberToCaravanModal" data-click-args="${crvArgs(cId)}">
+        <span class="lsv-row-avatar lsv-row-plus"><i class="fa-solid fa-plus"></i></span>
+        <span class="lsv-row-text"><strong>عضو جدید</strong><span>افزودن دانش‌آموز به «${esc(caravan.name || '')}»</span></span>
+      </button>`;
+    el.innerHTML = (members.length ? members.map(m => crvMemberRow(m, cId)).join('') : '<div class="lsv-col-empty">این کاروان هنوز عضوی ندارد.</div>') + addRow;
+  });
 
-  // Calculate sum of each asset across ALL members of the caravan
-  let sumZarik = 0;
-  let sumBeyragh = 0; // درفش
-  let sumNokh = 0;   // نخ
-  let sumFarsh = 0;  // فرش
-
-  if (members.length > 0) {
+  // The assets column: students' totals; progress comes with the details
+  let sumZarik = 0, sumBeyragh = 0, sumNokh = 0, sumFarsh = 0;
+  if (members.length) {
     members.forEach(m => {
       sumZarik += Number(m.zarikBalance ?? m.zarik ?? m.assets?.zarik ?? 0);
       sumBeyragh += Number(m.beyragh ?? m.derafsh ?? m.assets?.beyragh ?? 0);
       sumNokh += Number(m.nakh ?? m.nokh ?? m.assets?.nakh ?? 0);
       sumFarsh += Number(m.farsh ?? m.assets?.farsh ?? 0);
     });
-  } else if (caravan.wealth || caravan.assets) {
-    const w = caravan.wealth || caravan.assets || {};
+  } else {
+    const w = detail?.wealth || caravan.wealth || caravan.assets || {};
     sumZarik = Number(w.zarik ?? caravan.totalWealth ?? 0);
     sumBeyragh = Number(w.beyragh ?? 0);
     sumNokh = Number(w.nakh ?? w.nokh ?? 0);
     sumFarsh = Number(w.farsh ?? 0);
   }
+  set('caravan-detail-zarik', el => { el.textContent = crvFa(sumZarik); });
+  set('caravan-detail-derafsh', el => { el.textContent = crvFa(sumBeyragh); });
+  set('caravan-detail-nokh', el => { el.textContent = crvFa(sumNokh); });
+  set('caravan-detail-farsh', el => { el.textContent = crvFa(sumFarsh); });
+  set('caravan-detail-milestones', el => { el.textContent = `${crvFa(Math.round(detail?.overallProgress ?? caravan.overallProgress ?? 0))}٪`; });
+  set('crv-totals', el => { el.classList.toggle('is-loading', loading); });
+}
 
-  zarikEl.innerHTML = `${sumZarik.toLocaleString()} <i class="fa-solid fa-coins"></i>`;
-  if (derafshEl) derafshEl.innerHTML = `${sumBeyragh.toLocaleString()} <i class="fa-solid fa-flag"></i>`;
-  if (nokhEl) nokhEl.innerHTML = `${sumNokh.toLocaleString()} <i class="fa-solid fa-layer-group"></i>`;
-  if (farshEl) farshEl.innerHTML = `${sumFarsh.toLocaleString()} <i class="fa-solid fa-rug"></i>`;
+window.loadSelectedCaravanDetails = async function() {
+  const picker = document.getElementById('target-caravan-picker');
+  const view = document.getElementById('caravan-detail-view');
+  const overview = document.getElementById('crv-overview-view');
+  if (!picker || !view) return;
+  // Only the open caravan page is drawn; elsewhere the picker just remembers the chosen caravan
+  if (!window.crvActiveCaravanId) return;
+  if (picker.value) window.crvActiveCaravanId = picker.value;
+  const cId = window.crvActiveCaravanId;
 
-  milestonesEl.innerText = caravan.overallProgress ? `${caravan.overallProgress}%` : '0%';
+  let caravan = (window.caravansData || []).find(c => String(c.id) === String(cId));
+  const cached = crvDetailCache.get(cId) || null;
+  if (!caravan) caravan = cached;
 
-  rosterBody.innerHTML = '';
-  if (members.length === 0) {
-    NopaTable.empty(rosterBody, 'این کاروان عضوی ندارد.');
-  } else {
-    members.forEach(m => {
-      const name = m.name || m.user?.name || '-';
-      const phone = m.phoneNumber || m.user?.phoneNumber || '-';
-      const zarik = Number(m.zarikBalance ?? m.zarik ?? m.assets?.zarik ?? 0).toLocaleString();
-      const beyragh = Number(m.beyragh ?? m.derafsh ?? m.assets?.beyragh ?? 0).toLocaleString();
-      const nokh = Number(m.nakh ?? m.nokh ?? m.assets?.nakh ?? 0).toLocaleString();
-      const farsh = Number(m.farsh ?? m.assets?.farsh ?? 0).toLocaleString();
-      const displayId = m.userCode ? `NP-${m.userCode}` : (m.user?.userCode ? `NP-${m.user?.userCode}` : (m.id || '-'));
-      
-      const tr = document.createElement('tr');
-      tr.innerHTML = `
-        <td class="u-mono u-c-primary-text u-bold">${displayId}</td>
-        <td><strong>${esc(name)}</strong></td>
-        <td class="u-mono" dir="ltr">${esc(phone)}</td>
-        <td class="u-c-accent-text u-bold"><i class="fa-solid fa-coins"></i> ${zarik}</td>
-        <td class="u-c-primary-text u-bold"><i class="fa-solid fa-flag"></i> ${beyragh}</td>
-        <td class="u-c-success-text u-bold"><i class="fa-solid fa-layer-group"></i> ${nokh}</td>
-        <td class="u-c-primary-text u-bold"><i class="fa-solid fa-rug"></i> ${farsh}</td>
-        <td class="u-nowrap u-flex u-gap-6">
-          <button class="btn-action u-bg-info u-c-white u-p-4-8 u-fs-2xs u-r-6 u-pointer" data-click="viewStudentDetails" data-click-args="${esc(JSON.stringify([String(m.id)]))}">جزئیات</button>
-          <button class="btn-action u-bg-primary u-c-white u-p-4-8 u-fs-2xs u-r-6 u-pointer" data-click="openUserModal" data-click-args="${esc(JSON.stringify([String(m.id), String(name), String(m.role || 'student'), String(cId)]))}">ویرایش</button>
-          <button class="btn-action u-bg-accent u-c-white u-p-4-8 u-fs-2xs u-r-6 u-pointer" data-click="setAccountStatus" data-click-args="${esc(JSON.stringify([String(m.id), "SUSPENDED"]))}">تعلیق</button>
-          <button class="btn-action u-bg-danger u-c-white u-p-4-8 u-fs-2xs u-r-6 u-pointer" data-click="removeMemberFromCaravan" data-click-args="${esc(JSON.stringify([String(cId), String(m.id), String(name)]))}">حذف</button>
-        </td>
-      `;
-      rosterBody.appendChild(tr);
-    });
+  const wasOpen = view.style.display !== 'none';
+  const sameCaravan = wasOpen && window.crvRenderedCaravanId === cId;
+  if (caravan) {
+    window.crvRenderedCaravanId = cId;
+    if (overview) overview.style.display = 'none';
+    view.style.display = 'block';
+    if (sameCaravan && window.NopaFlip) {
+      window.NopaFlip.render(view, () => crvPaint(caravan, cached));
+    } else {
+      crvPaint(caravan, cached);
+      if (window.NopaFlip) {
+        // switching caravans keeps the header and the circles still; opening animates everything in
+        window.NopaFlip.enter(view.querySelectorAll(wasOpen
+          ? '.crv-flow > .lsv-col, .crv-flow > .lsv-link'
+          : '.lsv-head, .lsv-board, .lsv-notch .lsv-circle, .crv-flow > .lsv-col'));
+        const picked = wasOpen && view.querySelector('.lsv-circle.is-active .lsv-circle-img');
+        if (picked && typeof picked.animate === 'function' && !window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+          picked.animate([{ transform: 'scale(0.8)' }, { transform: 'scale(1.12)' }, { transform: 'none' }], { duration: 420, easing: 'cubic-bezier(0.22, 1, 0.36, 1)' });
+        }
+      }
+    }
+    crvFitNotch(view);
   }
+
+  // The caravan's details (leader's full card, progress): always refreshed, drawn when this caravan is still open
+  let detail = null;
+  try {
+    const res = await request(`/api/v1/admin/caravans/${cId}`);
+    if (res.ok) detail = await res.json();
+  } catch (_) {}
+  if (window.crvActiveCaravanId !== cId) return;
+  if (!detail) {
+    if (!caravan) window.closeCaravanView();
+    else document.querySelectorAll('#crv-mentor-card, #crv-totals').forEach(el => el.classList.remove('is-loading'));
+    return;
+  }
+  crvDetailCache.set(cId, detail);
+  if (!caravan) { window.loadSelectedCaravanDetails(); return; }
+  if (window.NopaFlip) window.NopaFlip.render(view, () => crvPaint(caravan, detail)); else crvPaint(caravan, detail);
+  crvFitNotch(view);
 };
+
+function crvFitNotch(view) {
+  if (typeof lmsFitBoardNotch === 'function') lmsFitBoardNotch(view);
+  // Centre the active circle inside the notch only
+  const notch = view.querySelector('.lsv-notch');
+  const activeEl = notch && notch.querySelector('.lsv-circle.is-active');
+  if (activeEl && notch.scrollWidth > notch.clientWidth) {
+    const nr = notch.getBoundingClientRect();
+    const ar = activeEl.getBoundingClientRect();
+    notch.scrollLeft += (ar.left + ar.width / 2) - (nr.left + nr.width / 2);
+  }
+}
+
+// The tab starts in its loading state until the first fetch finishes
+if (!(window.caravansData || []).length) window.crvSetLoading(true);
 
 // ===============================
 // MODULE C: CARAVANS LOGIC
@@ -732,67 +1044,176 @@ window.cancelAssetConversion = async function(id) {
 
 // Removed loadCaravanPerformance logic to loadCaravansTab
 
+// ---- New caravan: steps like the station editor's create mode (info → leader → members → review) ----
 window.pendingCaravanMembers = [];
+const CRV_STEPS = ['info', 'mentor', 'members', 'review'];
+let crvWizardCurrent = 'info';
+let crvWizardMentor = null; // { id, name, code, avatarUrl }
+let crvMentorsCache = null;
+
+function crvWizardValid(step) {
+  if (step === 'info') return Boolean(document.getElementById('cw-name')?.value.trim());
+  if (step === 'mentor') return Boolean(document.getElementById('cw-mentor-id')?.value);
+  return true;
+}
+
+function crvWizardPaint() {
+  const modal = document.getElementById('caravan-wizard-modal');
+  if (!modal) return;
+  const idx = CRV_STEPS.indexOf(crvWizardCurrent);
+  // a step opens once every step before it is complete
+  let reachable = 0;
+  while (reachable < CRV_STEPS.length - 1 && crvWizardValid(CRV_STEPS[reachable])) reachable++;
+  modal.querySelectorAll('[data-crv-step]').forEach(tab => {
+    const i = CRV_STEPS.indexOf(tab.dataset.crvStep);
+    tab.classList.toggle('is-active', i === idx);
+    tab.classList.toggle('is-done', i < idx && crvWizardValid(tab.dataset.crvStep));
+    tab.disabled = i > reachable;
+  });
+  modal.querySelectorAll('[data-crv-pane]').forEach(p => p.classList.toggle('is-active', p.dataset.crvPane === crvWizardCurrent));
+  const back = document.getElementById('cw-btn-back');
+  const next = document.getElementById('cw-btn-next');
+  const submit = document.getElementById('cw-btn-submit');
+  if (back) back.hidden = idx === 0;
+  if (next) next.hidden = idx === CRV_STEPS.length - 1;
+  if (submit) submit.hidden = idx !== CRV_STEPS.length - 1;
+  const note = document.getElementById('cw-foot-note');
+  if (note) note.innerHTML = `<i class="fa-solid fa-circle-info"></i> گام ${crvFa(idx + 1)} از ${crvFa(CRV_STEPS.length)}`;
+  if (crvWizardCurrent === 'review') crvWizardReview();
+}
+
+window.crvWizardGo = function(step) {
+  const target = CRV_STEPS.indexOf(step);
+  if (target < 0) return;
+  for (let i = 0; i < target; i++) {
+    if (!crvWizardValid(CRV_STEPS[i])) {
+      showToast(i === 0 ? 'لطفاً نام کاروان را وارد کنید.' : 'لطفاً یک راهبر انتخاب کنید.', 'error');
+      crvWizardCurrent = CRV_STEPS[i];
+      crvWizardPaint();
+      return;
+    }
+  }
+  crvWizardCurrent = step;
+  crvWizardPaint();
+  const focus = { info: 'cw-name', mentor: 'cw-mentor-search', members: 'cw-student-search' }[step];
+  if (focus) setTimeout(() => document.getElementById(focus)?.focus(), 50);
+};
+
+window.crvWizardStep = function(delta) {
+  const idx = CRV_STEPS.indexOf(crvWizardCurrent) + Number(delta);
+  if (idx >= 0 && idx < CRV_STEPS.length) window.crvWizardGo(CRV_STEPS[idx]);
+};
+
+function crvWizardReview() {
+  const dl = document.getElementById('cw-review');
+  if (!dl) return;
+  const val = id => (document.getElementById(id)?.value || '').trim();
+  const members = window.pendingCaravanMembers;
+  const rows = [
+    ['نام کاروان', esc(val('cw-name'))],
+    ['ظرفیت', val('cw-capacity') ? `${crvFa(val('cw-capacity'))} نفر` : 'پیش‌فرض'],
+    ['راهبر', crvWizardMentor ? esc(crvWizardMentor.name) : '-'],
+    ['اعضا', members.length ? `${crvFa(members.length)} نفر: ${members.map(p => esc(p.name)).join('، ')}` : 'بعداً اضافه می‌شوند'],
+    ['توضیحات', esc(val('cw-description')) || '-'],
+    ['لینک گروه', val('cw-social-link') ? `<bdi dir="ltr">${esc(val('cw-social-link'))}</bdi>` : '-']
+  ];
+  dl.innerHTML = rows.map(([k, v]) => `<dt>${k}</dt><dd>${v}</dd>`).join('');
+}
+
+function crvResultRow(item, kind, picked) {
+  return `
+    <button type="button" class="lse-tree-row crv-result${picked ? ' is-active' : ''}" data-kind="${kind}" data-id="${esc(item.id)}" data-name="${esc(item.name || '')}" data-code="${esc(item.userCode || item.phoneNumber || '')}" data-avatar="${esc(item.avatarUrl || '')}">
+      ${crvAvatar(item.avatarUrl, item.name, 'lse-tree-num crv-result-avatar')}
+      <span class="lse-tree-text"><strong>${esc(item.name || 'بدون نام')}</strong><small>NP-${esc(item.userCode || item.phoneNumber || '-')}</small></span>
+      <i class="fa-solid ${kind === 'mentor' ? 'fa-check' : 'fa-plus'}"></i>
+    </button>`;
+}
+
+function crvPaintPickedMentor() {
+  const box = document.getElementById('cw-mentor-picked');
+  if (!box) return;
+  box.innerHTML = crvWizardMentor ? `
+    <div class="crv-picked-card">
+      ${crvAvatar(crvWizardMentor.avatarUrl, crvWizardMentor.name, 'lst-avatar')}
+      <span class="lse-tree-text"><strong>${esc(crvWizardMentor.name)}</strong><small>NP-${esc(crvWizardMentor.code || '-')}</small></span>
+      <button type="button" class="lsv-round lsv-round-sm lsv-round-danger" data-click="crvWizardClearMentor" title="برداشتن راهبر" aria-label="برداشتن راهبر"><i class="fa-solid fa-xmark"></i></button>
+    </div>` : '';
+}
+
+window.crvWizardClearMentor = function() {
+  crvWizardMentor = null;
+  document.getElementById('cw-mentor-id').value = '';
+  crvPaintPickedMentor();
+  crvWizardPaint();
+};
 
 async function openCaravanWizard() {
   document.getElementById('caravan-wizard-modal').style.display = 'flex';
-  document.getElementById('cw-mentor-search').value = '';
-  document.getElementById('cw-mentor-id').value = '';
-  document.getElementById('cw-student-search').value = '';
+  ['cw-name', 'cw-capacity', 'cw-description', 'cw-social-link', 'cw-mentor-search', 'cw-mentor-id', 'cw-student-search'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.value = '';
+  });
   document.getElementById('cw-mentor-results').innerHTML = '';
   document.getElementById('cw-student-results').innerHTML = '';
-  
+  crvWizardMentor = null;
+  crvMentorsCache = null;
+  crvPaintPickedMentor();
+
   window.pendingCaravanMembers = [];
   renderPendingMembers();
+  crvWizardCurrent = 'info';
+  crvWizardPaint();
+  setTimeout(() => document.getElementById('cw-name')?.focus(), 50);
+
+  document.getElementById('cw-name').oninput = () => crvWizardPaint();
 
   // Mentor search logic
   document.getElementById('cw-mentor-search').oninput = async (e) => {
     const q = e.target.value.trim();
-    if(q.length < 2) return document.getElementById('cw-mentor-results').innerHTML = '';
-    const res = await request(`/api/v1/admin/mentors`);
-    const allMentors = await res.json();
-    const filtered = allMentors.filter(m => m.name.includes(q) || (m.phoneNumber && m.phoneNumber.includes(q)) || (m.userCode && m.userCode.toString() === q));
-    const html = filtered.map(m => `
-      <div class="mentor-result-item u-p-10 u-pointer u-bb-border" data-id="${m.id}" data-name="${esc(m.name)}">
-        <strong>${esc(m.name)}</strong> - NP-${esc(m.userCode || m.phoneNumber)}
-      </div>
-    `).join('');
-    document.getElementById('cw-mentor-results').innerHTML = html;
+    const box = document.getElementById('cw-mentor-results');
+    if (q.length < 2) { box.innerHTML = ''; return; }
+    if (!crvMentorsCache) {
+      const res = await request(`/api/v1/admin/mentors`);
+      const data = await res.json();
+      crvMentorsCache = Array.isArray(data) ? data : (data.users || data.mentors || []);
+    }
+    const filtered = crvMentorsCache.filter(m => (m.name || '').includes(q) || (m.phoneNumber && m.phoneNumber.includes(q)) || (m.userCode && m.userCode.toString() === q));
+    box.innerHTML = filtered.length
+      ? filtered.slice(0, 20).map(m => crvResultRow(m, 'mentor', crvWizardMentor && crvWizardMentor.id === m.id)).join('')
+      : '<div class="lse-empty lse-empty-sm">راهبری با این مشخصات یافت نشد</div>';
   };
 
   document.getElementById('cw-mentor-results').onclick = (e) => {
-    const item = e.target.closest('.mentor-result-item');
-    if (item) {
-      document.getElementById('cw-mentor-id').value = item.dataset.id;
-      document.getElementById('cw-mentor-search').value = item.dataset.name;
-      document.getElementById('cw-mentor-results').innerHTML = '';
-    }
+    const item = e.target.closest('.crv-result');
+    if (!item) return;
+    crvWizardMentor = { id: item.dataset.id, name: item.dataset.name, code: item.dataset.code, avatarUrl: item.dataset.avatar };
+    document.getElementById('cw-mentor-id').value = item.dataset.id;
+    document.getElementById('cw-mentor-search').value = '';
+    document.getElementById('cw-mentor-results').innerHTML = '';
+    crvPaintPickedMentor();
+    crvWizardPaint();
   };
 
   // Member search logic
   document.getElementById('cw-student-search').oninput = async (e) => {
     const q = e.target.value.trim();
-    if(q.length < 2) return document.getElementById('cw-student-results').innerHTML = '';
+    const box = document.getElementById('cw-student-results');
+    if (q.length < 2) { box.innerHTML = ''; return; }
     const res = await request(`/api/v1/admin/users?role=student&search=${encodeURIComponent(q)}`);
     const data = await res.json();
-    const students = Array.isArray(data) ? data : data.users;
-    const html = students.filter(s => !window.pendingCaravanMembers.some(p => p.id === s.id)).map(s => `
-      <div class="student-result-item u-p-10 u-pointer u-bb-border u-flex u-justify-between" data-id="${s.id}" data-name="${esc(s.name)}" data-code="${esc(s.userCode || s.phoneNumber)}">
-        <span><strong>${esc(s.name)}</strong> - NP-${esc(s.userCode || s.phoneNumber)}</span>
-        <i class="fa-solid fa-plus text-primary"></i>
-      </div>
-    `).join('');
-    document.getElementById('cw-student-results').innerHTML = html;
+    const students = (Array.isArray(data) ? data : data.users || []).filter(s => !window.pendingCaravanMembers.some(p => p.id === s.id));
+    box.innerHTML = students.length
+      ? students.slice(0, 20).map(s => crvResultRow(s, 'student', false)).join('')
+      : '<div class="lse-empty lse-empty-sm">دانش‌آموزی با این مشخصات یافت نشد</div>';
   };
 
   document.getElementById('cw-student-results').onclick = (e) => {
-    const item = e.target.closest('.student-result-item');
-    if (item) {
-      window.pendingCaravanMembers.push({ id: item.dataset.id, name: item.dataset.name, code: item.dataset.code });
-      document.getElementById('cw-student-search').value = '';
-      document.getElementById('cw-student-results').innerHTML = '';
-      renderPendingMembers();
-    }
+    const item = e.target.closest('.crv-result');
+    if (!item) return;
+    window.pendingCaravanMembers.push({ id: item.dataset.id, name: item.dataset.name, code: item.dataset.code });
+    document.getElementById('cw-student-search').value = '';
+    document.getElementById('cw-student-results').innerHTML = '';
+    renderPendingMembers();
   };
 }
 
@@ -802,11 +1223,11 @@ window.removePendingMember = function(id) {
 };
 
 function renderPendingMembers() {
-  document.getElementById('cw-pending-count').innerText = window.pendingCaravanMembers.length;
+  document.getElementById('cw-pending-count').innerText = crvFa(window.pendingCaravanMembers.length);
   document.getElementById('cw-pending-members').innerHTML = window.pendingCaravanMembers.map(p => `
-    <li class="u-bg-primary-color u-p-4-8 u-r-4 u-fs-xs u-flex u-items-center u-gap-6">
-      ${esc(p.name)} (NP-${p.code})
-      <i role="button" tabindex="0" aria-label="حذف از فهرست" class="fa-solid fa-times u-pointer" data-click="removePendingMember" data-click-args="${esc(JSON.stringify([String(p.id)]))}"></i>
+    <li class="crv-chip">
+      <span>${esc(p.name)} <small>NP-${esc(p.code)}</small></span>
+      <button type="button" class="crv-chip-del" aria-label="حذف از فهرست" title="حذف از فهرست" data-click="removePendingMember" data-click-args="${esc(JSON.stringify([String(p.id)]))}"><i class="fa-solid fa-xmark"></i></button>
     </li>
   `).join('');
 }
@@ -815,15 +1236,20 @@ function closeCaravanWizard() { document.getElementById('caravan-wizard-modal').
 
 async function submitCaravan(e) {
   e.preventDefault();
-  const name = document.getElementById('cw-name').value;
+  // Enter in a field moves to the next step; only the review step creates the caravan
+  if (crvWizardCurrent !== 'review') { window.crvWizardStep(1); return; }
+  const name = document.getElementById('cw-name').value.trim();
   const capacityLimit = document.getElementById('cw-capacity').value;
   const mentorId = document.getElementById('cw-mentor-id').value;
   const description = document.getElementById('cw-description').value;
   const socialGroupLink = document.getElementById('cw-social-link').value;
   const studentIds = window.pendingCaravanMembers.map(s => s.id);
 
-  if(!mentorId) return showToast('لطفاً یک راهبر انتخاب کنید.', 'error');
+  if (!name) return window.crvWizardGo('info');
+  if (!mentorId) return window.crvWizardGo('mentor');
 
+  const submit = document.getElementById('cw-btn-submit');
+  if (submit) submit.disabled = true;
   try {
     const res = await request('/api/v1/admin/caravans', {
       method: 'POST',
@@ -837,7 +1263,12 @@ async function submitCaravan(e) {
       const data = await res.json();
       showToast(data.error || 'خطا در ایجاد کاروان', 'error');
     }
-  } catch(err) { console.error(err); }
+  } catch(err) {
+    console.error(err);
+    showToast('خطا در ارتباط با سرور', 'error');
+  } finally {
+    if (submit) submit.disabled = false;
+  }
 }
 
 let currentDrawerCaravanId = null;
@@ -1416,7 +1847,7 @@ window.searchCandidateMembers = async function(query) {
   const container = document.getElementById('candidate-members-list');
   if (!container) return;
 
-  container.innerHTML = '<p class="u-text-center u-c-text-muted u-fs-xs u-m-10-0"><i class="fa-solid fa-spinner fa-spin"></i> در حال بارگذاری دانش‌آموزان...</p>';
+  container.innerHTML = '<div class="lst-skel-lines" aria-hidden="true">' + '<span class="lst-skel-row"></span>'.repeat(4) + '</div>';
 
   try {
     const qStr = query ? query.trim() : '';
@@ -1434,7 +1865,7 @@ window.searchCandidateMembers = async function(query) {
     }
 
     if (students.length === 0) {
-      container.innerHTML = '<p class="u-text-center u-c-danger-text u-fs-xs u-m-10-0">دانش‌آموزی با این مشخصات یافت نشد</p>';
+      container.innerHTML = '<div class="lse-empty lse-empty-sm">دانش‌آموزی با این مشخصات یافت نشد</div>';
       return;
     }
 
@@ -1442,34 +1873,27 @@ window.searchCandidateMembers = async function(query) {
       const hasCaravan = Boolean(u.caravanId || (u.caravanName && u.caravanName !== 'فاقد کاروان' && u.caravanName !== '-'));
       const isChecked = window.selectedCandidateMembers.has(u.id) && !hasCaravan ? 'checked' : '';
 
-      const caravanBadge = hasCaravan 
-        ? `<span class="u-c-danger-text u-fs-2xs u-bg-danger-15 u-bd-danger-30 u-p-2-8 u-r-6 u-inline-flex u-items-center u-gap-4"><i class="fa-solid fa-lock u-fs-2xs"></i> عضو کاروان «${esc(u.caravanName)}» (غیرقابل انتخاب)</span>`
-        : `<span class="u-c-success-text u-fs-2xs u-bg-success-15 u-bd-success-30 u-p-2-8 u-r-6 u-inline-flex u-items-center u-gap-4"><i class="fa-solid fa-check u-fs-2xs"></i> فاقد کاروان (آماده عضویت)</span>`;
+      const caravanBadge = hasCaravan
+        ? `<span class="lst-chip lst-chip-locked"><i class="fa-solid fa-lock"></i> عضو «${esc(u.caravanName)}»</span>`
+        : '<span class="lst-chip lst-chip-active"><i class="fa-solid fa-check"></i> آماده عضویت</span>';
 
       return `
-        <div class="u-flex u-justify-between u-items-center u-p-10-12 u-bb-fg-5 u-fs-sm" data-style="opacity: ${hasCaravan ? '0.6' : '1'}; background: ${hasCaravan ? 'rgb(var(--shade-rgb) / 0.15)' : 'transparent'}">
-          <label class="u-flex u-items-center u-gap-12 u-flex-1 u-m-0" data-style="cursor:${hasCaravan ? 'not-allowed' : 'pointer'}">
-            <input type="checkbox" 
-                   ${hasCaravan ? 'disabled' : `data-change="toggleCandidateSelection" data-change-args="${esc(JSON.stringify(["$this", String(u.id)]))}"`} 
-                   ${isChecked}
-                   data-style="${hasCaravan ? 'cursor:not-allowed; opacity:0.3;' : 'cursor:pointer;'}">
-            <div class="u-flex u-col u-gap-2">
-              <div class="u-flex u-items-center u-gap-8">
-                <strong data-style="color:${hasCaravan ? 'var(--text-muted)' : 'white'};">${esc(u.name || 'بدون نام')}</strong>
-                <span class="u-c-text-muted u-fs-2xs u-mono" dir="ltr">${esc(u.phoneNumber || '-')}</span>
-                <span class="u-c-primary-text u-fs-2xs u-bg-primary-10 u-p-1-6 u-r-4">دانش‌آموز</span>
-              </div>
-              <div class="u-mt-2">
-                ${caravanBadge}
-              </div>
-            </div>
-          </label>
-        </div>
+        <label class="lse-tree-row crv-cand${hasCaravan ? ' is-disabled' : ''}">
+          <input type="checkbox"
+                 ${hasCaravan ? 'disabled' : `data-change="toggleCandidateSelection" data-change-args="${esc(JSON.stringify(["$this", String(u.id)]))}"`}
+                 ${isChecked}>
+          ${crvAvatar(u.avatarUrl, u.name, 'lse-tree-num crv-result-avatar')}
+          <span class="lse-tree-text">
+            <strong>${esc(u.name || 'بدون نام')}</strong>
+            <small dir="ltr">${esc(u.phoneNumber || '-')}</small>
+          </span>
+          ${caravanBadge}
+        </label>
       `;
     }).join('');
   } catch(e) {
     console.error(e);
-    container.innerHTML = '<p class="u-text-center u-c-danger-text u-fs-xs">خطا در جستجو و دریافت لیست دانش‌آموزان</p>';
+    container.innerHTML = '<div class="lse-empty lse-empty-sm"><i class="fa-solid fa-triangle-exclamation lst-warn"></i> خطا در دریافت فهرست دانش‌آموزان</div>';
   }
 };
 

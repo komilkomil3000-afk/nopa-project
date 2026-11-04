@@ -1977,3 +1977,290 @@ body.lse-open #nopa-toast-container { bottom: 92px; }
 .lms-drag-ghost-clip .lse-tree-clip-grip { opacity: 1; }
 /* a session or category being dragged: the part lists fold away so the rows can pass each other */
 body.lms-dragging:not(:has(.lms-drag-ghost-clip)) .lse-tree-clips { display: none; }
+
+/* ---------- Caravans tab (js/features/caravans.js): bento overview + one caravan's page, like the stations tab ---------- */
+/* Overview: filters in the big tile's head, a card per caravan */
+.crv-filters { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; flex: 1; justify-content: flex-end; min-width: 0; }
+.crv-filters .search-box { min-width: 200px; flex: 1; max-width: 320px; }
+.crv-filters .select-ctrl { border-radius: 999px; }
+.crv-card-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 14px; }
+.crv-card {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 14px;
+  min-width: 0;
+  text-align: right;
+  font: inherit;
+  color: var(--app-card-title);
+  cursor: pointer;
+  border: 1.2px solid transparent;
+  border-radius: 22px;
+  background: var(--app-card-fill) padding-box, var(--app-card-stroke) border-box;
+  box-shadow: var(--app-card-shadow);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+.crv-card:hover, .crv-card:focus-visible { transform: translateY(-3px); box-shadow: var(--app-card-shadow-hover); outline: none; }
+.crv-card-top { display: flex; align-items: center; gap: 10px; min-width: 0; }
+.crv-card-cover {
+  width: 48px;
+  height: 48px;
+  flex: 0 0 auto;
+  border-radius: 50%;
+  overflow: hidden;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--brand-gradient);
+  color: var(--on-fill);
+  font-size: 1.2rem;
+  font-weight: 800;
+}
+.crv-card-name { flex: 1; min-width: 0; display: flex; flex-direction: column; align-items: flex-start; gap: 4px; }
+.crv-card-name strong { max-width: 100%; font-size: var(--text-sm, 0.9rem); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.crv-card-mentor { display: flex; align-items: center; gap: 8px; min-width: 0; font-size: var(--text-xs, 0.78rem); color: var(--app-card-muted); }
+.crv-card-mentor > span:last-child { min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.crv-card-mentor em { font-style: normal; color: var(--danger-text); }
+.crv-card-cap { display: flex; justify-content: space-between; font-size: var(--text-2xs, 0.7rem); color: var(--app-card-muted); }
+.crv-card-cap strong { color: var(--app-card-title); }
+.crv-card .lst-bar { height: 6px; }
+.crv-card-foot { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.crv-card-nums { display: inline-flex; gap: 10px; font-size: 11px; font-weight: 700; white-space: nowrap; }
+.crv-faces { display: inline-flex; padding-inline-start: 8px; }
+.crv-face {
+  width: 26px;
+  height: 26px;
+  flex: 0 0 auto;
+  border-radius: 50%;
+  overflow: hidden;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--brand-gradient);
+  color: var(--on-fill);
+  font-size: 10px;
+  font-weight: 800;
+}
+.crv-faces .crv-face { margin-inline-start: -8px; border: 2px solid var(--app-card-image); }
+.crv-face-more { background: rgb(var(--fg-rgb) / 0.12); color: var(--app-card-title); }
+.crv-card-add {
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  min-height: 190px;
+  color: var(--primary-text);
+  font-weight: 700;
+  background: rgb(var(--primary-rgb) / 0.04);
+  border: 2px dashed rgb(var(--primary-rgb) / 0.35);
+  box-shadow: none;
+}
+.crv-card-add .lsv-round-lg { cursor: pointer; }
+.crv-card.lst-skel { min-height: 190px; }
+.crv-card.lst-skel .crv-card-cover { background: var(--app-card-skel); }
+.crv-card.lst-skel .lst-skel-line { flex: 0 0 auto; width: 100%; }
+.crv-card.lst-skel .lst-skel-chip { width: 52px; }
+.crv-card.lst-skel .lst-skel-short { width: 55%; }
+.crv-rank {
+  width: 24px;
+  height: 24px;
+  flex: 0 0 auto;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: rgb(var(--primary-rgb) / 0.15);
+  color: var(--primary-text);
+  font-size: 11px;
+  font-weight: 800;
+}
+
+/* Round pictures drawn as a frame with the image inside (the first letter when there is none) */
+.crv-card-cover img, .crv-face img, .crv-mentor-photo img, .crv-member .lsv-row-avatar img,
+.lst-list-item .lst-avatar img, .crv-picked-card .lst-avatar img, .crv-result-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  border-radius: inherit;
+}
+.crv-member .lsv-row-avatar, .lst-list-item span.lst-avatar, .crv-picked-card span.lst-avatar, .crv-result-avatar { overflow: hidden; }
+
+/* Caravan page: the leader's card (right) linked to the larger members' card */
+.crv-flow { align-items: flex-start; }
+.lsv-col.crv-col-mentor { flex: 0 0 300px; }
+.lsv-col.crv-col-members { flex: 0 1 540px; min-width: 380px; }
+.lsv-col.crv-col-mentor .lsv-col-card, .lsv-col.crv-col-members .lsv-col-card, .lsv-col.crv-col-assets .lsv-col-card { flex: 0 1 auto; }
+.crv-mentor { align-items: center; text-align: center; gap: 8px; padding: 24px 16px; min-height: 300px; }
+.crv-mentor-photo {
+  width: 124px;
+  height: 124px;
+  flex: 0 0 auto;
+  border-radius: 50%;
+  overflow: hidden;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--brand-gradient);
+  color: var(--on-fill);
+  font-size: 2.6rem;
+  font-weight: 800;
+  border: 3px solid var(--surface);
+  box-shadow: 0 0 0 3px rgb(var(--primary-rgb) / 0.45), 0 10px 24px rgb(var(--shade-rgb) / 0.25);
+  margin-bottom: 6px;
+}
+.crv-mentor-none { background: rgb(var(--fg-rgb) / 0.06); color: var(--text-muted); font-size: 2rem; box-shadow: none; }
+.crv-mentor-name { font-size: 1.1rem; color: var(--text); }
+.crv-mentor-phone { font-size: var(--text-xs, 0.78rem); color: var(--text-muted); }
+.crv-mentor-facts { justify-content: center; }
+.crv-mentor-bio {
+  margin: 4px 0 0;
+  font-size: var(--text-xs, 0.78rem);
+  color: var(--text-soft);
+  line-height: 1.8;
+  display: -webkit-box;
+  -webkit-line-clamp: 4;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.crv-mentor .lst-skel-line { flex: 0 0 auto; width: 70%; height: 10px; background: rgb(var(--fg-rgb) / 0.08); }
+.crv-mentor .lst-skel-short { width: 45%; }
+.lst-skel-avatar { background: rgb(var(--fg-rgb) / 0.08); box-shadow: none; }
+/* The link meets the middle of the leader's photo */
+.crv-flow > .lsv-link::before { top: 86px; }
+.crv-flow > .lsv-link::after { top: 83px; }
+.crv-members-list { display: flex; flex-direction: column; gap: 2px; max-height: 620px; overflow-y: auto; scrollbar-width: thin; }
+.crv-member { flex-wrap: wrap; gap: 12px; padding: 10px 8px; }
+.crv-member:not(.lsv-row-add) { cursor: default; }
+.crv-member .lsv-row-avatar { width: 44px; height: 44px; }
+.crv-member .lsv-row-text { flex: 1 1 160px; }
+.crv-member .lsv-row-text strong { font-size: var(--text-sm, 0.9rem); }
+.crv-member .lsv-row-text span { font-size: var(--text-2xs, 0.7rem); }
+.crv-assets { display: inline-flex; gap: 12px; flex-wrap: wrap; font-size: var(--text-2xs, 0.7rem); font-weight: 700; }
+.crv-member-tools { gap: 4px; opacity: 0.55; transition: opacity 0.15s ease; }
+.crv-member:hover .crv-member-tools, .crv-member:focus-within .crv-member-tools { opacity: 1; }
+/* Third column: the caravan's assets and progress, one tile each */
+.lsv-col.crv-col-assets { flex: 1 1 240px; min-width: 220px; }
+.crv-assets-card { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); align-content: start; gap: 8px; padding: 12px; }
+.crv-asset {
+  --tone: var(--primary-rgb);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px;
+  border-radius: 16px;
+  background: rgb(var(--tone) / 0.08);
+  border: 1px solid rgb(var(--tone) / 0.2);
+}
+.crv-asset.is-accent { --tone: var(--accent-rgb); }
+.crv-asset.is-success, .crv-asset.is-progress { --tone: var(--success-rgb); }
+.crv-asset.is-info { --tone: var(--info-rgb); }
+.crv-asset-icon {
+  width: 38px;
+  height: 38px;
+  flex: 0 0 auto;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: rgb(var(--tone) / 0.18);
+  color: rgb(var(--tone));
+}
+.crv-asset-text { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.crv-asset-text small { font-size: var(--text-2xs, 0.7rem); color: var(--text-muted); }
+.crv-asset-text strong { font-size: 1.05rem; font-weight: 800; color: var(--text); }
+.lsv-col-card.is-loading .crv-asset.is-progress strong { color: transparent; background: rgb(var(--fg-rgb) / 0.07); border-radius: 6px; min-width: 48px; }
+#crv-state:empty { display: none; }
+
+/* Loading: the leader's card and the totals shimmer until the caravan's details arrive (same sweep as the tiles) */
+.lsv-col-card.is-loading, .lsv-panel.is-loading { position: relative; overflow: hidden; }
+.lsv-col-card.is-loading::after, .lsv-panel.is-loading::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: linear-gradient(100deg, transparent 20%, rgb(var(--fg-rgb) / 0.07) 50%, transparent 80%);
+  background-size: 200% 100%;
+  animation: lstShimmer 1.2s linear infinite;
+  pointer-events: none;
+}
+@media (prefers-reduced-motion: reduce) {
+  .crv-card { transition: none; }
+  .crv-card:hover { transform: none; }
+  .lsv-col-card.is-loading::after, .lsv-panel.is-loading::after { animation: none; }
+}
+
+/* New caravan wizard and the caravan modals (station-editor look) */
+.lse.crv-wizard { width: min(880px, 100%); height: min(720px, 100%); }
+.crv-pane { display: none; flex-direction: column; gap: 16px; }
+.crv-pane.is-active { display: flex; }
+.crv-wizard .lse-foot-actions > [hidden] { display: none; }
+.crv-modal-search { min-width: 0; width: 100%; }
+.crv-modal-search .input-ctrl { width: 100%; }
+.crv-results { display: flex; flex-direction: column; gap: 2px; max-height: 260px; overflow-y: auto; scrollbar-width: thin; }
+.crv-results:empty { display: none; }
+.crv-results > .crv-result > i { color: var(--primary-text); font-size: 0.8rem; }
+.crv-results-tall { max-height: none; flex: 1; min-height: 220px; padding: 6px; border: 1px solid var(--border); border-radius: 18px; background: var(--surface); }
+.lse.crv-modal-tall { height: min(720px, 100%); }
+.crv-picked-card {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border-radius: 18px;
+  background: rgb(var(--success-rgb) / 0.08);
+  border: 1px solid rgb(var(--success-rgb) / 0.4);
+}
+.crv-picked:empty { display: none; }
+.crv-chips { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 8px; }
+.crv-chips:empty { display: none; }
+.crv-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 6px 4px 12px;
+  border-radius: 999px;
+  background: rgb(var(--primary-rgb) / 0.12);
+  color: var(--text);
+  font-size: var(--text-xs, 0.78rem);
+  font-weight: 600;
+}
+.crv-chip small { color: var(--text-muted); font-weight: 400; }
+.crv-chip-del {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  border: none;
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+.crv-chip-del:hover { background: rgb(var(--danger-rgb) / 0.12); color: var(--danger-text); }
+.crv-check { display: inline-flex; align-items: center; gap: 8px; font-size: var(--text-xs, 0.78rem); color: var(--text-soft); cursor: pointer; }
+.crv-check input, .crv-cand input { width: 18px; height: 18px; accent-color: var(--success); cursor: pointer; }
+.crv-cand .lst-chip { flex: 0 0 auto; }
+.crv-cand.is-disabled { opacity: 0.55; cursor: not-allowed; }
+.crv-cand.is-disabled input { cursor: not-allowed; }
+
+/* Every older dialog follows the station editor too: header with a divider, rounded fields, pill buttons, footer */
+.modal-overlay .modal-content .modal-header { padding-bottom: 14px; margin-bottom: 18px; border-bottom: 1px solid var(--border); }
+.modal-overlay .modal-content .modal-header h3 { margin: 0; font-size: 1.1rem; font-weight: 800; color: var(--text); display: flex; align-items: center; gap: 10px; }
+.modal-overlay .modal-content .input-ctrl,
+.modal-overlay .modal-content .select-ctrl { border-radius: 14px !important; }
+.modal-overlay .modal-content .btn-primary { border-radius: 999px !important; }
+.modal-overlay .modal-content .modal-footer { display: flex; justify-content: flex-end; gap: 8px; border-top: 1px solid var(--border); margin-top: 8px; }
+
+@media (max-width: 1100px) {
+  .lsv-col.crv-col-members { min-width: 320px; }
+  .lsv-col.crv-col-assets { flex-basis: 210px; }
+}
+@media (max-width: 900px) {
+  .crv-flow { flex-direction: column; align-items: stretch; }
+  .lsv-col.crv-col-mentor, .lsv-col.crv-col-members, .lsv-col.crv-col-assets { flex: 0 0 auto; min-width: 0; }
+  .crv-flow > .lsv-link { flex-basis: 24px; }
+  .crv-flow > .lsv-link::before { top: 0; bottom: 0; left: 50%; right: auto; border-top: none; border-left: 1px dashed rgb(var(--primary-rgb) / 0.55); }
+  .crv-flow > .lsv-link::after { top: auto; bottom: -3px; right: calc(50% - 3px); }
+  .crv-filters { justify-content: stretch; }
+}
