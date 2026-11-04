@@ -140,6 +140,7 @@ export async function getMe(req: AuthRequest, res: Response) {
       dateOfBirth: user.dateOfBirth,
       email: user.email,
       city: user.city,
+      slogan: user.slogan,
       mentorDocuments: user.mentorDocuments,
       certificates: user.certificates,
       caravanMembers: caravanMembersList
@@ -192,6 +193,7 @@ export async function completeProfile(req: AuthRequest, res: Response) {
       dateOfBirth: pick('dateOfBirth', user.dateOfBirth),
       email,
       city: pick('city', user.city),
+      ...(req.body?.slogan !== undefined ? { slogan: String(req.body.slogan).trim().slice(0, 30) || null } : {}),
       identityVerified: Boolean(nationalId),
     };
 

@@ -139,9 +139,10 @@ class _ChatTopicInfoScreenState extends State<ChatTopicInfoScreen> {
     }
   }
 
-  Future<void> _saveAndPay() async {
+  /// Saves the chosen statuses and pays the kalaf: of one person ([onlyUserId]) or of everyone not yet paid.
+  Future<void> _saveAndPay({String? onlyUserId}) async {
     final rows = _rows
-        .where((r) => r['paid'] != true)
+        .where((r) => r['paid'] != true && (onlyUserId == null || r['userId'] == onlyUserId))
         .map((r) => {'userId': r['userId'], 'status': _statuses[r['userId']], 'reason': _reasons[r['userId']]?.text})
         .toList();
     setState(() => _busy = true);
@@ -152,7 +153,12 @@ class _ChatTopicInfoScreenState extends State<ChatTopicInfoScreen> {
       AppToast.error(context, saved.error);
       return;
     }
-    await _run('POST', '/chat/topics/$_topicId/pay', done: 'پاداش‌ها پرداخت شد.');
+    await _run(
+      'POST',
+      '/chat/topics/$_topicId/pay',
+      body: onlyUserId == null ? null : {'userIds': [onlyUserId]},
+      done: onlyUserId == null ? 'پاداش‌ها پرداخت شد.' : 'پاداش پرداخت شد.',
+    );
   }
 
   @override
@@ -244,7 +250,7 @@ class _ChatTopicInfoScreenState extends State<ChatTopicInfoScreen> {
         children: [
           if (status == 'open') ChatButton(label: 'بستن چالش', onPressed: _busy ? null : () => _run('POST', '/chat/topics/$_topicId/close', done: 'چالش بسته شد.')),
           if (status == 'closed') ChatButton(label: 'بازکردن دوباره', primary: false, onPressed: _busy ? null : () => _run('POST', '/chat/topics/$_topicId/reopen')),
-          if (status == 'closed' && _rows.isNotEmpty && !_legacy) ChatButton(label: 'تأیید و پرداخت', onPressed: _busy ? null : _saveAndPay),
+          if (_rows.any((r) => r['paid'] != true) && !_legacy) ChatButton(label: 'تأیید و پرداخت همه', onPressed: _busy ? null : () => _saveAndPay()),
           ChatButton(label: 'خروجی', primary: false, onPressed: _export),
         ],
       ),
@@ -253,11 +259,7 @@ class _ChatTopicInfoScreenState extends State<ChatTopicInfoScreen> {
         Padding(
           padding: const EdgeInsets.only(bottom: 10),
           child: Text(
-            status == 'open'
-                ? 'مرحله‌ی ۱: چالش را ببندید. مرحله‌ی ۲: برای هر شرکت‌کننده یکی از وضعیت‌های پرچمدار، فعال، نیمه‌فعال، همراه یا خسته را انتخاب کنید. مرحله‌ی ۳: «تأیید و پرداخت» پاداش‌ها را بر اساس درصد هر وضعیت می‌دهد.'
-                : status == 'closed'
-                    ? 'وضعیت مشارکت هر نفر را انتخاب کنید و «تأیید و پرداخت» را بزنید؛ پاداش هر نفر به درصد وضعیتش داده می‌شود.'
-                    : 'پاداش‌ها پرداخت شده است. برای تغییر، از «اصلاح» کنار هر نفر استفاده کنید.',
+            'برای هر نفر وضعیت مشارکت را انتخاب کنید؛ مقدار کلاف قبل از تأیید روی دکمه‌ی همان نفر نوشته شده است. با «تأیید و پرداخت» همان نفر (یا «تأیید و پرداخت همه») پاداش به حسابش اضافه می‌شود. پس از پرداخت، برای تغییر از «اصلاح» استفاده کنید.',
             style: ChatTheme.caption.copyWith(fontSize: 13),
           ),
         ),
@@ -345,6 +347,10 @@ class _ChatTopicInfoScreenState extends State<ChatTopicInfoScreen> {
             ],
           ),
           if (!paid) TextField(controller: _reasons[id], style: ChatTheme.caption.copyWith(color: ChatTheme.text), decoration: chatField('توضیح برای دانش‌آموز (اختیاری)')),
+          if (!paid && !_legacy) ...[
+            const SizedBox(height: 8),
+            ChatButton(label: 'تأیید و پرداخت $value کلاف', onPressed: _busy ? null : () => _saveAndPay(onlyUserId: id)),
+          ],
         ],
       ),
     );
@@ -583,7 +589,7 @@ class _InterGroupSectionState extends State<InterGroupSection> {
               ),
             ],
           ),
-        if (_tiers.isNotEmpty) ChatButton(label: 'تأیید وضعیت‌ها', onPressed: () => _submit('PUT', '$_base/tiers', {'tiers': _chosen}, 'وضعیت‌ها ثبت شد.')),
+        if (_tiers.isNotEmpty) ChatButton(label: 'تأیید وضعیت‌ها', onPressed: () => _submit('PUT', '$_base/tiers', {'tiers': _chosen}, 'وضعیت‌ها ثبت شد؛ جایزه پس از نهایی شدن رتبه‌بندی پرداخت می‌شود.')),
         const SizedBox(height: 16),
         Text('داوری آثار ناشناس', style: ChatTheme.title),
         if (_works.isEmpty) Text(_judgingNote ?? 'اثری برای داوری وجود ندارد.', style: ChatTheme.caption),

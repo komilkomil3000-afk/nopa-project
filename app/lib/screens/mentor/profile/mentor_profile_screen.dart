@@ -235,6 +235,15 @@ class _ProfileScreenState extends State<MentorProfileScreen> {
                   subtitle,
                   style: AppTypography.bodyMediumMuted,
                 ),
+                if ((user.slogan ?? '').trim().isNotEmpty) ...[
+                  const SizedBox(height: 4),
+                  Text(
+                    user.slogan!.trim(),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: AppTypography.bodyMediumMuted.copyWith(fontStyle: FontStyle.italic),
+                  ),
+                ],
               ],
             ),
           ),

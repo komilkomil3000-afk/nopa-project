@@ -40,6 +40,7 @@ class UserModel {
   final int? userCode;
   final List<dynamic>? mentorDocuments;
   final String? city;
+  final String? slogan;
   final String? caravanId;
   final String? caravanName;
   final String? caravanMentor;
@@ -80,6 +81,7 @@ class UserModel {
     this.userCode,
     this.mentorDocuments,
     this.city,
+    this.slogan,
     this.caravanId,
     this.caravanName,
     this.caravanMentor,
@@ -123,6 +125,7 @@ class UserModel {
     int? userCode,
     List<dynamic>? mentorDocuments,
     String? city,
+    String? slogan,
     String? caravanId,
     String? caravanName,
     String? caravanMentor,
@@ -163,6 +166,7 @@ class UserModel {
       userCode: userCode ?? this.userCode,
       mentorDocuments: mentorDocuments ?? this.mentorDocuments,
       city: city ?? this.city,
+      slogan: slogan ?? this.slogan,
       caravanId: caravanId ?? this.caravanId,
       caravanName: caravanName ?? this.caravanName,
       caravanMentor: caravanMentor ?? this.caravanMentor,
@@ -219,6 +223,7 @@ class UserModel {
       userCode: json['userCode'],
       mentorDocuments: json['mentorDocuments'],
       city: json['city'],
+      slogan: json['slogan'],
       caravanId: json['caravanId'],
       caravanName: json['caravanName'] ?? json['caravan']?['name'] ?? 'فاقد کاروان',
       caravanMentor: json['caravanMentor'] ?? json['caravan']?['mentor']?['name'] ?? 'تعیین نشده',

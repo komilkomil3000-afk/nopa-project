@@ -496,7 +496,7 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
 
   Future<void> _processLoginResponse(dynamic response) async {
     if (response == null) {
-      _showError('ارتباط با سرور برقرار نشد');
+      _showError('ارتباط با سرور برقرار نشد. اگر فیلترشکن شما روشن است، لطفاً آن را خاموش کنید.');
       return;
     }
 

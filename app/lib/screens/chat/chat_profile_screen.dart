@@ -91,6 +91,41 @@ class _ChatSpaceProfileScreenState extends State<ChatSpaceProfileScreen> {
     }
   }
 
+  /// The mentor writes (or clears) the short slogan of the caravan group, 30 characters at most.
+  Future<void> _editSlogan() async {
+    final ctrl = TextEditingController(text: (_profile?['slogan'] ?? '').toString());
+    final value = await showDialog<String>(
+      context: context,
+      builder: (ctx) => Directionality(
+        textDirection: TextDirection.rtl,
+        child: AlertDialog(
+          backgroundColor: ChatTheme.surfaceBottom,
+          title: Text('بیو / شعار گروه', style: ChatTheme.body),
+          content: TextField(
+            controller: ctrl,
+            maxLength: 30,
+            autofocus: true,
+            style: ChatTheme.body,
+            decoration: const InputDecoration(hintText: 'حداکثر ۳۰ کاراکتر'),
+          ),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('انصراف')),
+            TextButton(onPressed: () => Navigator.pop(ctx, ctrl.text.trim()), child: const Text('ذخیره')),
+          ],
+        ),
+      ),
+    );
+    if (value == null) return;
+    final res = await _chat.api('PUT', '/chat/spaces/${widget.spaceId}/slogan', body: {'slogan': value});
+    if (!mounted) return;
+    if (res.ok) {
+      setState(() => _profile = {...?_profile, 'slogan': value});
+      AppToast.success(context, 'شعار گروه ذخیره شد.');
+    } else {
+      AppToast.error(context, res.error.isNotEmpty ? res.error : 'ذخیره شعار انجام نشد.');
+    }
+  }
+
   Future<void> _load() async {
     var profile = await _chat.spaceProfile(widget.spaceId);
     // A server without the profile endpoint yet: what the app already knows of the space and its people
@@ -144,6 +179,7 @@ class _ChatSpaceProfileScreenState extends State<ChatSpaceProfileScreen> {
                 name: profile['title'] ?? space?.title ?? '',
                 subtitle: '${isChannel ? 'تعداد اعضا' : 'تعداد همسفر'} ${memberCount.toString()}نفر    ${online.toString()}نفر آنلاین',
                 rank: (profile['rank'] as num?)?.toInt(),
+                slogan: (profile['slogan'] ?? '').toString().trim(),
               ),
               if (profile['canEditCover'] == true) ...[
                 const SizedBox(height: 14),
@@ -158,6 +194,30 @@ class _ChatSpaceProfileScreenState extends State<ChatSpaceProfileScreen> {
                             : const Icon(Icons.add_a_photo_rounded, color: ChatTheme.lavender, size: 20),
                         const SizedBox(width: 10),
                         Text('تغییر عکس گروه', style: ChatTheme.body.copyWith(color: ChatTheme.lavender, fontSize: 13)),
+                      ]),
+                    ),
+                  ),
+                  const SizedBox(width: 16),
+                  InkWell(
+                    onTap: _editSlogan,
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 6),
+                      child: Row(children: [
+                        const Icon(Icons.edit_note_rounded, color: ChatTheme.lavender, size: 20),
+                        const SizedBox(width: 6),
+                        Text('بیو / شعار', style: ChatTheme.body.copyWith(color: ChatTheme.lavender, fontSize: 13)),
+                      ]),
+                    ),
+                  ),
+                  const SizedBox(width: 16),
+                  InkWell(
+                    onTap: _editSlogan,
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 6),
+                      child: Row(children: [
+                        const Icon(Icons.edit_note_rounded, color: ChatTheme.lavender, size: 20),
+                        const SizedBox(width: 6),
+                        Text('بیو / شعار', style: ChatTheme.body.copyWith(color: ChatTheme.lavender, fontSize: 13)),
                       ]),
                     ),
                   ),
@@ -344,6 +404,7 @@ class _ChatMemberProfileScreenState extends State<ChatMemberProfileScreen> {
                 name: p['name'] ?? '',
                 subtitle: subtitle,
                 rank: isMentor ? null : (p['rank'] as num?)?.toInt(),
+                slogan: (p['slogan'] ?? '').toString().trim(),
               ),
               if (assets != null) ...[
                 const SizedBox(height: 18),
@@ -467,7 +528,8 @@ class _IdentityRow extends StatelessWidget {
   final String subtitle;
   final int? rank;
   final bool online;
-  const _IdentityRow({required this.avatar, required this.name, required this.subtitle, this.rank, this.online = false});
+  final String slogan;
+  const _IdentityRow({required this.avatar, required this.name, required this.subtitle, this.rank, this.online = false, this.slogan = ''});
 
   @override
   Widget build(BuildContext context) {
@@ -486,6 +548,10 @@ class _IdentityRow extends StatelessWidget {
               Text(name, maxLines: 1, overflow: TextOverflow.ellipsis, style: AppTypography.h1),
               const SizedBox(height: 4),
               Text(subtitle, maxLines: 2, style: ChatTheme.caption.copyWith(color: ChatTheme.lavender, fontSize: 11.5, fontWeight: FontWeight.w600)),
+              if (slogan.isNotEmpty) ...[
+                const SizedBox(height: 4),
+                Text(slogan, maxLines: 1, overflow: TextOverflow.ellipsis, style: ChatTheme.caption.copyWith(color: ChatTheme.muted, fontSize: 11.5, fontStyle: FontStyle.italic)),
+              ],
             ],
           ),
         ),

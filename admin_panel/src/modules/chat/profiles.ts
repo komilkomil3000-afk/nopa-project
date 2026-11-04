@@ -49,18 +49,30 @@ export const spaceProfile = handler(async (req, res, actor) => {
   let rank: number | null = null;
   let caravanName: string | null = null;
   let coverImageUrl: string | null = null;
+  let slogan: string | null = null;
   if (space.caravanId) {
-    coverImageUrl = (await prisma.caravan.findUnique({ where: { id: space.caravanId }, select: { coverImageUrl: true } }))?.coverImageUrl || null;
+    const own = await prisma.caravan.findUnique({ where: { id: space.caravanId }, select: { coverImageUrl: true, slogan: true } });
+    coverImageUrl = own?.coverImageUrl || null;
+    slogan = own?.slogan || null;
     const caravans = await prisma.caravan.findMany({ where: { isDeleted: false }, select: { id: true, name: true, groupPoints: true }, orderBy: { groupPoints: 'desc' } });
     const at = caravans.findIndex(c => c.id === space.caravanId);
     if (at >= 0) { rank = at + 1; caravanName = caravans[at].name; }
   }
   const title = space.type === 'caravan' && caravanName ? caravanName : space.title;
   res.json({
-    id: space.id, type: space.type, title, caravanName, coverImageUrl, memberCount, onlineCount, rank, members,
+    id: space.id, type: space.type, title, caravanName, coverImageUrl, slogan, memberCount, onlineCount, rank, members,
     canModerate: canModerate(actor, space),
     canEditCover: canEditCover(actor, space),
   });
+});
+
+/** Sets or clears the slogan of the caravan group (at most 30 characters); the caravan's mentor or an admin. */
+export const setSpaceSlogan = handler(async (req, res, actor) => {
+  const { space } = await requireSpace(actor, req.params.id);
+  if (!canEditCover(actor, space)) throw new ChatError(403, 'فقط راهبر کاروان می‌تواند شعار گروه را تغییر دهد');
+  const slogan = String(req.body?.slogan ?? '').trim().slice(0, 30) || null;
+  await prisma.caravan.update({ where: { id: space.caravanId! }, data: { slogan } });
+  res.json({ slogan });
 });
 
 const COVER_EXTENSIONS = new Set(['.jpg', '.jpeg', '.png', '.webp']);
@@ -120,7 +132,7 @@ export const memberProfile = handler(async (req, res, actor) => {
   }
   const user = await prisma.user.findUnique({
     where: { id: userId },
-    select: { ...PERSON_SELECT, caravanId: true, zarikBalance: true, nakh: true, farsh: true, beyragh: true, levelFrame: true, caravan: { select: { name: true } } },
+    select: { ...PERSON_SELECT, slogan: true, caravanId: true, zarikBalance: true, nakh: true, farsh: true, beyragh: true, levelFrame: true, caravan: { select: { name: true } } },
   });
   if (!user) throw new ChatError(404, 'کاربر یافت نشد');
 
@@ -159,7 +171,7 @@ export const memberProfile = handler(async (req, res, actor) => {
   }
 
   res.json({
-    id: user.id, name: user.name, avatarUrl: user.avatarUrl, role: user.role, gender: user.gender,
+    id: user.id, name: user.name, avatarUrl: user.avatarUrl, role: user.role, gender: user.gender, slogan: user.slogan,
     caravanId: user.caravanId, caravanName: user.caravan?.name ?? null,
     zarik: user.zarikBalance, nakh: user.nakh, farsh: user.farsh, derafsh: user.beyragh, levelFrame: user.levelFrame,
     rank, online: isOnline(user.id), stats,

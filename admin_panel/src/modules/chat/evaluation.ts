@@ -217,14 +217,15 @@ export const saveEvaluation = handler(async (req, res, actor) => {
   if (!moderator) throw new ChatError(403, 'این بخش مخصوص راهبر است');
   await closeIfDue(req.params.id);
   const { topic, rows } = await buildEvaluation(req.params.id);
-  if (topic.status === 'paid') throw new ChatError(400, 'این چالش پرداخت شده است');
   assertPaysKalaf(topic.challenge);
   const range = await rangeOf(topic.challenge);
   const input: any[] = Array.isArray(req.body?.rows) ? req.body.rows : [];
+  const alreadyPaid = new Set((await prisma.challengeEvaluation.findMany({ where: { topicId: topic.id, paidAt: { not: null } }, select: { userId: true } })).map(r => r.userId));
 
   for (const item of input) {
     const row = rows.find(r => r.userId === item.userId);
     if (!row) throw new ChatError(400, 'فقط شرکت‌کنندگان واقعی ارزیابی می‌شوند');
+    if (alreadyPaid.has(item.userId)) continue; // paid rows change only through a correction
     const status = normalizeStatus(item.status);
     if (!status) throw new ChatError(400, 'وضعیت مشارکت همه‌ی افراد را مشخص کنید');
     const finalNakh = shareOf(range.max, status);
@@ -240,16 +241,16 @@ export const saveEvaluation = handler(async (req, res, actor) => {
   res.json({ success: true });
 });
 
-/** Pays every saved row at once. The claim on the status makes a repeated or parallel call do nothing. */
+/** Pays the saved rows: the people in body.userIds, or every unpaid one. Each row is claimed before it is paid, so a repeated or parallel call pays nobody twice. */
 export const payEvaluation = handler(async (req, res, actor) => {
   const { topic, moderator } = await requireTopic(actor, req.params.id);
   if (!moderator) throw new ChatError(403, 'این بخش مخصوص راهبر است');
   if (topic.challenge.category === 'inter_group') throw new ChatError(400, 'جایزه‌ی چالش فراگروهی از مسیر رتبه‌بندی پرداخت می‌شود');
   await closeIfDue(req.params.id);
   assertPaysKalaf(topic.challenge);
-  if (topic.status === 'open') throw new ChatError(400, 'اول چالش را ببندید');
-  const rows = await prisma.challengeEvaluation.findMany({ where: { topicId: topic.id, paidAt: null } });
-  if (rows.length === 0) throw new ChatError(400, 'ارزیابی ثبت‌شده‌ای وجود ندارد');
+  const wanted: string[] | null = Array.isArray(req.body?.userIds) && req.body.userIds.length ? req.body.userIds.map(String) : null;
+  const rows = await prisma.challengeEvaluation.findMany({ where: { topicId: topic.id, paidAt: null, ...(wanted ? { userId: { in: wanted } } : {}) } });
+  if (rows.length === 0) throw new ChatError(400, 'ارزیابی ثبت‌شده‌ای وجود ندارد؛ وضعیت مشارکت را انتخاب و دوباره تأیید کنید');
 
   const space = await prisma.chatSpace.findUnique({ where: { id: topic.spaceId }, select: { caravanId: true } });
   if (isMentorRole(actor.role)) {
@@ -265,9 +266,9 @@ export const payEvaluation = handler(async (req, res, actor) => {
     ? (await prisma.chatMessage.findUnique({ where: { id: topic.finalMessageId }, select: { body: true } }))?.body
     : null;
   await prisma.$transaction(async (tx) => {
-    const claimed = await tx.chatTopic.updateMany({ where: { id: topic.id, status: 'closed' }, data: { status: 'paid' } });
-    if (claimed.count !== 1) throw new ChatError(400, 'این چالش قبلاً پرداخت شده است');
     for (const row of rows) {
+      const claim = await tx.challengeEvaluation.updateMany({ where: { id: row.id, paidAt: null }, data: { paidAt: new Date() } });
+      if (claim.count !== 1) continue; // paid a moment ago by another call
       const existing = await tx.submission.findUnique({ where: { challengeId_studentId: { challengeId: topic.challengeId, studentId: row.userId } } });
       if (existing?.status === 'approved') {
         skipped.push(row.userId); // already paid from the challenge screen
@@ -279,7 +280,6 @@ export const payEvaluation = handler(async (req, res, actor) => {
         create: { challengeId: topic.challengeId, studentId: row.userId, status: 'approved', score: row.finalNakh, mentorFeedback: row.reason, answerText: finalAnswer || 'ارزیابی از گفتگوی چالش' },
       });
       if (row.finalNakh > 0) await creditChallengeReward(tx, { submissionId: submission.id, studentId: row.userId, asset: 'nakh', amount: row.finalNakh, title: topic.challenge.title, actorId: actor.id });
-      await tx.challengeEvaluation.update({ where: { id: row.id }, data: { paidAt: new Date() } });
       await tx.submissionEvent.create({
         data: { submissionId: submission.id, challengeId: topic.challengeId, studentId: row.userId, action: 'approved', feedback: row.reason, score: row.finalNakh, actorId: actor.id, actorName: actor.name },
       });
@@ -288,6 +288,13 @@ export const payEvaluation = handler(async (req, res, actor) => {
       });
     }
   });
+  // The challenge is «paid» once it is closed and everyone who took part has been paid
+  if (topic.status === 'closed') {
+    const { rows: everyone } = await buildEvaluation(topic.id);
+    const unpaid = await prisma.challengeEvaluation.count({ where: { topicId: topic.id, paidAt: null, userId: { notIn: skipped } } });
+    const evaluated = await prisma.challengeEvaluation.count({ where: { topicId: topic.id } });
+    if (unpaid === 0 && evaluated >= everyone.length) await prisma.chatTopic.updateMany({ where: { id: topic.id, status: 'closed' }, data: { status: 'paid' } });
+  }
   await publishUpdate(topic.messageId);
   await publishBotMessage({ spaceId: topic.spaceId, botKey: 'challenge', threadRootId: topic.messageId, body: 'نتیجه‌ی ارزیابی ثبت شد. کارنامه‌ی خود را از کارت چالش ببینید.' });
   res.json({ paid: rows.length - skipped.length, skipped: skipped.length });

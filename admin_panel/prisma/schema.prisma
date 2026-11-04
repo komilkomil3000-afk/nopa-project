@@ -49,6 +49,7 @@ model User {
   // Mentor Demographics & Tangible Assets
   city                           String?
   bio                            String?
+  slogan                         String?  // short line (max 30 chars) shown in chat profiles
   academicDegree                 String?
   academicCertificates           String?
   accountStatus                  String         @default("ACTIVE") // ACTIVE, SUSPENDED, RESTRICTED, PENDING_VERIFICATION
@@ -124,6 +125,7 @@ model Caravan {
 
   description     String?
   coverImageUrl   String?
+  slogan          String?  // short line (max 30 chars), set by the mentor
   targetStationId String?
 
   // Relations

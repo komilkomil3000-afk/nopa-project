@@ -1,3 +1,5 @@
+import 'dart:ui' as ui;
+
 import 'package:crop_your_image/crop_your_image.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart' hide Text;
@@ -27,6 +29,16 @@ class _ChatImageCropScreen extends StatefulWidget {
 class _ChatImageCropScreenState extends State<_ChatImageCropScreen> {
   final CropController _controller = CropController();
   bool _working = false;
+  ui.Image? _decoded;
+  Rect? _area; // the kept part, in the photo's own pixels
+
+  @override
+  void initState() {
+    super.initState();
+    ui.decodeImageFromList(widget.image, (image) {
+      if (mounted) setState(() => _decoded = image);
+    });
+  }
 
   /// Pure Dart (no native plugin): fit within 1024 px and re-encode as JPEG.
   static Uint8List _compact(Uint8List cropped) {
@@ -69,6 +81,10 @@ class _ChatImageCropScreenState extends State<_ChatImageCropScreen> {
                   image: widget.image,
                   controller: _controller,
                   aspectRatio: 1,
+                  interactive: true,
+                  onMoved: (_, imageRect) {
+                    if (mounted) setState(() => _area = imageRect);
+                  },
                   withCircleUi: true,
                   baseColor: Colors.black,
                   maskColor: Colors.black.withValues(alpha: 0.6),
@@ -76,11 +92,25 @@ class _ChatImageCropScreenState extends State<_ChatImageCropScreen> {
                   onCropped: _onCropped,
                 ),
               ),
+              if (_decoded != null && _area != null)
+                Padding(
+                  padding: const EdgeInsets.only(top: 8),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Text('پیش‌نمایش در پروفایل', style: ChatTheme.caption.copyWith(color: Colors.white70)),
+                      const SizedBox(width: 12),
+                      _CropPreview(image: _decoded!, area: _area!, size: 80),
+                      const SizedBox(width: 10),
+                      _CropPreview(image: _decoded!, area: _area!, size: 36),
+                    ],
+                  ),
+                ),
               Padding(
                 padding: const EdgeInsets.fromLTRB(16, 10, 16, 14),
                 child: Column(
                   children: [
-                    Text('قاب را جابه‌جا کنید و گوشه‌هایش را بکشید تا بخش دلخواه انتخاب شود.', style: ChatTheme.caption.copyWith(color: Colors.white70), textAlign: TextAlign.center),
+                    Text('قاب را جابه‌جا کنید، گوشه‌هایش را بکشید یا با دو انگشت عکس را بزرگ و کوچک کنید.', style: ChatTheme.caption.copyWith(color: Colors.white70), textAlign: TextAlign.center),
                     const SizedBox(height: 10),
                     Row(
                       mainAxisAlignment: MainAxisAlignment.center,
@@ -108,4 +138,33 @@ class _ChatImageCropScreenState extends State<_ChatImageCropScreen> {
       ),
     );
   }
+}
+
+/// A round preview of the kept part, the way it will show in the profile.
+class _CropPreview extends StatelessWidget {
+  final ui.Image image;
+  final Rect area;
+  final double size;
+  const _CropPreview({required this.image, required this.area, required this.size});
+
+  @override
+  Widget build(BuildContext context) {
+    return ClipOval(
+      child: SizedBox(width: size, height: size, child: CustomPaint(painter: _CropPreviewPainter(image, area))),
+    );
+  }
+}
+
+class _CropPreviewPainter extends CustomPainter {
+  final ui.Image image;
+  final Rect area;
+  _CropPreviewPainter(this.image, this.area);
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    canvas.drawImageRect(image, area, Offset.zero & size, Paint()..filterQuality = FilterQuality.medium);
+  }
+
+  @override
+  bool shouldRepaint(_CropPreviewPainter old) => old.image != image || old.area != area;
 }

@@ -290,7 +290,7 @@ class _ChatConversationScreenState extends State<ChatConversationScreen> {
     if (!mounted) return false;
     setState(() => _uploading = false);
     if (attachment == null) {
-      AppToast.error(context, 'ارسال فایل انجام نشد. اتصال اینترنت را بررسی کنید و دوباره تلاش کنید.');
+      AppToast.error(context, 'ارسال فایل انجام نشد. اتصال اینترنت را بررسی کنید و دوباره تلاش کنید. اگر فیلترشکن شما روشن است، لطفاً آن را خاموش کنید.');
       return false;
     }
     await _chat.send(spaceId: widget.spaceId, sender: _me(), body: caption.trim(), threadRootId: _threadId, attachments: [attachment]);

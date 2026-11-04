@@ -64,7 +64,7 @@ class CustomDrawer extends StatelessWidget {
       update = await AppUpdateService.check();
     } catch (_) {
       final ctx = navigatorKey.currentContext;
-      if (ctx != null && ctx.mounted) AppToast.error(ctx, 'بررسی نسخه انجام نشد. اتصال اینترنت را بررسی کنید.');
+      if (ctx != null && ctx.mounted) AppToast.error(ctx, 'بررسی نسخه انجام نشد. اتصال اینترنت را بررسی کنید. اگر فیلترشکن شما روشن است، لطفاً آن را خاموش کنید.');
       return;
     }
     final ctx = navigatorKey.currentContext;

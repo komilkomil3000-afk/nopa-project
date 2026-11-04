@@ -37,6 +37,7 @@ class _EditProfileScreenState extends State<StudentEditProfileScreen> {
   late TextEditingController _dobCtrl;
   late TextEditingController _nationalIdCtrl;
   late TextEditingController _addressCtrl;
+  late TextEditingController _sloganCtrl;
 
   // Mentor profile fields
   late TextEditingController _educationCtrl;
@@ -65,6 +66,7 @@ class _EditProfileScreenState extends State<StudentEditProfileScreen> {
     _dobCtrl = TextEditingController(text: widget.user.dateOfBirth ?? '');
     _nationalIdCtrl = TextEditingController(text: widget.user.nationalId ?? '');
     _addressCtrl = TextEditingController(text: widget.user.city ?? '');
+    _sloganCtrl = TextEditingController(text: widget.user.slogan ?? '');
 
     _educationCtrl = TextEditingController(text: 'کارشناسی ارشد مدیریت آموزشی');
     _jobCtrl = TextEditingController(text: 'مدرس و راهبر کاروان');
@@ -81,6 +83,7 @@ class _EditProfileScreenState extends State<StudentEditProfileScreen> {
     _dobCtrl.dispose();
     _nationalIdCtrl.dispose();
     _addressCtrl.dispose();
+    _sloganCtrl.dispose();
     _educationCtrl.dispose();
     _jobCtrl.dispose();
     _resumeCtrl.dispose();
@@ -145,7 +148,7 @@ class _EditProfileScreenState extends State<StudentEditProfileScreen> {
                                   } catch (e) {
                                     setDialogState(() => isUploading = false);
                                     if (context.mounted) {
-                                      AppToast.error(context, 'خطایی رخ داده است. خطا در ارتباط با سرور');
+                                      AppToast.error(context, 'خطایی رخ داده است. خطا در ارتباط با سرور. اگر فیلترشکن شما روشن است، لطفاً آن را خاموش کنید.');
                                     }
                                   }
                                 },
@@ -237,6 +240,7 @@ class _EditProfileScreenState extends State<StudentEditProfileScreen> {
         'dateOfBirth': _dobCtrl.text.trim(),
         'email': email,
         'city': _addressCtrl.text.trim(),
+        'slogan': _sloganCtrl.text.trim(),
       });
       if (saveError != null) {
         if (!mounted) return;
@@ -355,6 +359,14 @@ class _EditProfileScreenState extends State<StudentEditProfileScreen> {
                               ),
                             ),
                           ],
+                        ),
+                        const SizedBox(height: 16),
+
+                        _buildFormField(
+                          label: 'بیو / شعار (حداکثر ۳۰ کاراکتر)',
+                          controller: _sloganCtrl,
+                          hintText: 'یک جمله کوتاه دربارهٔ خودتان',
+                          maxLength: 30,
                         ),
                         const SizedBox(height: 16),
 
@@ -642,6 +654,7 @@ class _EditProfileScreenState extends State<StudentEditProfileScreen> {
     TextInputType keyboardType = TextInputType.text,
     bool readOnly = false,
     VoidCallback? onTap,
+    int? maxLength,
   }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -660,12 +673,14 @@ class _EditProfileScreenState extends State<StudentEditProfileScreen> {
           child: TextField(
             controller: controller,
             keyboardType: keyboardType,
+            maxLength: maxLength,
             readOnly: readOnly || onTap != null,
             onTap: onTap,
             enableInteractiveSelection: !readOnly && onTap == null,
             style: AppTypography.bodyLarge.copyWith(color: readOnly ? const Color(0xFF8E889D) : const Color(0xFFEAE8F8)),
             decoration: InputDecoration(
               isDense: true,
+              counterText: '',
               border: InputBorder.none,
               hintText: hintText,
               hintStyle: AppTypography.bodyMedium.copyWith(color: Colors.white.withValues(alpha: 0.25)),

@@ -56,7 +56,7 @@ class _AvatarPickerBodyState extends State<_AvatarPickerBody> {
       Navigator.of(context).pop();
     } else {
       setState(() => _saving = false);
-      AppToast.error(context, 'ذخیره تصویر انجام نشد. اتصال اینترنت را بررسی کنید.');
+      AppToast.error(context, 'ذخیره تصویر انجام نشد. اتصال اینترنت را بررسی کنید. اگر فیلترشکن شما روشن است، لطفاً آن را خاموش کنید.');
     }
   }
 

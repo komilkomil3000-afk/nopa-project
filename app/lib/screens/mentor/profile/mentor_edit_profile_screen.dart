@@ -34,6 +34,7 @@ class _EditProfileScreenState extends State<MentorEditProfileScreen> {
   late TextEditingController _dobCtrl;
   late TextEditingController _nationalIdCtrl;
   late TextEditingController _addressCtrl;
+  late TextEditingController _sloganCtrl;
 
   // Mentor profile fields
   late TextEditingController _educationCtrl;
@@ -67,6 +68,7 @@ class _EditProfileScreenState extends State<MentorEditProfileScreen> {
     _dobCtrl = TextEditingController(text: widget.user.dateOfBirth ?? '');
     _nationalIdCtrl = TextEditingController(text: widget.user.nationalId ?? '');
     _addressCtrl = TextEditingController(text: widget.user.city ?? '');
+    _sloganCtrl = TextEditingController(text: widget.user.slogan ?? '');
 
     _educationCtrl = TextEditingController(text: 'کارشناسی ارشد مدیریت آموزشی');
     _jobCtrl = TextEditingController(text: 'مدرس و راهبر کاروان');
@@ -85,6 +87,7 @@ class _EditProfileScreenState extends State<MentorEditProfileScreen> {
     _dobCtrl.dispose();
     _nationalIdCtrl.dispose();
     _addressCtrl.dispose();
+    _sloganCtrl.dispose();
     _educationCtrl.dispose();
     _jobCtrl.dispose();
     _resumeCtrl.dispose();
@@ -193,6 +196,7 @@ class _EditProfileScreenState extends State<MentorEditProfileScreen> {
         'nationalId': _nationalIdCtrl.text.trim(),
         'dateOfBirth': _dobCtrl.text.trim(),
         'city': _addressCtrl.text.trim(),
+        'slogan': _sloganCtrl.text.trim(),
       });
       if (saveError != null) {
         if (!mounted) return;
@@ -311,6 +315,14 @@ class _EditProfileScreenState extends State<MentorEditProfileScreen> {
                               ),
                             ),
                           ],
+                        ),
+                        const SizedBox(height: 16),
+
+                        _buildFormField(
+                          label: 'بیو / شعار (حداکثر ۳۰ کاراکتر)',
+                          controller: _sloganCtrl,
+                          hintText: 'یک جمله کوتاه دربارهٔ خودتان',
+                          maxLength: 30,
                         ),
                         const SizedBox(height: 16),
 
@@ -596,6 +608,7 @@ class _EditProfileScreenState extends State<MentorEditProfileScreen> {
     required TextEditingController controller,
     required String hintText,
     TextInputType keyboardType = TextInputType.text,
+    int? maxLength,
   }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -614,9 +627,11 @@ class _EditProfileScreenState extends State<MentorEditProfileScreen> {
           child: TextField(
             controller: controller,
             keyboardType: keyboardType,
+            maxLength: maxLength,
             style: AppTypography.bodyLarge.copyWith(color: Color(0xFFEAE8F8)),
             decoration: InputDecoration(
               isDense: true,
+              counterText: '',
               border: InputBorder.none,
               hintText: hintText,
               hintStyle: AppTypography.bodyMedium.copyWith(color: Colors.white.withValues(alpha: 0.25)),

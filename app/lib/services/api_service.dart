@@ -287,17 +287,17 @@ class HttpApiService {
         await Future.delayed(const Duration(milliseconds: 600));
         return _sendWithAuthRetry(method, url, headers: headers, body: body, checkAuth: checkAuth, retryCount: retryCount + 1);
       }
-      return http.Response(jsonEncode({'error': 'اتصال اینترنت برقرار نیست. لطفاً اتصال خود را بررسی کنید و دوباره تلاش کنید.', 'offline': true}), 503, headers: _jsonUtf8);
+      return http.Response(jsonEncode({'error': 'اتصال اینترنت برقرار نیست. لطفاً اتصال خود را بررسی کنید و دوباره تلاش کنید. اگر فیلترشکن شما روشن است، لطفاً آن را خاموش کنید.', 'offline': true}), 503, headers: _jsonUtf8);
     } on TimeoutException catch (e) {
       debugPrint('⚠️ [HttpApiService] ⏱️ TIMEOUT ($method $url) after ${stopwatch.elapsedMilliseconds}ms: $e');
       if (retryCount < 1) {
         await Future.delayed(const Duration(milliseconds: 600));
         return _sendWithAuthRetry(method, url, headers: headers, body: body, checkAuth: checkAuth, retryCount: retryCount + 1);
       }
-      return http.Response(jsonEncode({'error': 'پاسخی از سرور دریافت نشد. لطفاً دوباره تلاش کنید.', 'timeout': true}), 504, headers: _jsonUtf8);
+      return http.Response(jsonEncode({'error': 'پاسخی از سرور دریافت نشد. لطفاً دوباره تلاش کنید. اگر فیلترشکن شما روشن است، لطفاً آن را خاموش کنید.', 'timeout': true}), 504, headers: _jsonUtf8);
     } catch (e) {
       debugPrint('⚠️ [HttpApiService] ❌ Network exception for $url (${stopwatch.elapsedMilliseconds}ms): $e');
-      return http.Response(jsonEncode({'error': 'ارتباط با سرور برقرار نشد. لطفاً دوباره تلاش کنید.', 'offline': true}), 503, headers: _jsonUtf8);
+      return http.Response(jsonEncode({'error': 'ارتباط با سرور برقرار نشد. لطفاً دوباره تلاش کنید. اگر فیلترشکن شما روشن است، لطفاً آن را خاموش کنید.', 'offline': true}), 503, headers: _jsonUtf8);
     }
   }
 
@@ -579,7 +579,7 @@ class HttpApiService {
       return {
         'status': 'error',
         'success': false,
-        'message': 'خطای ارتباط با سرور. لطفاً اتصال اینترنت خود را بررسی کنید.',
+        'message': 'خطای ارتباط با سرور. لطفاً اتصال اینترنت خود را بررسی کنید. اگر فیلترشکن شما روشن است، لطفاً آن را خاموش کنید.',
       };
     }
   }
@@ -650,7 +650,7 @@ class HttpApiService {
       return {'status': 'error', 'message': data?['message'] ?? data?['error'] ?? 'خطایی رخ داده است'};
     } catch (e) {
       debugPrint('Login error: $e');
-      return {'status': 'error', 'message': 'خطای ارتباط با سرور'};
+      return {'status': 'error', 'message': 'خطای ارتباط با سرور. اگر فیلترشکن شما روشن است، لطفاً آن را خاموش کنید.'};
     }
   }
 
@@ -720,7 +720,7 @@ class HttpApiService {
       return {'status': 'error', 'message': data?['message'] ?? data?['error'] ?? 'خطایی در ثبت‌نام رخ داده است'};
     } catch (e) {
       debugPrint('Register error: $e');
-      return {'status': 'error', 'message': 'خطای ارتباط با سرور'};
+      return {'status': 'error', 'message': 'خطای ارتباط با سرور. اگر فیلترشکن شما روشن است، لطفاً آن را خاموش کنید.'};
     }
   }
 
@@ -780,7 +780,7 @@ class HttpApiService {
       return 'ارسال پیامک انجام نشد (${response.statusCode})';
     } catch (e) {
       debugPrint('requestPasswordResetCode error: $e');
-      return 'ارتباط با سرور برقرار نشد. اتصال اینترنت را بررسی کنید.';
+      return 'ارتباط با سرور برقرار نشد. اتصال اینترنت را بررسی کنید. اگر فیلترشکن شما روشن است، لطفاً آن را خاموش کنید.';
     }
   }
 
@@ -801,7 +801,7 @@ class HttpApiService {
       return 'بررسی رمز عبور انجام نشد (${response.statusCode})';
     } catch (e) {
       debugPrint('verifyCurrentPassword error: $e');
-      return 'ارتباط با سرور برقرار نشد. اتصال اینترنت را بررسی کنید.';
+      return 'ارتباط با سرور برقرار نشد. اتصال اینترنت را بررسی کنید. اگر فیلترشکن شما روشن است، لطفاً آن را خاموش کنید.';
     }
   }
 
@@ -824,7 +824,7 @@ class HttpApiService {
       return 'تغییر رمز عبور انجام نشد (${response.statusCode})';
     } catch (e) {
       debugPrint('setNewPassword error: $e');
-      return 'ارتباط با سرور برقرار نشد. اتصال اینترنت را بررسی کنید.';
+      return 'ارتباط با سرور برقرار نشد. اتصال اینترنت را بررسی کنید. اگر فیلترشکن شما روشن است، لطفاً آن را خاموش کنید.';
     }
   }
 
@@ -844,7 +844,7 @@ class HttpApiService {
       return 'ذخیره اطلاعات انجام نشد (${response.statusCode})';
     } catch (e) {
       debugPrint('completeProfile error: $e');
-      return 'ارتباط با سرور برقرار نشد. اتصال اینترنت را بررسی کنید.';
+      return 'ارتباط با سرور برقرار نشد. اتصال اینترنت را بررسی کنید. اگر فیلترشکن شما روشن است، لطفاً آن را خاموش کنید.';
     }
   }
 
@@ -1016,7 +1016,7 @@ class HttpApiService {
       return (result: null, error: message ?? 'خطای سرور (${response.statusCode})');
     } catch (e) {
       debugPrint('HTTP submitQuizChallengeWithError error: $e');
-      return (result: null, error: 'ارتباط با سرور برقرار نشد.');
+      return (result: null, error: 'ارتباط با سرور برقرار نشد. اگر فیلترشکن شما روشن است، لطفاً آن را خاموش کنید.');
     }
   }
 
@@ -1419,7 +1419,7 @@ class HttpApiService {
       }
     } catch (e) {
       debugPrint('reviewSubmission error: $e');
-      return {'success': false, 'error': 'خطای ارتباط با سرور'};
+      return {'success': false, 'error': 'خطای ارتباط با سرور. اگر فیلترشکن شما روشن است، لطفاً آن را خاموش کنید.'};
     }
   }
 
@@ -1502,7 +1502,7 @@ class HttpApiService {
       return 'ارسال پاسخ با خطا مواجه شد';
     } catch (e) {
       debugPrint('HTTP submitTask error: $e');
-      return 'اتصال اینترنت را بررسی کنید و دوباره تلاش کنید';
+      return 'اتصال اینترنت را بررسی کنید و دوباره تلاش کنید. اگر فیلترشکن شما روشن است، لطفاً آن را خاموش کنید.';
     }
   }
 
@@ -1831,7 +1831,7 @@ class HttpApiService {
       return d?['error']?.toString() ?? 'ثبت چالش انجام نشد';
     } catch (e) {
       debugPrint('HTTP createChallenge error: $e');
-      return 'خطای ارتباط با سرور';
+      return 'خطای ارتباط با سرور. اگر فیلترشکن شما روشن است، لطفاً آن را خاموش کنید.';
     }
   }
 
@@ -1867,7 +1867,7 @@ class HttpApiService {
       return d?['error']?.toString() ?? 'ویرایش چالش انجام نشد';
     } catch (e) {
       debugPrint('HTTP updateChallengeError error: $e');
-      return 'خطای ارتباط با سرور';
+      return 'خطای ارتباط با سرور. اگر فیلترشکن شما روشن است، لطفاً آن را خاموش کنید.';
     }
   }
 
@@ -2278,7 +2278,7 @@ class HttpApiService {
       return _conversionError(response.body);
     } catch (e) {
       debugPrint('submitStudentAssetConversion error: $e');
-      return 'خطا در ارتباط با سرور. لطفاً دوباره تلاش کنید.';
+      return 'خطا در ارتباط با سرور. لطفاً دوباره تلاش کنید. اگر فیلترشکن شما روشن است، لطفاً آن را خاموش کنید.';
     }
   }
 
@@ -2295,7 +2295,7 @@ class HttpApiService {
       return _conversionError(response.body);
     } catch (e) {
       debugPrint('cancelCaravanAssetConversion error: $e');
-      return 'خطا در ارتباط با سرور. لطفاً دوباره تلاش کنید.';
+      return 'خطا در ارتباط با سرور. لطفاً دوباره تلاش کنید. اگر فیلترشکن شما روشن است، لطفاً آن را خاموش کنید.';
     }
   }
 

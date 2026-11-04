@@ -521,7 +521,7 @@ class ChatRepository extends ChangeNotifier {
   /// A call whose result a screen reads itself.
   Future<ChatApiResult> api(String method, String path, {Map<String, dynamic>? body}) async {
     final res = await _api.chatCall(method, path, body: body);
-    if (res == null) return const ChatApiResult(false, null, 'اتصال اینترنت برقرار نیست.');
+    if (res == null) return const ChatApiResult(false, null, 'اتصال اینترنت برقرار نیست. اگر فیلترشکن شما روشن است، لطفاً آن را خاموش کنید.');
     final ok = res.statusCode < 300;
     dynamic data;
     try {

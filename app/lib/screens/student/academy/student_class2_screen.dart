@@ -1581,7 +1581,7 @@ class _Class2ScreenState extends State<StudentClass2Screen> {
                                           if (context.mounted) {
                                             setDialogState(() {
                                               isErrorFeedback = true;
-                                              feedbackMessage = 'ثبت آزمون با خطا مواجه شد. اتصال اینترنت را بررسی کنید و دوباره تلاش کنید.';
+                                              feedbackMessage = 'ثبت آزمون با خطا مواجه شد. اتصال اینترنت را بررسی کنید و دوباره تلاش کنید. اگر فیلترشکن شما روشن است، لطفاً آن را خاموش کنید.';
                                             });
                                           }
                                           return;

@@ -12,6 +12,7 @@ import 'package:nopa_app/screens/chat/chat_theme.dart';
 import 'package:nopa_app/screens/chat/chat_waveform.dart';
 import 'package:nopa_app/screens/chat/chat_widgets.dart';
 import 'package:nopa_app/services/audio_exclusivity_service.dart';
+import 'package:nopa_app/services/chat_downloads.dart';
 import 'package:nopa_app/services/chat_repository.dart';
 import 'package:nopa_app/widgets/app_toast.dart';
 import 'package:nopa_app/widgets/fa_text.dart';
@@ -195,7 +196,7 @@ class _ChatMessageBubbleState extends State<ChatMessageBubble> {
         if (m.replyToId != null) _quote(),
         if (_isSubmission) _submissionBadge(),
         if (_challenge) ..._challengeContent() else ...[
-          for (final attachment in m.attachments) ChatAttachmentView(attachment: attachment, onGold: !_mineLook),
+          for (final attachment in m.attachments) ChatAttachmentView(attachment: attachment, onGold: !_mineLook, own: widget.mine),
           if (m.body.isNotEmpty) _bodyText(),
         ],
         if (m.tags.isNotEmpty || m.best || widget.staffTags.isNotEmpty)
@@ -515,17 +516,97 @@ class _TailPainter extends CustomPainter {
 }
 
 /// A photo, voice or file inside a message. [onGold] draws it for the light, gold bubble.
-class ChatAttachmentView extends StatelessWidget {
+/// Received photos and voices are not fetched on their own: the user taps to download them
+/// ([own] ones, sent by this user, are shown directly).
+class ChatAttachmentView extends StatefulWidget {
   final ChatAttachment attachment;
   final bool onGold;
-  const ChatAttachmentView({super.key, required this.attachment, this.onGold = false});
+  final bool own;
+  const ChatAttachmentView({super.key, required this.attachment, this.onGold = false, this.own = false});
 
+  @override
+  State<ChatAttachmentView> createState() => _ChatAttachmentViewState();
+}
+
+class _ChatAttachmentViewState extends State<ChatAttachmentView> {
+  ChatAttachment get attachment => widget.attachment;
+  bool get onGold => widget.onGold;
   String get _url => ApiConstants.resolveImageUrl(attachment.url);
+  String get _cacheKey => 'chat-${attachment.id}'; // the link changes, the file does not
+
+  @override
+  void initState() {
+    super.initState();
+    ChatDownloads.instance.addListener(_changed);
+    ChatDownloads.instance.load();
+  }
+
+  @override
+  void dispose() {
+    ChatDownloads.instance.removeListener(_changed);
+    super.dispose();
+  }
+
+  void _changed() {
+    if (mounted) setState(() {});
+  }
+
+  Future<void> _download() async {
+    final ok = await ChatDownloads.instance.download(attachment.id, _url, cacheKey: _cacheKey);
+    if (!ok && mounted) {
+      AppToast.error(context, 'دانلود انجام نشد. اتصال اینترنت را بررسی کنید. اگر فیلترشکن شما روشن است، لطفاً آن را خاموش کنید.');
+    }
+  }
+
+  static String _size(int bytes) {
+    if (bytes <= 0) return '';
+    if (bytes < 1024 * 1024) return '${(bytes / 1024).ceil()} KB';
+    return '${(bytes / (1024 * 1024)).toStringAsFixed(1)} MB';
+  }
+
+  bool get _ready => widget.own || ChatDownloads.instance.has(attachment.id);
+
+  Widget _downloadButton(Color color) {
+    final busy = ChatDownloads.instance.isBusy(attachment.id);
+    return GestureDetector(
+      onTap: busy ? null : _download,
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          SizedBox(
+            width: 34,
+            height: 34,
+            child: busy
+                ? Padding(padding: const EdgeInsets.all(7), child: CircularProgressIndicator(strokeWidth: 2.4, color: color))
+                : Icon(Icons.download_for_offline_rounded, color: color, size: 30),
+          ),
+          const SizedBox(width: 6),
+          Text(_size(attachment.size), style: ChatTheme.caption.copyWith(color: color)),
+        ],
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
+    final color = onGold ? ChatTheme.goldTitle : ChatTheme.accent;
     switch (attachment.kind) {
       case 'image':
+        if (!_ready) {
+          return Padding(
+            padding: const EdgeInsets.only(bottom: 4),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(ChatTheme.radius),
+              child: Container(
+                height: 150,
+                width: 190,
+                color: color.withValues(alpha: 0.12),
+                alignment: Alignment.center,
+                child: _downloadButton(color),
+              ),
+            ),
+          );
+        }
         return Padding(
           padding: const EdgeInsets.only(bottom: 4),
           child: ClipRRect(
@@ -534,7 +615,7 @@ class ChatAttachmentView extends StatelessWidget {
               imageUrl: _url,
               child: CachedNetworkImage(
                 imageUrl: _url,
-                cacheKey: 'chat-${attachment.id}', // the link changes, the file does not
+                cacheKey: _cacheKey,
                 height: 190,
                 fit: BoxFit.cover,
                 placeholder: (_, _) => const SizedBox(height: 120, width: 160),
@@ -544,9 +625,24 @@ class ChatAttachmentView extends StatelessWidget {
           ),
         );
       case 'audio':
+        if (!_ready) {
+          return Padding(
+            padding: const EdgeInsets.only(bottom: 4),
+            child: SizedBox(
+              width: 230,
+              child: Row(
+                children: [
+                  _downloadButton(color),
+                  const SizedBox(width: 8),
+                  Expanded(child: Text('پیام صوتی', style: ChatTheme.caption.copyWith(color: color))),
+                ],
+              ),
+            ),
+          );
+        }
         return ChatAudioPlayer(url: _url, onGold: onGold, peaks: ChatWaveform.decodePeaks(attachment.name), seed: attachment.id, attachmentId: attachment.id);
       default:
-        final color = onGold ? ChatTheme.goldTitle : ChatTheme.accent;
+        final fileColor = onGold ? ChatTheme.goldTitle : ChatTheme.accent;
         return GestureDetector(
           onTap: () => launchUrl(Uri.parse(_url), mode: LaunchMode.externalApplication),
           child: Padding(
@@ -554,7 +650,7 @@ class ChatAttachmentView extends StatelessWidget {
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Icon(attachment.kind == 'video' ? Icons.movie_rounded : Icons.description_rounded, color: color, size: 24),
+                Icon(attachment.kind == 'video' ? Icons.movie_rounded : Icons.description_rounded, color: fileColor, size: 24),
                 const SizedBox(width: 6),
                 Flexible(child: Text(attachment.name, style: ChatTheme.caption.copyWith(color: onGold ? ChatTheme.goldInk : ChatTheme.text), maxLines: 2, overflow: TextOverflow.ellipsis)),
               ],
