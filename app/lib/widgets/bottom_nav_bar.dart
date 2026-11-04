@@ -153,21 +153,17 @@ class CustomBottomNavBar extends StatelessWidget {
         ? const Color(0xFFDFB690) // Gold/tan color
         : const Color(0xFF9292E2); // Lavender/purple color
 
-    // Selected icon grows slightly and its tint cross-fades (no layout change, transform only)
+    // Selected icon grows slightly (transform only, no layout change)
     return AnimatedScale(
       scale: isSelected ? 1.12 : 1.0,
       duration: AppMotion.dur(context, AppMotion.base),
       curve: AppMotion.enter,
-      child: TweenAnimationBuilder<Color?>(
-        tween: ColorTween(end: iconColor),
-        duration: AppMotion.dur(context, AppMotion.base),
-        builder: (context, color, _) => SvgPicture.asset(
-          item.iconPath,
-          width: 25,
-          height: 25,
-          colorFilter: ColorFilter.mode(color ?? iconColor, BlendMode.srcIn),
-          placeholderBuilder: (context) => Icon(item.fallbackIcon, size: 25, color: color ?? iconColor),
-        ),
+      child: SvgPicture.asset(
+        item.iconPath,
+        width: 25,
+        height: 25,
+        colorFilter: ColorFilter.mode(iconColor, BlendMode.srcIn),
+        placeholderBuilder: (context) => Icon(item.fallbackIcon, size: 25, color: iconColor),
       ),
     );
   }

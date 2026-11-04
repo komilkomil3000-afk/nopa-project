@@ -257,8 +257,8 @@ Future<T?> showNopaSheet<T>(
   );
 }
 
-/// Drop-in replacement for [showDialog] with the app's dialog motion: the dialog fades in while scaling up
-/// from 0.94 (200 ms, ease-out) and fades out faster (150 ms). Same parameters and behaviour otherwise, and
+/// Drop-in replacement for [showDialog] with the app's dialog timing: a plain fade (200 ms in, 150 ms out;
+/// no scale, to keep heavy dialogs cheap to paint). Same parameters and behaviour otherwise, and
 /// plain (no motion) when the system has animations turned off.
 Future<T?> showNopaDialog<T>({
   required BuildContext context,
@@ -279,23 +279,6 @@ Future<T?> showNopaDialog<T>({
             curve: AppMotion.enter,
             reverseCurve: AppMotion.exit,
           ),
-    builder: (ctx) => reduced ? builder(ctx) : _DialogScaleIn(child: builder(ctx)),
+    builder: builder,
   );
-}
-
-/// One-shot scale-up entrance. It animates only on first build; later rebuilds of the dialog do not replay it.
-class _DialogScaleIn extends StatelessWidget {
-  final Widget child;
-  const _DialogScaleIn({required this.child});
-
-  @override
-  Widget build(BuildContext context) {
-    return TweenAnimationBuilder<double>(
-      tween: Tween(begin: 0.94, end: 1.0),
-      duration: AppMotion.base,
-      curve: AppMotion.enter,
-      child: child,
-      builder: (context, scale, child) => Transform.scale(scale: scale, child: child),
-    );
-  }
 }

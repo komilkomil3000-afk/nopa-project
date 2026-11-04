@@ -152,9 +152,7 @@ class StationProgressStepper extends StatelessWidget {
     return TapExpander(child: GestureDetector(
       onTap: onStationSelected != null ? () => onStationSelected!(index) : null,
       behavior: HitTestBehavior.opaque,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 400),
-        curve: Curves.easeOutCubic,
+      child: Container(
         width: nodeSize,
         height: nodeSize,
         decoration: BoxDecoration(
