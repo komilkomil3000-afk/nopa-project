@@ -15,6 +15,9 @@ import 'package:nopa_app/models/chat_models.dart';
 import 'package:nopa_app/models/user_model.dart';
 import 'package:nopa_app/screens/chat/chat_conversation_screen.dart';
 import 'package:nopa_app/screens/chat/chat_groups_screen.dart';
+import 'package:nopa_app/screens/chat/chat_image_crop_screen.dart';
+import 'package:path/path.dart' as p;
+import 'package:path_provider/path_provider.dart';
 import 'package:nopa_app/screens/chat/chat_message_bubble.dart';
 import 'package:nopa_app/screens/chat/chat_theme.dart';
 import 'package:nopa_app/screens/chat/chat_widgets.dart';
@@ -61,11 +64,18 @@ class _ChatSpaceProfileScreenState extends State<ChatSpaceProfileScreen> {
       final picked = await FilePicker.platform.pickFiles(type: FileType.image);
       final path = picked?.files.single.path;
       if (path == null) return;
-      file = io.File(path);
-      if (await file.length() > 5 * 1024 * 1024) {
-        if (mounted) AppToast.error(context, 'حجم عکس نباید بیشتر از ۵ مگابایت باشد.');
+      final source = io.File(path);
+      if (await source.length() > 30 * 1024 * 1024) {
+        if (mounted) AppToast.error(context, 'حجم عکس نباید بیشتر از ۳۰ مگابایت باشد.');
         return;
       }
+      final bytes = await source.readAsBytes();
+      if (!mounted) return;
+      // The photo opens whole and the mentor picks the part to keep, so it is never squeezed out of shape
+      final cropped = await cropImageSquare(context, bytes, title: 'انتخاب بخشی از عکس کاروان');
+      if (cropped == null) return;
+      final dir = await getTemporaryDirectory();
+      file = await io.File(p.join(dir.path, 'caravan-cover-${DateTime.now().millisecondsSinceEpoch}.jpg')).writeAsBytes(cropped);
     }
     setState(() => _savingCover = true);
     final result = await _chat.setSpaceCover(widget.spaceId, file);

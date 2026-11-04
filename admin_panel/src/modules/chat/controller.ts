@@ -16,10 +16,10 @@ import { ensureOpenCase } from './support';
 import { recordArenaSubmission } from './intergroup';
 import {
   attachmentKind, CHAT_FILES_DIR, ChatError, directKey, findVisibleSpace, MAX_BODY, MESSAGE_INCLUDE, PAGE_SIZE,
-  randomStorageName, REACTION_TYPES, serializeMessage, signFileUrl, verifyFileToken, visibleSpaces,
+  randomStorageName, REACTION_TYPES, serializeMessage, STAR_REACTION, signFileUrl, verifyFileToken, visibleSpaces,
 } from './service';
 
-const MAX_FILE_BYTES = 20 * 1024 * 1024;
+const MAX_FILE_BYTES = 30 * 1024 * 1024;
 const DAILY_UPLOAD_BYTES = 200 * 1024 * 1024;
 // Private folder: only the server's own user may read it (files are chmod 600 after upload)
 fs.mkdirSync(CHAT_FILES_DIR, { recursive: true, mode: 0o700 });
@@ -264,13 +264,21 @@ export const setMuted = handler(async (req, res, actor) => {
 });
 
 export const toggleReaction = handler(async (req, res, actor) => {
-  const { message } = await requireMessage(actor, req.params.id);
+  const { message, space } = await requireMessage(actor, req.params.id);
   const type = String(req.body?.type || '');
   if (!REACTION_TYPES.includes(type)) throw new ChatError(400, 'واکنش نامعتبر است');
+  if (type === STAR_REACTION) {
+    // The star is separate from the ordinary reaction: it neither replaces it nor is replaced by it
+    if (!canModerate(actor, space)) throw new ChatError(403, 'فقط راهبران می‌توانند پیام را برتر کنند');
+    const star = await prisma.chatReaction.findFirst({ where: { messageId: message.id, userId: actor.id, type } });
+    if (star) await prisma.chatReaction.delete({ where: { id: star.id } });
+    else await prisma.chatReaction.create({ data: { messageId: message.id, userId: actor.id, type } });
+    return res.json(serializeMessage(await publishUpdate(message.id)));
+  }
   // One reaction per person per message: the same one again takes it back, another one replaces it
-  const mine = await prisma.chatReaction.findMany({ where: { messageId: message.id, userId: actor.id } });
+  const mine = await prisma.chatReaction.findMany({ where: { messageId: message.id, userId: actor.id, type: { not: STAR_REACTION } } });
   const same = mine.some(r => r.type === type);
-  await prisma.chatReaction.deleteMany({ where: { messageId: message.id, userId: actor.id } });
+  await prisma.chatReaction.deleteMany({ where: { messageId: message.id, userId: actor.id, type: { not: STAR_REACTION } } });
   if (!same) await prisma.chatReaction.create({ data: { messageId: message.id, userId: actor.id, type } });
   res.json(serializeMessage(await publishUpdate(message.id)));
 });
@@ -308,8 +316,15 @@ export const searchMessages = handler(async (req, res, actor) => {
   const { space } = await requireSpace(actor, req.params.id);
   const q = String(req.query.q || '').trim();
   if (q.length < 2) return res.json([]);
+  // "#برتر" lists the messages a mentor starred; words after it narrow them down
+  const top = /^#\s*(برتر|top)(?=\s|$)\s*/i.exec(q);
+  const text = top ? q.slice(top[0].length).trim() : q;
   const rows = await prisma.chatMessage.findMany({
-    where: { spaceId: space.id, deletedAt: null, body: { contains: q, mode: 'insensitive' } },
+    where: {
+      spaceId: space.id, deletedAt: null,
+      ...(text ? { body: { contains: text, mode: 'insensitive' as const } } : {}),
+      ...(top ? { reactions: { some: { type: STAR_REACTION } } } : {}),
+    },
     orderBy: { seq: 'desc' }, take: 30, include: MESSAGE_INCLUDE,
   });
   res.json(rows.map(serializeMessage));

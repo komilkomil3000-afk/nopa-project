@@ -180,6 +180,59 @@ export async function recordAppUsage(req: AuthRequest, res: Response) {
   }
 }
 
+/** The signed-in user's own challenge participation and time in the app (same shape as one member of caravan-progress). */
+export async function getMyActivityStats(req: AuthRequest, res: Response) {
+  try {
+    const userId = req.user!.id;
+    const me = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { caravanId: true, caravan: { select: { id: true, mentorId: true } } }
+    });
+    const caravan = me?.caravan || null;
+
+    // Challenges this user can see (same rules as the mentor's view of a caravan member)
+    const adminIds = (await prisma.user.findMany({ where: { role: 'admin' }, select: { id: true } })).map(a => a.id);
+    const challengeOr: any[] = [];
+    if (caravan) {
+      challengeOr.push({ caravanId: caravan.id });
+      if (caravan.mentorId) challengeOr.push({ createdByMentorId: caravan.mentorId });
+    }
+    if (adminIds.length > 0) challengeOr.push({ AND: [{ caravanId: null }, { createdByMentorId: { in: adminIds } }] });
+    const challenges = challengeOr.length > 0
+      ? await prisma.challenge.findMany({ where: { OR: challengeOr }, select: { id: true, recipientIds: true, stationId: true } })
+      : [];
+    const visible = challenges.filter(c => c.recipientIds.length === 0 || c.recipientIds.includes(userId));
+    const visibleIds = new Set(visible.map(c => c.id));
+    const submissions = await prisma.submission.findMany({ where: { studentId: userId }, select: { challengeId: true } });
+    const participated = new Set(submissions.map(s => s.challengeId).filter(id => visibleIds.has(id)));
+
+    const challengesByStation: Record<string, { total: number; participated: number }> = {};
+    for (const c of visible) {
+      const key = c.stationId || '';
+      const row = challengesByStation[key] || (challengesByStation[key] = { total: 0, participated: 0 });
+      row.total++;
+      if (participated.has(c.id)) row.participated++;
+    }
+
+    const usageSince = tehranDay(new Date(Date.now() - 29 * 86400000));
+    const usageRows = await prisma.userUsageDay.findMany({
+      where: { userId, day: { gte: usageSince } },
+      select: { day: true, seconds: true }
+    });
+    const usageDays: Record<string, number> = {};
+    usageRows.forEach(u => { usageDays[u.day] = u.seconds; });
+
+    res.json({
+      challengesTotal: visible.length,
+      challengesParticipated: participated.size,
+      challengesByStation,
+      usageDays
+    });
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
+  }
+}
+
 export async function getMentorCaravanProgress(req: AuthRequest, res: Response) {
   try {
     const userId = req.user!.id;

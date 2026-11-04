@@ -124,6 +124,9 @@ class ChatTheme {
     'thanks': (emoji: '🙏', label: 'ممنون'),
   };
 
+  /// The extra reaction only mentors have: it marks a message as a top one ("#برتر" in search lists them).
+  static const String starReaction = 'star';
+
   /// Reactions given before the current set: still shown, no longer offered.
   static const Map<String, String> legacyReactions = {'bravo': '👏', 'agree': '✅', 'question': '❓', 'confused': '😕'};
 

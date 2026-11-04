@@ -34,7 +34,7 @@ function upload(req: AuthRequest, res: Response, next: NextFunction) {
   chat.chatUpload.single('file')(req as any, res as any, (err: any) => {
     if (!err) return next();
     const tooLarge = err.code === 'LIMIT_FILE_SIZE';
-    res.status(400).json({ error: tooLarge ? 'حجم فایل نباید بیشتر از ۲۰ مگابایت باشد' : (err.message || 'فایل معتبر نیست') });
+    res.status(400).json({ error: tooLarge ? 'حجم فایل نباید بیشتر از ۳۰ مگابایت باشد' : (err.message || 'فایل معتبر نیست') });
   });
 }
 
