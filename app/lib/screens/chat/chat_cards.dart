@@ -109,6 +109,7 @@ class ChallengeCard extends StatelessWidget {
             Padding(padding: const EdgeInsets.only(top: 3), child: Text(meta['description'].toString(), style: ChatTheme.caption.copyWith(fontSize: 12), maxLines: 3, overflow: TextOverflow.ellipsis)),
           line('منزلگاه', meta['stationTitle']),
           line('ایجادکننده', meta['creatorName']),
+          if (meta['mentorName'] != null && meta['mentorName'] != meta['creatorName']) line('راهبر کاروان', meta['mentorName']),
           line('مهلت', meta['dueDate'] == null ? null : chatDateText(meta['dueDate'])),
           line('جایزه', meta['reward']),
           line('پاسخ نهایی گروه', meta['finalAnswer']),

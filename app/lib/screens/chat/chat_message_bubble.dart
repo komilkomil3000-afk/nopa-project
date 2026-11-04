@@ -193,6 +193,7 @@ class _ChatMessageBubbleState extends State<ChatMessageBubble> {
       children: [
         if (widget.showSender) _sender(),
         if (m.replyToId != null) _quote(),
+        if (_isSubmission) _submissionBadge(),
         if (_challenge) ..._challengeContent() else ...[
           for (final attachment in m.attachments) ChatAttachmentView(attachment: attachment, onGold: !_mineLook),
           if (m.body.isNotEmpty) _bodyText(),
@@ -211,6 +212,30 @@ class _ChatMessageBubbleState extends State<ChatMessageBubble> {
         if (widget.onOpenThread != null && m.threadOpen) _threadBox(),
         _footer(),
       ],
+    );
+  }
+
+  /// A caravan's work under an inter-group challenge in «میدان آثار».
+  bool get _isSubmission => m.meta?['submission'] == true;
+
+  /// «اثر کاروان», and the place the admin gave it once the ranking is confirmed.
+  Widget _submissionBadge() {
+    final rank = (m.meta?['rank'] as num?)?.toInt();
+    final label = (m.meta?['rankLabel'] ?? '').toString();
+    final caravan = (m.meta?['caravanName'] ?? '').toString();
+    final color = switch (rank) {
+      1 => const Color(0xFFE5B84B),
+      2 => const Color(0xFFC4C9D4),
+      3 => const Color(0xFFCD8B5A),
+      _ => ChatTheme.accent,
+    };
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 5),
+      child: Wrap(spacing: 4, runSpacing: 4, children: [
+        const ChatChip(label: 'اثر کاروان'),
+        if (rank != null)
+          ChatChip(label: caravan.isEmpty ? label : '$label · $caravan', color: color),
+      ]),
     );
   }
 

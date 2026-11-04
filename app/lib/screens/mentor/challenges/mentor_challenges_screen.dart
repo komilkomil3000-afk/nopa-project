@@ -1,5 +1,4 @@
 import 'package:nopa_app/screens/chat/challenge_chat_button.dart';
-import 'package:nopa_app/widgets/swipe_category_view.dart';
 import '../../../widgets/nopa_modal_shell.dart';
 import 'package:nopa_app/screens/shell/app_shell.dart' show challengeFocusRequest;
 import 'package:nopa_app/core/economy_rates.dart';
@@ -35,6 +34,7 @@ class _ChallengesScreenState extends State<MentorChallengesScreen> {
   int _mentorSelectedCategoryIndex = 0;
   final Set<String> _expandedChallengeIds = {};
 
+  final PageController _mentorPageCtrl = PageController();
   late final PageController _bannerPageCtrl;
   int _currentBannerIndex = 0;
   Timer? _bannerAutoScrollTimer;
@@ -77,8 +77,14 @@ class _ChallengesScreenState extends State<MentorChallengesScreen> {
     });
   }
 
+  void _goToPage(PageController ctrl, int page) {
+    if (!ctrl.hasClients) return;
+    ctrl.animateToPage(page, duration: const Duration(milliseconds: 260), curve: Curves.easeOutCubic);
+  }
+
   @override
   void dispose() {
+    _mentorPageCtrl.dispose();
     challengeFocusRequest.removeListener(_applyFocusRequest);
     _bannerAutoScrollTimer?.cancel();
     _bannerPageCtrl.dispose();
@@ -718,91 +724,85 @@ class _ChallengesScreenState extends State<MentorChallengesScreen> {
     UserModel user,
   ) {
     final mentorChallenges = _getMentorChallenges(repository);
-    final filtered = mentorChallenges.where((c) {
-      if (_mentorSelectedCategoryIndex == 0) {
-        return c['category'] == 'intra_group';
-      } else {
-        return c['category'] == 'inter_group';
-      }
-    }).toList();
-
     final caravanName = user.caravanName ?? 'کاروان پنجم رضا جلالی';
+    const keys = ['intra_group', 'inter_group'];
 
-    return SwipeCategoryView(
-      index: _mentorSelectedCategoryIndex,
-      count: 2,
-      onChanged: (i) => setState(() => _mentorSelectedCategoryIndex = i),
-      child: RefreshIndicator(
-      color: const Color(0xFFCD8449),
-      backgroundColor: const Color(0xFF231C38),
-      onRefresh: () async {
-        await repository.refreshChallenges();
-      },
-      child: SingleChildScrollView(
-        physics: const AlwaysScrollableScrollPhysics(),
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            // Caravan Name Subtitle on right
-            Align(
-              alignment: Alignment.centerRight,
-              child: Padding(
-                padding: const EdgeInsets.only(top: 2, right: 4, bottom: 12),
-                child: Text(
-                  caravanName,
-                  style: AppTypography.h3.copyWith(color: const Color(0xFF9E9AC0).withValues(alpha: 0.9)),
-                ),
-              ),
-            ),
-
-            // Top Action Button: [ + ایجاد چالش جدید ]
-            Row(
-              children: [
-                Expanded(
-                  child: _buildMentorHeaderButton(
-                    title: 'ایجاد چالش جدید',
-                    onTap: () => _showCreateChallengeDialog(context, user),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 6, 16, 0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              // Caravan Name Subtitle on right
+              Align(
+                alignment: Alignment.centerRight,
+                child: Padding(
+                  padding: const EdgeInsets.only(top: 2, right: 4, bottom: 12),
+                  child: Text(
+                    caravanName,
+                    style: AppTypography.h3.copyWith(color: const Color(0xFF9E9AC0).withValues(alpha: 0.9)),
                   ),
                 ),
-              ],
-            ),
-
-            const SizedBox(height: 24),
-
-            // Mentor Category Tabs: [درون گروهی] [میان گروهی]
-            _buildMentorCategoryTabsBar(),
-
-            const SizedBox(height: 18),
-
-            // Challenge Cards List (a sideways swipe switches the category)
-            CategorySlide(
-              index: _mentorSelectedCategoryIndex,
-              child: filtered.isEmpty
-                  ? _buildEmptyState()
-                  : ListView.separated(
-                      shrinkWrap: true,
-                      physics: const NeverScrollableScrollPhysics(),
-                      itemCount: filtered.length,
-                      separatorBuilder: (context, index) => const SizedBox(height: 12),
-                      itemBuilder: (context, index) {
-                        final item = filtered[index];
-                        final String id = item['id']?.toString() ?? 'm_ch_$index';
-                        return _buildMentorChallengeCard(
-                          context: context,
-                          user: user,
-                          item: item,
-                          id: id,
-                        );
-                      },
+              ),
+              // Top Action Button: [ + ایجاد چالش جدید ]
+              Row(
+                children: [
+                  Expanded(
+                    child: _buildMentorHeaderButton(
+                      title: 'ایجاد چالش جدید',
+                      onTap: () => MentorChallengeDialogs.showCreateChallengeDialog(context, user),
                     ),
-            ),
-
-            const SizedBox(height: 40),
-          ],
+                  ),
+                ],
+              ),
+              const SizedBox(height: 24),
+              // Mentor Category Tabs: [درون گروهی] [میان گروهی]
+              _buildMentorCategoryTabsBar(),
+              const SizedBox(height: 18),
+            ],
+          ),
         ),
-      ),
-      ),
+        // The bodies of both tabs: a sideways swipe anywhere on them switches the tab
+        Expanded(
+          child: Directionality(
+            textDirection: TextDirection.rtl,
+            child: PageView.builder(
+              controller: _mentorPageCtrl,
+              itemCount: keys.length,
+              onPageChanged: (i) => setState(() => _mentorSelectedCategoryIndex = i),
+              itemBuilder: (context, page) {
+                final filtered = mentorChallenges.where((c) => c['category'] == keys[page]).toList();
+                return RefreshIndicator(
+                  color: const Color(0xFFCD8449),
+                  backgroundColor: const Color(0xFF231C38),
+                  onRefresh: () async {
+                    await repository.refreshChallenges();
+                  },
+                  child: ListView(
+                    physics: const AlwaysScrollableScrollPhysics(),
+                    padding: const EdgeInsets.fromLTRB(16, 0, 16, 40),
+                    children: filtered.isEmpty
+                        ? [_buildEmptyState()]
+                        : [
+                            for (var index = 0; index < filtered.length; index++) ...[
+                              if (index > 0) const SizedBox(height: 12),
+                              _buildMentorChallengeCard(
+                                context: context,
+                                user: user,
+                                item: filtered[index],
+                                id: filtered[index]['id']?.toString() ?? 'm_ch_$index',
+                              ),
+                            ],
+                          ],
+                  ),
+                );
+              },
+            ),
+          ),
+        ),
+      ],
     );
   }
 
@@ -847,7 +847,7 @@ class _ChallengesScreenState extends State<MentorChallengesScreen> {
             children: [
               // درون گروهی
               TapExpander(child: GestureDetector(
-                onTap: () => setState(() => _mentorSelectedCategoryIndex = 0),
+                onTap: () => _goToPage(_mentorPageCtrl, 0),
                 behavior: HitTestBehavior.opaque,
                 child: Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
@@ -861,7 +861,7 @@ class _ChallengesScreenState extends State<MentorChallengesScreen> {
               )),
               // میان گروهی
               TapExpander(child: GestureDetector(
-                onTap: () => setState(() => _mentorSelectedCategoryIndex = 1),
+                onTap: () => _goToPage(_mentorPageCtrl, 1),
                 behavior: HitTestBehavior.opaque,
                 child: Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
@@ -998,7 +998,7 @@ class _ChallengesScreenState extends State<MentorChallengesScreen> {
                           if ((item['totalSubmissions'] as int? ?? 0) > 0) {
                             AppToast.error(context, 'پس از شرکت اولین عضو، امکان ویرایش چالش وجود ندارد.');
                           } else {
-                            _showCreateChallengeDialog(context, user, existing: item);
+                            MentorChallengeDialogs.showCreateChallengeDialog(context, user, existing: item);
                           }
                         },
                         child: Icon(
@@ -1050,9 +1050,494 @@ class _ChallengesScreenState extends State<MentorChallengesScreen> {
     );
   }
 
+
+  /// Clean Banner Slider (No text overlay) with 3 animated indicator dots
+  Widget _buildStationBannerSlider() {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        SizedBox(
+          height: 82,
+          child: PageView.builder(
+            controller: _bannerPageCtrl,
+            itemCount: 3,
+            onPageChanged: (index) {
+              setState(() => _currentBannerIndex = index);
+            },
+            itemBuilder: (context, index) {
+              return Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 4.0),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(18),
+                  child: Image.asset(
+                    'assets/images/banners/banner1.jpg',
+                    fit: BoxFit.cover,
+                    errorBuilder: (context, error, stackTrace) => Container(
+                      decoration: const BoxDecoration(
+                        gradient: LinearGradient(
+                          colors: [Color(0xFF5A3825), Color(0xFF382318)],
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              );
+            },
+          ),
+        ),
+
+        const SizedBox(height: 8),
+
+        // 3 Animated Dot Indicators
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: List.generate(
+            3,
+            (index) {
+              final bool isActive = _currentBannerIndex == index;
+
+              return AnimatedContainer(
+                duration: const Duration(milliseconds: 300),
+                margin: const EdgeInsets.symmetric(horizontal: 3),
+                width: isActive ? 18 : 6,
+                height: 6,
+                decoration: BoxDecoration(
+                  color: isActive
+                      ? const Color(0xFFCD8449)
+                      : Colors.white.withValues(alpha: 0.25),
+                  borderRadius: BorderRadius.circular(3),
+                ),
+              );
+            },
+          ),
+        ),
+      ],
+    );
+  }
+
+  /// Category Tabs: فردی / گروهی / میان گروهی (Strictly equal distances with گروهی dead-center)
+  Widget _buildCategoryTabsBar() {
+    final tabs = [
+      {'title': 'فردی', 'index': 0},
+      {'title': 'گروهی', 'index': 1},
+      {'title': 'میان گروهی', 'index': 2},
+    ];
+
+    return Directionality(
+      textDirection: TextDirection.rtl,
+      child: Column(
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+            children: tabs.map((tab) {
+              final int idx = tab['index'] as int;
+              final bool isSelected = _selectedCategoryIndex == idx;
+
+              return Expanded(
+                child: Center(
+                  child: TapExpander(child: GestureDetector(
+                    onTap: () => setState(() => _selectedCategoryIndex = idx),
+                    behavior: HitTestBehavior.opaque,
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 6),
+                      child: Text(
+                        tab['title'] as String,
+                        style: TextStyle(
+                          color: isSelected ? AppColors.accentGoldEnd : const Color(0xFF9D99B8),
+                          fontSize: isSelected ? 15.5 : 14,
+                          fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
+                          fontFamily: AppTheme.fontFamily,
+                          fontFamilyFallback: AppTheme.fontFamilyFallback,
+                          shadows: isSelected
+                              ? [
+                                  Shadow(
+                                    color: AppColors.buttonCamel.withValues(alpha: 0.45),
+                                    blurRadius: 8,
+                                  ),
+                                ]
+                              : null,
+                        ),
+                      ),
+                    ),
+                  )),
+                ),
+              );
+            }).toList(),
+          ),
+          const SizedBox(height: 8),
+          // Subtle Thin Divider
+          Container(
+            height: 1.0,
+            width: double.infinity,
+            color: const Color(0xFF383556).withValues(alpha: 0.7),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Compact Challenge Box (collapsed shows only Title, Tag, Reward) -> expands on tap showing info & participate button
+  Widget _buildChallengeCard({
+    required Map<String, dynamic> item,
+    required String id,
+    required bool isExpanded,
+  }) {
+    final String title = item['title'] ?? 'چالش نپا';
+    final String desc = item['desc'] ?? '';
+    final String status = item['status'] ?? 'new';
+    final int reward = item['reward'] ?? 50;
+    final String dateStr = _formatDate(item['createdAt']);
+    final String typeLabel = _resolveChallengeTypeLabel(item['type']?.toString() ?? '');
+    final String deadlineLabel = item['deadlineLabel']?.toString() ?? 'بدون مهلت';
+    final String? feedback = item['mentorFeedback']?.toString();
+
+    // Status label, text color & background
+    String statusLabel = 'شروع شده';
+    Color statusColor = const Color(0xFFE5A86D);
+    Color statusBg = const Color(0xFFE5A86D).withValues(alpha: 0.15);
+    Color statusBorder = const Color(0xFFE5A86D).withValues(alpha: 0.4);
+
+    if (status == 'pending') {
+      statusLabel = 'در حال انجام';
+      statusColor = const Color(0xFF38BDF8);
+      statusBg = const Color(0xFF38BDF8).withValues(alpha: 0.15);
+      statusBorder = const Color(0xFF38BDF8).withValues(alpha: 0.4);
+    } else if (status == 'started' || status == 'new') {
+      statusLabel = 'شروع شده';
+      statusColor = const Color(0xFFE5A86D);
+      statusBg = const Color(0xFFE5A86D).withValues(alpha: 0.15);
+      statusBorder = const Color(0xFFE5A86D).withValues(alpha: 0.4);
+    } else if (status == 'rejected') {
+      statusLabel = 'اصلاحیه';
+      statusColor = const Color(0xFFEF4444);
+      statusBg = const Color(0xFFEF4444).withValues(alpha: 0.15);
+      statusBorder = const Color(0xFFEF4444).withValues(alpha: 0.45);
+    } else if (status == 'completed') {
+      statusLabel = 'تکمیل شده';
+      statusColor = const Color(0xFF10B981);
+      statusBg = const Color(0xFF10B981).withValues(alpha: 0.15);
+      statusBorder = const Color(0xFF10B981).withValues(alpha: 0.4);
+    } else if (status == 'expired') {
+      statusLabel = 'منقضی شده';
+      statusColor = const Color(0xFF9D99B8);
+      statusBg = const Color(0xFF9D99B8).withValues(alpha: 0.15);
+      statusBorder = const Color(0xFF9D99B8).withValues(alpha: 0.35);
+    }
+
+    return Directionality(
+      textDirection: TextDirection.rtl,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          // 1. Compact Header Box (Title -> Tag -> Reward Amount & Coin)
+          TapExpander(child: GestureDetector(
+            onTap: () {
+              setState(() {
+                if (_expandedChallengeIds.contains(id)) {
+                  _expandedChallengeIds.remove(id);
+                } else {
+                  _expandedChallengeIds.add(id);
+                }
+              });
+            },
+            behavior: HitTestBehavior.opaque,
+            child: Container(
+              decoration: BoxDecoration(
+                borderRadius: isExpanded
+                    ? const BorderRadius.only(
+                        topLeft: Radius.circular(16),
+                        topRight: Radius.circular(16),
+                      )
+                    : BorderRadius.circular(16),
+                gradient: const LinearGradient(
+                  begin: Alignment.centerLeft,
+                  end: Alignment.centerRight,
+                  stops: [0.0, 0.5, 1.0],
+                  colors: [
+                    Color(0xFF3A3A6A),
+                    Color(0xFF9292E2),
+                    Color(0xFF3A3A6A),
+                  ],
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.3),
+                    blurRadius: 10,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
+              ),
+              padding: const EdgeInsets.all(1.2), // Gradient border
+              child: Container(
+                decoration: BoxDecoration(
+                  borderRadius: isExpanded
+                      ? const BorderRadius.only(
+                          topLeft: Radius.circular(14.8),
+                          topRight: Radius.circular(14.8),
+                        )
+                      : BorderRadius.circular(14.8),
+                  gradient: const LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    stops: [0.0, 0.53, 1.0],
+                    colors: [
+                      Color(0xFF3D3C67),
+                      Color(0xFF36345C),
+                      Color(0xFF333359),
+                    ],
+                  ),
+                ),
+                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
+                child: Row(
+                  children: [
+                    // Right: Challenge Title (Smaller, concise)
+                    Expanded(
+                      child: Text(
+                        title,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: AppTypography.h3,
+                      ),
+                    ),
+
+                    const SizedBox(width: 8),
+
+                    // Left Group: Status Tag -> Reward Amount -> Chevron
+                    // 1. Status Tag
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 6.5, vertical: 2),
+                      decoration: BoxDecoration(
+                        color: statusBg,
+                        borderRadius: BorderRadius.circular(6),
+                        border: Border.all(color: statusBorder, width: 0.9),
+                      ),
+                      child: Text(
+                        statusLabel,
+                        style: AppTypography.caption.copyWith(color: statusColor),
+                      ),
+                    ),
+
+                    const SizedBox(width: 6),
+
+                    // 2. Reward Amount
+                    Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          (item['rewardLabel']?.toString() ?? '+$reward').toPersianDigits(),
+                          style: AppTypography.caption.copyWith(color: Color(0xFF9292E2)),
+                        ),
+                        const SizedBox(width: 4),
+                        SvgPicture.asset(
+                          'assets/svg_icons/challeng01.svg',
+                          width: 12,
+                          height: 12,
+                          colorFilter: const ColorFilter.mode(
+                            Color(0xFF9292E2),
+                            BlendMode.srcIn,
+                          ),
+                        ),
+                      ],
+                    ),
+
+                    const SizedBox(width: 6),
+
+                    // Far Left: Expand / Collapse Chevron Icon
+                    Icon(
+                      isExpanded ? Icons.keyboard_arrow_up_rounded : Icons.keyboard_arrow_down_rounded,
+                      color: const Color(0xFF9897D2),
+                      size: 20,
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          )),
+
+          // 2. Expanded Area: Opens on Click and Shows Description + Details + Participate Button
+          if (isExpanded)
+            Container(
+              decoration: BoxDecoration(
+                color: const Color(0xFF242240).withValues(alpha: 0.95),
+                borderRadius: const BorderRadius.only(
+                  bottomLeft: Radius.circular(16),
+                  bottomRight: Radius.circular(16),
+                ),
+                border: Border(
+                  left: BorderSide(color: const Color(0xFF3A3A6A).withValues(alpha: 0.8), width: 1.2),
+                  right: BorderSide(color: const Color(0xFF3A3A6A).withValues(alpha: 0.8), width: 1.2),
+                  bottom: BorderSide(color: const Color(0xFF3A3A6A).withValues(alpha: 0.8), width: 1.2),
+                ),
+              ),
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  // Description
+                  if (desc.isNotEmpty) ...[
+                    Text(
+                      desc,
+                      textAlign: TextAlign.right,
+                      style: AppTypography.caption.copyWith(color: Color(0xFFD3D0E3)),
+                    ),
+                    const SizedBox(height: 10),
+                  ],
+
+                  // Mentor Feedback if rejected
+                  if (status == 'rejected' && feedback != null && feedback.trim().isNotEmpty) ...[
+                    Container(
+                      margin: const EdgeInsets.only(bottom: 10),
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFEF4444).withValues(alpha: 0.12),
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(color: const Color(0xFFEF4444).withValues(alpha: 0.35)),
+                      ),
+                      child: Row(
+                        children: [
+                          const Icon(Icons.error_outline_rounded, color: Color(0xFFF87171), size: 15),
+                          const SizedBox(width: 6),
+                          Expanded(
+                            child: Text(
+                              'توضیح راهبر: $feedback',
+                              style: AppTypography.caption.copyWith(color: Color(0xFFFCA5A5)),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+
+                  // Bottom Action Row: Details on Right -> Participate Button on Left
+                  Row(
+                    children: [
+                      // Right: Details (Type + Creation Date + Deadline)
+                      Expanded(
+                        child: Wrap(
+                          spacing: 10,
+                          runSpacing: 4,
+                          crossAxisAlignment: WrapCrossAlignment.center,
+                          children: [
+                            Text(
+                              'نوع: $typeLabel',
+                              style: AppTypography.caption.copyWith(color: Color(0xFFB8B5CE)),
+                            ),
+                            Text(
+                              'مهلت: ${deadlineLabel.toPersianDigits()}',
+                              style: AppTypography.caption.copyWith(color: Color(0xFFB8B5CE)),
+                            ),
+                            Text(
+                              'تاریخ: $dateStr',
+                              style: AppTypography.caption.copyWith(color: Color(0xFF9D99B8)),
+                            ),
+                          ],
+                        ),
+                      ),
+
+                      const SizedBox(width: 8),
+
+                      // Left: Participate Button (دکمه شرکت)
+                      TapExpander(child: GestureDetector(
+                        onTap: () => _showSubmissionDialog(item),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 5.5),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFF2A2835),
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(
+                              color: AppColors.buttonCamel.withValues(alpha: 0.85),
+                              width: 1.0,
+                            ),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withValues(alpha: 0.25),
+                                blurRadius: 4,
+                                offset: const Offset(0, 2),
+                              ),
+                            ],
+                          ),
+                          child: Text(
+                            status == 'rejected' ? 'اصلاح و ارسال' : (status == 'started' ? 'ادامه' : 'شرکت'),
+                            style: AppTypography.captionGold,
+                          ),
+                        ),
+                      )),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
+  /// Empty State Widget
+  Widget _buildEmptyState() {
+    return Container(
+      margin: const EdgeInsets.symmetric(vertical: 30),
+      padding: const EdgeInsets.all(26),
+      decoration: BoxDecoration(
+        color: const Color(0xFF1E1435).withValues(alpha: 0.6),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: const Color(0xFF453F73).withValues(alpha: 0.3)),
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const Icon(
+            Icons.emoji_events_outlined,
+            size: 44,
+            color: Color(0xFF676296),
+          ),
+          const SizedBox(height: 12),
+          const Text(
+            'چالشی در این دسته‌بندی وجود ندارد',
+            style: AppTypography.h3,
+          ),
+          const SizedBox(height: 6),
+          Text(
+            'چالش‌های جدید ثبت شده توسط راهبر یا مدیر در این بخش نمایش داده خواهند شد.',
+            textAlign: TextAlign.center,
+            style: AppTypography.caption.copyWith(color: Color(0xFF9D99B8)),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// The create / edit challenge dialog, shared by the challenges screen and the challenge group's info screen.
+class MentorChallengeDialogs {
+  MentorChallengeDialogs._();
+
+  static String formatDate(dynamic createdAt) => _formatDate(createdAt);
+
+  static String _formatDate(dynamic createdAt) {
+    if (createdAt != null) {
+      try {
+        final dt = createdAt is DateTime ? createdAt : DateTime.tryParse(createdAt.toString());
+        if (dt != null) {
+          final j = Jalali.fromDateTime(dt);
+          final y = (j.year % 100).toString().padLeft(2, '0');
+          final m = j.month.toString().padLeft(2, '0');
+          final d = j.day.toString().padLeft(2, '0');
+          return '$d/$m/۱۴$y'.toPersianDigits();
+        }
+      } catch (_) {}
+    }
+    final nowJ = Jalali.now();
+    final y = (nowJ.year % 100).toString().padLeft(2, '0');
+    final m = nowJ.month.toString().padLeft(2, '0');
+    final d = nowJ.day.toString().padLeft(2, '0');
+    return '$d/$m/۱۴$y'.toPersianDigits();
+  }
+
   /// Multi-select of the caravan's students. Returns null when cancelled; "all" means every member.
   /// Confirm stays disabled while nothing is ticked, so an empty recipient list cannot be sent.
-  Future<({bool all, Set<String> ids, int total})?> _pickRecipients(
+  static Future<({bool all, Set<String> ids, int total})?> _pickRecipients(
     BuildContext ctx,
     UserModel user,
     Set<String> current,
@@ -1133,7 +1618,7 @@ class _ChallengesScreenState extends State<MentorChallengesScreen> {
   }
 
   /// Jalali date picker (year / month / day dropdowns). Returns the picked day at midnight, or null.
-  Future<DateTime?> _pickJalaliDate(BuildContext ctx, DateTime initial) {
+  static Future<DateTime?> _pickJalaliDate(BuildContext ctx, DateTime initial) {
     const monthNames = ['فروردین', 'اردیبهشت', 'خرداد', 'تیر', 'مرداد', 'شهریور', 'مهر', 'آبان', 'آذر', 'دی', 'بهمن', 'اسفند'];
     final init = Jalali.fromDateTime(initial);
     int year = init.year, month = init.month, day = init.day;
@@ -1192,7 +1677,7 @@ class _ChallengesScreenState extends State<MentorChallengesScreen> {
   }
 
   /// Create a challenge, or edit one of the mentor's own ([existing] = its list item) while nobody has answered it.
-  void _showCreateChallengeDialog(BuildContext context, UserModel user, {Map<String, dynamic>? existing}) {
+  static void showCreateChallengeDialog(BuildContext context, UserModel user, {Map<String, dynamic>? existing, Future<void> Function()? onSaved}) {
     final bool editing = existing != null;
     final titleCtrl = TextEditingController(text: existing?['title']?.toString() ?? '');
     final questionCtrl = TextEditingController(text: existing?['desc']?.toString() ?? '');
@@ -1812,6 +2297,7 @@ class _ChallengesScreenState extends State<MentorChallengesScreen> {
                                       if (ctx.mounted) Navigator.pop(ctx);
                                       AppToast.success(context, editing ? 'چالش "$title" ویرایش شد' : 'چالش "$title" ایجاد و برای کاروان ابلاغ شد');
                                       await repository.refreshChallenges();
+                                      if (onSaved != null) await onSaved();
                                     },
                               style: TextButton.styleFrom(
                                 padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -1848,7 +2334,7 @@ class _ChallengesScreenState extends State<MentorChallengesScreen> {
   }
 
   /// Reusable Field Row matching ContactUsDialog specification
-  Widget _buildContactDialogFieldRow({
+  static Widget _buildContactDialogFieldRow({
     required String label,
     required Widget child,
     bool isTopAligned = false,
@@ -1883,468 +2369,10 @@ class _ChallengesScreenState extends State<MentorChallengesScreen> {
   }
 
   /// Reusable Text Value for ContactUsDialog style fields
-  Widget _buildContactDialogValueText(String value) {
+  static Widget _buildContactDialogValueText(String value) {
     return Text(
       value,
       style: AppTypography.h3Strong,
-    );
-  }
-
-
-  /// Clean Banner Slider (No text overlay) with 3 animated indicator dots
-  Widget _buildStationBannerSlider() {
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        SizedBox(
-          height: 82,
-          child: PageView.builder(
-            controller: _bannerPageCtrl,
-            itemCount: 3,
-            onPageChanged: (index) {
-              setState(() => _currentBannerIndex = index);
-            },
-            itemBuilder: (context, index) {
-              return Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 4.0),
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(18),
-                  child: Image.asset(
-                    'assets/images/banners/banner1.jpg',
-                    fit: BoxFit.cover,
-                    errorBuilder: (context, error, stackTrace) => Container(
-                      decoration: const BoxDecoration(
-                        gradient: LinearGradient(
-                          colors: [Color(0xFF5A3825), Color(0xFF382318)],
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight,
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-              );
-            },
-          ),
-        ),
-
-        const SizedBox(height: 8),
-
-        // 3 Animated Dot Indicators
-        Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: List.generate(
-            3,
-            (index) {
-              final bool isActive = _currentBannerIndex == index;
-
-              return AnimatedContainer(
-                duration: const Duration(milliseconds: 300),
-                margin: const EdgeInsets.symmetric(horizontal: 3),
-                width: isActive ? 18 : 6,
-                height: 6,
-                decoration: BoxDecoration(
-                  color: isActive
-                      ? const Color(0xFFCD8449)
-                      : Colors.white.withValues(alpha: 0.25),
-                  borderRadius: BorderRadius.circular(3),
-                ),
-              );
-            },
-          ),
-        ),
-      ],
-    );
-  }
-
-  /// Category Tabs: فردی / گروهی / میان گروهی (Strictly equal distances with گروهی dead-center)
-  Widget _buildCategoryTabsBar() {
-    final tabs = [
-      {'title': 'فردی', 'index': 0},
-      {'title': 'گروهی', 'index': 1},
-      {'title': 'میان گروهی', 'index': 2},
-    ];
-
-    return Directionality(
-      textDirection: TextDirection.rtl,
-      child: Column(
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-            children: tabs.map((tab) {
-              final int idx = tab['index'] as int;
-              final bool isSelected = _selectedCategoryIndex == idx;
-
-              return Expanded(
-                child: Center(
-                  child: TapExpander(child: GestureDetector(
-                    onTap: () => setState(() => _selectedCategoryIndex = idx),
-                    behavior: HitTestBehavior.opaque,
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 6),
-                      child: Text(
-                        tab['title'] as String,
-                        style: TextStyle(
-                          color: isSelected ? AppColors.accentGoldEnd : const Color(0xFF9D99B8),
-                          fontSize: isSelected ? 15.5 : 14,
-                          fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
-                          fontFamily: AppTheme.fontFamily,
-                          fontFamilyFallback: AppTheme.fontFamilyFallback,
-                          shadows: isSelected
-                              ? [
-                                  Shadow(
-                                    color: AppColors.buttonCamel.withValues(alpha: 0.45),
-                                    blurRadius: 8,
-                                  ),
-                                ]
-                              : null,
-                        ),
-                      ),
-                    ),
-                  )),
-                ),
-              );
-            }).toList(),
-          ),
-          const SizedBox(height: 8),
-          // Subtle Thin Divider
-          Container(
-            height: 1.0,
-            width: double.infinity,
-            color: const Color(0xFF383556).withValues(alpha: 0.7),
-          ),
-        ],
-      ),
-    );
-  }
-
-  /// Compact Challenge Box (collapsed shows only Title, Tag, Reward) -> expands on tap showing info & participate button
-  Widget _buildChallengeCard({
-    required Map<String, dynamic> item,
-    required String id,
-    required bool isExpanded,
-  }) {
-    final String title = item['title'] ?? 'چالش نپا';
-    final String desc = item['desc'] ?? '';
-    final String status = item['status'] ?? 'new';
-    final int reward = item['reward'] ?? 50;
-    final String dateStr = _formatDate(item['createdAt']);
-    final String typeLabel = _resolveChallengeTypeLabel(item['type']?.toString() ?? '');
-    final String deadlineLabel = item['deadlineLabel']?.toString() ?? 'بدون مهلت';
-    final String? feedback = item['mentorFeedback']?.toString();
-
-    // Status label, text color & background
-    String statusLabel = 'شروع شده';
-    Color statusColor = const Color(0xFFE5A86D);
-    Color statusBg = const Color(0xFFE5A86D).withValues(alpha: 0.15);
-    Color statusBorder = const Color(0xFFE5A86D).withValues(alpha: 0.4);
-
-    if (status == 'pending') {
-      statusLabel = 'در حال انجام';
-      statusColor = const Color(0xFF38BDF8);
-      statusBg = const Color(0xFF38BDF8).withValues(alpha: 0.15);
-      statusBorder = const Color(0xFF38BDF8).withValues(alpha: 0.4);
-    } else if (status == 'started' || status == 'new') {
-      statusLabel = 'شروع شده';
-      statusColor = const Color(0xFFE5A86D);
-      statusBg = const Color(0xFFE5A86D).withValues(alpha: 0.15);
-      statusBorder = const Color(0xFFE5A86D).withValues(alpha: 0.4);
-    } else if (status == 'rejected') {
-      statusLabel = 'اصلاحیه';
-      statusColor = const Color(0xFFEF4444);
-      statusBg = const Color(0xFFEF4444).withValues(alpha: 0.15);
-      statusBorder = const Color(0xFFEF4444).withValues(alpha: 0.45);
-    } else if (status == 'completed') {
-      statusLabel = 'تکمیل شده';
-      statusColor = const Color(0xFF10B981);
-      statusBg = const Color(0xFF10B981).withValues(alpha: 0.15);
-      statusBorder = const Color(0xFF10B981).withValues(alpha: 0.4);
-    } else if (status == 'expired') {
-      statusLabel = 'منقضی شده';
-      statusColor = const Color(0xFF9D99B8);
-      statusBg = const Color(0xFF9D99B8).withValues(alpha: 0.15);
-      statusBorder = const Color(0xFF9D99B8).withValues(alpha: 0.35);
-    }
-
-    return Directionality(
-      textDirection: TextDirection.rtl,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          // 1. Compact Header Box (Title -> Tag -> Reward Amount & Coin)
-          TapExpander(child: GestureDetector(
-            onTap: () {
-              setState(() {
-                if (_expandedChallengeIds.contains(id)) {
-                  _expandedChallengeIds.remove(id);
-                } else {
-                  _expandedChallengeIds.add(id);
-                }
-              });
-            },
-            behavior: HitTestBehavior.opaque,
-            child: Container(
-              decoration: BoxDecoration(
-                borderRadius: isExpanded
-                    ? const BorderRadius.only(
-                        topLeft: Radius.circular(16),
-                        topRight: Radius.circular(16),
-                      )
-                    : BorderRadius.circular(16),
-                gradient: const LinearGradient(
-                  begin: Alignment.centerLeft,
-                  end: Alignment.centerRight,
-                  stops: [0.0, 0.5, 1.0],
-                  colors: [
-                    Color(0xFF3A3A6A),
-                    Color(0xFF9292E2),
-                    Color(0xFF3A3A6A),
-                  ],
-                ),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.3),
-                    blurRadius: 10,
-                    offset: const Offset(0, 4),
-                  ),
-                ],
-              ),
-              padding: const EdgeInsets.all(1.2), // Gradient border
-              child: Container(
-                decoration: BoxDecoration(
-                  borderRadius: isExpanded
-                      ? const BorderRadius.only(
-                          topLeft: Radius.circular(14.8),
-                          topRight: Radius.circular(14.8),
-                        )
-                      : BorderRadius.circular(14.8),
-                  gradient: const LinearGradient(
-                    begin: Alignment.topCenter,
-                    end: Alignment.bottomCenter,
-                    stops: [0.0, 0.53, 1.0],
-                    colors: [
-                      Color(0xFF3D3C67),
-                      Color(0xFF36345C),
-                      Color(0xFF333359),
-                    ],
-                  ),
-                ),
-                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
-                child: Row(
-                  children: [
-                    // Right: Challenge Title (Smaller, concise)
-                    Expanded(
-                      child: Text(
-                        title,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: AppTypography.h3,
-                      ),
-                    ),
-
-                    const SizedBox(width: 8),
-
-                    // Left Group: Status Tag -> Reward Amount -> Chevron
-                    // 1. Status Tag
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 6.5, vertical: 2),
-                      decoration: BoxDecoration(
-                        color: statusBg,
-                        borderRadius: BorderRadius.circular(6),
-                        border: Border.all(color: statusBorder, width: 0.9),
-                      ),
-                      child: Text(
-                        statusLabel,
-                        style: AppTypography.caption.copyWith(color: statusColor),
-                      ),
-                    ),
-
-                    const SizedBox(width: 6),
-
-                    // 2. Reward Amount
-                    Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Text(
-                          (item['rewardLabel']?.toString() ?? '+$reward').toPersianDigits(),
-                          style: AppTypography.caption.copyWith(color: Color(0xFF9292E2)),
-                        ),
-                        const SizedBox(width: 4),
-                        SvgPicture.asset(
-                          'assets/svg_icons/challeng01.svg',
-                          width: 12,
-                          height: 12,
-                          colorFilter: const ColorFilter.mode(
-                            Color(0xFF9292E2),
-                            BlendMode.srcIn,
-                          ),
-                        ),
-                      ],
-                    ),
-
-                    const SizedBox(width: 6),
-
-                    // Far Left: Expand / Collapse Chevron Icon
-                    Icon(
-                      isExpanded ? Icons.keyboard_arrow_up_rounded : Icons.keyboard_arrow_down_rounded,
-                      color: const Color(0xFF9897D2),
-                      size: 20,
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          )),
-
-          // 2. Expanded Area: Opens on Click and Shows Description + Details + Participate Button
-          if (isExpanded)
-            Container(
-              decoration: BoxDecoration(
-                color: const Color(0xFF242240).withValues(alpha: 0.95),
-                borderRadius: const BorderRadius.only(
-                  bottomLeft: Radius.circular(16),
-                  bottomRight: Radius.circular(16),
-                ),
-                border: Border(
-                  left: BorderSide(color: const Color(0xFF3A3A6A).withValues(alpha: 0.8), width: 1.2),
-                  right: BorderSide(color: const Color(0xFF3A3A6A).withValues(alpha: 0.8), width: 1.2),
-                  bottom: BorderSide(color: const Color(0xFF3A3A6A).withValues(alpha: 0.8), width: 1.2),
-                ),
-              ),
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  // Description
-                  if (desc.isNotEmpty) ...[
-                    Text(
-                      desc,
-                      textAlign: TextAlign.right,
-                      style: AppTypography.caption.copyWith(color: Color(0xFFD3D0E3)),
-                    ),
-                    const SizedBox(height: 10),
-                  ],
-
-                  // Mentor Feedback if rejected
-                  if (status == 'rejected' && feedback != null && feedback.trim().isNotEmpty) ...[
-                    Container(
-                      margin: const EdgeInsets.only(bottom: 10),
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFEF4444).withValues(alpha: 0.12),
-                        borderRadius: BorderRadius.circular(8),
-                        border: Border.all(color: const Color(0xFFEF4444).withValues(alpha: 0.35)),
-                      ),
-                      child: Row(
-                        children: [
-                          const Icon(Icons.error_outline_rounded, color: Color(0xFFF87171), size: 15),
-                          const SizedBox(width: 6),
-                          Expanded(
-                            child: Text(
-                              'توضیح راهبر: $feedback',
-                              style: AppTypography.caption.copyWith(color: Color(0xFFFCA5A5)),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-
-                  // Bottom Action Row: Details on Right -> Participate Button on Left
-                  Row(
-                    children: [
-                      // Right: Details (Type + Creation Date + Deadline)
-                      Expanded(
-                        child: Wrap(
-                          spacing: 10,
-                          runSpacing: 4,
-                          crossAxisAlignment: WrapCrossAlignment.center,
-                          children: [
-                            Text(
-                              'نوع: $typeLabel',
-                              style: AppTypography.caption.copyWith(color: Color(0xFFB8B5CE)),
-                            ),
-                            Text(
-                              'مهلت: ${deadlineLabel.toPersianDigits()}',
-                              style: AppTypography.caption.copyWith(color: Color(0xFFB8B5CE)),
-                            ),
-                            Text(
-                              'تاریخ: $dateStr',
-                              style: AppTypography.caption.copyWith(color: Color(0xFF9D99B8)),
-                            ),
-                          ],
-                        ),
-                      ),
-
-                      const SizedBox(width: 8),
-
-                      // Left: Participate Button (دکمه شرکت)
-                      TapExpander(child: GestureDetector(
-                        onTap: () => _showSubmissionDialog(item),
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 5.5),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFF2A2835),
-                            borderRadius: BorderRadius.circular(8),
-                            border: Border.all(
-                              color: AppColors.buttonCamel.withValues(alpha: 0.85),
-                              width: 1.0,
-                            ),
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.black.withValues(alpha: 0.25),
-                                blurRadius: 4,
-                                offset: const Offset(0, 2),
-                              ),
-                            ],
-                          ),
-                          child: Text(
-                            status == 'rejected' ? 'اصلاح و ارسال' : (status == 'started' ? 'ادامه' : 'شرکت'),
-                            style: AppTypography.captionGold,
-                          ),
-                        ),
-                      )),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-        ],
-      ),
-    );
-  }
-
-  /// Empty State Widget
-  Widget _buildEmptyState() {
-    return Container(
-      margin: const EdgeInsets.symmetric(vertical: 30),
-      padding: const EdgeInsets.all(26),
-      decoration: BoxDecoration(
-        color: const Color(0xFF1E1435).withValues(alpha: 0.6),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: const Color(0xFF453F73).withValues(alpha: 0.3)),
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          const Icon(
-            Icons.emoji_events_outlined,
-            size: 44,
-            color: Color(0xFF676296),
-          ),
-          const SizedBox(height: 12),
-          const Text(
-            'چالشی در این دسته‌بندی وجود ندارد',
-            style: AppTypography.h3,
-          ),
-          const SizedBox(height: 6),
-          Text(
-            'چالش‌های جدید ثبت شده توسط راهبر یا مدیر در این بخش نمایش داده خواهند شد.',
-            textAlign: TextAlign.center,
-            style: AppTypography.caption.copyWith(color: Color(0xFF9D99B8)),
-          ),
-        ],
-      ),
     );
   }
 }

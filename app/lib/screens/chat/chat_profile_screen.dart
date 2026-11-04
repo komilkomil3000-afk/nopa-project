@@ -18,6 +18,7 @@ import 'package:nopa_app/screens/chat/chat_groups_screen.dart';
 import 'package:nopa_app/screens/chat/chat_message_bubble.dart';
 import 'package:nopa_app/screens/chat/chat_theme.dart';
 import 'package:nopa_app/screens/chat/chat_widgets.dart';
+import 'package:nopa_app/screens/mentor/challenges/mentor_challenges_screen.dart' show MentorChallengeDialogs;
 import 'package:nopa_app/screens/mentor/profile/mentor_caravans_roster_screen.dart';
 import 'package:nopa_app/services/app_state_repository.dart';
 import 'package:nopa_app/services/chat_repository.dart';
@@ -44,6 +45,7 @@ class _ChatSpaceProfileScreenState extends State<ChatSpaceProfileScreen> {
   bool _allMembers = false;
 
   static const int _shownMembers = 8;
+  UserModel get _me => Provider.of<AppRepository>(context, listen: false).currentUser;
   bool _savingCover = false;
 
   @override
@@ -157,6 +159,21 @@ class _ChatSpaceProfileScreenState extends State<ChatSpaceProfileScreen> {
                     ),
                   ],
                 ]),
+              ],
+              if ((profile['type'] ?? space?.type) == 'challenges' && space?.canPost == true && _me.role.isMentorLike) ...[
+                const SizedBox(height: 14),
+                // The same dialog as on the challenges screen; the new card then lands in this group's feed
+                InkWell(
+                  onTap: () => MentorChallengeDialogs.showCreateChallengeDialog(context, _me, onSaved: _load),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 6),
+                    child: Row(children: [
+                      const Icon(Icons.local_fire_department_rounded, color: ChatTheme.lavender, size: 20),
+                      const SizedBox(width: 10),
+                      Text('ایجاد چالش', style: ChatTheme.body.copyWith(color: ChatTheme.lavender, fontSize: 13)),
+                    ]),
+                  ),
+                ),
               ],
               if (profile['canModerate'] == true && profile['type'] == 'media') ...[
                 const SizedBox(height: 18),

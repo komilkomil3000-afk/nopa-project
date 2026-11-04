@@ -282,3 +282,71 @@ export const answerQuestion = handler(async (req, res) => {
   await publishBotMessage({ spaceId: arena.id, botKey: 'challenge', threadRootId: topic?.messageId, body: `پرسش: ${question.body}\nپاسخ داور: ${answer}` });
   res.json({ success: true });
 });
+
+// ---- «میدان آثار»: a mentor's deliverable under a challenge, and the rank it later earns ----
+
+const RANK_LABELS = ['مقام اول', 'مقام دوم', 'مقام سوم'];
+
+/**
+ * A mentor's reply with a file under an inter-group challenge in the arena is the caravan's work for that challenge.
+ * It is marked on the message (so a rank can be shown on it later) and kept as the caravan's entry for the admin's ranking.
+ * Text-only replies stay ordinary discussion. Never throws: a failure here must not lose the message.
+ */
+export async function recordArenaSubmission(actor: ChatActor, space: { id: string; type: string }, message: { id: string; body: string; threadRootId?: string | null; attachments?: { id: string }[] }): Promise<void> {
+  try {
+    if (space.type !== 'arena' || !message.threadRootId || !message.attachments?.length) return;
+    if (!isMentorRole(actor.role) || actor.mentoredCaravanIds.length === 0) return;
+    const topic = await prisma.chatTopic.findUnique({ where: { messageId: message.threadRootId }, include: { challenge: true } });
+    if (!topic || topic.challenge.category !== 'inter_group') return;
+    const challenge = topic.challenge;
+    const caravanId = actor.mentoredCaravanIds[0];
+    const meta = { submission: true, caravanId, challengeId: challenge.id };
+    await prisma.chatMessage.update({ where: { id: message.id }, data: { meta } });
+    if (!challenge.rankingFinalizedAt && !judgingOpen(challenge)) {
+      const body = (message.body || '').trim().slice(0, 8000) || 'اثر پیوست‌شده';
+      const attachmentId = message.attachments[0].id;
+      await prisma.$transaction(async (tx) => {
+        const existing = await tx.interGroupEntry.findUnique({ where: { challengeId_caravanId: { challengeId: challenge.id, caravanId } } });
+        if (existing) {
+          await tx.interGroupEntry.update({ where: { id: existing.id }, data: { body, fileUrl: attachmentId, submittedBy: actor.id, submittedAt: new Date() } });
+          return;
+        }
+        await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${challenge.id}))`;
+        const count = await tx.interGroupEntry.count({ where: { challengeId: challenge.id } });
+        await tx.interGroupEntry.create({ data: { challengeId: challenge.id, caravanId, anonCode: count + 1, body, fileUrl: attachmentId, submittedBy: actor.id } });
+      });
+    }
+    await publishUpdate(message.id);
+  } catch (e) {
+    console.error('recordArenaSubmission error:', e);
+  }
+}
+
+/**
+ * Copies the admin's ranking onto the caravans' submissions in the arena, so each shows its place.
+ * Safe to repeat after a correction: a caravan without a place has its badge removed.
+ */
+export async function applyRankBadges(challengeId: string): Promise<void> {
+  try {
+    const [banners, topics] = await Promise.all([
+      prisma.caravanBanner.findMany({ where: { challengeId }, select: { caravanId: true, rank: true } }),
+      prisma.chatTopic.findMany({ where: { challengeId, space: { type: 'arena' } }, select: { messageId: true } }),
+    ]);
+    if (topics.length === 0) return;
+    const rankOf = new Map(banners.map(b => [b.caravanId, b.rank]));
+    const caravans = await prisma.caravan.findMany({ where: { id: { in: banners.map(b => b.caravanId) } }, select: { id: true, name: true } });
+    const nameOf = new Map(caravans.map(c => [c.id, c.name]));
+    const replies = await prisma.chatMessage.findMany({ where: { threadRootId: { in: topics.map(t => t.messageId) }, deletedAt: null }, select: { id: true, meta: true } });
+    for (const reply of replies) {
+      const meta = (reply.meta ?? {}) as Record<string, any>;
+      if (!meta.submission || !meta.caravanId) continue;
+      const rank = rankOf.get(meta.caravanId) ?? null;
+      const { rank: _oldRank, rankLabel: _oldLabel, caravanName: _oldName, ...rest } = meta;
+      const next = rank ? { ...rest, rank, rankLabel: RANK_LABELS[rank - 1] ?? `مقام ${rank}`, caravanName: nameOf.get(meta.caravanId) ?? '' } : rest;
+      await prisma.chatMessage.update({ where: { id: reply.id }, data: { meta: next } });
+      await publishUpdate(reply.id);
+    }
+  } catch (e) {
+    console.error('applyRankBadges error:', e);
+  }
+}
