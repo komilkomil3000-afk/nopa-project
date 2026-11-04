@@ -167,7 +167,8 @@ window.saveQuizFromModal = async function(e) {
   const clipId = document.getElementById('quiz-modal-clip-id')?.value;
 
   const title = document.getElementById('quiz-modal-title-input')?.value;
-  const rewardZarik = parseInt(document.getElementById('quiz-modal-zarik')?.value) || 10;
+  const rawZarik = parseInt(document.getElementById('quiz-modal-zarik')?.value, 10);
+  const rewardZarik = Number.isFinite(rawZarik) && rawZarik >= 0 ? rawZarik : 10; // 0 is a valid reward
 
   const question = document.getElementById('quiz-modal-q-text')?.value;
   const opts = Array.from(document.querySelectorAll('#quiz-opts .quiz-opt-text')).map(i => i.value);
@@ -200,6 +201,8 @@ window.saveQuizFromModal = async function(e) {
       showToast('آزمونک (متن سوال، گزینه‌ها، پاسخ صحیح و پاداش زریک) با موفقیت در دیتابیس ذخیره شد', 'success');
       document.getElementById('lms-quiz-editor-modal').style.display = 'none';
       await window.fetchLiveLmsStations();
+      // only this quiz changes; shown at once even if the list was read before the change landed
+      if (id) lmsEachQuiz(q => { if (String(q.id) === String(id)) q.rewardZarik = rewardZarik; });
       // the station editor redraws with its unsaved draft kept (js/features/lms/station-editor.js)
       if (typeof window.lmsEditorRefresh === 'function') window.lmsEditorRefresh();
     } else {
@@ -229,3 +232,11 @@ window.deleteQuizRecord = async function(quizId) {
     console.error('Delete quiz error:', err);
   }
 };
+
+// Calls fn for every quiz in the loaded station list (session quizzes and part quizzes)
+function lmsEachQuiz(fn) {
+  (window.lmsStationsMasterList || []).forEach(st => (st.categories || []).forEach(c => (c.sessions || []).forEach(s => {
+    (s.quizzes || []).forEach(fn);
+    (s.videoClips || []).forEach(clip => (clip.quizzes || []).forEach(fn));
+  })));
+}

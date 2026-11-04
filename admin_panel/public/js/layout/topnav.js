@@ -1,5 +1,7 @@
 // Horizontal top navigation, built from the tab registry (js/core/router.js). Loaded before the feature modules (js/app, js/features).
-// - Groups with several tabs open a dropdown; a group with a single tab is a direct link.
+// - Groups with several tabs open a dropdown; a group with a single tab is a direct link. A group with subs
+//   (کاربران, منزلگاه‌ها) opens a menu of sub-menus, one column per sub.
+// - Stats and settings are icons on the left of the header (like the bell and the chat, js/layout/header-chat.js).
 // - Sub admins only see tabs whose section they were granted: NopaNav.applyAccess({ all, sections }).
 // - Below NAV_BREAKPOINT the groups move into a slide-in panel (hamburger).
 // - Section search ("/" or Ctrl+K), bell (own messages, newest support messages, "needs attention"), user menu.
@@ -23,11 +25,24 @@
   const hrefOf = tabId => '#' + NopaRouter.TABS[tabId].hashes[0];
 
   // ---- model ------------------------------------------------------------------------------
+  const tabsOf = (groupId, subId) => Object.keys(NopaRouter.TABS).filter(id => {
+    const t = NopaRouter.TABS[id];
+    return t.group === groupId && !t.hidden && (subId === undefined || t.sub === subId) && isAllowed(id);
+  });
+
   function model() {
     const items = [];
     if (isAllowed(DASHBOARD.tabId)) items.push({ kind: 'link', tabId: DASHBOARD.tabId, label: DASHBOARD.label, icon: DASHBOARD.icon });
     NopaRouter.GROUPS.forEach(g => {
-      const tabs = Object.keys(NopaRouter.TABS).filter(id => NopaRouter.TABS[id].group === g.id && isAllowed(id));
+      if (g.placement === 'tools') return; // header icons (renderTools)
+      if (g.subs) {
+        const subs = g.subs.map(sub => ({ sub, tabs: tabsOf(g.id, sub.id) })).filter(x => x.tabs.length);
+        const count = subs.reduce((n, x) => n + x.tabs.length, 0);
+        if (count === 1) items.push({ kind: 'link', tabId: subs[0].tabs[0], label: g.label, icon: g.icon, group: g.id });
+        else if (count > 1) items.push({ kind: 'mega', group: g, subs });
+        return;
+      }
+      const tabs = tabsOf(g.id);
       if (tabs.length === 1) items.push({ kind: 'link', tabId: tabs[0], label: g.label, icon: g.icon, group: g.id });
       else if (tabs.length > 1) items.push({ kind: 'group', group: g, tabs });
     });
@@ -35,6 +50,20 @@
   }
 
   // ---- render -----------------------------------------------------------------------------
+  function menuLink(id) {
+    const t = NopaRouter.TABS[id];
+    return `<a class="topnav-menu-link" role="menuitem" href="${hrefOf(id)}" data-tab="${esc(id)}">
+      <i class="${esc(t.icon)}"></i>
+      <span class="topnav-menu-text"><span class="topnav-menu-label">${esc(t.label)}</span><span class="topnav-menu-desc">${esc(t.desc)}</span></span>
+    </a>`;
+  }
+
+  function trigger(g) {
+    return `<button type="button" class="topnav-trigger" aria-haspopup="true" aria-expanded="false">
+      <i class="${esc(g.icon)}"></i><span>${esc(g.label)}</span><i class="fa-solid fa-chevron-down topnav-caret"></i>
+    </button>`;
+  }
+
   function render() {
     const list = $('topnav-list');
     if (!list) return;
@@ -46,31 +75,67 @@
           </a></li>`;
       }
       const g = item.group;
+      if (item.kind === 'mega') {
+        // a menu of sub-menus: one column per sub, each with its own heading and tabs
+        return `<li class="topnav-item has-menu" data-group="${esc(g.id)}">
+          ${trigger(g)}
+          <div class="topnav-menu topnav-mega" role="menu" data-cols="${item.subs.length}">
+            ${item.subs.map(x => `<div class="topnav-sub" role="group" aria-label="${esc(x.sub.label)}" data-sub="${esc(x.sub.id)}">
+              <div class="topnav-sub-head"><i class="${esc(x.sub.icon)}"></i><span>${esc(x.sub.label)}</span></div>
+              ${x.tabs.map(menuLink).join('')}
+            </div>`).join('')}
+          </div></li>`;
+      }
       return `<li class="topnav-item has-menu" data-group="${esc(g.id)}">
-        <button type="button" class="topnav-trigger" aria-haspopup="true" aria-expanded="false">
-          <i class="${esc(g.icon)}"></i><span>${esc(g.label)}</span><i class="fa-solid fa-chevron-down topnav-caret"></i>
-        </button>
-        <div class="topnav-menu" role="menu">
-          ${item.tabs.map(id => {
-            const t = NopaRouter.TABS[id];
-            return `<a class="topnav-menu-link" role="menuitem" href="${hrefOf(id)}" data-tab="${esc(id)}">
-              <i class="${esc(t.icon)}"></i>
-              <span class="topnav-menu-text"><span class="topnav-menu-label">${esc(t.label)}</span><span class="topnav-menu-desc">${esc(t.desc)}</span></span>
-            </a>`;
-          }).join('')}
-        </div></li>`;
+        ${trigger(g)}
+        <div class="topnav-menu" role="menu">${item.tabs.map(menuLink).join('')}</div></li>`;
     }).join('');
+    renderTools();
     markActive(typeof activeTab !== 'undefined' ? activeTab : null);
   }
 
+  // Stats and settings: icon buttons on the left of the header, like the bell and the chat.
+  // A tools group with one allowed tab is a plain link; with several it opens a dropdown.
+  function renderTools() {
+    NopaRouter.GROUPS.filter(g => g.placement === 'tools').forEach(g => {
+      const menu = $(`tool-${g.id}-menu`);
+      if (!menu) return;
+      const tabs = tabsOf(g.id);
+      menu.hidden = !tabs.length;
+      const btn = menu.querySelector(':scope > button');
+      const dd = menu.querySelector('.header-dropdown');
+      const single = tabs.length === 1 || !dd;
+      menu.classList.toggle('is-direct', single);
+      if (single) {
+        if (tabs[0]) btn.dataset.tab = tabs[0];
+        btn.removeAttribute('aria-expanded');
+        btn.removeAttribute('aria-haspopup');
+      } else {
+        delete btn.dataset.tab;
+        btn.setAttribute('aria-haspopup', 'true');
+        btn.setAttribute('aria-expanded', String(menu.classList.contains('is-open')));
+      }
+      if (dd) {
+        dd.innerHTML = `<div class="header-dropdown-title">${esc(g.label)}</div>` + tabs.map(id => {
+          const t = NopaRouter.TABS[id];
+          return `<a class="header-dropdown-item" href="${hrefOf(id)}" data-tab="${esc(id)}"><i class="${esc(t.icon)}"></i><span>${esc(t.label)}</span></a>`;
+        }).join('');
+        if (single) dd.hidden = true;
+      }
+    });
+  }
+
   function markActive(tabId) {
-    document.querySelectorAll('#topnav [data-tab]').forEach(a => {
+    document.querySelectorAll('#topnav [data-tab], .header-tool [data-tab]').forEach(a => {
       const on = a.dataset.tab === tabId;
       a.classList.toggle('is-active', on);
       if (on) a.setAttribute('aria-current', 'page'); else a.removeAttribute('aria-current');
     });
-    document.querySelectorAll('#topnav .has-menu').forEach(li => {
+    document.querySelectorAll('#topnav .has-menu, .header-tool').forEach(li => {
       li.classList.toggle('is-active', !!li.querySelector(`[data-tab="${tabId}"]`));
+    });
+    document.querySelectorAll('#topnav .topnav-sub').forEach(sub => {
+      sub.classList.toggle('is-active', !!sub.querySelector(`[data-tab="${tabId}"]`));
     });
   }
 
@@ -84,7 +149,7 @@
     document.querySelectorAll('.header-menu.is-open').forEach(m => {
       if (m === except) return;
       m.classList.remove('is-open');
-      const btn = m.querySelector('[aria-expanded]');
+      const btn = m.querySelector(':scope > button[aria-expanded]');
       if (btn) btn.setAttribute('aria-expanded', 'false');
       const dd = m.querySelector('.header-dropdown');
       if (dd) dd.hidden = true;
@@ -100,10 +165,11 @@
   }
 
   function toggleHeaderMenu(menu) {
+    if (menu.classList.contains('is-direct')) return false; // a tools icon with one tab is a plain link
     const open = !menu.classList.contains('is-open');
     closeMenus(menu);
     menu.classList.toggle('is-open', open);
-    menu.querySelector('[aria-expanded]').setAttribute('aria-expanded', String(open));
+    menu.querySelector(':scope > button').setAttribute('aria-expanded', String(open));
     menu.querySelector('.header-dropdown').hidden = !open;
     return open;
   }
@@ -135,7 +201,13 @@
     const box = $('nav-search-results');
     const query = norm(q);
     if (!query) { box.hidden = true; searchResults = []; return; }
-    const groupLabel = id => (NopaRouter.GROUPS.find(g => g.id === NopaRouter.TABS[id].group) || {}).label || 'داشبورد';
+    const groupLabel = id => {
+      const t = NopaRouter.TABS[id];
+      const g = NopaRouter.GROUPS.find(x => x.id === t.group);
+      if (!g) return 'داشبورد';
+      const sub = g.subs && g.subs.find(x => x.id === t.sub);
+      return sub ? `${g.label} › ${sub.label}` : g.label;
+    };
     searchResults = Object.keys(NopaRouter.TABS).filter(isAllowed).filter(id => {
       const t = NopaRouter.TABS[id];
       return [t.label, t.title, t.desc, groupLabel(id)].some(v => norm(v).includes(query));
@@ -352,12 +424,23 @@
 
     // Header dropdowns (bell, user)
     document.querySelectorAll('.header-menu').forEach(menu => {
-      menu.querySelector('[aria-expanded]').addEventListener('click', e => {
+      const btn = menu.querySelector(':scope > button');
+      if (!btn) return;
+      btn.addEventListener('click', e => {
         e.stopPropagation();
+        if (menu.classList.contains('is-direct')) { if (btn.dataset.tab) go(btn.dataset.tab); return; }
         const opened = toggleHeaderMenu(menu);
         if (opened && menu.id === 'attention-menu') { refreshAttention(); if (window.NopaInbox) NopaInbox.refresh(); }
+        if (opened) { try { menu.dispatchEvent(new CustomEvent('nopa:menuopen')); } catch (_) { /* old browser */ } }
       });
     });
+    // Links in the tools dropdowns (settings)
+    document.querySelectorAll('.header-tool .header-dropdown').forEach(dd => dd.addEventListener('click', e => {
+      const link = e.target.closest('a[data-tab]');
+      if (!link || e.ctrlKey || e.metaKey) return;
+      e.preventDefault();
+      go(link.dataset.tab);
+    }));
     $('attention-dropdown').addEventListener('click', e => {
       const own = e.target.closest('[data-inbox-id]');
       // stopPropagation: the list re-renders, and a detached target would read as a click outside the menu
@@ -422,5 +505,5 @@
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);
   else init();
 
-  window.NopaNav = { applyAccess, setUser, render, refreshAttention, isAllowed, sectionAllowed };
+  window.NopaNav = { applyAccess, setUser, render, refreshAttention, isAllowed, sectionAllowed, go, closeMenus };
 })();

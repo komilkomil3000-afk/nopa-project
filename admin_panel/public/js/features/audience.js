@@ -50,6 +50,11 @@ function usrLevelName(level, short) {
 window.usrGoTab = function(tabId) {
   if (window.NopaRouter) window.NopaRouter.switchTab(tabId, true);
 };
+// Quick access: go to a tab, then open one of its dialogs (e.g. the station editor lives inside the stations tab)
+window.usrGoTabAndRun = function(tabId, fnName) {
+  window.usrGoTab(tabId);
+  requestAnimationFrame(() => { if (typeof window[fnName] === 'function') window[fnName](); });
+};
 
 // ==================== LOADER ====================
 // Called by the router on every visit and by the filters / pager (bootstrap.js). Keeps an open page in sync.

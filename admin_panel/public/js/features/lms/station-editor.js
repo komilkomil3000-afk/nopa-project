@@ -777,12 +777,20 @@
     const ci = cats.findIndex(c => String(c.id) === catId);
     const cat = cats[ci];
     const sessions = sessionsOf(cat);
-    let parts = 0, quizzes = 0;
+    let parts = 0;
+    const quizMap = new Map(); // a part's quiz is also in its session's list: count each once
     sessions.forEach(s => {
       parts += (s.videoClips || []).length;
-      quizzes += (s.quizzes || []).length;
-      (s.videoClips || []).forEach(c => { quizzes += (c.quizzes || []).length; });
+      (s.quizzes || []).forEach(q => quizMap.set(String(q.id), q));
+      (s.videoClips || []).forEach(c => (c.quizzes || []).forEach(q => quizMap.set(String(q.id), q)));
     });
+    const quizzes = quizMap.size;
+    // The batch box starts at the category's current reward: the shared amount, else the most common one
+    const tally = {};
+    quizMap.forEach(q => { const z = q.rewardZarik ?? 10; tally[z] = (tally[z] || 0) + 1; });
+    const zKeys = Object.keys(tally);
+    const catZarik = zKeys.length ? zKeys.sort((a, b) => tally[b] - tally[a])[0] : 15;
+    const zarikMixed = zKeys.length > 1;
     const bank = window.globalInstructorsList || [];
     return `
       <header class="lse-detail-head">
@@ -819,10 +827,10 @@
         </section>
         <section class="lse-card lse-tool">
           <h5><i class="fa-solid fa-coins"></i> پاداش زریک همه آزمونک‌ها</h5>
-          <p>پاداش پاسخ درست به همه آزمونک‌های این دسته. بلافاصله ثبت می‌شود.</p>
+          <p>پاداش پاسخ درست به همه آزمونک‌های این دسته. بلافاصله ثبت می‌شود و روی هر آزمونک نشان داده می‌شود؛ بعدا می‌توانید پاداش یک آزمونک را جدا تغییر دهید.${zarikMixed ? ' <b>اکنون پاداش آزمونک‌ها یکسان نیست.</b>' : ''}</p>
           <span class="lse-inline">
-            <input type="number" id="batch-zarik-cat-${esc(cat.id)}" class="input-ctrl" value="15" min="0" max="1000" aria-label="مقدار زریک">
-            <button type="button" class="lsv-pill" data-click="applyBatchZarikToCategory" data-click-args="${args(cat.id, st.id)}">اعمال</button>
+            <input type="number" id="batch-zarik-cat-${esc(cat.id)}" class="input-ctrl" value="${esc(catZarik)}" min="0" max="1000" aria-label="مقدار زریک" data-batch-zarik="${esc(cat.id)}" data-batch-station="${esc(st.id)}"${quizzes ? '' : ' disabled'}>
+            <button type="button" class="lsv-pill" data-click="applyBatchZarikToCategory" data-click-args="${args(cat.id, st.id)}"${quizzes ? '' : ' disabled title="این دسته هنوز آزمونکی ندارد"'}>اعمال</button>
           </span>
         </section>
       </div>`;
@@ -1387,6 +1395,13 @@
     m.dataset.bound = '1';
     m.addEventListener('input', onFieldInput);
     m.addEventListener('change', onFieldInput);
+    // Enter in a category's batch zarik box applies it (instead of nothing / a form submit)
+    m.addEventListener('keydown', e => {
+      const box = e.target instanceof Element && e.target.closest('[data-batch-zarik]');
+      if (!box || e.key !== 'Enter') return;
+      e.preventDefault();
+      window.applyBatchZarikToCategory(box.dataset.batchZarik, box.dataset.batchStation);
+    });
     // a backdrop click closes the editor only when nothing is waiting to be saved (js/ui/modal.js)
     if (window.NopaModal && window.NopaModal.guard) window.NopaModal.guard(MODAL_ID, () => isOpen() && (isDirty() || ED.saving));
   }

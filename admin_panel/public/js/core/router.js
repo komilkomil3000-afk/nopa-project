@@ -11,15 +11,22 @@
     if (typeof fn === 'function') return fn.apply(window, Array.prototype.slice.call(arguments, 1));
   }
 
+  // Main menu groups. A group with `subs` opens a menu of sub-menus (each with its own tabs); a tab names its
+  // group and, inside such a group, its sub. `placement: 'tools'` groups are not in the main menu: they are
+  // icon buttons on the left of the header (js/layout/topnav.js).
   const GROUPS = [
-    { id: 'stats', label: 'آمار', icon: 'fa-solid fa-chart-column' },
-    { id: 'audience', label: 'مخاطبان', icon: 'fa-solid fa-users' },
-    { id: 'economy', label: 'اقتصاد و لیگ', icon: 'fa-solid fa-coins' },
-    { id: 'mentors', label: 'راهبران', icon: 'fa-solid fa-user-tie' },
-    { id: 'caravans', label: 'کاروان‌ها', icon: 'fa-solid fa-compass' },
-    { id: 'learning', label: 'آموزش', icon: 'fa-solid fa-book-open' },
+    { id: 'people', label: 'کاربران', icon: 'fa-solid fa-users', subs: [
+      { id: 'travelers', label: 'همسفران', icon: 'fa-solid fa-people-group' },
+      { id: 'mentors', label: 'راهبران', icon: 'fa-solid fa-user-tie' },
+      { id: 'caravans', label: 'کاروان', icon: 'fa-solid fa-compass' },
+    ] },
+    { id: 'stations', label: 'منزلگاه‌ها', icon: 'fa-solid fa-route', subs: [
+      { id: 'learning', label: 'آموزش', icon: 'fa-solid fa-book-open' },
+      { id: 'economy', label: 'اقتصاد و لیگ', icon: 'fa-solid fa-coins' },
+    ] },
     { id: 'outreach', label: 'اطلاع‌رسانی', icon: 'fa-solid fa-bullhorn' },
-    { id: 'settings', label: 'تنظیمات', icon: 'fa-solid fa-shield-halved' },
+    { id: 'stats', label: 'آمار', icon: 'fa-solid fa-chart-column', placement: 'tools' },
+    { id: 'settings', label: 'تنظیمات', icon: 'fa-solid fa-gear', placement: 'tools' },
   ];
 
   const TABS = {
@@ -35,62 +42,62 @@
       load: () => call('loadStatsPage'),
     },
     'users-tab': {
-      hashes: ['users'], group: 'audience', label: 'همسفران', icon: 'fa-solid fa-people-group', section: 'users',
+      hashes: ['users'], group: 'people', sub: 'travelers', label: 'همسفران', icon: 'fa-solid fa-people-group', section: 'users',
       title: 'همسفران نپا', desc: 'همه همسفران نپا (نوجوانان، راهبران و مدیران) در یک نگاه',
       load: () => call('loadUsersData'),
     },
     'levels-tab': {
-      hashes: ['levels'], group: 'audience', label: 'سطوح و گواهینامه‌ها', icon: 'fa-solid fa-layer-group', section: 'users',
+      hashes: ['levels'], group: 'people', sub: 'travelers', label: 'سطوح و گواهینامه‌ها', icon: 'fa-solid fa-layer-group', section: 'users',
       title: 'سطوح و گواهینامه‌ها', desc: 'سطح هر نوجوان در مسیر منزلگاه‌ها، گواهینامه‌ها و درخواست‌های چاپی',
       load: () => call('loadLevelsAndCertificatesTab'),
     },
     'rewards-tab': {
-      hashes: ['rewards'], group: 'economy', label: 'کیف پول و لیگ', icon: 'fa-solid fa-coins', section: 'rewards',
+      hashes: ['rewards'], group: 'stations', sub: 'economy', label: 'کیف پول و لیگ', icon: 'fa-solid fa-coins', section: 'rewards',
       title: 'کیف پول زریک', desc: 'مدیریت ترازنامه، جوایز فصلی و توزیع ثروت اقتصاد زریک',
       load: () => call('loadWallet'),
     },
     'assets-tab': {
-      hashes: ['assets'], group: 'economy', label: 'سرمایه‌ها', icon: 'fa-solid fa-scale-balanced', section: null,
+      hashes: ['assets'], group: 'stations', sub: 'economy', label: 'سرمایه‌ها', icon: 'fa-solid fa-scale-balanced', section: null,
       title: 'سرمایه‌ها', desc: 'نام دارایی‌ها، نرخ‌ها، جوایز و قوانین مالی اپ',
       load: () => call('loadAssetsTab'),
     },
     'mentors-profile-tab': {
-      hashes: ['mentors', 'mentors-profile', 'mentors-league'], group: 'mentors', label: 'پروفایل و شناسنامه', icon: 'fa-solid fa-id-card', section: 'mentors',
+      hashes: ['mentors', 'mentors-profile', 'mentors-league'], group: 'people', sub: 'mentors', label: 'پروفایل و شناسنامه', icon: 'fa-solid fa-id-card', section: 'mentors',
       title: 'پروفایل و شناسنامه راهبران', desc: 'مرکز ارزیابی راهبران و مربیان',
       load: () => call('loadMentorsData'),
     },
     'mentors-tickets-tab': {
-      hashes: ['mentors-tickets'], group: 'mentors', label: 'میزکار و تیکت‌ها', icon: 'fa-solid fa-inbox', section: 'support',
+      hashes: ['mentors-tickets'], group: 'people', sub: 'mentors', label: 'میزکار و تیکت‌ها', icon: 'fa-solid fa-inbox', section: 'support',
       title: 'میزکار و تیکت‌ها', desc: 'مدیریت تیکت‌ها و درخواست‌های مربیان',
       load: () => call('loadTickets'),
     },
     'mentors-docs-tab': {
-      hashes: ['mentors-docs'], group: 'mentors', label: 'تایید مدارک و گواهینامه‌ها', icon: 'fa-solid fa-file-circle-check', section: 'mentors',
+      hashes: ['mentors-docs'], group: 'people', sub: 'mentors', label: 'تایید مدارک و گواهینامه‌ها', icon: 'fa-solid fa-file-circle-check', section: 'mentors',
       title: 'تایید مدارک و گواهینامه‌ها', desc: 'صف انتظار بررسی و تایید مدارک مربیان',
       load: () => call('loadMentorDocs'),
     },
     'instructors-tab': {
-      hashes: ['instructors'], group: 'mentors', label: 'بانک اساتید', icon: 'fa-solid fa-chalkboard-user', section: 'instructors',
+      hashes: ['instructors'], group: 'people', sub: 'mentors', label: 'بانک اساتید', icon: 'fa-solid fa-chalkboard-user', section: 'instructors',
       title: 'بانک و مدیریت اساتید', desc: 'مشخصات، سوابق، مدرک، رزومه و کلاس‌های اساتید دوره',
       load: () => call('fetchInstructorsList'),
     },
     'caravans-tab': {
-      hashes: ['caravans', 'caravan-league'], group: 'caravans', label: 'مدیریت و فهرست کاروان‌ها', icon: 'fa-solid fa-compass', section: 'caravans',
+      hashes: ['caravans', 'caravan-league'], group: 'people', sub: 'caravans', label: 'مدیریت و فهرست کاروان‌ها', icon: 'fa-solid fa-compass', section: 'caravans',
       title: 'کاروان‌ها و مربیان', desc: 'گزارش پیشرفت گروهی کاروان‌ها و ارزیابی مربیان',
       load: () => call('loadCaravansData'),
     },
     'lms-tab': {
-      hashes: ['lms', 'stations'], group: 'learning', label: 'ساختار منزلگاه و کلاس‌ها', icon: 'fa-solid fa-graduation-cap', section: 'lms',
+      hashes: ['lms', 'stations'], group: 'stations', sub: 'learning', label: 'ساختار منزلگاه و کلاس‌ها', icon: 'fa-solid fa-graduation-cap', section: 'lms',
       title: 'ساختار منزلگاه‌ها', desc: 'مدیریت منزلگاه‌ها، کلاس‌ها و آزمون‌ها',
       load: () => call('fetchLiveLmsStations'),
     },
     'submissions-tab': {
-      hashes: ['submissions'], group: 'learning', label: 'بررسی چالش‌ها و تکالیف', icon: 'fa-solid fa-trophy', section: 'challenges',
+      hashes: ['submissions'], group: 'stations', sub: 'learning', label: 'بررسی چالش‌ها و تکالیف', icon: 'fa-solid fa-trophy', section: 'challenges',
       title: 'بررسی و مدیریت چالش‌ها', desc: 'مشاهده چالش‌های فعال نپا، مراحل و گام‌های سوالات، و ارزیابی تکالیف دانش‌آموزان',
       load: () => call('loadChallengesAndSubmissionsTab'),
     },
     'form-builder-tab': {
-      hashes: ['form-builder'], group: 'learning', label: 'فرم‌ساز داینامیک', icon: 'fa-brands fa-wpforms', section: 'content',
+      hashes: ['form-builder'], group: 'stations', sub: 'learning', label: 'فرم‌ساز داینامیک', icon: 'fa-brands fa-wpforms', section: 'content',
       title: 'فرم‌ساز داینامیک', desc: 'طراحی و مدیریت فرم‌ها و پرسشنامه‌های اختصاصی',
       load: () => call('loadDynForms'),
     },
@@ -116,7 +123,7 @@
       load: () => call('loadSupportCases'),
     },
     'chat-tab': {
-      hashes: ['chat'], group: 'outreach', label: 'مدیریت چت', icon: 'fa-solid fa-comments', section: 'chat',
+      hashes: ['chat'], group: 'outreach', hidden: true, label: 'مدیریت چت', icon: 'fa-solid fa-comments', section: 'chat',
       title: 'مدیریت چت', desc: 'وضعیت چت و مدیریت کانال‌ها و گروه‌ها',
       load: () => { call('loadChatSettings'); call('loadChatOps'); },
     },

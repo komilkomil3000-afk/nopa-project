@@ -261,7 +261,20 @@
     const h = new Date().getHours();
     const part = h < 12 ? 'صبح بخیر' : h < 17 ? 'روز بخیر' : 'عصر بخیر';
     $('dash-greeting').textContent = `${part}${user.name ? '، ' + user.name : ''}`;
-    $('dash-date').textContent = new Date().toLocaleDateString('fa-IR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+    $('dash-date').textContent = persianToday();
+  }
+
+  // «چهارشنبه، ۱۳ آبان ۱۴۰۵». Built from the parts: some browsers' fa-IR long format comes out in
+  // English order («۱۴۰۵ آبان ۱۳, چهارشنبه»), which reads backwards in the RTL greeting.
+  function persianToday() {
+    const now = new Date();
+    try {
+      const parts = new Intl.DateTimeFormat('fa-IR-u-ca-persian-nu-arabext', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric', timeZone: 'Asia/Tehran' }).formatToParts(now);
+      const get = type => (parts.find(p => p.type === type) || {}).value || '';
+      const out = `${get('weekday')}، ${get('day')} ${get('month')} ${get('year')}`.trim();
+      if (get('day') && get('month') && get('year')) return out;
+    } catch (_) { /* old browser: fall through */ }
+    return now.toLocaleDateString('fa-IR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
   }
 
   async function loadDashboard() {

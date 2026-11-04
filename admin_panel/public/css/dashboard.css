@@ -144,6 +144,23 @@
 .kpi--gold .kpi-value { color: #422006; }
 .kpi--gold .kpi-head i { background: rgb(255 255 255 / 0.45); color: #713F12; }
 
+/* More tile colours, from the app's palette (app/lib/core/theme/app_colors.dart): emerald, pink, blue,
+   orange, purple and sky. White text on a saturated gradient, like .kpi--brand. */
+.kpi--emerald { --kpi-a: #10B981; --kpi-b: #047857; --kpi-glow: 16 185 129; }
+.kpi--pink    { --kpi-a: #EC4899; --kpi-b: #BE185D; --kpi-glow: 236 72 153; }
+.kpi--blue    { --kpi-a: #3B82F6; --kpi-b: #1D4ED8; --kpi-glow: 59 130 246; }
+.kpi--orange  { --kpi-a: #F97316; --kpi-b: #C2410C; --kpi-glow: 249 115 22; }
+.kpi--purple  { --kpi-a: #8B5CF6; --kpi-b: #6D28D9; --kpi-glow: 139 92 246; }
+.kpi--sky     { --kpi-a: #38BDF8; --kpi-b: #0369A1; --kpi-glow: 56 189 248; }
+.kpi--emerald, .kpi--pink, .kpi--blue, .kpi--orange, .kpi--purple, .kpi--sky {
+  background: linear-gradient(135deg, var(--kpi-a) 0%, var(--kpi-b) 100%);
+  border-color: transparent;
+  box-shadow: 0 14px 34px rgb(var(--kpi-glow) / 0.28);
+}
+:is(.kpi--emerald, .kpi--pink, .kpi--blue, .kpi--orange, .kpi--purple, .kpi--sky) :is(.kpi-head, .kpi-sub) { color: rgb(255 255 255 / 0.88); }
+:is(.kpi--emerald, .kpi--pink, .kpi--blue, .kpi--orange, .kpi--purple, .kpi--sky) .kpi-value { color: #fff; }
+:is(.kpi--emerald, .kpi--pink, .kpi--blue, .kpi--orange, .kpi--purple, .kpi--sky) .kpi-head i { background: rgb(255 255 255 / 0.2); color: #fff; }
+
 /* ---------- Lists ---------- */
 .dash-attention, .dash-league, .dash-earners, .dash-audit { list-style: none; }
 .dash-empty {

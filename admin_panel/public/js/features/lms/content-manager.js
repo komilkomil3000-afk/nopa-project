@@ -173,8 +173,24 @@ window.deleteClipRecord = async function(clipId, sessionId) {
 
 // ==================== BATCH TOOLS OF A CATEGORY ====================
 
+// Every quiz of a category (session quizzes and part quizzes; the same quiz can appear in both lists)
+function lmsCategoryQuizzes(categoryId) {
+  const out = [];
+  for (const st of window.lmsStationsMasterList || []) {
+    for (const c of st.categories || []) {
+      if (String(c.id) !== String(categoryId)) continue;
+      (c.sessions || []).forEach(s => {
+        (s.quizzes || []).forEach(q => out.push(q));
+        (s.videoClips || []).forEach(clip => (clip.quizzes || []).forEach(q => out.push(q)));
+      });
+    }
+  }
+  return out;
+}
+window.lmsCategoryQuizzes = lmsCategoryQuizzes;
+
 window.applyBatchZarikToCategory = async function(categoryId, stationId) {
-  const amount = parseInt(document.getElementById(`batch-zarik-cat-${categoryId}`)?.value ?? 15);
+  const amount = parseInt(document.getElementById(`batch-zarik-cat-${categoryId}`)?.value, 10);
   if (isNaN(amount) || amount < 0) {
     showToast('لطفاً یک عدد معتبر برای پاداش زریک وارد نمایید.', 'error');
     return;
@@ -192,7 +208,11 @@ window.applyBatchZarikToCategory = async function(categoryId, stationId) {
     }
     const data = await lmsResponseData(res);
     showToast((data && data.message) || 'پاداش زریک روی همه آزمونک‌های این دسته اعمال شد.', 'success');
-    await lmsReloadContentModal(stationId, `cat:${categoryId}`);
+    await window.fetchLiveLmsStations();
+    // The new amount is shown at once on every quiz of the category (and in each quiz's modal) even if the
+    // station list that just came back was read before the change landed
+    lmsCategoryQuizzes(categoryId).forEach(q => { q.rewardZarik = amount; });
+    if (typeof window.lmsEditorRefresh === 'function') window.lmsEditorRefresh(stationId, `cat:${categoryId}`);
   } catch (err) {
     console.error('Batch zarik error:', err);
     showToast('ارتباط با سرور برقرار نشد', 'error');

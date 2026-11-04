@@ -231,6 +231,15 @@
             <ul class="nav-search-results" id="nav-search-results" role="listbox" hidden></ul>
           </div>
 
+          <!-- Stats and settings: icons only, built from the tab registry by js/layout/topnav.js (renderTools) -->
+          <div class="header-menu header-tool" id="tool-stats-menu" hidden>
+            <button type="button" class="btn-icon header-btn" aria-label="آمار" title="آمار"><i class="fa-solid fa-chart-column"></i></button>
+          </div>
+          <div class="header-menu header-tool" id="tool-settings-menu" hidden>
+            <button type="button" class="btn-icon header-btn" aria-haspopup="true" aria-expanded="false" aria-label="تنظیمات" title="تنظیمات"><i class="fa-solid fa-gear"></i></button>
+            <div class="header-dropdown tool-dropdown" hidden></div>
+          </div>
+
           <div class="header-menu" id="attention-menu">
             <button type="button" class="btn-icon header-btn" id="btn-attention" aria-haspopup="true" aria-expanded="false" aria-label="اعلان‌ها و موارد نیازمند رسیدگی">
               <i class="fa-solid fa-bell"></i><span class="header-badge" id="attention-badge" hidden>0</span>
@@ -251,19 +260,24 @@
             </div>
           </div>
 
-          <!-- Chat switch (super admin only): off / pilot / on, filled by js/features/chat-settings.js -->
+          <!-- Chat: the latest conversations (js/layout/header-chat.js) for everyone with the chat section;
+               the super admin also gets the chat switch (off / pilot / on, js/features/chat-settings.js) below them -->
           <div class="header-menu chat-switch" id="chat-switch-menu" hidden>
-            <button type="button" class="btn-icon header-btn" id="btn-chat-switch" aria-haspopup="true" aria-expanded="false" aria-label="وضعیت چت" title="وضعیت چت">
-              <i class="fa-solid fa-comments"></i><span class="chat-switch-dot" id="chat-switch-dot" data-mode="unknown"></span>
+            <button type="button" class="btn-icon header-btn" id="btn-chat-switch" aria-haspopup="true" aria-expanded="false" aria-label="آخرین پیام‌های چت" title="چت">
+              <i class="fa-solid fa-comments"></i><span class="header-badge" id="chat-badge" hidden>0</span><span class="chat-switch-dot" id="chat-switch-dot" data-mode="unknown" hidden></span>
             </button>
-            <div class="header-dropdown chat-switch-dropdown" id="chat-switch-dropdown" hidden>
-              <div class="header-dropdown-title">وضعیت چت در اپ</div>
-              <div class="chat-switch-modes" role="radiogroup" aria-label="وضعیت چت">
-                <button type="button" class="chat-switch-mode" role="radio" aria-checked="false" data-chat-mode="off"><i class="fa-solid fa-power-off"></i><span>خاموش</span></button>
-                <button type="button" class="chat-switch-mode" role="radio" aria-checked="false" data-chat-mode="pilot"><i class="fa-solid fa-flask"></i><span>آزمایشی</span></button>
-                <button type="button" class="chat-switch-mode" role="radio" aria-checked="false" data-chat-mode="on"><i class="fa-solid fa-circle-check"></i><span>روشن</span></button>
+            <div class="header-dropdown inbox-dropdown chat-switch-dropdown" id="chat-switch-dropdown" hidden>
+              <div class="header-dropdown-title inbox-head">آخرین پیام‌ها <button type="button" class="inbox-read-all" id="btn-chat-open-all">همه گفتگوها</button></div>
+              <ul class="attention-list inbox-list" id="chat-recent-list"><li class="attention-empty">در حال بارگذاری...</li></ul>
+              <div id="chat-switch-block" hidden>
+                <div class="header-dropdown-title">وضعیت چت در اپ</div>
+                <div class="chat-switch-modes" role="radiogroup" aria-label="وضعیت چت">
+                  <button type="button" class="chat-switch-mode" role="radio" aria-checked="false" data-chat-mode="off"><i class="fa-solid fa-power-off"></i><span>خاموش</span></button>
+                  <button type="button" class="chat-switch-mode" role="radio" aria-checked="false" data-chat-mode="pilot"><i class="fa-solid fa-flask"></i><span>آزمایشی</span></button>
+                  <button type="button" class="chat-switch-mode" role="radio" aria-checked="false" data-chat-mode="on"><i class="fa-solid fa-circle-check"></i><span>روشن</span></button>
+                </div>
+                <div class="chat-switch-note" id="chat-switch-note">در حال بارگذاری...</div>
               </div>
-              <div class="chat-switch-note" id="chat-switch-note">در حال بارگذاری...</div>
               <button type="button" class="header-dropdown-item" id="btn-chat-switch-manage"><i class="fa-solid fa-sliders"></i> مدیریت چت، کاروان‌های آزمایشی و دسترسی‌ها</button>
             </div>
           </div>
@@ -1628,6 +1642,9 @@
               <h4 class="lst-tile-title"><i class="fa-solid fa-bolt"></i> دسترسی سریع</h4>
               <div class="lst-quick">
                 <button type="button" class="lst-quick-btn" data-click="openCaravanWizard"><i class="fa-solid fa-plus"></i> کاروان جدید</button>
+                <button type="button" class="lst-quick-btn" data-click="openUserModal"><i class="fa-solid fa-user-plus"></i> همسفر جدید</button>
+                <button type="button" class="lst-quick-btn" data-click="showMentorModal"><i class="fa-solid fa-user-tie"></i> راهبر جدید</button>
+                <button type="button" class="lst-quick-btn" data-click="usrGoTabAndRun" data-click-args="[&quot;lms-tab&quot;,&quot;openCreateStationModal&quot;]"><i class="fa-solid fa-route"></i> منزلگاه جدید</button>
                 <button type="button" class="lst-quick-btn" data-click="loadCaravansTab"><i class="fa-solid fa-sync"></i> بروزرسانی</button>
                 <button type="button" class="lst-quick-btn" data-click="exportData" data-click-args="[&quot;caravans&quot;,&quot;excel&quot;]"><i class="fa-solid fa-file-excel"></i> خروجی اکسل</button>
                 <button type="button" class="lst-quick-btn" data-click="exportData" data-click-args="[&quot;caravans&quot;,&quot;pdf&quot;]"><i class="fa-solid fa-file-pdf"></i> خروجی پی‌دی‌اف</button>
@@ -2824,6 +2841,8 @@
               <button type="button" class="lst-quick-btn" data-click="exportLmsToExcel"><i class="fa-solid fa-file-excel"></i> خروجی اکسل</button>
               <button type="button" class="lst-quick-btn" data-click="reloadLmsStations"><i class="fa-solid fa-sync"></i> بروزرسانی</button>
               <button type="button" class="lst-quick-btn" data-click="openInstructorModal"><i class="fa-solid fa-user-plus"></i> استاد جدید</button>
+              <button type="button" class="lst-quick-btn" data-click="showMentorModal"><i class="fa-solid fa-user-tie"></i> راهبر جدید</button>
+              <button type="button" class="lst-quick-btn" data-click="openCaravanWizard"><i class="fa-solid fa-compass"></i> کاروان جدید</button>
             </div>
           </div>
 
@@ -4724,6 +4743,7 @@
     <script src="js/features/chat-settings.js"></script>
     <script src="js/features/chat-ops.js"></script>
     <script src="js/features/chat-messenger.js"></script>
+    <script src="js/layout/header-chat.js"></script>
     <script src="js/features/access.js"></script>
     <script src="js/features/users.js"></script>
     <script src="js/features/rewards.js"></script>

@@ -481,7 +481,7 @@ export const createOrUpdateStation = async (req: Request, res: Response) => {
                     questionsJson: typeof quizPayload.questionsJson === 'string' 
                         ? quizPayload.questionsJson 
                         : JSON.stringify(quizPayload.questionsJson || []),
-                    rewardZarik: parseInt(quizPayload.rewardZarik) || 10,
+                    rewardZarik: quizReward(quizPayload.rewardZarik),
                     rewardNakh: parseInt(quizPayload.rewardNakh) || 0,
                     rewardFarsh: parseInt(quizPayload.rewardFarsh) || 0,
                     orderIndex: parseInt(quizPayload.orderIndex) || (q + 1)
@@ -798,6 +798,12 @@ export const reorderClips = async (req: Request, res: Response) => {
   }
 };
 
+// A quiz's zarik for a right answer: 0 is a valid choice; missing / invalid falls back to 10
+function quizReward(v: any): number {
+  const n = parseInt(v, 10);
+  return Number.isFinite(n) && n >= 0 ? n : 10;
+}
+
 export const createOrUpdateQuiz = async (req: Request, res: Response) => {
   try {
     const { id: paramId } = req.params;
@@ -812,7 +818,7 @@ export const createOrUpdateQuiz = async (req: Request, res: Response) => {
           title: title || 'آزمونک پارت', 
           type: type || 'MULTIPLE_CHOICE', 
           questionsJson: typeof questionsJson === 'string' ? questionsJson : JSON.stringify(questionsJson || []), 
-          rewardZarik: Number(rewardZarik ?? 10), 
+          rewardZarik: quizReward(rewardZarik), 
           rewardNakh: Number(rewardNakh || 0), 
           rewardFarsh: Number(rewardFarsh || 0),
           ...(clipId ? { clipId } : {}),
@@ -827,13 +833,14 @@ export const createOrUpdateQuiz = async (req: Request, res: Response) => {
           title: title || 'آزمونک پارت', 
           type: type || 'MULTIPLE_CHOICE', 
           questionsJson: typeof questionsJson === 'string' ? questionsJson : JSON.stringify(questionsJson || []), 
-          rewardZarik: Number(rewardZarik ?? 10), 
+          rewardZarik: quizReward(rewardZarik), 
           rewardNakh: Number(rewardNakh || 0), 
           rewardFarsh: Number(rewardFarsh || 0),
           orderIndex: Number(orderIndex || 1)
         }
       });
     }
+    clearStationsCache(); // the panel re-reads the stations right after this reply
     res.json({ message: 'آزمونک با موفقیت ذخیره شد', data: quiz });
   } catch (error) {
     console.error('createOrUpdateQuiz error:', error);
@@ -882,9 +889,12 @@ export const setBatchCategoryZarik = async (req: Request, res: Response) => {
       }
     });
 
+    clearStationsCache(); // the panel re-reads the stations right after this reply
     res.json({ 
       message: `پاداش ${amount} زریک با موفقیت روی تمامی ${quizIds.length} آزمونک این دسته اعمال شد`, 
-      updatedCount: quizIds.length 
+      updatedCount: quizIds.length,
+      rewardZarik: amount,
+      quizIds
     });
   } catch (error: any) {
     console.error('setBatchCategoryZarik error:', error);

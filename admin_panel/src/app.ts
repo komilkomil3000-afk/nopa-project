@@ -48,6 +48,10 @@ app.use((req, res, next) => {
     res.on('finish', clearAuthCache);
   }
   if (req.method !== 'GET' && req.method !== 'HEAD' && req.method !== 'OPTIONS' && !req.path.includes('/chat')) {
+    // Cleared on both ends: 'finish' can fire after the client already got the reply and re-read the
+    // stations (it would then get the cached, pre-write tree); clearing first also stops a read that
+    // overlaps the write from re-caching for long, and 'finish' drops whatever that read cached.
+    clearStationsCache();
     res.on('finish', clearStationsCache);
   }
   next();

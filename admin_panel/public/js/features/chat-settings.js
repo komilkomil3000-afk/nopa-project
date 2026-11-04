@@ -119,9 +119,8 @@ window.NopaChatSwitch = (function () {
     const btn = $('btn-chat-switch');
     if (dot && btn) {
       dot.dataset.mode = mode;
-      const label = state ? `چت: ${MODE_LABELS[mode]}` : 'وضعیت چت';
-      btn.setAttribute('aria-label', label);
-      btn.title = label;
+      // the button opens the latest messages (js/layout/header-chat.js); the dot tells the super admin the mode
+      btn.title = state ? `چت · ${MODE_LABELS[mode]}` : 'چت';
     }
     document.querySelectorAll('.chat-switch-mode, .chs-mode').forEach(b => {
       b.setAttribute('aria-checked', String(!!state && (b.dataset.chatMode || b.dataset.chsMode) === mode));
@@ -190,12 +189,16 @@ window.NopaChatSwitch = (function () {
     }
   }
 
+  // The header chat menu itself (latest messages) belongs to js/layout/header-chat.js; only its switch block
+  // and the status dot on the button are the super admin's
   function applyRole() {
-    const menu = $('chat-switch-menu');
     const allowed = typeof isSuperAdminUser === 'function' && isSuperAdminUser();
-    if (menu) menu.hidden = !allowed;
+    const block = $('chat-switch-block');
+    if (block) block.hidden = !allowed;
+    const dot = $('chat-switch-dot');
+    if (dot) dot.hidden = !allowed;
     if (allowed) refresh(true);
-    else { closeDropdown(); render(); }
+    else render();
   }
 
   function init() {

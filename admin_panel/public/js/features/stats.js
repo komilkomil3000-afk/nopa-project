@@ -7,14 +7,15 @@
   const st = { range: 'week', caravanId: '', role: '', stationId: '', caravanBy: 'appSeconds', peopleBy: 'appSeconds', data: null, seq: 0 };
 
   const KPIS = [
+    // each tile in one of the app's colours (css/dashboard.css .kpi--*)
     ['appSeconds', 'زمان حضور در اپ', 'fa-mobile-screen', 'seconds', 'kpi--brand'],
-    ['videoSeconds', 'زمان تماشای فیلم‌ها', 'fa-circle-play', 'seconds', ''],
-    ['opens', 'تعداد ورود به اپ', 'fa-right-to-bracket', 'count', ''],
-    ['activeUsers', 'کاربران فعال', 'fa-users', 'count', ''],
-    ['onlineNow', 'آنلاین همین الان', 'fa-signal', 'count', ''],
-    ['messages', 'پیام‌های چت', 'fa-comments', 'count', ''],
-    ['challenges', 'ارسال پاسخ چالش', 'fa-trophy', 'count', ''],
-    ['quizzes', 'آزمون‌های داده‌شده', 'fa-spell-check', 'count', ''],
+    ['videoSeconds', 'زمان تماشای فیلم‌ها', 'fa-circle-play', 'seconds', 'kpi--pink'],
+    ['opens', 'تعداد ورود به اپ', 'fa-right-to-bracket', 'count', 'kpi--blue'],
+    ['activeUsers', 'کاربران فعال', 'fa-users', 'count', 'kpi--emerald'],
+    ['onlineNow', 'آنلاین همین الان', 'fa-signal', 'count', 'kpi--sky'],
+    ['messages', 'پیام‌های چت', 'fa-comments', 'count', 'kpi--purple'],
+    ['challenges', 'ارسال پاسخ چالش', 'fa-trophy', 'count', 'kpi--orange'],
+    ['quizzes', 'آزمون‌های داده‌شده', 'fa-spell-check', 'count', 'kpi--gold'],
   ];
   const CARAVAN_BY = [['appSeconds', 'حضور در اپ', 'seconds'], ['videoSeconds', 'تماشای فیلم', 'seconds'], ['activeMembers', 'اعضای فعال', 'count']];
   const PEOPLE_BY = [['appSeconds', 'حضور در اپ', 'seconds'], ['videoSeconds', 'تماشای فیلم', 'seconds'], ['opens', 'ورود به اپ', 'count']];
