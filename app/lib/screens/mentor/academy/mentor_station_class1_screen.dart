@@ -378,7 +378,7 @@ class _MentorStationScreenState extends State<MentorStationClass1Screen> {
   /// Station Lore Header: Text on Left & Station Image Box on Right (Matching Class1 Screen)
   Widget _buildStationLoreHeader(Map<String, dynamic> station) {
     const double cardWidth = 105.0;
-    const double cardHeight = 138.0;
+    const double cardHeight = 148.5; // A4 poster (1:1.414) at this width
     final String stationImage = Station.imageFrom(station);
     final bool hasValidImg =
         stationImage.isNotEmpty &&
@@ -477,9 +477,12 @@ class _MentorStationScreenState extends State<MentorStationClass1Screen> {
                   const SizedBox(height: 2),
                   // Title
                   Text(
-                    ordinalTitle,
+                    Station.getPureName(
+                      (station['orderIndex'] as num?)?.toInt() ?? StationNumbering.numberAt(_selectedStationIndex + 1),
+                      ordinalTitle,
+                    ),
                     textAlign: TextAlign.right,
-                    style: AppTypography.h3.copyWith(height: 1.25),
+                    style: AppTypography.h3Strong,
                   ),
                   const SizedBox(height: 4),
 
@@ -729,7 +732,7 @@ class _MentorStationScreenState extends State<MentorStationClass1Screen> {
         children: [
           // Heading
           const Text(
-            'نگارستان منزلگاه',
+            'نگارستان',
             textAlign: TextAlign.right,
             style: AppTypography.h3Strong,
           ),

@@ -283,7 +283,7 @@ class _EducationCalendarState extends State<EducationCalendar> {
               alignment: Alignment.centerRight,
               child: Text(
                 'روزمان',
-                style: AppTypography.h3,
+                style: AppTypography.h2,
               ),
             ),
           ),

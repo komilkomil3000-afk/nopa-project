@@ -203,7 +203,7 @@ class _HomeScreenState extends State<StudentHomeScreen> {
             alignment: Alignment.centerRight,
             child: Text(
               'سرمایه ها',
-              style: AppTypography.h3,
+              style: AppTypography.h2,
             ),
           ),
         ),
@@ -423,7 +423,7 @@ class _HomeScreenState extends State<StudentHomeScreen> {
                     children: [
                       const Text(
                         'منزلگاه ها',
-                        style: AppTypography.h3,
+                        style: AppTypography.h2,
                       ),
                       TextButton(
                         onPressed: () {
@@ -445,7 +445,7 @@ class _HomeScreenState extends State<StudentHomeScreen> {
               ),
               const SizedBox(height: 10),
               SizedBox(
-                height: 230,
+                height: 264,
                 child: _stations.isEmpty
                     ? const Center(child: Text('منزلگاهی یافت نشد', style: AppTypography.bodyMedium))
                     : Directionality(

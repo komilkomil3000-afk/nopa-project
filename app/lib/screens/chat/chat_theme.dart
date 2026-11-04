@@ -114,11 +114,17 @@ class ChatTheme {
   static const TextStyle title = TextStyle(color: text, fontFamily: AppTheme.fontFamily, fontSize: 14, fontWeight: FontWeight.bold);
   static const TextStyle caption = TextStyle(color: muted, fontFamily: AppTheme.fontFamily, fontSize: 11);
 
-  static const Map<String, ({IconData icon, String label})> reactions = {
-    'bravo': (icon: Icons.auto_awesome_rounded, label: 'آفرین'),
-    'agree': (icon: Icons.check_circle_rounded, label: 'موافقم'),
-    'idea': (icon: Icons.lightbulb_rounded, label: 'ایده‌ی خوب'),
-    'question': (icon: Icons.help_rounded, label: 'سؤال دارم'),
-    'confused': (icon: Icons.psychology_alt_rounded, label: 'متوجه نشدم'),
+  /// The reactions one can pick, in order.
+  static const Map<String, ({String emoji, String label})> reactions = {
+    'like': (emoji: '👍', label: 'تایید'),
+    'dislike': (emoji: '👎', label: 'مخالف'),
+    'idea': (emoji: '💡', label: 'ایده'),
+    'flower': (emoji: '🌹', label: 'گل'),
+    'thanks': (emoji: '🙏', label: 'ممنون'),
   };
+
+  /// Reactions given before the current set: still shown, no longer offered.
+  static const Map<String, String> legacyReactions = {'bravo': '👏', 'agree': '✅', 'question': '❓', 'confused': '😕'};
+
+  static String emojiOf(String type) => reactions[type]?.emoji ?? legacyReactions[type] ?? '⭐';
 }

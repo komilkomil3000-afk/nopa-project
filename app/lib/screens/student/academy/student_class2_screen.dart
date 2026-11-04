@@ -1,7 +1,6 @@
 import 'package:nopa_app/widgets/tap_expander.dart';
 import 'package:nopa_app/widgets/bottom_nav_bar.dart';
 import '../../../widgets/nopa_dialog_container.dart';
-import '../../../widgets/nopa_modal_shell.dart';
 import 'package:nopa_app/core/station_numbering.dart';
 import 'package:nopa_app/core/schedule_utils.dart';
 import 'package:nopa_app/core/station_categories.dart';

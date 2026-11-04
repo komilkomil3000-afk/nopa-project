@@ -310,7 +310,6 @@ class _ChatConversationScreenState extends State<ChatConversationScreen> {
       if (mine && !message.deleted && Provider.of<AppRepository>(context, listen: false).currentUser.role.isMentorLike)
         ChatMenuItem('mentorMark', Icons.verified_rounded, message.mentorMark ? 'برداشتن نشان راهبر' : 'نشان راهبر'),
       if (moderator) ChatMenuItem('pin', Icons.push_pin_rounded, message.pinned ? 'برداشتن سنجاق' : 'سنجاق کردن'),
-      if (!mine && message.senderId != null && space?.isPrivate != true) const ChatMenuItem('profile', Icons.person_rounded, 'پروفایل فرستنده'),
       if (moderator && !mine && message.senderId != null) const ChatMenuItem('mute', Icons.voice_over_off_rounded, 'بی‌صدا تا یک ساعت'),
       if (space?.canTag == true) ...[
         const ChatMenuItem('tag', Icons.label_rounded, 'برچسب'),
@@ -359,8 +358,6 @@ class _ChatConversationScreenState extends State<ChatConversationScreen> {
       setState(() => _editing = message);
       _input.text = message.body;
       _focus.requestFocus();
-    } else if (action == 'profile') {
-      _openMember(message.senderId);
     } else if (action == 'pin') {
       await _chat.togglePin(message);
     } else if (action == 'delete') {

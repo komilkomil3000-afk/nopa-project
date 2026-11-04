@@ -38,7 +38,7 @@ class _HomeChallengesSectionState extends State<HomeChallengesSection> {
                   children: [
                     const Text(
                       'چالش‌های مخصوص تو',
-                      style: AppTypography.h3,
+                      style: AppTypography.h2,
                     ),
                     TextButton(
                       onPressed: () {

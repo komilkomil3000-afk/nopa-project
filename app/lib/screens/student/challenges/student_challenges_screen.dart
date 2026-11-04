@@ -1,5 +1,4 @@
 import 'package:nopa_app/screens/chat/challenge_chat_button.dart';
-import 'package:nopa_app/widgets/swipe_category_view.dart';
 import 'package:nopa_app/core/theme/app_colors.dart';
 import '../../../widgets/nopa_dialog_container.dart';
 import 'package:nopa_app/widgets/tap_expander.dart';
@@ -36,6 +35,8 @@ class _ChallengesScreenState extends State<StudentChallengesScreen> {
   // station id -> station number shown on the challenge tag
   final Map<String, int> _stationNumberById = {};
 
+  final PageController _pageCtrl = PageController();
+  final PageController _mentorPageCtrl = PageController();
   late final PageController _bannerPageCtrl;
   int _currentBannerIndex = 0;
   Timer? _bannerAutoScrollTimer;
@@ -97,6 +98,9 @@ class _ChallengesScreenState extends State<StudentChallengesScreen> {
         ..clear()
         ..add(req.id);
     });
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted && _pageCtrl.hasClients) _pageCtrl.jumpToPage(req.category);
+    });
     // The tab is switching at the same moment: once it is on screen, bring the opened card into view
     for (final delay in const [150, 450]) {
       Future.delayed(Duration(milliseconds: delay), () {
@@ -109,6 +113,11 @@ class _ChallengesScreenState extends State<StudentChallengesScreen> {
     }
   }
 
+  void _goToPage(PageController ctrl, int page) {
+    if (!ctrl.hasClients) return;
+    ctrl.animateToPage(page, duration: const Duration(milliseconds: 260), curve: Curves.easeOutCubic);
+  }
+
   // One key per challenge card, used to scroll the opened card into view
   final Map<String, GlobalKey> _cardKeys = {};
 
@@ -117,6 +126,8 @@ class _ChallengesScreenState extends State<StudentChallengesScreen> {
     challengeFocusRequest.removeListener(_applyFocusRequest);
     _bannerAutoScrollTimer?.cancel();
     _bannerPageCtrl.dispose();
+    _pageCtrl.dispose();
+    _mentorPageCtrl.dispose();
     super.dispose();
   }
 
@@ -300,74 +311,63 @@ class _ChallengesScreenState extends State<StudentChallengesScreen> {
     }
 
     final allChallenges = _getChallenges(repository);
+    const keys = ['individual', 'group', 'inter_group'];
 
-    // Filter by selected category (0: فردی, 1: گروهی, 2: میان گروهی)
-    final filtered = allChallenges.where((c) {
-      if (_selectedCategoryIndex == 0) {
-        return c['category'] == 'individual';
-      } else if (_selectedCategoryIndex == 1) {
-        return c['category'] == 'group';
-      } else {
-        return c['category'] == 'inter_group';
-      }
-    }).toList();
-
-    return SwipeCategoryView(
-      index: _selectedCategoryIndex,
-      count: 3,
-      excludeKey: _bannerKey,
-      onChanged: (i) => setState(() => _selectedCategoryIndex = i),
-      child: RefreshIndicator(
-      color: const Color(0xFFCD8449),
-      backgroundColor: const Color(0xFF231C38),
-      onRefresh: () async {
-        await repository.refreshChallenges();
-      },
-      child: SingleChildScrollView(
-        physics: const AlwaysScrollableScrollPhysics(),
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            // 1. Clean Station Banner Carousel with 3 indicator dots (No text overlay)
-            _buildStationBannerSlider(),
-
-            const SizedBox(height: 18),
-
-            // 2. Category Tabs: فردی / گروهی / میان گروهی (گروهی strictly centered)
-            _buildCategoryTabsBar(),
-
-            const SizedBox(height: 18),
-
-            // 3. Challenge Cards List or Empty State (a sideways swipe switches the category)
-            CategorySlide(
-              index: _selectedCategoryIndex,
-              child: filtered.isEmpty
-                  ? _buildEmptyState()
-                  : ListView.separated(
-                      shrinkWrap: true,
-                      physics: const NeverScrollableScrollPhysics(),
-                      itemCount: filtered.length,
-                      separatorBuilder: (context, index) => const SizedBox(height: 12),
-                      itemBuilder: (context, index) {
-                        final item = filtered[index];
-                        final String id = item['id']?.toString() ?? 'ch_$index';
-                        final bool isExpanded = _expandedChallengeIds.contains(id);
-
-                        return _buildChallengeCard(
-                          item: item,
-                          id: id,
-                          isExpanded: isExpanded,
-                        );
-                      },
-                    ),
-            ),
-
-            const SizedBox(height: 30),
-          ],
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 6, 16, 0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              // 1. Clean Station Banner Carousel with 3 indicator dots (No text overlay)
+              _buildStationBannerSlider(),
+              const SizedBox(height: 18),
+              // 2. Category Tabs: شخصی / گروهی / میان گروهی
+              _buildCategoryTabsBar(),
+              const SizedBox(height: 18),
+            ],
+          ),
         ),
-      ),
-      ),
+        // 3. The bodies of the three tabs: a sideways swipe anywhere on them switches the tab
+        Expanded(
+          child: Directionality(
+            textDirection: TextDirection.rtl,
+            child: PageView.builder(
+              controller: _pageCtrl,
+              itemCount: keys.length,
+              onPageChanged: (i) => setState(() => _selectedCategoryIndex = i),
+              itemBuilder: (context, page) {
+                final filtered = allChallenges.where((c) => c['category'] == keys[page]).toList();
+                return RefreshIndicator(
+                  color: const Color(0xFFCD8449),
+                  backgroundColor: const Color(0xFF231C38),
+                  onRefresh: () async {
+                    await repository.refreshChallenges();
+                  },
+                  child: ListView(
+                    physics: const AlwaysScrollableScrollPhysics(),
+                    padding: const EdgeInsets.fromLTRB(16, 0, 16, 30),
+                    children: filtered.isEmpty
+                        ? [_buildEmptyState()]
+                        : [
+                            for (var index = 0; index < filtered.length; index++) ...[
+                              if (index > 0) const SizedBox(height: 12),
+                              _buildChallengeCard(
+                                item: filtered[index],
+                                id: filtered[index]['id']?.toString() ?? 'ch_$index',
+                                isExpanded: _expandedChallengeIds.contains(filtered[index]['id']?.toString() ?? 'ch_$index'),
+                              ),
+                            ],
+                          ],
+                  ),
+                );
+              },
+            ),
+          ),
+        ),
+      ],
     );
   }
 
@@ -377,84 +377,85 @@ class _ChallengesScreenState extends State<StudentChallengesScreen> {
     UserModel user,
   ) {
     final mentorChallenges = _getMentorChallenges(repository);
-    final filtered = mentorChallenges.where((c) {
-      if (_mentorSelectedCategoryIndex == 0) {
-        return c['category'] == 'intra_group';
-      } else {
-        return c['category'] == 'inter_group';
-      }
-    }).toList();
-
     final caravanName = user.caravanName ?? 'کاروان پنجم رضا جلالی';
+    const keys = ['intra_group', 'inter_group'];
 
-    return RefreshIndicator(
-      color: const Color(0xFFCD8449),
-      backgroundColor: const Color(0xFF231C38),
-      onRefresh: () async {
-        await repository.refreshChallenges();
-      },
-      child: SingleChildScrollView(
-        physics: const AlwaysScrollableScrollPhysics(),
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            // Caravan Name Subtitle on right
-            Align(
-              alignment: Alignment.centerRight,
-              child: Padding(
-                padding: const EdgeInsets.only(top: 2, right: 4, bottom: 12),
-                child: Text(
-                  caravanName,
-                  style: AppTypography.h3.copyWith(color: const Color(0xFF9E9AC0).withValues(alpha: 0.9)),
-                ),
-              ),
-            ),
-
-            // Top Action Button: [ + ایجاد چالش جدید ]
-            Row(
-              children: [
-                Expanded(
-                  child: _buildMentorHeaderButton(
-                    title: 'ایجاد چالش جدید',
-                    onTap: () => _showCreateChallengeDialog(context, user),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 6, 16, 0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              // Caravan Name Subtitle on right
+              Align(
+                alignment: Alignment.centerRight,
+                child: Padding(
+                  padding: const EdgeInsets.only(top: 2, right: 4, bottom: 12),
+                  child: Text(
+                    caravanName,
+                    style: AppTypography.h3.copyWith(color: const Color(0xFF9E9AC0).withValues(alpha: 0.9)),
                   ),
                 ),
-              ],
-            ),
-
-            const SizedBox(height: 24),
-
-            // Mentor Category Tabs: [درون گروهی] [میان گروهی]
-            _buildMentorCategoryTabsBar(),
-
-            const SizedBox(height: 18),
-
-            // Challenge Cards List
-            if (filtered.isEmpty)
-              _buildEmptyState()
-            else
-              ListView.separated(
-                shrinkWrap: true,
-                physics: const NeverScrollableScrollPhysics(),
-                itemCount: filtered.length,
-                separatorBuilder: (context, index) => const SizedBox(height: 12),
-                itemBuilder: (context, index) {
-                  final item = filtered[index];
-                  final String id = item['id']?.toString() ?? 'm_ch_$index';
-                  return _buildMentorChallengeCard(
-                    context: context,
-                    user: user,
-                    item: item,
-                    id: id,
-                  );
-                },
               ),
-
-            const SizedBox(height: 40),
-          ],
+              // Top Action Button: [ + ایجاد چالش جدید ]
+              Row(
+                children: [
+                  Expanded(
+                    child: _buildMentorHeaderButton(
+                      title: 'ایجاد چالش جدید',
+                      onTap: () => _showCreateChallengeDialog(context, user),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 24),
+              // Mentor Category Tabs: [درون گروهی] [میان گروهی]
+              _buildMentorCategoryTabsBar(),
+              const SizedBox(height: 18),
+            ],
+          ),
         ),
-      ),
+        // The bodies of both tabs: a sideways swipe anywhere on them switches the tab
+        Expanded(
+          child: Directionality(
+            textDirection: TextDirection.rtl,
+            child: PageView.builder(
+              controller: _mentorPageCtrl,
+              itemCount: keys.length,
+              onPageChanged: (i) => setState(() => _mentorSelectedCategoryIndex = i),
+              itemBuilder: (context, page) {
+                final filtered = mentorChallenges.where((c) => c['category'] == keys[page]).toList();
+                return RefreshIndicator(
+                  color: const Color(0xFFCD8449),
+                  backgroundColor: const Color(0xFF231C38),
+                  onRefresh: () async {
+                    await repository.refreshChallenges();
+                  },
+                  child: ListView(
+                    physics: const AlwaysScrollableScrollPhysics(),
+                    padding: const EdgeInsets.fromLTRB(16, 0, 16, 40),
+                    children: filtered.isEmpty
+                        ? [_buildEmptyState()]
+                        : [
+                            for (var index = 0; index < filtered.length; index++) ...[
+                              if (index > 0) const SizedBox(height: 12),
+                              _buildMentorChallengeCard(
+                                context: context,
+                                user: user,
+                                item: filtered[index],
+                                id: filtered[index]['id']?.toString() ?? 'm_ch_$index',
+                              ),
+                            ],
+                          ],
+                  ),
+                );
+              },
+            ),
+          ),
+        ),
+      ],
     );
   }
 
@@ -499,7 +500,7 @@ class _ChallengesScreenState extends State<StudentChallengesScreen> {
             children: [
               // درون گروهی
               TapExpander(child: GestureDetector(
-                onTap: () => setState(() => _mentorSelectedCategoryIndex = 0),
+                onTap: () => _goToPage(_mentorPageCtrl, 0),
                 behavior: HitTestBehavior.opaque,
                 child: Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
@@ -513,7 +514,7 @@ class _ChallengesScreenState extends State<StudentChallengesScreen> {
               )),
               // میان گروهی
               TapExpander(child: GestureDetector(
-                onTap: () => setState(() => _mentorSelectedCategoryIndex = 1),
+                onTap: () => _goToPage(_mentorPageCtrl, 1),
                 behavior: HitTestBehavior.opaque,
                 child: Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
@@ -1238,7 +1239,7 @@ class _ChallengesScreenState extends State<StudentChallengesScreen> {
 
               return Expanded(
                 child: GestureDetector(
-                    onTap: () => setState(() => _selectedCategoryIndex = idx),
+                    onTap: () => _goToPage(_pageCtrl, idx),
                     behavior: HitTestBehavior.opaque,
                     child: Container(
                       alignment: Alignment.center,

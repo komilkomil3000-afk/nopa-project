@@ -74,20 +74,10 @@ class CustomDrawer extends StatelessWidget {
         : (isMentor ? 'راهبر ارشد کاروان' : 'عضو کاروان شماره پنجم');
 
     return Drawer(
-      backgroundColor: const Color(0xFF19172B),
+      backgroundColor: Colors.transparent,
       child: Container(
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topRight,
-            end: Alignment.bottomLeft,
-            stops: [0.0, 0.45, 1.0],
-            colors: [
-              Color(0xFF24203D),
-              Color(0xFF1A172D),
-              Color(0xFF131122),
-            ],
-          ),
-        ),
+        // The same background as every screen
+        decoration: const BoxDecoration(gradient: AppColors.screenBackgroundGradient),
         child: SafeArea(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,

@@ -933,11 +933,16 @@ class _SharedMediaState extends State<_SharedMedia> {
     final status = const {'open': 'باز', 'closed': 'بسته', 'paid': 'ارزیابی‌شده'}[item['topicStatus']];
     return InkWell(
       onTap: () => _openSession(item),
+      borderRadius: BorderRadius.circular(16),
       child: Container(
         margin: const EdgeInsets.only(bottom: 8),
-        padding: const EdgeInsets.all(12),
-        decoration: ChatTheme.card(),
-        child: Row(children: [
+        // Same frame as the session cards of the academy: a 1.2px station stroke round a dark station fill
+        padding: const EdgeInsets.all(1.2),
+        decoration: BoxDecoration(gradient: AppColors.stationStrokeGradient, borderRadius: BorderRadius.circular(16)),
+        child: Container(
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(color: const Color(0xFF241F3B), borderRadius: BorderRadius.circular(14.8)),
+          child: Row(children: [
           Icon(item['kind'] == 'challenge' ? Icons.local_fire_department_rounded : Icons.forum_rounded, color: ChatTheme.accent, size: 22),
           const SizedBox(width: 10),
           Expanded(
@@ -955,7 +960,8 @@ class _SharedMediaState extends State<_SharedMedia> {
             ]),
           ),
           const Icon(Icons.chevron_left_rounded, color: ChatTheme.muted),
-        ]),
+          ]),
+        ),
       ),
     );
   }

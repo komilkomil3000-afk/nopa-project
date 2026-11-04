@@ -424,7 +424,7 @@ class _MentorHomeScreenState extends State<MentorHomeScreen> {
             alignment: Alignment.centerRight,
             child: Text(
               'سرمایه های کاروان',
-              style: AppTypography.h3,
+              style: AppTypography.h2,
             ),
           ),
         ),
@@ -605,7 +605,7 @@ class _MentorHomeScreenState extends State<MentorHomeScreen> {
             alignment: Alignment.centerRight,
             child: Text(
               'دسترسی سریع',
-              style: AppTypography.h3,
+              style: AppTypography.h2,
             ),
           ),
         ),
