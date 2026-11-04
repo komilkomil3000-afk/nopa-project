@@ -2,6 +2,7 @@ import { Response } from 'express';
 import { AuthRequest } from '../middleware/auth';
 import prisma from '../config/db';
 import { addActivity } from '../services/activity';
+import { AppArea, logLiveEvent, markAppAway, touchApp } from '../services/liveActivity';
 import { CATEGORY_ORDER_BY, trackTypeFor } from '../utils/stationCategories';
 
 export async function createMentorChallenge(req: AuthRequest, res: Response) {
@@ -163,16 +164,28 @@ export function tehranDay(d: Date): string {
   return new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Tehran', year: 'numeric', month: '2-digit', day: '2-digit' }).format(d);
 }
 
-/** The app reports the seconds it was open in the foreground; they are added to today's row (capped per call). */
+/** The app reports the seconds it was open in the foreground; they are added to today's row (capped per call).
+ *  Newer app versions send it every ~15 s (also a heartbeat for «online now») with the part of the app it is in
+ *  (area: chat | video | other | away) and how many of the seconds were spent in the chat and watching videos. */
 export async function recordAppUsage(req: AuthRequest, res: Response) {
   try {
     const seconds = Math.max(0, Math.min(300, Math.round(Number(req.body?.seconds) || 0)));
     // times the app was opened (or came back after a while) since the last report; sent by newer app versions
     const opens = Math.max(0, Math.min(20, Math.round(Number(req.body?.opens) || 0)));
+    const chatSeconds = Math.max(0, Math.min(seconds, Math.round(Number(req.body?.chatSeconds) || 0)));
+    const videoSeconds = Math.max(0, Math.min(seconds, Math.round(Number(req.body?.videoSeconds) || 0)));
+    const rawArea = typeof req.body?.area === 'string' ? req.body.area : '';
+    const area = (['chat', 'video', 'other', 'away'] as AppArea[]).includes(rawArea as AppArea) ? rawArea as AppArea : undefined;
     const userId = req.user!.id;
+    if (opens > 0) logLiveEvent(userId, 'open');
+    if (area === 'away') markAppAway(userId); else touchApp(userId, area);
     if (opens > 0) await addActivity(userId, 'open', opens);
     if (seconds === 0) return res.json({ ok: true });
-    await addActivity(userId, 'app', seconds);
+    await Promise.all([
+      addActivity(userId, 'app', seconds),
+      chatSeconds ? addActivity(userId, 'chat', chatSeconds) : null,
+      videoSeconds ? addActivity(userId, 'appvideo', videoSeconds) : null,
+    ]);
     const day = tehranDay(new Date());
     await prisma.userUsageDay.upsert({
       where: { userId_day: { userId, day } },

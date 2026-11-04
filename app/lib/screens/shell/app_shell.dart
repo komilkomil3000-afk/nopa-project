@@ -113,6 +113,8 @@ class MainScreenState extends State<AppShell> {
     }
 
     final Widget chatTab = chatEnabled ? const ChatHomeScreen() : const SizedBox.shrink();
+    // the panel's «آمار» counts the time spent in the chat
+    AppRepository().chatTabVisible = chatEnabled && _currentIndex == AppTabs.chat;
 
     final List<Widget> screens = userRole.isMentorLike
         ? [

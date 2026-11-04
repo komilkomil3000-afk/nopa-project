@@ -514,6 +514,8 @@ class HttpApiService {
   Map<String, String> _getHeaders() {
     return {
       'Content-Type': 'application/json',
+      // tells the server this is the mobile app (the panel's «آمار» counts app sign-ins and presence from it)
+      'X-Nopa-Client': 'app',
       if (_token != null) 'Authorization': 'Bearer $_token',
     };
   }
@@ -598,7 +600,7 @@ class HttpApiService {
       
       final response = await _post(
         targetUrl,
-        headers: {'Content-Type': 'application/json'},
+        headers: {'Content-Type': 'application/json', 'X-Nopa-Client': 'app'},
         body: jsonEncode(bodyMap),
         checkAuth: false,
       );
@@ -1683,12 +1685,20 @@ class HttpApiService {
 
   /// Reports [seconds] the app was open in the foreground (added to today's usage on the server) and how many
   /// times it was [opens]ed since the last report.
-  Future<bool> pingAppUsage(int seconds, {int opens = 0}) async {
+  /// [area] is the part of the app in use now (chat | video | other, or away when it went to the background);
+  /// [chatSeconds] / [videoSeconds] are the parts of [seconds] spent in the chat and with a video playing.
+  Future<bool> pingAppUsage(int seconds, {int opens = 0, int chatSeconds = 0, int videoSeconds = 0, String? area}) async {
     try {
       final res = await _post(
         Uri.parse('$baseUrl/usage/ping'),
         headers: _getHeaders(),
-        body: jsonEncode({'seconds': seconds, if (opens > 0) 'opens': opens}),
+        body: jsonEncode({
+          'seconds': seconds,
+          if (opens > 0) 'opens': opens,
+          if (chatSeconds > 0) 'chatSeconds': chatSeconds,
+          if (videoSeconds > 0) 'videoSeconds': videoSeconds,
+          'area': ?area,
+        }),
       );
       return res.statusCode == 200;
     } catch (e) {

@@ -5,17 +5,22 @@
 //       host      element the card is drawn into (drawing again with the same key + params keeps it as it is)
 //       key       remembers the chosen chart type and period across repaints
 //       options   { params: { userId | caravanId | role | stationId }, metrics: ['app', ...], title,
-//                   range: fixed period (hides the period chips; the «آمار» tab sets its own), metric }
-//   NopaActivity.refresh(key)  asks the server again
+//                   range: fixed period (hides the period chips; the «آمار» tab sets its own), metric,
+//                   metricTitle: true = the title names the chosen chart type }
+//   NopaActivity.refresh(key, { silent })  asks the server again (silent: no loading state, redrawn only when changed)
+//   NopaActivity.setMetric(key, metric) / NopaActivity.metricOf(key)
 (function () {
   const escHtml = v => String(v == null ? '' : v).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 
   const METRICS = {
     app: { label: 'زمان حضور در اپ', icon: 'fa-mobile-screen' },
     video: { label: 'زمان تماشای فیلم‌ها', icon: 'fa-circle-play' },
-    opens: { label: 'تعداد ورود به اپ', icon: 'fa-right-to-bracket' },
+    chat: { label: 'زمان حضور در چت', icon: 'fa-comments' },
+    other: { label: 'زمان در بقیه بخش‌ها', icon: 'fa-shapes' },
+    opens: { label: 'دفعات باز کردن اپ', icon: 'fa-door-open' },
+    logins: { label: 'تعداد لاگین در اپ', icon: 'fa-right-to-bracket' },
     active: { label: 'کاربران فعال', icon: 'fa-users' },
-    messages: { label: 'پیام‌های چت', icon: 'fa-comments' },
+    messages: { label: 'پیام‌های چت', icon: 'fa-comment-dots' },
     challenges: { label: 'ارسال پاسخ چالش', icon: 'fa-trophy' },
     quizzes: { label: 'آزمون‌های داده‌شده', icon: 'fa-spell-check' },
   };
@@ -25,6 +30,9 @@
     opens: 'از نسخه جدید اپ ثبت می‌شود.',
     video: 'تفکیک ساعتی و روزانه از این نسخه ثبت می‌شود.',
     active: 'در «تمام مدت»، شلوغ‌ترین روز هر ماه.',
+    chat: 'از نسخه جدید اپ ثبت می‌شود.',
+    other: 'حضور در اپ منهای زمان چت و تماشای ویدیو.',
+    logins: 'فقط ورود به حساب در اپ موبایل؛ ورودهای پنل مدیریت شمرده نمی‌شوند.',
   };
 
   const states = new Map(); // key -> { host, opts, metric, range, data, error, loading, sig }
@@ -58,7 +66,7 @@
     st.host.innerHTML = `
       <section class="lse-card nac${st.loading ? ' is-loading' : ''}" data-nac="${escHtml(st.key)}">
         <header class="nac-head">
-          <h4 class="lse-card-title"><i class="fa-solid ${m.icon}"></i> ${escHtml(o.title || 'نمودار فعالیت')}</h4>
+          <h4 class="lse-card-title"><i class="fa-solid ${m.icon}"></i> ${escHtml(o.metricTitle ? `روند ${m.label}` : (o.title || 'نمودار فعالیت'))}</h4>
           <label class="nac-type"><span>نوع نمودار</span>
             <select class="select-ctrl" data-nac-metric aria-label="نوع نمودار">
               ${metrics.map(k => `<option value="${k}"${k === st.metric ? ' selected' : ''}>${escHtml(METRICS[k].label)}</option>`).join('')}
@@ -81,6 +89,26 @@
           : '<div class="nbr nbr-skel" aria-hidden="true"></div>'}</div>
         ${NOTE[st.metric] ? `<p class="nac-note"><i class="fa-solid fa-circle-info"></i> ${escHtml(NOTE[st.metric])}</p>` : ''}
       </section>`;
+  }
+
+  // a quiet re-ask (the «آمار» tab every few seconds): no loading state, redrawn only if the answer changed
+  async function quiet(st) {
+    const u = url(st);
+    if (st.loading || st.quietBusy) return;
+    st.quietBusy = true;
+    try {
+      const data = await NopaApi.json(u, { silent: true });
+      cache.set(u, { at: Date.now(), data });
+      if (url(st) !== u || !st.host.isConnected) return;
+      if (JSON.stringify(data) === JSON.stringify(st.data)) return;
+      st.data = data;
+      st.error = '';
+      draw(st);
+    } catch (_) {
+      // keep what is shown; the next round tries again
+    } finally {
+      st.quietBusy = false;
+    }
   }
 
   async function load(st, force) {
@@ -122,9 +150,10 @@
     load(st);
   }
 
-  function refresh(key) {
+  function refresh(key, o) {
     const st = states.get(key);
-    if (st) load(st, true);
+    if (!st) return;
+    if (o && o.silent) quiet(st); else load(st, true);
   }
 
   const stateOf = el => {
@@ -153,5 +182,7 @@
     if (st && METRICS[metric] && st.metric !== metric) { st.metric = metric; load(st); }
   }
 
-  window.NopaActivity = { render, refresh, setMetric, METRICS };
+  const metricOf = key => (states.get(key) || {}).metric || '';
+
+  window.NopaActivity = { render, refresh, setMetric, metricOf, METRICS };
 })();

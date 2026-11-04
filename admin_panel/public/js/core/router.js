@@ -38,7 +38,7 @@
     },
     'stats-tab': {
       hashes: ['stats'], group: 'stats', label: 'آمار', icon: 'fa-solid fa-chart-column', section: 'analytics',
-      title: 'آمار', desc: 'زمان حضور در اپ، تماشای فیلم‌ها، ورود به اپ و فعالیت افراد، کاروان‌ها و منزلگاه‌ها',
+      title: 'آمار', desc: 'زمان حضور در اپ، چت و فیلم‌ها، باز کردن اپ، لاگین، آنلاین‌ها و فعالیت افراد، کاروان‌ها و منزلگاه‌ها',
       load: () => call('loadStatsPage'),
     },
     'users-tab': {

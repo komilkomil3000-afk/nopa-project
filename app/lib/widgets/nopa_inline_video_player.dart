@@ -182,7 +182,11 @@ class _NopaInlineVideoPlayerState extends State<NopaInlineVideoPlayer> {
         c.dispose();
       } catch (_) {}
     }
-    AppRepository().setMediaPlaying(false);
+    // only a player that was counted as playing gives its count back
+    if (_isPlaying) {
+      _isPlaying = false;
+      AppRepository().setMediaPlaying(false);
+    }
   }
 
   void _videoListener() {
@@ -219,7 +223,10 @@ class _NopaInlineVideoPlayerState extends State<NopaInlineVideoPlayer> {
         _hasError = true;
         _isLoading = false;
       });
-      AppRepository().setMediaPlaying(false);
+      if (_isPlaying) {
+        _isPlaying = false;
+        AppRepository().setMediaPlaying(false);
+      }
     }
   }
 

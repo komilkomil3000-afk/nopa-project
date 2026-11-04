@@ -14,6 +14,8 @@ class ChannelManagerShell extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final user = Provider.of<AppRepository>(context).currentUser;
+    // the whole screen is the chat (the panel's «آمار» counts it as time in the chat)
+    Provider.of<AppRepository>(context, listen: false).chatTabVisible = user.chatEnabled;
     WidgetsBinding.instance.addPostFrameCallback((_) => ChatRepository.instance.setEnabled(user.chatEnabled, user.id));
 
     return Container(

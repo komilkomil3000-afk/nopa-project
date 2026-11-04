@@ -247,7 +247,8 @@
       $('dash-usage-kpis').innerHTML = [
         cell('fa-mobile-screen', 'زمان حضور در اپ', nopaDuration(t.appSeconds)),
         cell('fa-circle-play', 'تماشای فیلم‌ها', nopaDuration(t.videoSeconds)),
-        cell('fa-right-to-bracket', 'ورود به اپ', fa(t.opens)),
+        cell('fa-door-open', 'باز کردن اپ', fa(t.opens)),
+        cell('fa-right-to-bracket', 'لاگین در اپ', fa(t.logins)),
         cell('fa-users', 'کاربران فعال', `${fa(t.activeUsers)} نفر`),
         cell('fa-signal', 'آنلاین همین الان', `${fa(t.onlineNow)} نفر`),
       ].join('');

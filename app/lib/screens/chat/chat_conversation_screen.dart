@@ -67,6 +67,7 @@ class _ChatConversationScreenState extends State<ChatConversationScreen> {
   @override
   void initState() {
     super.initState();
+    AppRepository().chatScreenOpened();
     _chat.watch(widget.spaceId, threadRootId: _threadId);
     _chat.open(widget.spaceId, threadRootId: _threadId).then((_) => _chat.markRead(widget.spaceId));
     _chat.people(widget.spaceId).then((people) {
@@ -90,6 +91,7 @@ class _ChatConversationScreenState extends State<ChatConversationScreen> {
 
   @override
   void dispose() {
+    AppRepository().chatScreenClosed();
     dismissChatMessageMenu();
     _chat.unwatch(widget.spaceId, threadRootId: _threadId);
     _chat.removeListener(_markReadWhileOpen);
@@ -479,7 +481,8 @@ class _ChatConversationScreenState extends State<ChatConversationScreen> {
     if (ok == true) {
       final res = await _chat.api('POST', '/chat/spaces/${widget.spaceId}/tags', body: {'name': name.text, 'color': color, 'visibility': staffOnly ? 'staff' : 'public'});
       if (mounted) res.ok ? AppToast.success(context, 'تگ ساخته شد.') : AppToast.error(context, res.error);
-    }  }
+    }
+  }
 
   /// What was said in one station of this conversation.
   Future<void> _chooseStation() async {
@@ -557,7 +560,8 @@ class _ChatConversationScreenState extends State<ChatConversationScreen> {
           actions: [ChatButton(label: 'جستجو', onPressed: () => Navigator.pop(ctx, controller.text))],
         ),
       ),
-    );    if (query != null && query.trim().length >= 2) {
+    );
+    if (query != null && query.trim().length >= 2) {
       await _showList('نتایج جستجو', () => _chat.search(widget.spaceId, query.trim()));
     }
   }

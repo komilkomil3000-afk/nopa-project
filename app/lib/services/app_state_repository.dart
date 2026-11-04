@@ -54,6 +54,7 @@ class AppRepository extends ChangeNotifier with WidgetsBindingObserver {
         _activeMediaPlayingCount--;
       }
     }
+    _noteAreaChange();
   }
 
   void recordActivity() {
@@ -86,20 +87,52 @@ class AppRepository extends ChangeNotifier with WidgetsBindingObserver {
   // Times the app was opened (or brought back after [_reopenAfter] in the background) not yet reported:
   // the panel charts "تعداد ورود به اپ" from them.
   int _usagePendingOpens = 0;
+  // Parts of the pending seconds spent in the chat and with a video playing (the panel shows time in the chat,
+  // in videos and in the rest of the app separately).
+  int _usagePendingChat = 0;
+  int _usagePendingVideo = 0;
   bool _usageFlushing = false;
   DateTime? _backgroundSince;
   static const Duration _reopenAfter = Duration(minutes: 1);
+  /// The foreground time is reported this often; it is also the heartbeat behind «online now» in the panel.
+  static const int _heartbeatSeconds = 15;
 
-  Future<void> _flushUsage() async {
+  /// Set by the shells: the chat tab is the one on screen.
+  bool chatTabVisible = false;
+  int _chatScreensOpen = 0;
+  /// A chat conversation screen opened / closed (it can be pushed over any tab).
+  void chatScreenOpened() { _chatScreensOpen++; _noteAreaChange(); }
+  void chatScreenClosed() { if (_chatScreensOpen > 0) _chatScreensOpen--; _noteAreaChange(); }
+
+  String get _usageArea {
+    if (isMediaPlaying) return 'video';
+    if (_chatScreensOpen > 0 || chatTabVisible) return 'chat';
+    return 'other';
+  }
+  String? _lastReportedArea;
+
+  void _noteAreaChange() {
+    if (_appInForeground && _apiService.isAuthenticated && _usageArea != _lastReportedArea) _flushUsage(force: true);
+  }
+
+  /// Sends the gathered time. [force] sends even without new seconds (a heartbeat / a change of area); [away] tells
+  /// the server the app went to the background.
+  Future<void> _flushUsage({bool force = false, bool away = false}) async {
     if (_usageFlushing || !_apiService.isAuthenticated) return;
-    if (_usagePendingSeconds < 5 && _usagePendingOpens == 0) return;
+    if (!force && !away && _usagePendingSeconds < 5 && _usagePendingOpens == 0) return;
     _usageFlushing = true;
-    final sending = _usagePendingSeconds < 5 ? 0 : _usagePendingSeconds;
+    final sending = _usagePendingSeconds < 5 && !away ? 0 : _usagePendingSeconds;
+    final chat = sending == 0 ? 0 : _usagePendingChat.clamp(0, sending);
+    final video = sending == 0 ? 0 : _usagePendingVideo.clamp(0, sending);
     final opens = _usagePendingOpens;
+    final area = away ? 'away' : _usageArea;
     try {
-      if (await _apiService.pingAppUsage(sending, opens: opens)) {
+      if (await _apiService.pingAppUsage(sending, opens: opens, chatSeconds: chat, videoSeconds: video, area: area)) {
         _usagePendingSeconds -= sending;
+        _usagePendingChat = (_usagePendingChat - chat).clamp(0, 1 << 30);
+        _usagePendingVideo = (_usagePendingVideo - video).clamp(0, 1 << 30);
         _usagePendingOpens -= opens;
+        _lastReportedArea = area;
       }
     } catch (_) {
     } finally {
@@ -120,8 +153,12 @@ class AppRepository extends ChangeNotifier with WidgetsBindingObserver {
     var tick = 0;
     _notificationPollTimer = Timer.periodic(pollInterval, (_) async {
       if (_appInForeground && _apiService.isAuthenticated) {
-        _usagePendingSeconds += pollInterval.inSeconds;
-        if (_usagePendingSeconds >= 60) _flushUsage();
+        final step = pollInterval.inSeconds;
+        _usagePendingSeconds += step;
+        final area = _usageArea;
+        if (area == 'chat') _usagePendingChat += step;
+        if (area == 'video') _usagePendingVideo += step;
+        if (_usagePendingSeconds >= _heartbeatSeconds || area != _lastReportedArea) _flushUsage(force: true);
       }
       // One request round at a time (a slow network must not pile up requests) and none while in background.
       if (_pollInFlight || !_appInForeground || !_apiService.isAuthenticated) return;
@@ -201,7 +238,8 @@ class AppRepository extends ChangeNotifier with WidgetsBindingObserver {
       } else if (state == AppLifecycleState.paused || state == AppLifecycleState.inactive || state == AppLifecycleState.detached) {
         if (state != AppLifecycleState.inactive) _backgroundSince ??= DateTime.now();
         recordActivity();
-        _flushUsage();
+        // in the background: send the time gathered so far and leave «online now»
+        _flushUsage(away: state != AppLifecycleState.inactive);
       }
     } catch (e) {
       debugPrint('Lifecycle state change caught: $e');

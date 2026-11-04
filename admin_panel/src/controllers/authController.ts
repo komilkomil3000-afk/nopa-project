@@ -1,4 +1,5 @@
 import { Request, Response } from 'express';
+import { isAppClient, logLiveEvent, markAppAway } from '../services/liveActivity';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import prisma from '../config/db';
@@ -169,6 +170,8 @@ export async function login(req: Request, res: Response) {
     });
 
     // Record login for individual hourly tracking
+    const fromApp = isAppClient(req.headers);
+    if (fromApp) logLiveEvent(user.id, 'login');
     await prisma.auditLog.create({
       data: {
         actorId: user.id,
@@ -177,7 +180,8 @@ export async function login(req: Request, res: Response) {
         action: 'USER_LOGIN',
         targetEntity: 'User',
         targetEntityId: user.id,
-        details: `ورود موفق کاربر به سامانه (لاگین ${hourlyLogins + 1} در این ساعت)`,
+        // [اپ] / [پنل]: the «آمار» tab counts only sign-ins to the mobile app
+        details: `ورود موفق کاربر به سامانه (لاگین ${hourlyLogins + 1} در این ساعت) ${fromApp ? '[اپ]' : '[پنل]'}`,
         ipAddress: clientIp
       }
     });
@@ -504,6 +508,7 @@ export async function refreshToken(req: Request, res: Response) {
 
 export async function logout(req: AuthRequest, res: Response) {
   try {
+    if (req.user && isAppClient(req.headers)) { logLiveEvent(req.user.id, 'logout'); markAppAway(req.user.id); }
     const authHeader = req.headers.authorization;
     if (authHeader && authHeader.startsWith('Bearer ')) {
       const token = authHeader.split(' ')[1];

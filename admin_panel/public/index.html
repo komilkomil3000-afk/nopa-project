@@ -442,6 +442,7 @@
             </select>
             <select id="sts-station" class="select-ctrl" aria-label="منزلگاه (برای نمودار فیلم‌ها)"><option value="">همه منزلگاه‌ها</option></select>
             <button type="button" id="sts-clear" class="lse-btn" title="حذف فیلترها"><i class="fa-solid fa-filter-circle-xmark"></i> همه</button>
+            <span class="sts-live" id="sts-live" title="آمار هر ۳ ثانیه خودکار به‌روز می‌شود"><i></i> زنده <time id="sts-live-stamp"></time></span>
             <button type="button" id="sts-refresh" class="btn-icon header-btn" title="بروزرسانی" aria-label="بروزرسانی آمار"><i class="fa-solid fa-rotate"></i></button>
           </div>
         </div>
@@ -450,9 +451,25 @@
 
         <div class="bento sts-bento" id="sts-bento">
           <article class="tile sts-tile sts-wide" data-anim-key="st:main"><div id="sts-main-chart"></div></article>
+          <article class="tile sts-tile sts-half" data-anim-key="st:online">
+            <div class="tile-head"><h3><i class="fa-solid fa-signal"></i> آنلاین در اپ <span class="tile-badge" id="sts-online-count"></span></h3></div>
+            <div id="sts-online" class="sts-scroll"></div>
+          </article>
+          <article class="tile sts-tile sts-half" data-anim-key="st:log">
+            <div class="tile-head"><h3><i class="fa-solid fa-list-ul"></i> لاگ لحظه‌ای کاربران</h3></div>
+            <div id="sts-log" class="sts-scroll"></div>
+          </article>
           <article class="tile sts-tile sts-half" data-anim-key="st:hours">
-            <div class="tile-head"><h3><i class="fa-solid fa-clock"></i> ساعات اوج استفاده</h3></div>
+            <div class="tile-head"><h3><i class="fa-solid fa-clock"></i> سه بازه اوج استفاده در شبانه‌روز</h3><div class="chm-chips sts-by" id="sts-hours-by"></div></div>
             <div id="sts-hours"></div>
+          </article>
+          <article class="tile sts-tile sts-half" data-anim-key="st:split">
+            <div class="tile-head"><h3><i class="fa-solid fa-chart-simple"></i> زمان حضور به تفکیک بخش</h3></div>
+            <div id="sts-split"></div>
+          </article>
+          <article class="tile sts-tile sts-wide" data-anim-key="st:table">
+            <div class="tile-head"><h3><i class="fa-solid fa-table-list"></i> گزارش فعالیت هر کاربر در این بازه</h3></div>
+            <div id="sts-table"></div>
           </article>
           <article class="tile sts-tile sts-half" data-anim-key="st:roles">
             <div class="tile-head"><h3><i class="fa-solid fa-user-tag"></i> به تفکیک نقش</h3></div>

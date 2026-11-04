@@ -1,5 +1,6 @@
 import prisma from '../config/db';
 import { isOnline } from '../modules/chat/realtime';
+import { isInApp } from './liveActivity';
 import { tehranDay } from '../controllers/mentorWorkspaceController';
 
 // Is a person in the app right now, and how long have they used it. Online = a live chat socket, or an app usage
@@ -23,7 +24,7 @@ export async function presenceOf(userIds: string[]): Promise<Map<string, Presenc
   for (const u of users) {
     const ping = pinged.get(u.id) || null;
     const seen = [u.lastActiveTimestamp, ping].filter(Boolean).sort((a, b) => b!.getTime() - a!.getTime())[0] || null;
-    const online = isOnline(u.id) || (!!ping && now - ping.getTime() < RECENT_PING_MS);
+    const online = isInApp(u.id) || isOnline(u.id) || (!!ping && now - ping.getTime() < RECENT_PING_MS);
     out.set(u.id, { online, lastSeenAt: online ? new Date() : seen });
   }
   return out;

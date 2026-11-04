@@ -3,7 +3,7 @@ import { Prisma } from '@prisma/client';
 import prisma from '../config/db';
 import { AuthRequest } from '../middleware/auth';
 import { tehranSlot } from '../services/activity';
-import { onlineUserIds } from '../modules/chat/realtime';
+import { liveInApp, recentLiveEvents } from '../services/liveActivity';
 
 // Charts of the admin panel: a person's page and the «آمار» tab.
 //   GET /admin/analytics/stats/series   ?metric&range[&userId|caravanId|role|stationId]  -> one bar chart
@@ -11,11 +11,14 @@ import { onlineUserIds } from '../modules/chat/realtime';
 // Days are Asia/Tehran days ("YYYY-MM-DD"); weeks start on Saturday and months are Persian (Jalali) months.
 // range: today (24 hours) | week (Sat..Fri) | month (this Jalali month) | month:1405-07 | all (one bar per month)
 
-type Metric = 'app' | 'video' | 'opens' | 'active' | 'messages' | 'challenges' | 'quizzes';
+type Metric = 'app' | 'video' | 'chat' | 'other' | 'opens' | 'logins' | 'active' | 'messages' | 'challenges' | 'quizzes';
 const METRICS: Record<Metric, { label: string; unit: 'seconds' | 'count' }> = {
   app: { label: 'زمان حضور در اپ', unit: 'seconds' },
   video: { label: 'زمان تماشای فیلم‌ها', unit: 'seconds' },
-  opens: { label: 'تعداد ورود به اپ', unit: 'count' },
+  chat: { label: 'زمان حضور در چت', unit: 'seconds' },
+  other: { label: 'زمان در بقیه بخش‌ها', unit: 'seconds' },
+  opens: { label: 'دفعات باز کردن اپ', unit: 'count' },
+  logins: { label: 'تعداد لاگین در اپ', unit: 'count' },
   active: { label: 'کاربران فعال', unit: 'count' },
   messages: { label: 'پیام‌های چت', unit: 'count' },
   challenges: { label: 'ارسال پاسخ چالش', unit: 'count' },
@@ -104,11 +107,18 @@ function resolveRange(range: string, today: string, firstDay: () => Promise<stri
 // ---- data -----------------------------------------------------------------------------------
 interface Scope { userIds: string[] | null; sessionIds: string[] | null }
 
-const SQL_SOURCES: Record<'messages' | 'challenges' | 'quizzes', { table: string; at: string; user: string }> = {
+type SqlMetric = 'messages' | 'challenges' | 'quizzes' | 'logins';
+const SQL_SOURCES: Record<SqlMetric, { table: string; at: string; user: string; where?: string }> = {
   messages: { table: '"ChatMessage"', at: '"createdAt"', user: '"senderId"' },
   challenges: { table: '"Submission"', at: '"submittedAt"', user: '"studentId"' },
   quizzes: { table: '"QuizSubmission"', at: '"submittedAt"', user: '"studentId"' },
+  // successful sign-ins (authController); the admin panel's own sign-ins are tagged [پنل] and left out
+  logins: { table: '"AuditLog"', at: '"createdAt"', user: '"actorId"', where: `"action" = 'USER_LOGIN' AND "details" NOT LIKE '%[پنل]%'` },
 };
+const isSql = (m: Metric): m is SqlMetric => m in SQL_SOURCES;
+const sqlWhere = (src: { where?: string }) => (src.where ? Prisma.raw(`AND ${src.where}`) : Prisma.empty);
+/** activity kinds kept in UserActivityHour, summed */
+const HOUR_KINDS: Partial<Record<Metric, string>> = { app: 'app', video: 'video', opens: 'open', chat: 'chat' };
 const sqlLocal = (at: string) => Prisma.raw(`((${at} AT TIME ZONE 'UTC') AT TIME ZONE 'Asia/Tehran')`);
 
 function userFilter(scope: Scope): any {
@@ -127,26 +137,51 @@ async function daily(metric: Metric, from: string, to: string, scope: Scope): Pr
     rows.forEach(r => out.set(r.day, metric === 'app' ? r._sum.seconds || 0 : r._count._all));
     return out;
   }
-  if (metric === 'video' || metric === 'opens') {
+  if (metric === 'other') {
+    // time outside the chat and the videos: app - chat - video (the larger of the class-video and in-app-video counts)
+    const [app, chat, video, appvideo] = await Promise.all([
+      daily('app', from, to, scope), daily('chat', from, to, scope), daily('video', from, to, { ...scope, sessionIds: null }), dailyKind('appvideo', from, to, scope),
+    ]);
+    app.forEach((v, d) => out.set(d, Math.max(0, v - (chat.get(d) || 0) - Math.max(video.get(d) || 0, appvideo.get(d) || 0))));
+    return out;
+  }
+  if (metric === 'video' || metric === 'opens' || metric === 'chat') {
     if (scope.sessionIds && scope.sessionIds.length === 0 && metric === 'video') return out;
     const rows = await prisma.userActivityHour.groupBy({
       by: ['day'],
-      where: { day: dayRange, kind: metric === 'video' ? 'video' : 'open', ...userFilter(scope), ...(metric === 'video' && scope.sessionIds ? { refId: { in: scope.sessionIds } } : {}) },
+      where: { day: dayRange, kind: HOUR_KINDS[metric]!, ...userFilter(scope), ...(metric === 'video' && scope.sessionIds ? { refId: { in: scope.sessionIds } } : {}) },
       _sum: { value: true },
     });
     rows.forEach(r => out.set(r.day, r._sum.value || 0));
     return out;
   }
+  if (!isSql(metric)) return out;
   const src = SQL_SOURCES[metric];
   const local = sqlLocal(src.at);
   const users = scope.userIds ? Prisma.sql`AND ${Prisma.raw(src.user)} IN (${Prisma.join(scope.userIds)})` : Prisma.empty;
   const rows = await prisma.$queryRaw<{ day: string; n: bigint }[]>`
     SELECT to_char(${local}, 'YYYY-MM-DD') AS day, COUNT(*)::bigint AS n
     FROM ${Prisma.raw(src.table)}
-    WHERE ${Prisma.raw(src.user)} IS NOT NULL ${users}
+    WHERE ${Prisma.raw(src.user)} IS NOT NULL ${users} ${sqlWhere(src)}
       AND to_char(${local}, 'YYYY-MM-DD') BETWEEN ${from} AND ${to}
     GROUP BY 1`;
   rows.forEach(r => out.set(r.day, Number(r.n)));
+  return out;
+}
+
+async function dailyKind(kind: string, from: string, to: string, scope: Scope): Promise<Map<string, number>> {
+  const out = new Map<string, number>();
+  if (scope.userIds && scope.userIds.length === 0) return out;
+  const rows = await prisma.userActivityHour.groupBy({ by: ['day'], where: { day: { gte: from, lte: to }, kind, ...userFilter(scope) }, _sum: { value: true } });
+  rows.forEach(r => out.set(r.day, r._sum.value || 0));
+  return out;
+}
+
+async function hourlyKind(kind: string, day: string, scope: Scope): Promise<number[]> {
+  const out = new Array(24).fill(0);
+  if (scope.userIds && scope.userIds.length === 0) return out;
+  const rows = await prisma.userActivityHour.groupBy({ by: ['hour'], where: { day, kind, ...userFilter(scope) }, _sum: { value: true } });
+  rows.forEach(r => { out[r.hour] = r._sum.value || 0; });
   return out;
 }
 
@@ -154,8 +189,14 @@ async function daily(metric: Metric, from: string, to: string, scope: Scope): Pr
 async function hourly(metric: Metric, day: string, scope: Scope): Promise<number[]> {
   const out = new Array(24).fill(0);
   if (scope.userIds && scope.userIds.length === 0) return out;
-  if (metric === 'app' || metric === 'video' || metric === 'opens' || metric === 'active') {
-    const kind = metric === 'opens' ? 'open' : metric === 'video' ? 'video' : 'app';
+  if (metric === 'other') {
+    const [app, chat, video, appvideo] = await Promise.all([
+      hourlyKind('app', day, scope), hourlyKind('chat', day, scope), hourlyKind('video', day, scope), hourlyKind('appvideo', day, scope),
+    ]);
+    return app.map((v, h) => Math.max(0, v - chat[h] - Math.max(video[h], appvideo[h])));
+  }
+  if (metric === 'app' || metric === 'video' || metric === 'opens' || metric === 'active' || metric === 'chat') {
+    const kind = metric === 'active' ? 'app' : HOUR_KINDS[metric]!;
     const where: any = { day, kind, ...userFilter(scope) };
     if (metric === 'video' && scope.sessionIds) where.refId = { in: scope.sessionIds };
     if (metric === 'active') {
@@ -167,13 +208,14 @@ async function hourly(metric: Metric, day: string, scope: Scope): Promise<number
     }
     return out;
   }
+  if (!isSql(metric)) return out;
   const src = SQL_SOURCES[metric];
   const local = sqlLocal(src.at);
   const users = scope.userIds ? Prisma.sql`AND ${Prisma.raw(src.user)} IN (${Prisma.join(scope.userIds)})` : Prisma.empty;
   const rows = await prisma.$queryRaw<{ h: number; n: bigint }[]>`
     SELECT EXTRACT(HOUR FROM ${local})::int AS h, COUNT(*)::bigint AS n
     FROM ${Prisma.raw(src.table)}
-    WHERE ${Prisma.raw(src.user)} IS NOT NULL ${users}
+    WHERE ${Prisma.raw(src.user)} IS NOT NULL ${users} ${sqlWhere(src)}
       AND to_char(${local}, 'YYYY-MM-DD') = ${day}
     GROUP BY 1`;
   rows.forEach(r => { out[Number(r.h)] = Number(r.n); });
@@ -182,16 +224,17 @@ async function hourly(metric: Metric, day: string, scope: Scope): Promise<number
 
 async function firstDayOf(metric: Metric, scope: Scope): Promise<string> {
   const where = userFilter(scope);
-  if (metric === 'app' || metric === 'active') {
+  if (metric === 'app' || metric === 'active' || metric === 'other') {
     return (await prisma.userUsageDay.findFirst({ where, orderBy: { day: 'asc' }, select: { day: true } }))?.day || '';
   }
-  if (metric === 'video' || metric === 'opens') {
-    return (await prisma.userActivityHour.findFirst({ where: { ...where, kind: metric === 'video' ? 'video' : 'open' }, orderBy: { day: 'asc' }, select: { day: true } }))?.day || '';
+  if (metric === 'video' || metric === 'opens' || metric === 'chat') {
+    return (await prisma.userActivityHour.findFirst({ where: { ...where, kind: HOUR_KINDS[metric]! }, orderBy: { day: 'asc' }, select: { day: true } }))?.day || '';
   }
+  if (!isSql(metric)) return '';
   const src = SQL_SOURCES[metric];
   const users = scope.userIds ? (scope.userIds.length ? Prisma.sql`AND ${Prisma.raw(src.user)} IN (${Prisma.join(scope.userIds)})` : Prisma.sql`AND FALSE`) : Prisma.empty;
   const rows = await prisma.$queryRaw<{ day: string | null }[]>`
-    SELECT to_char(MIN(${sqlLocal(src.at)}), 'YYYY-MM-DD') AS day FROM ${Prisma.raw(src.table)} WHERE ${Prisma.raw(src.user)} IS NOT NULL ${users}`;
+    SELECT to_char(MIN(${sqlLocal(src.at)}), 'YYYY-MM-DD') AS day FROM ${Prisma.raw(src.table)} WHERE ${Prisma.raw(src.user)} IS NOT NULL ${users} ${sqlWhere(src)}`;
   return rows[0]?.day || '';
 }
 
@@ -278,6 +321,23 @@ async function activeUsersIn(from: string, to: string, scope: Scope): Promise<nu
   return rows.length;
 }
 
+/** rows of a SQL source per person in from..to */
+async function countByUser(metric: SqlMetric, from: string, to: string, scope: Scope): Promise<Map<string, number>> {
+  const out = new Map<string, number>();
+  if (scope.userIds && !scope.userIds.length) return out;
+  const src = SQL_SOURCES[metric];
+  const local = sqlLocal(src.at);
+  const users = scope.userIds ? Prisma.sql`AND ${Prisma.raw(src.user)} IN (${Prisma.join(scope.userIds)})` : Prisma.empty;
+  const rows = await prisma.$queryRaw<{ u: string; n: bigint }[]>`
+    SELECT ${Prisma.raw(src.user)} AS u, COUNT(*)::bigint AS n
+    FROM ${Prisma.raw(src.table)}
+    WHERE ${Prisma.raw(src.user)} IS NOT NULL ${users} ${sqlWhere(src)}
+      AND to_char(${local}, 'YYYY-MM-DD') BETWEEN ${from} AND ${to}
+    GROUP BY 1`;
+  rows.forEach(r => out.set(r.u, Number(r.n)));
+  return out;
+}
+
 // ---- overview -------------------------------------------------------------------------------
 export async function getStatsOverview(req: AuthRequest, res: Response) {
   try {
@@ -306,6 +366,15 @@ export async function getStatsOverview(req: AuthRequest, res: Response) {
       all && !none ? prisma.sessionWatchRecord.groupBy({ by: ['sessionId', 'userId'], where: { watchedSeconds: { gt: 0 }, ...uf }, _sum: { watchedSeconds: true } }) : empty([] as any[]),
     ]);
     const sumMap = (m: Map<string, number>) => Array.from(m.values()).reduce((s, v) => s + v, 0);
+    const [chatByUser, appvideoByUser, hourUserRows, logins, messagesByUser] = await Promise.all([
+      none ? empty([] as any[]) : prisma.userActivityHour.groupBy({ by: ['userId'], where: { day: dayRange, kind: 'chat', ...uf }, _sum: { value: true } }),
+      none ? empty([] as any[]) : prisma.userActivityHour.groupBy({ by: ['userId'], where: { day: dayRange, kind: 'appvideo', ...uf }, _sum: { value: true } }),
+      none ? empty([] as any[]) : prisma.userActivityHour.groupBy({ by: ['hour', 'userId'], where: { day: dayRange, kind: 'app', ...uf } }),
+      countByUser('logins', from, to, scope),
+      countByUser('messages', from, to, scope),
+    ]);
+    const chat = new Map<string, number>(chatByUser.map((r: any) => [r.userId, r._sum.value || 0]));
+    const appVideo = new Map<string, number>(appvideoByUser.map((r: any) => [r.userId, r._sum.value || 0]));
 
     // per class / per person video: hourly tracking, or for "all" whichever is larger per class+person
     const watch = new Map<string, number>(); // `${sessionId}|${userId}` -> seconds
@@ -328,11 +397,29 @@ export async function getStatsOverview(req: AuthRequest, res: Response) {
 
     const app = new Map<string, number>(appByUser.map((r: any) => [r.userId, r._sum.seconds || 0]));
     const opens = new Map<string, number>(opensByUser.map((r: any) => [r.userId, r._sum.value || 0]));
-    const ids = Array.from(new Set([...app.keys(), ...videoUser.keys(), ...opens.keys()]));
+    // time outside the chat and videos, per person
+    const other = new Map<string, number>();
+    app.forEach((a, id) => other.set(id, Math.max(0, a - (chat.get(id) || 0) - Math.max(videoUser.get(id) || 0, appVideo.get(id) || 0))));
+
+    // who is in the app right now (heartbeats of the app, services/liveActivity.ts)
+    const scopeSet = scope.userIds ? new Set(scope.userIds) : null;
+    const liveNow = liveInApp(scopeSet);
+    const events = recentLiveEvents(80, scopeSet);
+
+    const ids = Array.from(new Set([...app.keys(), ...videoUser.keys(), ...opens.keys(), ...logins.keys(), ...messagesByUser.keys()]));
+    const extraIds = Array.from(new Set([...liveNow.map(l => l.userId), ...events.map(e => e.userId)])).filter(id => !ids.includes(id));
     const people = ids.length
       ? await prisma.user.findMany({ where: { id: { in: ids } }, select: { id: true, name: true, avatarUrl: true, siteAvatarUrl: true, role: true, caravanId: true, gender: true } })
       : [];
     const byId = new Map(people.map(p => [p.id, p]));
+    if (extraIds.length) {
+      (await prisma.user.findMany({ where: { id: { in: extraIds } }, select: { id: true, name: true, avatarUrl: true, siteAvatarUrl: true, role: true, caravanId: true, gender: true } }))
+        .forEach(p => byId.set(p.id, p));
+    }
+    const brief = (id: string) => {
+      const p = byId.get(id);
+      return { id, name: p?.name || 'کاربر', avatarUrl: p?.avatarUrl || null, role: p?.role || '' };
+    };
 
     // caravans
     const caravanRows = await prisma.caravan.findMany({
@@ -393,14 +480,24 @@ export async function getStatsOverview(req: AuthRequest, res: Response) {
           id, name: p.name, avatarUrl: p.avatarUrl, siteAvatarUrl: p.siteAvatarUrl, role: p.role, gender: p.gender,
           caravanName: caravanRows.find(c => c.id === p.caravanId)?.name || null,
           appSeconds: app.get(id) || 0, videoSeconds: videoUser.get(id) || 0, opens: opens.get(id) || 0,
+          chatSeconds: chat.get(id) || 0, otherSeconds: other.get(id) || 0,
+          logins: logins.get(id) || 0, messages: messagesByUser.get(id) || 0,
         };
       })
       .filter(Boolean)
       .sort((a: any, b: any) => b.appSeconds - a.appSeconds || b.videoSeconds - a.videoSeconds)
-      .slice(0, 20);
+      .slice(0, 50);
 
     const hours = new Array(24).fill(0);
     appByHour.forEach((r: any) => { hours[r.hour] = r._sum.value || 0; });
+    const hourUsers = new Array(24).fill(0); // different people in the app in each hour of the day
+    hourUserRows.forEach((r: any) => { hourUsers[r.hour] += 1; });
+    // the three busiest hours of the day (time in the app, then people)
+    const peakHours = hours
+      .map((seconds, hour) => ({ hour, seconds, users: hourUsers[hour] }))
+      .filter(h => h.seconds > 0 || h.users > 0)
+      .sort((a, b) => b.seconds - a.seconds || b.users - a.users)
+      .slice(0, 3);
 
     // choices of the «آمار» tab's filters
     const [caravanOptions, stationOptions] = await Promise.all([
@@ -408,8 +505,12 @@ export async function getStatsOverview(req: AuthRequest, res: Response) {
       prisma.station.findMany({ select: { id: true, title: true }, orderBy: { orderIndex: 'asc' } }),
     ]);
 
-    const online = onlineUserIds();
-    const onlineNow = scope.userIds ? scope.userIds.filter(id => online.has(id)).length : online.size;
+    const now = Date.now();
+    const online = liveNow
+      .map(l => ({ ...brief(l.userId), area: l.area, areaSeconds: Math.round((now - l.areaSince) / 1000), sessionSeconds: Math.round((now - l.since) / 1000) }))
+      .sort((a, b) => b.sessionSeconds - a.sessionSeconds);
+    const onlineAreas = { chat: 0, video: 0, other: 0 } as Record<string, number>;
+    online.forEach(o => { onlineAreas[o.area] = (onlineAreas[o.area] || 0) + 1; });
 
     res.json({
       range, rangeLabel: span.label, from, to,
@@ -418,14 +519,20 @@ export async function getStatsOverview(req: AuthRequest, res: Response) {
         appSeconds: Array.from(app.values()).reduce((s, v) => s + v, 0),
         videoSeconds: Array.from(videoUser.values()).reduce((s, v) => s + v, 0),
         opens: Array.from(opens.values()).reduce((s, v) => s + v, 0),
+        chatSeconds: sumMap(chat),
+        otherSeconds: sumMap(other),
+        logins: sumMap(logins),
         activeUsers: Array.from(app.values()).filter(v => v > 0).length,
         messages: sumMap(messages), challenges: sumMap(challenges), quizzes: sumMap(quizzes),
-        onlineNow,
+        onlineNow: online.length,
         people: scope.userIds ? scope.userIds.length : await prisma.user.count({ where: { isDeleted: false } }),
       },
       topUsers, caravans, stations, classes,
       roles: Array.from(roleMap.values()).sort((a, b) => b.appSeconds - a.appSeconds),
-      hours,
+      hours, hourUsers, peakHours,
+      online: online.slice(0, 100), onlineAreas,
+      events: events.map(e => ({ at: new Date(e.at).toISOString(), type: e.type, user: brief(e.userId) })),
+      serverTime: new Date(now).toISOString(),
       options: { caravans: caravanOptions, stations: stationOptions },
     });
   } catch (error: any) {
