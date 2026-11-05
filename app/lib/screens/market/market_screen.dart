@@ -19,6 +19,7 @@ import 'package:nopa_app/models/user_model.dart';
 import 'package:nopa_app/services/app_state_repository.dart';
 import 'package:nopa_app/services/api_service.dart';
 import 'package:nopa_app/widgets/nopa_dialog_container.dart';
+import 'package:nopa_app/widgets/caravan_banners_dialog.dart';
 import 'package:nopa_app/utils/constants.dart';
 import 'package:nopa_app/utils/mentor_contact.dart';
 
@@ -106,6 +107,39 @@ class _MarketScreenState extends State<MarketScreen> {
   int _activeActionButton = 1; // Default: 'ثبت درخواست' is active/colored
 
   final List<String> _availableAssets = ['زریک', 'کلاف', 'قالیچه'];
+
+  // «توضیحات» under the capital: six lines, then «بیشتر...» (as on the station page)
+  bool _isDescriptionExpanded = false;
+
+  /// Assets a user can give: those with at least one allowed exchange (for now کلاف → قالیچه and
+  /// قالیچه → زریک; زریک → کلاف only when the admin allows buying کلاف).
+  List<String> get _sourceOptions =>
+      _availableAssets.where((s) => _targetOptionsFor(s).isNotEmpty).toList();
+
+  /// What [source] can be exchanged for.
+  List<String> _targetOptionsFor(String source) =>
+      _availableAssets.where((t) => EconomyRates.rule(source, t) != null).toList();
+
+  /// Keeps the two pickers on an allowed pair (the rules can change when the rates arrive from the server).
+  void _normalizeExchangePair() {
+    final sources = _sourceOptions;
+    if (sources.isEmpty) return;
+    if (!sources.contains(_sourceAsset)) _sourceAsset = sources.first;
+    final targets = _targetOptionsFor(_sourceAsset);
+    if (!targets.contains(_targetAsset)) _targetAsset = targets.first;
+  }
+
+  /// The source picked: the target follows it, and the amount starts at one exchange step.
+  void _onSourceChanged(String source) {
+    setState(() {
+      _sourceAsset = source;
+      final targets = _targetOptionsFor(source);
+      if (!targets.contains(_targetAsset) && targets.isNotEmpty) _targetAsset = targets.first;
+      final rule = EconomyRates.rule(_sourceAsset, _targetAsset);
+      if (rule != null) _amountController.text = rule.step.toString();
+    });
+    _recalculateExchange();
+  }
 
   // Mentor Market States
   int _selectedMentorMarketTab = 0; // 0: گزارش اعضا, 1: مبادلات
@@ -600,6 +634,8 @@ class _MarketScreenState extends State<MarketScreen> {
               // 3. Section 2: سرمایه های شما (Your Capital - only for student)
               if (!isMentor) ...[
                 _buildAssetsSection(user),
+                const SizedBox(height: 20),
+                _buildMarketDescription(),
                 const SizedBox(height: 24),
               ],
 
@@ -800,7 +836,7 @@ class _MarketScreenState extends State<MarketScreen> {
               padding: const EdgeInsets.symmetric(horizontal: 18),
               children: [
                 _buildAssetPill(
-                  badgeNumber: '۱',
+                  assetKey: 'zarik',
                   label: AssetNames.labelFor('زریک'),
                   value: zarikVal,
                   isGold: _selectedAssetIndex == 0,
@@ -808,15 +844,18 @@ class _MarketScreenState extends State<MarketScreen> {
                 ),
                 const SizedBox(width: 10),
                 _buildAssetPill(
-                  badgeNumber: '۲',
+                  assetKey: 'derafsh',
                   label: AssetNames.labelFor('درفش'),
                   value: beyrahVal,
                   isGold: _selectedAssetIndex == 1,
-                  onTap: () => setState(() => _selectedAssetIndex = 1),
+                  onTap: () {
+                    setState(() => _selectedAssetIndex = 1);
+                    CaravanBannersDialog.show(context, Provider.of<AppRepository>(context, listen: false).caravanBanners);
+                  },
                 ),
                 const SizedBox(width: 10),
                 _buildAssetPill(
-                  badgeNumber: '۳',
+                  assetKey: 'nakh',
                   label: AssetNames.labelFor('کلاف'),
                   value: nakhVal,
                   isGold: _selectedAssetIndex == 2,
@@ -824,7 +863,7 @@ class _MarketScreenState extends State<MarketScreen> {
                 ),
                 const SizedBox(width: 10),
                 _buildAssetPill(
-                  badgeNumber: '۴',
+                  assetKey: 'farsh',
                   label: AssetNames.labelFor('قالیچه'),
                   value: farshVal,
                   isGold: _selectedAssetIndex == 3,
@@ -1572,7 +1611,7 @@ class _MarketScreenState extends State<MarketScreen> {
 
 
   Widget _buildAssetPill({
-    required String badgeNumber,
+    required String assetKey,
     required String label,
     required String value,
     required bool isGold,
@@ -1632,21 +1671,8 @@ class _MarketScreenState extends State<MarketScreen> {
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                // Right: Circular Badge with Number
-                Container(
-                  width: 26,
-                  height: 26,
-                  decoration: BoxDecoration(
-                    color: isGold ? const Color(0xFF653A18) : const Color(0xFF8B88E8),
-                    shape: BoxShape.circle,
-                  ),
-                  child: Center(
-                    child: Text(
-                      badgeNumber,
-                      style: AppTypography.h3Strong,
-                    ),
-                  ),
-                ),
+                // Right: the asset's icon, as on the home screens (bottom bar style, or the picture set in the panel)
+                AssetIcon(assetKey, size: 24, color: isGold ? const Color(0xFF653A18) : const Color(0xFFDFB690)),
                 const SizedBox(width: 8),
                 // Middle: Label
                 Text(
@@ -1670,6 +1696,7 @@ class _MarketScreenState extends State<MarketScreen> {
 
   /// Section 3: مبادله - Purple Box based on Station Card with black selector boxes and responsive layout
   Widget _buildExchangePanel() {
+    _normalizeExchangePair();
     final String resultDisplay = _calculatedResult % 1 == 0
         ? _calculatedResult.toInt().toString().toPersianDigits()
         : _calculatedResult.toStringAsFixed(1).toPersianDigits();
@@ -1740,7 +1767,9 @@ class _MarketScreenState extends State<MarketScreen> {
                         children: [
                           // 1. Inputs Section
                           _buildExchangeInputsSection(resultDisplay),
-                          const SizedBox(height: 14),
+                          const SizedBox(height: 10),
+                          _buildAllowedExchangesNote(),
+                          const SizedBox(height: 10),
 
                           // 2. Description text
                           Text(
@@ -1825,7 +1854,14 @@ class _MarketScreenState extends State<MarketScreen> {
                         // Right in RTL (Selectors & Amount inputs)
                         Expanded(
                           flex: 6,
-                          child: _buildExchangeInputsSection(resultDisplay),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                            children: [
+                              _buildExchangeInputsSection(resultDisplay),
+                              const SizedBox(height: 10),
+                              _buildAllowedExchangesNote(),
+                            ],
+                          ),
                         ),
                       ],
                     );
@@ -1858,11 +1894,9 @@ class _MarketScreenState extends State<MarketScreen> {
               flex: 5,
               child: _buildAssetDropdown(
                 value: _sourceAsset,
+                options: _sourceOptions,
                 onChanged: (val) {
-                  if (val != null) {
-                    setState(() => _sourceAsset = val);
-                    _recalculateExchange();
-                  }
+                  if (val != null) _onSourceChanged(val);
                 },
               ),
             ),
@@ -1893,6 +1927,7 @@ class _MarketScreenState extends State<MarketScreen> {
               flex: 5,
               child: _buildAssetDropdown(
                 value: _targetAsset,
+                options: _targetOptionsFor(_sourceAsset),
                 onChanged: (val) {
                   if (val != null) {
                     setState(() => _targetAsset = val);
@@ -1917,6 +1952,7 @@ class _MarketScreenState extends State<MarketScreen> {
   /// Dark Asset Selector Dropdown Box matching notification and login dark surface styling
   Widget _buildAssetDropdown({
     required String value,
+    required List<String> options,
     required ValueChanged<String?> onChanged,
   }) {
     return Container(
@@ -1939,7 +1975,7 @@ class _MarketScreenState extends State<MarketScreen> {
             icon: const Icon(Icons.keyboard_arrow_down_rounded, color: Color(0xFFC7B299), size: 18),
             isDense: true,
             style: AppTypography.bodyLarge,
-            items: _availableAssets.map((asset) {
+            items: options.map((asset) {
               return DropdownMenuItem<String>(
                 value: asset,
                 child: Text(AssetNames.labelFor(asset), style: AppTypography.bodyMedium),
@@ -1947,6 +1983,96 @@ class _MarketScreenState extends State<MarketScreen> {
             }).toList(),
             onChanged: onChanged,
           ),
+        ),
+      ),
+    );
+  }
+
+  /// Small line in the exchange box listing the exchanges open to users, e.g. «کلاف به قالیچه و قالیچه به زریک».
+  Widget _buildAllowedExchangesNote() {
+    final pairs = <String>[
+      for (final s in _sourceOptions)
+        for (final t in _targetOptionsFor(s)) '${AssetNames.labelFor(s)} به ${AssetNames.labelFor(t)}',
+    ];
+    if (pairs.isEmpty) return const SizedBox.shrink();
+    final list = pairs.length == 1 ? pairs.first : '${pairs.sublist(0, pairs.length - 1).join('، ')} و ${pairs.last}';
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Padding(
+          padding: EdgeInsets.only(top: 1),
+          child: Icon(Icons.info_outline_rounded, size: 13, color: Color(0xFFC7B299)),
+        ),
+        const SizedBox(width: 4),
+        Expanded(
+          child: Text(
+            'فعلاً فقط تبدیل $list ممکن است.',
+            style: AppTypography.caption.copyWith(color: const Color(0xFFC7B299), fontSize: 11),
+          ),
+        ),
+      ],
+    );
+  }
+
+  /// «توضیحات» under the capital, plain text like the station page's description.
+  Widget _buildMarketDescription() {
+    final zarik = AssetNames.of('zarik');
+    final nakh = AssetNames.of('nakh');
+    final farsh = AssetNames.of('farsh');
+    final derafsh = AssetNames.of('derafsh');
+    final price = EconomyRates.farshSalePrice.toPersian();
+    final text = 'اینجا جایی است که شما می‌توانید ارزش اموالتان را با تبدیل آن‌ها ارزشمندتر کنید. '
+        'شما می‌توانید پس از شرکت در چالش‌های گروهی‌تان $nakh دریافت کنید و آن‌ها را به $farsh تبدیل کنید. '
+        'هر $farsh $price $zarik ارزش دارد. '
+        'همچنین شما با شرکت در چالش‌های فراگروهی و دریافت $derafsh‌ها می‌توانید $zarik‌های فراوانی دریافت کنید '
+        'که رتبه‌ی شما و کاروانتان را افزایش می‌دهد. '
+        'در مسیر سفر می‌توانید سوغاتی‌ها و قابلیت‌های مختلفی را که کم‌کم به بازار خواهند آمد بخرید. '
+        'پس کمی صبوری کنید و سعی کنید ارزش سرمایه‌هایتان را افزایش دهید تا نزد علاءالملک رتبه‌ی بالاتری داشته باشید.';
+    final style = AppTypography.caption.copyWith(color: const Color(0xFFD3D0E3));
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 20.0),
+      child: Directionality(
+        textDirection: TextDirection.rtl,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            const Text('توضیحات', textAlign: TextAlign.right, style: AppTypography.h2),
+            const SizedBox(height: 6),
+            LayoutBuilder(
+              builder: (context, constraints) {
+                final painter = TextPainter(
+                  text: TextSpan(text: text, style: style),
+                  textDirection: TextDirection.rtl,
+                  maxLines: 6,
+                )..layout(maxWidth: constraints.maxWidth);
+                final long = painter.didExceedMaxLines;
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      text,
+                      textAlign: TextAlign.justify,
+                      maxLines: long && !_isDescriptionExpanded ? 6 : null,
+                      overflow: long && !_isDescriptionExpanded ? TextOverflow.ellipsis : null,
+                      style: style,
+                    ),
+                    if (long) ...[
+                      const SizedBox(height: 2),
+                      TapExpander(
+                        child: GestureDetector(
+                          onTap: () => setState(() => _isDescriptionExpanded = !_isDescriptionExpanded),
+                          child: Text(
+                            _isDescriptionExpanded ? 'بستن (کمتر)' : 'بیشتر...',
+                            style: AppTypography.captionGold.copyWith(decoration: TextDecoration.underline),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ],
+                );
+              },
+            ),
+          ],
         ),
       ),
     );
