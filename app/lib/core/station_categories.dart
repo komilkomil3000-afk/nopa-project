@@ -3,13 +3,35 @@
 /// A station may have any number of categories with any title ("مهارتی", "شناختی", "رسانه‌ای", ...).
 /// The app never guesses a category's kind from keywords in its title: every screen shows the categories in
 /// their admin-panel order, under the title the admin gave them.
+/// An instructor of a category: name and photo (from the admin panel's instructor bank).
+class CategoryInstructor {
+  final String name;
+  final String avatarUrl;
+  final String degree;
+  const CategoryInstructor({required this.name, this.avatarUrl = '', this.degree = ''});
+}
+
 class StationCategory {
   final String id;
   final String title;
   final int index;
   final List<Map<String, dynamic>> sessions;
+  /// Details shown in the «مشخصات جلسه» tab, as the admin entered them.
+  final String description;
+  final List<CategoryInstructor> instructors;
+  final String handoutUrl;
+  final String handoutTitle;
 
-  const StationCategory({required this.id, required this.title, required this.index, required this.sessions});
+  const StationCategory({
+    required this.id,
+    required this.title,
+    required this.index,
+    required this.sessions,
+    this.description = '',
+    this.instructors = const [],
+    this.handoutUrl = '',
+    this.handoutTitle = '',
+  });
 
   /// Short label for a tab: the title without a leading "کلاس‌های" / "کلاس" / "دسته" (e.g. "کلاس‌های شناختی" -> "شناختی").
   String get shortTitle => StationCategories.shortLabel(title);
@@ -74,6 +96,18 @@ class StationCategories {
         title: title.isEmpty ? 'کلاس‌ها' : title,
         index: out.length,
         sessions: sessions,
+        description: cat['description']?.toString() ?? '',
+        instructors: [
+          for (final i in (cat['instructorsInfo'] as List? ?? const []).whereType<Map>())
+            if ((i['name']?.toString().trim() ?? '').isNotEmpty)
+              CategoryInstructor(
+                name: i['name'].toString().trim(),
+                avatarUrl: i['avatarUrl']?.toString() ?? '',
+                degree: i['degree']?.toString() ?? '',
+              ),
+        ],
+        handoutUrl: cat['handoutUrl']?.toString() ?? '',
+        handoutTitle: cat['handoutTitle']?.toString() ?? '',
       ));
     }
     return out;

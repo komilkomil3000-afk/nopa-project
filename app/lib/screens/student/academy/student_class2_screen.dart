@@ -1,5 +1,6 @@
 import 'package:nopa_app/widgets/nopa_modal_shell.dart';
 import 'package:nopa_app/widgets/tap_expander.dart';
+import 'package:nopa_app/widgets/safe_avatar.dart';
 import 'package:nopa_app/widgets/bottom_nav_bar.dart';
 import '../../../widgets/nopa_dialog_container.dart';
 import 'package:nopa_app/core/station_numbering.dart';
@@ -1220,151 +1221,178 @@ class _Class2ScreenState extends State<StudentClass2Screen> {
     );
   }
 
-  /// 5. Session Details Tab (اطلاعات جلسه ساده بدون باکس + قسمت استادها دارای باکس شبیه به چالش‌های صفحه هوم)
-  Widget _buildSessionDetailsTab() {
-    final session = _activeSession;
-    if (session == null) {
-      return const SizedBox.shrink();
-    }
+  // The category whose details the «مشخصات جلسه» tab shows (null = the class tab the person came from)
+  int? _detailsCategory;
 
-    final String sessionDesc = session['description']?.toString().trim() ?? '';
-    final String handoutUrl = session['handoutUrl']?.toString().trim() ?? '';
-    final String handoutTitle = session['handoutTitle']?.toString().trim() ?? '';
+  /// «مشخصات جلسه»: one option per class category of the station; each shows that category's description,
+  /// its instructors (with their photos) and the notes to download. Everything comes from the admin panel.
+  Widget _buildSessionDetailsTab() {
+    if (_categories.isEmpty) return const SizedBox.shrink();
+    final int selected = (_detailsCategory ?? _selectedTab).clamp(0, _categories.length - 1);
+    final cat = _categories[selected];
+
+    final String description = cat.description.trim();
+    final instructors = cat.instructors;
+    // Notes: the category's own file, then the ones attached to its sessions
+    final handouts = <({String title, String url})>[
+      if (cat.handoutUrl.trim().isNotEmpty) (title: cat.handoutTitle.trim().isNotEmpty ? cat.handoutTitle.trim() : 'دانلود جزوه ${cat.shortTitle}', url: cat.handoutUrl.trim()),
+      for (final s in cat.sessions)
+        if ((s['handoutUrl']?.toString().trim() ?? '').isNotEmpty)
+          (
+            title: (s['handoutTitle']?.toString().trim() ?? '').isNotEmpty ? s['handoutTitle'].toString().trim() : 'جزوه ${s['title'] ?? 'جلسه'}',
+            url: s['handoutUrl'].toString().trim(),
+          ),
+    ];
+
+    Widget box({required Widget child}) => Container(
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(16),
+            gradient: const LinearGradient(
+              begin: Alignment.centerLeft,
+              end: Alignment.centerRight,
+              stops: [0.0, 0.5, 1.0],
+              colors: [Color(0xFF3A3A6A), Color(0xFF9292E2), Color(0xFF3A3A6A)],
+            ),
+          ),
+          padding: const EdgeInsets.all(1.2),
+          child: Container(
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(14.8),
+              gradient: const LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                stops: [0.0, 0.53, 1.0],
+                colors: [Color(0xFF3D3C67), Color(0xFF36345C), Color(0xFF333359)],
+              ),
+            ),
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+            child: child,
+          ),
+        );
 
     return Directionality(
       textDirection: TextDirection.rtl,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          // 1. اطلاعات و شرح متنی جلسه (ساده و بدون باکس)
+          // One option per category of this station
+          SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: Row(
+              children: [
+                for (int i = 0; i < _categories.length; i++) ...[
+                  GestureDetector(
+                    onTap: () => setState(() => _detailsCategory = i),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+                      decoration: BoxDecoration(
+                        color: i == selected ? const Color(0xFF9292E2) : const Color(0xFF2E2D4A),
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                      child: Text(
+                        _categories[i].title,
+                        style: AppTypography.caption.copyWith(color: i == selected ? Colors.white : const Color(0xFFD3D0E3)),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                ],
+              ],
+            ),
+          ),
+          const SizedBox(height: 12),
+
+          // 1. توضیحات
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 6),
+            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  'اطلاعات جلسه',
-                  style: AppTypography.h3.copyWith(color: Color(0xFFE5B888)),
-                ),
+                Text('توضیحات', style: AppTypography.h3.copyWith(color: const Color(0xFFE5B888))),
                 const SizedBox(height: 6),
                 Text(
-                  sessionDesc.isNotEmpty
-                      ? sessionDesc
-                      : 'توضیحات و سرفصل‌های آموزشی این جلسه در کاروان نپا.',
-                  style: AppTypography.caption.copyWith(color: Color(0xFFD3D0E3)),
+                  description.isNotEmpty ? description : 'برای این دسته توضیحاتی ثبت نشده است.',
+                  style: AppTypography.caption.copyWith(color: const Color(0xFFD3D0E3)),
                 ),
               ],
             ),
           ),
+          const SizedBox(height: 12),
 
-          const SizedBox(height: 14),
-
-          // 2. قسمت استادها (باکس شبیه به باکس چالش‌ها در صفحه هوم با استروک گرادیانت)
-          Container(
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(16),
-              gradient: const LinearGradient(
-                begin: Alignment.centerLeft,
-                end: Alignment.centerRight,
-                stops: [0.0, 0.5, 1.0],
-                colors: [
-                  Color(0xFF3A3A6A),
-                  Color(0xFF9292E2),
-                  Color(0xFF3A3A6A),
-                ],
-              ),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.3),
-                  blurRadius: 10,
-                  offset: const Offset(0, 4),
-                ),
-              ],
-            ),
-            padding: const EdgeInsets.all(1.2), // Gradient border stroke
-            child: Container(
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(14.8),
-                gradient: const LinearGradient(
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                  stops: [0.0, 0.53, 1.0],
-                  colors: [
-                    Color(0xFF3D3C67),
-                    Color(0xFF36345C),
-                    Color(0xFF333359),
+          // 2. اساتید
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 6),
+            child: Text('اساتید', style: AppTypography.h3.copyWith(color: const Color(0xFFE5B888))),
+          ),
+          const SizedBox(height: 6),
+          if (instructors.isEmpty)
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 6),
+              child: Text('برای این دسته استادی ثبت نشده است.', style: AppTypography.caption.copyWith(color: const Color(0xFFD3D0E3))),
+            )
+          else
+            for (final ins in instructors) ...[
+              box(
+                child: Row(
+                  children: [
+                    SafeAvatar(radius: 22, imageUrl: ins.avatarUrl, name: ins.name, backgroundColor: const Color(0xFF7E72B8)),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text('نماینده پیرمنزلگاه: ${ins.name}', style: AppTypography.h3.copyWith(color: const Color(0xFFFBE4C8))),
+                          if (ins.degree.isNotEmpty) ...[
+                            const SizedBox(height: 3),
+                            Text(ins.degree, style: AppTypography.caption.copyWith(color: const Color(0xFF9D99B8))),
+                          ],
+                        ],
+                      ),
+                    ),
                   ],
                 ),
               ),
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-              child: Row(
-                children: [
-                  // Instructor Avatar on the right in RTL
-                  Container(
-                    width: 42,
-                    height: 42,
-                    decoration: BoxDecoration(
-                      color: const Color(0xFF7E72B8).withValues(alpha: 0.35),
-                      shape: BoxShape.circle,
-                      border: Border.all(
-                        color: const Color(0xFF9E92E8).withValues(alpha: 0.5),
-                        width: 1,
-                      ),
-                    ),
-                    child: const Center(
-                      child: Icon(Icons.person_rounded, color: Color(0xFFE5B888), size: 24),
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          session['instructor']?.toString() ?? 'استاد دوره',
-                          style: AppTypography.h3.copyWith(color: Color(0xFFFBE4C8)),
-                        ),
-                        const SizedBox(height: 3),
-                        Text(
-                          _currentCategory?.title ?? 'استاد راهنمای جلسات کاروان',
-                          style: AppTypography.caption.copyWith(color: Color(0xFF9D99B8)),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            ),
+              const SizedBox(height: 8),
+            ],
+          const SizedBox(height: 6),
+
+          // 3. دانلود جزوه
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 6),
+            child: Text('دانلود جزوه', style: AppTypography.h3.copyWith(color: const Color(0xFFE5B888))),
           ),
-
-          const SizedBox(height: 12),
-
-          // 3. جزوه جلسه (فقط وقتی در پنل ادمین فایلی برای جلسه ثبت شده باشد)
-          if (handoutUrl.isNotEmpty) ...[
-            const SizedBox(height: 12),
-            Container(
-              decoration: BoxDecoration(
-                color: const Color(0xFF241F3B),
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: const Color(0xFFC09268).withValues(alpha: 0.6)),
-              ),
-              child: ListTile(
-                leading: const Icon(Icons.download_rounded, color: Color(0xFFE5B888), size: 20),
-                title: Text(
-                  handoutTitle.isNotEmpty ? handoutTitle : 'دانلود جزوه و درسنامه آموزشی',
-                  style: const TextStyle(
-                    color: Color(0xFFDDD9EE),
-                    fontSize: 11.5,
-                    fontWeight: FontWeight.bold,
-                    fontFamily: AppTheme.fontFamily,
-                    fontFamilyFallback: AppTheme.fontFamilyFallback,
-                  ),
+          const SizedBox(height: 6),
+          if (handouts.isEmpty)
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 6),
+              child: Text('برای این دسته جزوه‌ای ثبت نشده است.', style: AppTypography.caption.copyWith(color: const Color(0xFFD3D0E3))),
+            )
+          else
+            for (final h in handouts) ...[
+              Container(
+                decoration: BoxDecoration(
+                  color: const Color(0xFF241F3B),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: const Color(0xFFC09268).withValues(alpha: 0.6)),
                 ),
-                trailing: const Icon(Icons.chevron_left_rounded, color: Color(0xFF9D99B8), size: 18),
-                onTap: () => _openHandout(handoutUrl),
+                child: ListTile(
+                  leading: const Icon(Icons.download_rounded, color: Color(0xFFE5B888), size: 20),
+                  title: Text(
+                    h.title,
+                    style: const TextStyle(
+                      color: Color(0xFFDDD9EE),
+                      fontSize: 11.5,
+                      fontWeight: FontWeight.bold,
+                      fontFamily: AppTheme.fontFamily,
+                      fontFamilyFallback: AppTheme.fontFamilyFallback,
+                    ),
+                  ),
+                  trailing: const Icon(Icons.chevron_left_rounded, color: Color(0xFF9D99B8), size: 18),
+                  onTap: () => _openHandout(h.url),
+                ),
               ),
-            ),
-          ],
+              const SizedBox(height: 8),
+            ],
         ],
       ),
     );

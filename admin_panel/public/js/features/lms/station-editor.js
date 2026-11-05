@@ -798,6 +798,7 @@
     const catZarik = zKeys.length ? zKeys.sort((a, b) => tally[b] - tally[a])[0] : 15;
     const zarikMixed = zKeys.length > 1;
     const bank = window.globalInstructorsList || [];
+    const catPickerId = `lse-catpick-${cat.id}`;
     return `
       <header class="lse-detail-head">
         <div>
@@ -818,6 +819,32 @@
           <span><i class="fa-solid fa-book-open"></i> ${sessions.length} جلسه</span>
           <span><i class="fa-solid fa-film"></i> ${parts} پارت</span>
           <span><i class="fa-solid fa-circle-question"></i> ${quizzes} آزمونک</span>
+        </div>
+      </section>
+      <section class="lse-card">
+        <h5><i class="fa-solid fa-circle-info"></i> مشخصات این کلاس در اپلیکیشن <small>در تب «مشخصات جلسه»، یک بخش برای هر دسته</small></h5>
+        <label class="lse-field">
+          <span>توضیحات</span>
+          <textarea class="input-ctrl" rows="3" data-f="cat.${esc(cat.id)}.description" placeholder="توضیحات و سرفصل‌های این دسته از کلاس‌ها...">${esc(val(`cat.${cat.id}.description`))}</textarea>
+        </label>
+        <div class="lse-field inst-picker-wrapper" id="${esc(catPickerId)}" data-inst-picker>
+          <span class="lse-field-label">اساتید <small>در اپ به شکل «نماینده پیرمنزلگاه: نام استاد» با عکسشان از بانک اساتید نشان داده می‌شود</small> <a href="#" data-click="openInstructorModalQuick" data-click-args="${args(catPickerId)}"><i class="fa-solid fa-plus"></i> استاد جدید</a></span>
+          <input type="hidden" class="modal-cat-instructor" data-f="cat.${esc(cat.id)}.instructor" value="${esc(val(`cat.${cat.id}.instructor`))}">
+          <div role="button" tabindex="0" id="inst-picker-box-${esc(catPickerId)}" class="inst-picker-box lse-picker" data-click="toggleInstructorDropdown" data-click-args="${args(catPickerId, '$event')}"></div>
+          <div id="inst-dropdown-${esc(catPickerId)}" class="inst-dropdown-menu lse-dropdown" data-style="display:none"></div>
+        </div>
+        <div class="lse-grid lse-grid-2">
+          <label class="lse-field">
+            <span><i class="fa-solid fa-file-pdf"></i> عنوان جزوه</span>
+            <input type="text" class="input-ctrl" data-f="cat.${esc(cat.id)}.handoutTitle" value="${esc(val(`cat.${cat.id}.handoutTitle`))}" placeholder="مثال: جزوه کلاس‌های مهارتی">
+          </label>
+          <label class="lse-field">
+            <span>فایل جزوه <small>در تب «مشخصات جلسه» اپ قابل دانلود است</small></span>
+            <span class="lse-inline">
+              <input type="text" id="lse-cat-handout-${esc(cat.id)}" class="input-ctrl" dir="ltr" data-f="cat.${esc(cat.id)}.handoutUrl" value="${esc(val(`cat.${cat.id}.handoutUrl`))}" placeholder="https://... یا /uploads/...">
+              ${upload(`lse-cat-handout-${cat.id}`, 'آپلود', '.pdf,.doc,.docx,.ppt,.pptx,image/*')}
+            </span>
+          </label>
         </div>
       </section>
       <div class="lse-grid lse-grid-2">
@@ -1371,7 +1398,15 @@
       else if (kind === 'clip') (clipFields[id] = clipFields[id] || new Set()).add(f);
       else if (kind === 'sess') (sessFields[id] = sessFields[id] || new Set()).add(f);
     });
-    const categories = Array.from(catIds).map(id => ({ id, title: val(`cat.${id}.title`).trim() })).filter(c => c.title);
+    const catFields = {};
+    keys.forEach(k => { const [kind, id, f] = k.split('.'); if (kind === 'cat') (catFields[id] = catFields[id] || new Set()).add(f); });
+    const categories = Array.from(catIds).map(id => {
+      const c = { id, title: val(`cat.${id}.title`).trim() };
+      ['description', 'instructor', 'handoutUrl', 'handoutTitle'].forEach(f => {
+        if (catFields[id] && catFields[id].has(f)) c[f] = val(`cat.${id}.${f}`);
+      });
+      return c;
+    }).filter(c => c.title);
     const clips = Object.keys(clipFields).map(id => {
       const f = clipFields[id];
       if (f.has('unlockDate') || f.has('unlockTime')) { f.add('unlockDate'); f.add('unlockTime'); }

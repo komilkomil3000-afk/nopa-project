@@ -112,6 +112,19 @@ export const getStations = async (req: Request, res: Response) => {
       };
     });
 
+    // Each category's instructors with their photos from the instructor bank (name and picture only: the bank's
+    // phone numbers and ids stay private). A category with no instructors of its own lists its sessions' ones.
+    const splitNames = (v: any) => String(v || '').split(/[،,؛\n]/).map(x => x.trim()).filter(Boolean);
+    const bank = await prisma.instructor.findMany({ where: { isActive: true }, select: { name: true, avatarUrl: true, degree: true } });
+    const bankByName = new Map(bank.map(i => [i.name.trim(), i]));
+    for (const st of mapped as any[]) {
+      for (const cat of (st.categories || [])) {
+        let names = splitNames(cat.instructor);
+        if (names.length === 0) names = Array.from(new Set((cat.sessions || []).filter((s: any) => !s.isDeleted).flatMap((s: any) => splitNames(s.instructor))));
+        cat.instructorsInfo = names.map(n => ({ name: n, avatarUrl: bankByName.get(n)?.avatarUrl || '', degree: bankByName.get(n)?.degree || '' }));
+      }
+    }
+
     const body = JSON.stringify(mapped);
     stationsCache.set(cacheKey, { at: Date.now(), body });
     res.setHeader('Cache-Control', 'private, no-cache');
@@ -544,7 +557,7 @@ export const createOrUpdateStation = async (req: Request, res: Response) => {
 
 export const createOrUpdateCategory = async (req: Request, res: Response) => {
   try {
-    const { id, stationId, packageId, title, orderIndex } = req.body;
+    const { id, stationId, packageId, title, orderIndex, description, instructor, handoutUrl, handoutTitle } = req.body;
     const finalStationId = stationId || packageId;
     let category;
     const targetId = id || req.params.id;
@@ -555,7 +568,11 @@ export const createOrUpdateCategory = async (req: Request, res: Response) => {
         where: { id: targetId },
         data: {
           ...(title !== undefined && String(title).trim() ? { title: String(title).trim() } : {}),
-          ...(orderIndex !== undefined && orderIndex !== null && orderIndex !== '' ? { orderIndex: Number(orderIndex) || 0 } : {})
+          ...(orderIndex !== undefined && orderIndex !== null && orderIndex !== '' ? { orderIndex: Number(orderIndex) || 0 } : {}),
+          ...(description !== undefined ? { description: String(description || '').trim() || null } : {}),
+          ...(instructor !== undefined ? { instructor: String(instructor || '').trim() || null } : {}),
+          ...(handoutUrl !== undefined ? { handoutUrl: String(handoutUrl || '').trim() || null } : {}),
+          ...(handoutTitle !== undefined ? { handoutTitle: String(handoutTitle || '').trim() || null } : {})
         }
       });
     } else {
@@ -797,7 +814,11 @@ export const batchSaveStationContent = async (req: Request, res: Response) => {
               where: { id: cat.id },
               data: {
                 ...(cat.title ? { title: cat.title } : {}),
-                ...(cat.orderIndex !== undefined ? { orderIndex: Number(cat.orderIndex) } : {})
+                ...(cat.orderIndex !== undefined ? { orderIndex: Number(cat.orderIndex) } : {}),
+                ...(cat.description !== undefined ? { description: String(cat.description || '').trim() || null } : {}),
+                ...(cat.instructor !== undefined ? { instructor: String(cat.instructor || '').trim() || null } : {}),
+                ...(cat.handoutUrl !== undefined ? { handoutUrl: String(cat.handoutUrl || '').trim() || null } : {}),
+                ...(cat.handoutTitle !== undefined ? { handoutTitle: String(cat.handoutTitle || '').trim() || null } : {})
               }
             });
           }
@@ -955,6 +976,7 @@ export const setBatchCategoryInstructor = async (req: Request, res: Response) =>
     }
 
     const cleanInstructor = instructor.trim();
+    await prisma.classCategory.update({ where: { id: categoryId }, data: { instructor: cleanInstructor } }).catch(() => {});
     const updated = await prisma.classSession.updateMany({
       where: { categoryId },
       data: { instructor: cleanInstructor }

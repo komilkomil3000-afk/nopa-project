@@ -503,6 +503,11 @@ model ClassCategory {
   stationId  String
   title      String
   orderIndex Int      @default(0)
+  // Shown in the app's «مشخصات جلسه» tab, one block per category
+  description  String?
+  instructor   String?  // instructor names from the bank, joined by «،»
+  handoutUrl   String?
+  handoutTitle String?
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
 

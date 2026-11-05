@@ -822,6 +822,13 @@ class _StudentReportCardAndEvaluationScreenState extends State<StudentReportCard
     return v < 1 ? 1 : v;
   }
 
+  // Name, phone, picture and balances come from the server's answer for this member; what the opening screen
+  // passed is only the first thing shown until it arrives.
+  String get _name => (_memberData?['name']?.toString().trim().isNotEmpty ?? false) ? _memberData!['name'].toString() : widget.member.name;
+  String get _phone => ((_memberData?['phoneNumber'] ?? widget.member.phoneNumber)?.toString() ?? '').trim();
+  String get _avatar => (_memberData?['avatarUrl']?.toString().isNotEmpty ?? false) ? _memberData!['avatarUrl'].toString() : widget.member.avatarUrl;
+  int _asset(String key, int fallback) => (_memberData?[key] as num?)?.toInt() ?? fallback;
+
   int get _completedCount => (_memberData?['completedStationsCount'] as num?)?.toInt() ?? 0;
 
   Map get _clipStatus => (_memberData?['clipStatus'] as Map?) ?? const {};
@@ -951,8 +958,8 @@ class _StudentReportCardAndEvaluationScreenState extends State<StudentReportCard
                       child: Center(
                         child: SafeAvatar(
                           radius: 24,
-                          imageUrl: member.avatarUrl,
-                          name: member.name,
+                          imageUrl: _avatar,
+                          name: _name,
                           backgroundColor: Colors.transparent,
                         ),
                       ),
@@ -963,7 +970,7 @@ class _StudentReportCardAndEvaluationScreenState extends State<StudentReportCard
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            member.name,
+                            _name,
                             style: AppTypography.h2,
                           ),
                           const SizedBox(height: 3),
@@ -972,10 +979,12 @@ class _StudentReportCardAndEvaluationScreenState extends State<StudentReportCard
                             style: AppTypography.captionMuted,
                           ),
                           const SizedBox(height: 2),
-                          Text(
-                            'شماره تماس: ${member.phoneNumber}',
-                            style: AppTypography.caption.copyWith(color: AppColors.buttonCancelPurple),
-                          ),
+                          if (_phone.isNotEmpty)
+                            Text(
+                              'شماره تماس: ${_phone.toPersian()}',
+                              textDirection: TextDirection.ltr,
+                              style: AppTypography.caption.copyWith(color: AppColors.buttonCancelPurple),
+                            ),
                         ],
                       ),
                     ),
@@ -1030,10 +1039,10 @@ class _StudentReportCardAndEvaluationScreenState extends State<StudentReportCard
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        _buildAssetBox(AssetNames.labelFor('زریک'), member.zarikBalance.toPersian(), const Color(0xFFE5A66B)),
-                        _buildAssetBox(AssetNames.labelFor('درفش'), member.beyragh.toPersian(), const Color(0xFF9292E2)),
-                        _buildAssetBox(AssetNames.labelFor('کلاف'), member.nakh.toPersian(), const Color(0xFF9292E2)),
-                        _buildAssetBox(AssetNames.labelFor('قالیچه'), member.farsh.toPersian(), const Color(0xFF9292E2)),
+                        _buildAssetBox(AssetNames.labelFor('زریک'), _asset('zarik', member.zarikBalance).toPersian(), const Color(0xFFE5A66B)),
+                        _buildAssetBox(AssetNames.labelFor('درفش'), _asset('beyragh', member.beyragh).toPersian(), const Color(0xFF9292E2)),
+                        _buildAssetBox(AssetNames.labelFor('کلاف'), _asset('nakh', member.nakh).toPersian(), const Color(0xFF9292E2)),
+                        _buildAssetBox(AssetNames.labelFor('قالیچه'), _asset('farsh', member.farsh).toPersian(), const Color(0xFF9292E2)),
                       ],
                     ),
                   ],

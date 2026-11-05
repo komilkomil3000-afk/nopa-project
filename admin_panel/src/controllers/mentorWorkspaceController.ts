@@ -261,19 +261,27 @@ export async function getMyActivityStats(req: AuthRequest, res: Response) {
       if (participated.has(c.id)) row.participated++;
     }
 
-    const usageSince = tehranDay(new Date(Date.now() - 29 * 86400000));
+    // Time in the app: per day for the last 90 days, and per hour for the last 14 days (Asia/Tehran)
+    const usageSince = tehranDay(new Date(Date.now() - 89 * 86400000));
     const usageRows = await prisma.userUsageDay.findMany({
       where: { userId, day: { gte: usageSince } },
       select: { day: true, seconds: true }
     });
     const usageDays: Record<string, number> = {};
     usageRows.forEach(u => { usageDays[u.day] = u.seconds; });
+    const hourRows = await prisma.userActivityHour.findMany({
+      where: { userId, kind: 'app', day: { gte: tehranDay(new Date(Date.now() - 13 * 86400000)) } },
+      select: { day: true, hour: true, value: true }
+    });
+    const usageHours: Record<string, number[]> = {};
+    hourRows.forEach(h => { (usageHours[h.day] = usageHours[h.day] || new Array(24).fill(0))[h.hour] += h.value; });
 
     res.json({
       challengesTotal: visible.length,
       challengesParticipated: participated.size,
       challengesByStation,
-      usageDays
+      usageDays,
+      usageHours
     });
   } catch (error: any) {
     res.status(500).json({ error: error.message });
@@ -489,9 +497,12 @@ export async function getMentorCaravanProgress(req: AuthRequest, res: Response) 
       : [];
 
     // Time in the app per member and day (last 30 days, Asia/Tehran days)
-    const usageSince = tehranDay(new Date(Date.now() - 29 * 86400000));
+    const usageSince = tehranDay(new Date(Date.now() - 89 * 86400000));
     const usageRows = memberIds.length > 0
       ? await prisma.userUsageDay.findMany({ where: { userId: { in: memberIds }, day: { gte: usageSince } }, select: { userId: true, day: true, seconds: true } })
+      : [];
+    const hourRows = memberIds.length > 0
+      ? await prisma.userActivityHour.findMany({ where: { userId: { in: memberIds }, kind: 'app', day: { gte: tehranDay(new Date(Date.now() - 13 * 86400000)) } }, select: { userId: true, day: true, hour: true, value: true } })
       : [];
 
     // Format members with real progress calculated from database
@@ -560,6 +571,8 @@ export async function getMentorCaravanProgress(req: AuthRequest, res: Response) 
       }
       const usageDays: Record<string, number> = {};
       usageRows.filter(u => u.userId === m.id).forEach(u => { usageDays[u.day] = u.seconds; });
+      const usageHours: Record<string, number[]> = {};
+      hourRows.filter(h => h.userId === m.id).forEach(h => { (usageHours[h.day] = usageHours[h.day] || new Array(24).fill(0))[h.hour] += h.value; });
 
       return {
         id: m.id,
@@ -576,6 +589,7 @@ export async function getMentorCaravanProgress(req: AuthRequest, res: Response) 
         challengesParticipated: participated.size,
         challengesByStation,
         usageDays,
+        usageHours,
         clipProgress,
         clipStatus,
         quizResults
