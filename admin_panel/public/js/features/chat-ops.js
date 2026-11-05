@@ -185,18 +185,36 @@ window.loadInterGroupDesk = async function(challengeId) {
     box.innerHTML = `<div class="u-c-text-soft u-fs-12 u-bold u-mb-5">میز رقابت</div>` + (d.challenge.judgingOpen ? '<div class="u-fs-12 u-c-text-muted u-mb-5">داوری باز است و آثار قفل شده‌اند.</div>' : chatRow(`<span class="u-flex-1 u-fs-12 u-c-text-muted">داوری پس از پایان مهلت باز می‌شود.</span>${chatBtn('startInterGroupJudging', [String(challengeId)], 'شروع داوری')}`)) + d.rows.map(r => chatRow(`
       <span class="u-flex-1">${esc(r.name)}</span>
       <span class="u-fs-11 u-c-text-muted">${r.delivered ? `اثر ${esc(String(r.anonCode))}${r.onTime ? '' : ' (با تأخیر)'}` : 'بدون اثر'} · ${esc(String(r.judgeCount))} داور · میانگین ${esc(String(r.judgeAverage))} · پوشش ${esc(String(r.activeShare))}٪ · ${r.tiersConfirmed ? 'سطوح تأیید شده' : 'سطوح تأیید نشده'} · امتیاز ${esc(String(r.score))}</span>${chatBtn('openTierEditor', [String(challengeId), String(r.caravanId)], 'سطوح')}`)).join('') + '<div id="intergroup-tiers" class="u-mt-15"></div>' +
-      d.questions.filter(q => !q.answer).map(q => chatRow(`
-        <span class="u-flex-1">پرسش: ${esc(q.body)}</span>
-        <input type="text" id="ig-answer-${esc(q.id)}" placeholder="پاسخ عمومی" class="u-p-6-10 u-bg-surface-2 u-bd-border-strong u-r-6 u-c-text u-fs-12_5">
-        ${chatBtn('answerInterGroupQuestion', [String(q.id), String(challengeId)], 'انتشار')}`)).join('');
+      igQuestionsHtml(d.questions || [], challengeId);
   } catch (e) {
     box.textContent = e.message || 'خطا در دریافت میز رقابت';
   }
 };
 
+// «پرسش از داور» sent from the app: waiting ones first with an answer box; the answer is published in the arena
+// thread for every caravan and the asker is notified.
+function igQuestionsHtml(questions, challengeId) {
+  const waiting = questions.filter(q => !q.answer);
+  const answered = questions.filter(q => q.answer);
+  const who = q => [q.askerName, q.caravanName && `کاروان ${q.caravanName}`].filter(Boolean).map(esc).join(' · ');
+  const when = q => (q.createdAt ? new Date(q.createdAt).toLocaleDateString('fa-IR', { month: 'short', day: 'numeric' }) : '');
+  let html = `<div class="u-c-text-soft u-fs-12 u-bold u-mt-15 u-mb-5">پرسش‌های داوری${waiting.length ? ` (${esc(waiting.length.toLocaleString('fa-IR'))} در انتظار پاسخ)` : ''}</div>`;
+  if (!questions.length) return html + '<div class="u-fs-12 u-c-text-muted u-mb-5">هنوز پرسشی از داور فرستاده نشده است.</div>';
+  html += waiting.map(q => chatRow(`
+    <span class="u-flex-1"><span class="u-fs-11 u-c-text-muted">${who(q)} · ${esc(when(q))}</span><br>${esc(q.body)}</span>
+    <input type="text" id="ig-answer-${esc(q.id)}" placeholder="پاسخ عمومی (برای همه‌ی کاروان‌ها منتشر می‌شود)" class="u-p-6-10 u-bg-surface-2 u-bd-border-strong u-r-6 u-c-text u-fs-12_5">
+    ${chatBtn('answerInterGroupQuestion', [String(q.id), String(challengeId)], 'انتشار')}`)).join('');
+  html += answered.map(q => chatRow(`
+    <span class="u-flex-1"><span class="u-fs-11 u-c-text-muted">${who(q)} · ${esc(when(q))} · پاسخ داده شد</span><br>${esc(q.body)}<br><span class="u-c-accent-text">پاسخ: ${esc(q.answer)}</span></span>`)).join('');
+  return html;
+}
+
 window.answerInterGroupQuestion = async function(id, challengeId) {
+  const answer = (document.getElementById(`ig-answer-${id}`)?.value || '').trim();
+  if (!answer) { showToast('متن پاسخ را بنویسید.', 'error'); return; }
   try {
-    await NopaApi.json(`/api/v1/admin/intergroup/questions/${id}/answer`, { method: 'POST', body: JSON.stringify({ answer: document.getElementById(`ig-answer-${id}`).value }) });
+    await NopaApi.json(`/api/v1/admin/intergroup/questions/${id}/answer`, { method: 'POST', body: JSON.stringify({ answer }) });
+    showToast('پاسخ برای همه‌ی کاروان‌ها منتشر شد.', 'success');
     window.loadInterGroupDesk(challengeId);
   } catch (e) {
     showToast(e.message || 'خطا در انتشار پاسخ', 'error');

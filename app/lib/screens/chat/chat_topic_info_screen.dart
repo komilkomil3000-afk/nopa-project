@@ -10,7 +10,6 @@ import 'package:nopa_app/core/constants/api_constants.dart';
 import 'package:nopa_app/models/chat_models.dart';
 import 'package:nopa_app/screens/chat/chat_cards.dart';
 import 'package:nopa_app/screens/chat/chat_theme.dart';
-import 'package:nopa_app/services/api_service.dart';
 import 'package:nopa_app/services/chat_repository.dart';
 import 'package:nopa_app/widgets/app_toast.dart';
 import 'package:nopa_app/widgets/fa_text.dart';
@@ -469,13 +468,26 @@ class _InterGroupSectionState extends State<InterGroupSection> {
   String? _judgingNote;
   ChatAttachment? _file;
   final Map<String, String> _chosen = {};
+  List<Map<String, dynamic>> _questions = [];
+  bool _asking = false;
 
   String get _base => '/chat/intergroup/${widget.challengeId}';
 
   @override
   void initState() {
     super.initState();
-    if (widget.mentor) _load();
+    if (widget.mentor) {
+      _load();
+    } else {
+      _loadQuestions();
+    }
+  }
+
+  /// The caravan's questions to the judges, with their answers (also published in the arena thread).
+  Future<void> _loadQuestions() async {
+    final res = await _chat.api('GET', '$_base/questions');
+    if (!mounted || !res.ok || res.data is! List) return;
+    setState(() => _questions = (res.data as List).map((q) => Map<String, dynamic>.from(q as Map)).toList());
   }
 
   @override
@@ -517,24 +529,49 @@ class _InterGroupSectionState extends State<InterGroupSection> {
     }
   }
 
-  /// "پرسش از داور" goes to the admin / head arbiter's support tickets, not to a mentor's chat.
-  Future<void> _askAdmin() async {
+  /// "پرسش از داور" goes to the challenge's judges desk in the panel (چالش‌ها → میز رقابت); the answer is
+  /// published in the arena thread for every caravan and shown here under «پرسش‌های شما».
+  Future<void> _askJudge() async {
     final text = _question.text.trim();
     if (text.isEmpty) {
       AppToast.error(context, 'متن پرسش را بنویسید.');
       return;
     }
-    final ticket = await HttpApiService().createTicket(
-      category: 'پرسش از داور',
-      subject: 'پرسش از داور (چالش ${widget.challengeId}): $text',
-    );
+    if (_asking) return;
+    setState(() => _asking = true);
+    final res = await _chat.api('POST', '$_base/question', body: {'body': text});
     if (!mounted) return;
-    if (ticket == null) {
-      AppToast.error(context, 'ارسال پرسش انجام نشد. دوباره تلاش کنید.');
+    setState(() => _asking = false);
+    if (!res.ok) {
+      AppToast.error(context, res.error.isNotEmpty ? res.error : 'ارسال پرسش انجام نشد. دوباره تلاش کنید.');
       return;
     }
     _question.clear();
-    AppToast.success(context, 'پرسش شما برای داور ارشد (مدیر) ارسال شد.');
+    AppToast.success(context, 'پرسش شما برای داور ارسال شد؛ پاسخ همین‌جا و در میدان رقابت نمایش داده می‌شود.');
+    _loadQuestions();
+  }
+
+  Widget _questionTile(Map<String, dynamic> q) {
+    final answer = q['answer']?.toString();
+    return Container(
+      margin: const EdgeInsets.only(top: 8),
+      padding: const EdgeInsets.all(10),
+      decoration: BoxDecoration(
+        color: ChatTheme.surfaceBottom,
+        borderRadius: BorderRadius.circular(10),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(q['body']?.toString() ?? '', style: ChatTheme.body),
+          const SizedBox(height: 4),
+          Text(
+            answer == null || answer.isEmpty ? 'در انتظار پاسخ داور' : 'پاسخ داور: $answer',
+            style: ChatTheme.caption.copyWith(color: answer == null || answer.isEmpty ? null : ChatTheme.text),
+          ),
+        ],
+      ),
+    );
   }
 
   Future<void> _submit(String method, String path, Map<String, dynamic> body, String done) async {
@@ -559,10 +596,15 @@ class _InterGroupSectionState extends State<InterGroupSection> {
           TextField(controller: _question, style: ChatTheme.body, decoration: chatField('پرسش از داور')),
           const SizedBox(height: 6),
           ChatButton(
-            label: 'ارسال پرسش',
+            label: _asking ? 'در حال ارسال…' : 'ارسال پرسش',
             primary: false,
-            onPressed: _askAdmin,
+            onPressed: _askJudge,
           ),
+          if (_questions.isNotEmpty) ...[
+            const SizedBox(height: 14),
+            Text('پرسش‌های شما از داور', style: ChatTheme.title),
+            for (final q in _questions) _questionTile(q),
+          ],
         ],
       );
     }

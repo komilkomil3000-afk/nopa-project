@@ -6,7 +6,7 @@ import * as chat from './controller';
 import { createTag, archiveTag, closeTopic, listTags, reopenTopic, setFinalAnswer, toggleMark, toggleMessageTag, topicByChallenge } from './topics';
 import { addGroupMembers, createGroup, deleteGroup, groupCandidates, listGroups, removeGroupMember, renameGroup, requestGroupDeletion } from './groups';
 import { correctEvaluation, fileObjection, getEvaluation, myReport, payEvaluation, resolveObjection, saveEvaluation } from './evaluation';
-import { askJudge, getTiers, judgeEntry, judgeList, saveTiers, submitEntry } from './intergroup';
+import { askJudge, getTiers, judgeEntry, judgeList, myQuestions, saveTiers, submitEntry } from './intergroup';
 import { exportTopic, exportTopicLink, mentorDashboard, reportMessage, serveTopicExport, topicInsight } from './reports';
 import { myCases, openSupport, rateCase } from './support';
 import { coverUpload, memberProfile, setSpaceCover, setSpaceSlogan, spaceMedia, spaceProfile } from './profiles';
@@ -112,6 +112,7 @@ router.post('/support/cases/:id/rate', rateCase as any);
 
 router.post('/intergroup/:id/entry', submitEntry as any);
 router.post('/intergroup/:id/question', askJudge as any);
+router.get('/intergroup/:id/questions', myQuestions as any);
 router.get('/intergroup/:id/judge', judgeList as any);
 router.post('/intergroup/entries/:entryId/judge', judgeEntry as any);
 router.get('/intergroup/:id/tiers', getTiers as any);

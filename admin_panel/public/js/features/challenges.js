@@ -207,7 +207,7 @@ function renderAdminChallenges(challenges) {
           </span>
           <span class="lsv-round-group">
             ${chlRoundBtn('fa-solid fa-list-check', 'مشاهده مراحل چالش', 'openChallengeStepsModal', [id])}
-            ${interGroup ? chlRoundBtn('fa-solid fa-flag', 'رتبه‌بندی کاروان‌ها و اعطای درفش', 'openChallengeRanking', [id]) : ''}
+            ${interGroup ? chlRoundBtn('fa-solid fa-flag', 'میز رقابت: پرسش‌های داوری، رتبه‌بندی و اعطای درفش', 'openChallengeRanking', [id]) : ''}
             ${chlRoundBtn('fa-solid fa-pen', 'ویرایش و اصلاح چالش', 'openEditChallengeModal', [id])}
             ${chlRoundBtn('fa-solid fa-trash', 'حذف چالش', 'deleteChallengeAdmin', [id, String(escJs(c.title || ''))], 'lsv-round-danger')}
           </span>

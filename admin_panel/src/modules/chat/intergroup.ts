@@ -94,7 +94,33 @@ export const askJudge = handler(async (req, res, actor) => {
   const caravanId = resolveActorCaravan(actor, req.body?.caravanId, { members: true });
   const body = String(req.body?.body || '').trim().slice(0, 500);
   if (!body) throw new ChatError(400, 'متن پرسش الزامی است');
-  res.status(201).json(await prisma.interGroupQuestion.create({ data: { challengeId: challenge.id, caravanId, userId: actor.id, body } }));
+  const question = await prisma.interGroupQuestion.create({ data: { challengeId: challenge.id, caravanId, userId: actor.id, body } });
+  // The admins answer it from the panel: «چالش‌ها» → the inter-group card's flag (ranking) → «پرسش‌های داوری»
+  const admins = await prisma.user.findMany({ where: { role: 'admin' }, select: { id: true } });
+  if (admins.length) {
+    const caravan = await prisma.caravan.findUnique({ where: { id: caravanId }, select: { name: true } });
+    await prisma.notification.createMany({
+      data: admins.map(a => ({
+        userId: a.id,
+        title: `پرسش از داور: ${challenge.title}`.slice(0, 120),
+        message: `${caravan?.name ? `کاروان ${caravan.name}: ` : ''}${body}`.slice(0, 140) + ' (پاسخ در «چالش‌ها» ← دکمه‌ی پرچم این چالش)',
+        type: 'alert',
+      })),
+    });
+  }
+  res.status(201).json(question);
+});
+
+/** The questions of the actor's own caravan(s) for this challenge, with the judges' answers. */
+export const myQuestions = handler(async (req, res, actor) => {
+  const challenge = await requireInterChallenge(req.params.id);
+  const caravanIds = [...actor.mentoredCaravanIds, ...(actor.caravanId ? [actor.caravanId] : [])];
+  const rows = await prisma.interGroupQuestion.findMany({
+    where: { challengeId: challenge.id, OR: [{ userId: actor.id }, { caravanId: { in: caravanIds } }] },
+    orderBy: { createdAt: 'desc' },
+    take: 50,
+  });
+  res.json(rows.map(q => ({ id: q.id, body: q.body, answer: q.answer, createdAt: q.createdAt, mine: q.userId === actor.id })));
 });
 
 /** Anonymous works a judge may score: never their own caravan's. */
@@ -234,6 +260,12 @@ export async function interGroupBoard(challengeId: string) {
     prisma.interGroupQuestion.findMany({ where: { challengeId }, orderBy: { createdAt: 'desc' } }),
   ]);
   const roster = await challengeRoster(challengeId, caravans.map(c => c.id));
+  const askers = await prisma.user.findMany({ where: { id: { in: [...new Set(questions.map(q => q.userId))] } }, select: { id: true, name: true } });
+  const askedQuestions = questions.map(q => ({
+    ...q,
+    askerName: askers.find(u => u.id === q.userId)?.name || null,
+    caravanName: caravans.find(c => c.id === q.caravanId)?.name || null,
+  }));
 
   const rows = caravans.map(c => {
     const entry = entries.find(e => e.caravanId === c.id);
@@ -249,7 +281,7 @@ export async function interGroupBoard(challengeId: string) {
       score: entry ? rankScore({ judgeAverage, activeShare, onTime, delivered: true }, config) : 0,
     };
   }).sort((a, b) => b.score - a.score);
-  return { challenge, rows, questions, config };
+  return { challenge, rows, questions: askedQuestions, config };
 }
 
 export const startJudging = handler(async (req, res, actor) => {
@@ -326,6 +358,10 @@ export const answerQuestion = handler(async (req, res) => {
   const arena = await globalSpace('arena');
   const topic = await prisma.chatTopic.findFirst({ where: { challengeId: question.challengeId, spaceId: arena.id } });
   await publishBotMessage({ spaceId: arena.id, botKey: 'challenge', threadRootId: topic?.messageId, body: `پرسش: ${question.body}\nپاسخ داور: ${answer}` });
+  // The asker also hears it directly, not only through the arena thread
+  await prisma.notification.create({
+    data: { userId: question.userId, title: 'داور به پرسش شما پاسخ داد', message: `${question.body.slice(0, 50)} ← ${answer}`.slice(0, 140), type: 'challenge' },
+  });
   res.json({ success: true });
 });
 
