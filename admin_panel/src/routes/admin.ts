@@ -85,6 +85,7 @@ import { getCaravanLeague, getIndividualsLeaderboard, getCaravansLeaderboardDeta
 
 import { restrictNonAdmins, getPanelMe } from '../middleware/adminAccess';
 import { importUsers, parseUserImportFile } from '../controllers/userImportController';
+import { grantAssets } from '../controllers/assetGrantController';
 
 const router = Router();
 
@@ -121,6 +122,8 @@ router.patch('/levels/orders/:id', updatePhysicalCertificateOrder as any);
 // 2. Zarik Ledger & Categorized Rewards
 router.get('/rewards/ledger', getZarikLedger as any);
 router.post('/rewards/adjust', adjustZarik as any);
+// A banner of a tier to a person, or any asset to a whole caravan (the wallets tab's «تراکنش جدید»)
+router.post('/rewards/assets/grant', grantAssets as any);
 router.get('/rewards/analytics', getZarikAnalytics as any);
 router.post('/rewards/grant', grantPromotionalZarik as any);
 router.get('/rewards/stats', getZarikSalesStats as any);

@@ -1132,13 +1132,22 @@
             <form id="zarik-adjust-form" class="lse-form">
               <div class="lse-body">
                 <section class="lse-card">
-                  <h4 class="lse-card-title"><i class="fa-solid fa-user"></i> کاربر و دارایی</h4>
-                  <label class="lse-field"><span>کاربر هدف <b class="lse-req">*</b></span>
-                    <select id="zarik-target-user" class="select-ctrl" required><option value="">انتخاب کاربر...</option></select>
+                  <h4 class="lse-card-title"><i class="fa-solid fa-user"></i> گیرنده و دارایی</h4>
+                  <label class="lse-field"><span>اعمال برای</span>
+                    <select id="adj-target-kind" class="select-ctrl" data-change="wltAdjustSync">
+                      <option value="user">یک نفر</option>
+                      <option value="caravan">یک کاروان (گروه)</option>
+                    </select>
+                  </label>
+                  <label class="lse-field" id="adj-user-field"><span>کاربر هدف <b class="lse-req">*</b></span>
+                    <select id="zarik-target-user" class="select-ctrl"><option value="">انتخاب کاربر...</option></select>
+                  </label>
+                  <label class="lse-field" id="adj-caravan-field" hidden><span>کاروان هدف <b class="lse-req">*</b></span>
+                    <select id="adj-target-caravan" class="select-ctrl"><option value="">انتخاب کاروان...</option></select>
                   </label>
                   <div class="lse-grid lse-grid-2">
                     <label class="lse-field"><span>نوع دارایی</span>
-                      <select id="adj-asset-type" class="select-ctrl">
+                      <select id="adj-asset-type" class="select-ctrl" data-change="wltAdjustSync">
                         <option value="zarik">زریک</option>
                         <option value="nakh">کلاف</option>
                         <option value="beyragh">درفش</option>
@@ -1147,6 +1156,15 @@
                     </label>
                     <label class="lse-field"><span>مقدار <b class="lse-req">*</b> <small>مثبت یا منفی</small></span><input type="number" id="zarik-amount" class="input-ctrl" placeholder="مثال: ۲۰۰ یا -۱۰۰" required></label>
                   </div>
+                  <label class="lse-field" id="adj-tier-field" hidden><span>نوع درفش <b class="lse-req">*</b></span>
+                    <select id="adj-banner-tier" class="select-ctrl">
+                      <option value="gold">درفش طلایی</option>
+                      <option value="silver">درفش نقره‌ای</option>
+                      <option value="bronze">درفش برنزی</option>
+                      <option value="cloth">درفش پارچه‌ای</option>
+                    </select>
+                  </label>
+                  <p class="lse-hint" id="adj-target-hint"></p>
                 </section>
                 <section class="lse-card">
                   <h4 class="lse-card-title"><i class="fa-solid fa-file-lines"></i> سند</h4>

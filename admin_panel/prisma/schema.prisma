@@ -75,6 +75,7 @@ model User {
   quizSubmissions              QuizSubmission[] @relation("StudentQuizSubmissions")
   quizReviews                  QuizSubmission[] @relation("MentorQuizReviews")
   formSubmissions              FormSubmission[]
+  userBanners                  UserBanner[]
 
   ratingsGiven                 MentorRating[] @relation("RatingStudent")
   ratingsReceived              MentorRating[] @relation("RatingMentor")
@@ -271,6 +272,21 @@ model CaravanBanner {
 
   @@unique([challengeId, caravanId])
   @@index([caravanId])
+}
+
+// Banner (درفش) the admin gave one person, by tier. The person's User.beyragh stays the total of every banner
+// they hold; these rows say which tiers make it up (older banners, given before this table, have no row).
+model UserBanner {
+  id        String   @id @default(uuid())
+  userId    String
+  tier      String   // "gold" | "silver" | "bronze" | "cloth"
+  reason    String?
+  awardedBy String?
+  createdAt DateTime @default(now())
+
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, tier])
 }
 
 model MentorRating {

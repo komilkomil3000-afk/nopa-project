@@ -1,6 +1,8 @@
 import { Request, Response } from 'express';
 import { csvRow, escapeHtml } from '../utils/csv';
 import prisma from '../config/db';
+import { capitalValue, getEconomyPolicy } from '../services/economy';
+import { caravanBannerCounts } from '../services/ranking';
 import ExcelJS from 'exceljs';
 // @ts-ignore
 import htmlPdf from 'html-pdf-node';
@@ -196,13 +198,17 @@ export const exportData = async (req: Request, res: Response) => {
     } else if (type === 'league_caravans' || type === 'caravans_league') {
       const sortBy = (req.query.sortBy as string) || 'totalScore';
       const search = ((req.query.search as string) || '').trim().toLowerCase();
+      // The same numbers as the panel's league and the app: capital by the money rules, درفش = the caravan's banners
+      const { config } = await getEconomyPolicy();
+      const bannersOf = await caravanBannerCounts();
 
       const caravans = await prisma.caravan.findMany({
         where: { isDeleted: false },
         include: {
           mentor: { select: { id: true, name: true, phoneNumber: true } },
           members: {
-            where: { isDeleted: false },
+            // students only, as in the app's ranking and the panel's league
+            where: { isDeleted: false, role: 'student' },
             select: {
               id: true,
               name: true,
@@ -237,7 +243,6 @@ export const exportData = async (req: Request, res: Response) => {
           totalZarik += m.zarikBalance || 0;
           totalNakh += m.nakh || 0;
           totalFarsh += m.farsh || 0;
-          totalBeyragh += m.beyragh || 0;
 
           m.quizSubmissions.forEach(qs => {
             totalQuizScore += qs.score || 0;
@@ -260,9 +265,10 @@ export const exportData = async (req: Request, res: Response) => {
         });
 
         const avgProgress = memberCount > 0 ? parseFloat((totalWatchedPercentages / memberCount).toFixed(1)) : 0;
-        const wealthScore = totalZarik + (totalNakh * 50) + (totalFarsh * 500) + (totalBeyragh * 200);
-        const activityScore = (totalQuizScore * 5) + (totalPassedQuizzes * 20) + (totalChallengeScore * 10) + (totalApprovedChallenges * 15);
-        const totalScore = wealthScore + activityScore + Math.round(avgProgress * 10);
+        const banners = bannersOf.get(c.id);
+        totalBeyragh = banners ? banners.gold + banners.silver + banners.bronze + banners.cloth : 0;
+        // Capital per member, as «برترین کاروان‌ها» ranks them
+        const totalScore = memberCount > 0 ? Math.round(capitalValue({ zarikBalance: totalZarik, nakh: totalNakh, farsh: totalFarsh }, config) / memberCount) : 0;
 
         return {
           id: c.id,
@@ -363,6 +369,7 @@ export const exportData = async (req: Request, res: Response) => {
       }
 
       const totalSessions = await prisma.classSession.count({ where: { isDeleted: false } });
+      const { config } = await getEconomyPolicy();
 
       const users = await prisma.user.findMany({
         where: whereClause,
@@ -412,9 +419,8 @@ export const exportData = async (req: Request, res: Response) => {
           progressPercentage = Math.min(100, parseFloat((totalWatch / (totalSessions || 1)).toFixed(1)));
         }
 
-        const wealthScore = zarik + (nakh * 50) + (farsh * 500) + (beyragh * 200);
-        const activityScore = (quizScore * 5) + (passedQuizzes * 20) + (challengeScore * 10) + (approvedChallenges * 15);
-        const totalScore = wealthScore + activityScore + Math.round(progressPercentage * 10);
+        // Capital by the money rules, as the app and the panel's league count it
+        const totalScore = capitalValue({ zarikBalance: zarik, nakh, farsh }, config);
 
         return {
           id: u.id,

@@ -2,7 +2,7 @@ import { randomBytes } from 'crypto';
 import { Response } from 'express';
 import { AuthRequest } from '../middleware/auth';
 import { stripAnswerKeys } from '../utils/answerKeys';
-import { isMentorRole } from '../utils/roles';
+import { isMentorRole, isSubAdminRole, isSuperAdminRole } from '../utils/roles';
 import { getAssetNames } from '../utils/assetNames';
 import prisma from '../config/db';
 import { changeBalance } from '../services/ledger';
@@ -10,6 +10,16 @@ import { removeChallengeCards, syncChallengeCardsQuietly } from '../modules/chat
 import { EconomyConfig, getEconomyPolicy } from '../services/economy';
 
 /** What a mentor may award for a personal or group challenge. Banners (درفش/بیرق) come only from the admin's cross-caravan ranking. */
+/**
+ * The two kinds of staff the challenge screens know: a panel admin (super admin, or a sub admin whose sections the
+ * panel's middleware already checked) and a mentor (the legacy SUPER_MENTOR too). Anyone else: null.
+ */
+function staffKind(role?: string | null): 'admin' | 'mentor' | null {
+  if (isSuperAdminRole(role) || isSubAdminRole(role)) return 'admin';
+  if (isMentorRole(role)) return 'mentor';
+  return null;
+}
+
 export const MENTOR_REWARD_ASSETS = ['zarik', 'nakh'] as const;
 
 /**
@@ -60,13 +70,18 @@ function normalizeQuizPayload(type: string, questions: any): { type: string; que
 
 export async function createChallenge(req: AuthRequest, res: Response) {
   try {
-    if (!req.user || (req.user.role !== 'mentor' && req.user.role !== 'admin')) {
+    const kind = staffKind(req.user?.role);
+    if (!req.user || !kind) {
       return res.status(403).json({ error: 'تنها مربی‌ها و مدیران می‌توانند چالش ایجاد کنند' });
     }
 
     const { id, title, description, type, questions, rewardZarik, caravanId, targetMentorId, stationId, dueDate, startDate } = req.body;
 
-    const rewardRange = parseRewardRange(req.body, (await getEconomyPolicy()).config);
+    // An admin only makes «چالش فراگروهی», which pays banners (درفش) from its ranking. The panel has no reward
+    // field for it, so whatever reward fields come along are ignored instead of refused.
+    const rewardRange: ReturnType<typeof parseRewardRange> = kind === 'admin'
+      ? { data: { rewardAssetType: 'derafsh', rewardMin: 0, rewardMax: 0 } }
+      : parseRewardRange(req.body, (await getEconomyPolicy()).config);
     if ('error' in rewardRange) {
       return res.status(400).json({ error: rewardRange.error });
     }
@@ -80,7 +95,7 @@ export async function createChallenge(req: AuthRequest, res: Response) {
     let category: 'intra_group' | 'inter_group' | 'individual' = 'intra_group';
     let recipientIds: string[] = [];
 
-    if (req.user.role === 'mentor') {
+    if (kind === 'mentor') {
       // Mentors can only create challenges for their own caravan
       const mentorCaravan = await prisma.caravan.findFirst({
         where: { mentorId: req.user.id }
@@ -109,7 +124,7 @@ export async function createChallenge(req: AuthRequest, res: Response) {
         recipientIds = picked;
         category = 'individual';
       }
-    } else if (req.user.role === 'admin') {
+    } else if (kind === 'admin') {
       // An admin creates «چالش فراگروهی» only (spec Part 1): personal and group challenges are the mentors'.
       // Older admin challenges for one caravan stay as they are; `targetMentorId` is no longer used.
       if (caravanId !== undefined && caravanId !== null && caravanId !== '' && caravanId !== 'inter_group') {
@@ -123,10 +138,6 @@ export async function createChallenge(req: AuthRequest, res: Response) {
 
     if (startDate && dueDate && new Date(startDate) > new Date(dueDate)) {
       return res.status(400).json({ error: 'تاریخ شروع نمی‌تواند بعد از تاریخ پایان باشد' });
-    }
-
-    if (category === 'inter_group') {
-      (rewardRange as any).data = { rewardAssetType: 'derafsh', rewardMin: 0, rewardMax: 0 };
     }
 
     const normalized = normalizeQuizPayload(type, questions);
@@ -152,8 +163,12 @@ export async function createChallenge(req: AuthRequest, res: Response) {
     });
 
     // Notify: "ایجاد و نتیجه هر چالش باید درون برنامه به فرد و راهبر اطلاع داده شود و اعلان داده شود."
-    const isByAdmin = req.user.role === 'admin';
+    const isByAdmin = kind === 'admin';
     const creatorName = isByAdmin ? 'مدیر سیستم' : ((req.user as any).name || 'راهبر');
+    // A timed challenge's card reaches the groups only when it starts: say so, or it reads as missing
+    const startsLater = challenge.startDate && challenge.startDate > new Date()
+      ? ` کارت چالش از ${challenge.startDate.toLocaleDateString('fa-IR', { timeZone: 'Asia/Tehran' })} در گروه‌ها قرار می‌گیرد.`
+      : '';
 
     let targetStudents: { id: string }[] = [];
     if (assignedCaravanId) {
@@ -178,12 +193,12 @@ export async function createChallenge(req: AuthRequest, res: Response) {
     } else {
       // General challenge for all students (only admin can create)
       targetStudents = await prisma.user.findMany({
-        where: { role: 'student' },
+        where: { role: 'student', isDeleted: false },
         select: { id: true }
       });
-      // Notify all mentors
+      // Notify all mentors (the legacy SUPER_MENTOR value too)
       const mentors = await prisma.user.findMany({
-        where: { role: 'mentor' },
+        where: { role: { in: ['mentor', 'SUPER_MENTOR', 'super_mentor'] }, isDeleted: false },
         select: { id: true }
       });
       if (mentors.length > 0) {
@@ -191,7 +206,7 @@ export async function createChallenge(req: AuthRequest, res: Response) {
           data: mentors.map(m => ({
             userId: m.id,
             title: 'چالش فراگروهی جدید ابلاغ شد',
-            message: `چالش جدید "${title}" توسط ${creatorName} برای تمامی کاروان‌ها منتشر گردید.`,
+            message: `چالش جدید "${title}" توسط ${creatorName} برای تمامی کاروان‌ها منتشر گردید.${startsLater}`,
             type: 'challenge'
           }))
         });
@@ -208,7 +223,7 @@ export async function createChallenge(req: AuthRequest, res: Response) {
         data: targetStudents.map(s => ({
           userId: s.id,
           title: 'چالش جدید ابلاغ شد',
-          message: `چالش جدید "${title}" توسط ${creatorName} منتشر گردید. پاداش: ${rewardText}`,
+          message: `چالش جدید "${title}" توسط ${creatorName} منتشر گردید. پاداش: ${rewardText}${startsLater}`,
           type: 'challenge'
         }))
       });
@@ -224,7 +239,8 @@ export async function createChallenge(req: AuthRequest, res: Response) {
 
 export async function updateChallenge(req: AuthRequest, res: Response) {
   try {
-    if (!req.user || (req.user.role !== 'mentor' && req.user.role !== 'admin')) {
+    const kind = staffKind(req.user?.role);
+    if (!req.user || !kind) {
       return res.status(403).json({ error: 'تنها راهبران و مدیران می‌توانند چالش‌ها را ویرایش کنند' });
     }
 
@@ -236,7 +252,7 @@ export async function updateChallenge(req: AuthRequest, res: Response) {
       return res.status(404).json({ error: 'چالش مورد نظر یافت نشد' });
     }
 
-    if (req.user.role === 'mentor') {
+    if (kind === 'mentor') {
       const mentorCaravan = await prisma.caravan.findFirst({ where: { mentorId: req.user.id } });
       const isOwner = existing.createdByMentorId === req.user.id || (mentorCaravan && existing.caravanId === mentorCaravan.id);
       if (!isOwner) {
@@ -256,7 +272,7 @@ export async function updateChallenge(req: AuthRequest, res: Response) {
     if (type) updateData.type = normalized.type;
     if (questions !== undefined) updateData.questions = normalized.questions;
     if (rewardZarik !== undefined && existing.category !== 'inter_group') updateData.rewardZarik = Number(rewardZarik);
-    const willBeInter = (req.user.role === 'admin' && caravanId !== undefined) ? caravanId === 'inter_group' : existing.category === 'inter_group';
+    const willBeInter = (kind === 'admin' && caravanId !== undefined) ? caravanId === 'inter_group' : existing.category === 'inter_group';
     if (willBeInter) {
       Object.assign(updateData, { rewardAssetType: 'derafsh', rewardMin: 0, rewardMax: 0, rewardZarik: 0 });
     } else if (req.body.rewardAssetType !== undefined || req.body.rewardMin !== undefined || req.body.rewardMax !== undefined) {
@@ -277,7 +293,7 @@ export async function updateChallenge(req: AuthRequest, res: Response) {
     if (effStart && effDue && effStart > effDue) {
       return res.status(400).json({ error: 'تاریخ شروع نمی‌تواند بعد از تاریخ پایان باشد' });
     }
-    if (req.user.role === 'admin') {
+    if (kind === 'admin') {
       if (targetMentorId) {
         updateData.createdByMentorId = targetMentorId;
       }
@@ -308,7 +324,8 @@ export async function updateChallenge(req: AuthRequest, res: Response) {
 
 export async function deleteChallenge(req: AuthRequest, res: Response) {
   try {
-    if (!req.user || (req.user.role !== 'admin' && req.user.role !== 'mentor')) {
+    const kind = staffKind(req.user?.role);
+    if (!req.user || !kind) {
       return res.status(403).json({ error: 'دسترسی غیرمجاز' });
     }
 
@@ -318,7 +335,7 @@ export async function deleteChallenge(req: AuthRequest, res: Response) {
       return res.status(404).json({ error: 'چالش مورد نظر یافت نشد' });
     }
 
-    if (req.user.role === 'mentor') {
+    if (kind === 'mentor') {
       const mentorCaravan = await prisma.caravan.findFirst({ where: { mentorId: req.user.id } });
       const isOwner = existing.createdByMentorId === req.user.id || (mentorCaravan && existing.caravanId === mentorCaravan.id);
       if (!isOwner) {
@@ -427,7 +444,8 @@ export async function getChallenges(req: AuthRequest, res: Response) {
           });
 
           const orConditions: any[] = [
-            { caravanId: student.caravanId }
+            { caravanId: student.caravanId },
+            { category: 'inter_group' }
           ];
 
           if (studentCaravan?.mentorId) {
@@ -447,13 +465,13 @@ export async function getChallenges(req: AuthRequest, res: Response) {
         } else {
           // No caravan yet: only see general admin challenges
           whereClause = adminIds.length > 0 ? {
-            AND: [
-              { caravanId: null },
-              { createdByMentorId: { in: adminIds } }
+            OR: [
+              { category: 'inter_group' },
+              { AND: [{ caravanId: null }, { createdByMentorId: { in: adminIds } }] }
             ]
-          } : { id: '__none__' };
+          } : { category: 'inter_group' };
         }
-      } else if (user.role === 'mentor') {
+      } else if (staffKind(user.role) === 'mentor') {
         // Mentor sees ONLY challenges for their own caravan or created by themselves
         const mentorCaravans = await prisma.caravan.findMany({
           where: { mentorId: user.id },
@@ -472,11 +490,12 @@ export async function getChallenges(req: AuthRequest, res: Response) {
         whereClause = {
           OR: [
             { createdByMentorId: user.id },
+            { category: 'inter_group' },
             ...(mentorCaravanIds.length > 0 ? [{ caravanId: { in: mentorCaravanIds } }] : []),
             ...(adminIds.length > 0 ? [{ AND: [{ caravanId: null }, { createdByMentorId: { in: adminIds } }] }] : [])
           ]
         };
-      } else if (user.role === 'admin') {
+      } else if (staffKind(user.role) === 'admin') {
         const { caravanId, mentorId } = req.query;
         if (caravanId && caravanId !== 'all') {
           whereClause.caravanId = caravanId as string;

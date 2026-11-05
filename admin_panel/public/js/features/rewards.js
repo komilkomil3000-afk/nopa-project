@@ -589,7 +589,41 @@ window.openWalletAdjust = function(userId) {
   wltPickUser('zarik-target-user', uid);
   const p = uid && wltFind(uid);
   wltSet('wlt-adjust-title', el => { el.textContent = p ? `تراکنش جدید برای ${p.name}` : 'تراکنش جدید'; });
+  wltLoadAdjustCaravans();
+  window.wltAdjustSync();
   wltShowModal('wlt-adjust-modal');
+};
+
+// Caravans for «اعمال برای: یک کاروان», loaded once per page
+let wltCaravans = null;
+async function wltLoadAdjustCaravans() {
+  if (wltCaravans) return;
+  try {
+    const res = await request('/api/v1/admin/caravans', { silent: true });
+    const data = res.ok ? await res.json() : null;
+    wltCaravans = Array.isArray(data) ? data : ((data && (data.caravans || data.data)) || []);
+  } catch (_) { return; } // tried again on the next opening
+  wltSet('adj-target-caravan', sel => {
+    const keep = sel.value;
+    sel.innerHTML = '<option value="">انتخاب کاروان...</option>' + wltCaravans.map(c => `<option value="${esc(c.id)}">${esc(c.name)}</option>`).join('');
+    sel.value = keep;
+  });
+}
+
+// Shows the fields that fit the choice: the person or the caravan, and the banner's tier for درفش
+window.wltAdjustSync = function() {
+  const caravan = document.getElementById('adj-target-kind')?.value === 'caravan';
+  const banner = document.getElementById('adj-asset-type')?.value === 'beyragh';
+  wltSet('adj-user-field', el => { el.hidden = caravan; });
+  wltSet('adj-caravan-field', el => { el.hidden = !caravan; });
+  wltSet('adj-tier-field', el => { el.hidden = !banner; });
+  wltSet('adj-target-hint', el => {
+    el.textContent = caravan
+      ? (banner ? 'درفش به خود کاروان داده می‌شود (مثل رتبه‌بندی چالش فراگروهی). با مقدار منفی فقط درفش‌هایی که دستی داده شده‌اند کم می‌شوند.'
+        : 'این مقدار به حساب هر یک از اعضای کاروان واریز (یا از آن کسر) می‌شود.')
+      : (banner ? 'درفش با نوع انتخاب‌شده در حساب همین نفر ثبت می‌شود.' : '');
+    el.hidden = !el.textContent;
+  });
 };
 // "adjust" from another list: open the dialog with the person picked
 window.pickZarikTarget = function(userId) { window.openWalletAdjust(String(userId)); };
@@ -623,20 +657,30 @@ function wltAfterBalanceChange() {
 }
 window.wltAfterBalanceChange = wltAfterBalanceChange;
 
-// The dialog offers an asset type: Zarik goes through rewards/adjust (keeps the ledger category),
-// the other assets (کلاف / قالیچه / درفش) through students/:id/adjust-balance.
+// The dialog offers an asset type and a recipient. For one person, Zarik goes through rewards/adjust (keeps the
+// ledger category) and کلاف / قالیچه through students/:id/adjust-balance; a درفش of a tier, and anything for a
+// whole caravan, through rewards/assets/grant.
 async function handleZarikAdjustment(e) {
   e.preventDefault();
+  const toCaravan = document.getElementById('adj-target-kind')?.value === 'caravan';
   const userId = document.getElementById('zarik-target-user').value;
+  const caravanId = document.getElementById('adj-target-caravan')?.value || '';
   const assetType = document.getElementById('adj-asset-type')?.value || 'zarik';
+  const tier = document.getElementById('adj-banner-tier')?.value || '';
   const amount = parseInt(document.getElementById('zarik-amount').value, 10);
   const category = document.getElementById('zarik-category').value;
   const reason = document.getElementById('zarik-reason').value;
-  if (!userId) return showToast('کاربر را انتخاب کنید', 'error');
+  if (toCaravan ? !caravanId : !userId) return showToast(toCaravan ? 'کاروان را انتخاب کنید' : 'کاربر را انتخاب کنید', 'error');
   if (!amount) return showToast('مقدار تراکنش را وارد کنید', 'error');
 
   try {
-    const res = assetType === 'zarik'
+    const res = (toCaravan || assetType === 'beyragh')
+      ? await request('/api/v1/admin/rewards/assets/grant', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ target: toCaravan ? 'caravan' : 'user', userId, caravanId, assetType, tier, amount, category, reason })
+        })
+      : assetType === 'zarik'
       ? await request('/api/v1/admin/rewards/adjust', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },

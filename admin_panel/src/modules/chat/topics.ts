@@ -50,29 +50,58 @@ async function targetsOf(c: Challenge): Promise<Target[]> {
     return out;
   }
   // A caravan's challenge group only gets its own challenges: its mentor's, or the admin's for this caravan (or for all)
-  const caravanIds = c.caravanId ? [c.caravanId] : (await prisma.caravan.findMany({ select: { id: true } })).map(x => x.id);
+  const caravanIds = c.caravanId ? [c.caravanId] : await activeCaravanIds();
   const out: Target[] = [];
   for (const caravanId of caravanIds) {
-    await ensureCaravanSpaces(caravanId);
-    const space = await prisma.chatSpace.findUniqueOrThrow({ where: { key: `challenges:${caravanId}` } });
-    out.push({ spaceId: space.id, recipientId: null, caravanId });
+    try {
+      await ensureCaravanSpaces(caravanId);
+      // Upsert, not a lookup: the in-memory "already made" set may outlive a space that is gone
+      const space = await ensureSpace(`challenges:${caravanId}`, { type: 'challenges', title: 'گروه چالش‌ها', caravanId });
+      out.push({ spaceId: space.id, recipientId: null, caravanId });
+    } catch (e) {
+      // One caravan's group failing must not keep the card from every caravan after it
+      console.error(`challenge card: no challenge group for caravan ${caravanId}:`, e);
+    }
   }
   // An inter-group challenge is also announced in the shared exhibition ("میدان آثار")
   if (c.category === 'inter_group') out.push({ spaceId: (await globalSpace('arena')).id, recipientId: null, caravanId: null });
   return out;
 }
 
-/** Puts a challenge's card everywhere it belongs. Safe to repeat: existing cards are refreshed. */
-export async function syncChallengeCards(challengeId: string): Promise<void> {
+/** Caravans that still exist: a deleted caravan's group gets no new cards. */
+async function activeCaravanIds(): Promise<string[]> {
+  return (await prisma.caravan.findMany({ where: { isDeleted: false }, select: { id: true } })).map(x => x.id);
+}
+
+/**
+ * Puts a challenge's card everywhere it belongs. Safe to repeat: existing cards are refreshed, or with
+ * `onlyMissing` left alone (the repair worker only fills the gaps). Each conversation is done on its own, so one
+ * failing does not keep the card from the rest; the failures are reported together at the end.
+ */
+export async function syncChallengeCards(challengeId: string, opts: { onlyMissing?: boolean } = {}): Promise<void> {
   const challenge = await prisma.challenge.findUnique({ where: { id: challengeId } });
   if (!challenge) return;
   const existingTopics = await prisma.chatTopic.count({ where: { challengeId } });
   // A timed challenge stays out of sight until it starts; the worker publishes it then
   if (challenge.startDate && challenge.startDate > new Date() && existingTopics === 0) return;
   const meta = await cardMeta(challenge);
+  const failed: string[] = [];
 
   for (const { spaceId, recipientId, caravanId } of await targetsOf(challenge)) {
+    try {
+      await syncCard(challenge, meta, { spaceId, recipientId, caravanId }, opts.onlyMissing === true);
+    } catch (e: any) {
+      failed.push(`${spaceId}: ${e?.message || e}`);
+    }
+  }
+  if (failed.length) throw new Error(`challenge ${challengeId}: ${failed.length} card(s) not posted (${failed.join(' | ')})`);
+}
+
+async function syncCard(challenge: Challenge, meta: Awaited<ReturnType<typeof cardMeta>>, target: Target, onlyMissing: boolean): Promise<void> {
+  const { spaceId, recipientId, caravanId } = target;
+  {
     const scopeKey = `${challenge.id}:${spaceId}:${recipientId || ''}`;
+    if (onlyMissing && await prisma.chatTopic.findUnique({ where: { scopeKey }, select: { id: true } })) return;
     // A personal or caravan challenge is posted by the mentor, not the system: in a private chat its creator,
     // in a caravan's group that caravan's mentor. An inter-group challenge speaks as «پشتیبانی نپا» everywhere.
     const interGroup = challenge.category === 'inter_group';
@@ -94,13 +123,21 @@ export async function syncChallengeCards(challengeId: string): Promise<void> {
         data: { meta: { ...spaceMeta, finalAnswer }, body: challenge.title, botKey, ...(mentor ? { senderId: mentor.id } : interGroup ? { senderId: null } : {}) },
       });
       await publishUpdate(existing.messageId);
-      continue;
+      return;
     }
     const { message } = await publishMessage({
       spaceId, botKey, body: challenge.title, kind: 'challenge', meta: spaceMeta, stationId: challenge.stationId || undefined,
       senderId: mentor?.id, stayOutside: true, attachmentIds: [], mentions: [],
     });
-    await prisma.chatTopic.create({ data: { scopeKey, messageId: message.id, spaceId, challengeId: challenge.id, recipientId } });
+    try {
+      await prisma.chatTopic.create({ data: { scopeKey, messageId: message.id, spaceId, challengeId: challenge.id, recipientId } });
+    } catch (e: any) {
+      // Two syncs at once (the worker and a save): the other one's card stands, this second copy is withdrawn
+      if (e?.code !== 'P2002') throw e;
+      await prisma.chatMessage.update({ where: { id: message.id }, data: { deletedAt: new Date() } });
+      await publishUpdate(message.id);
+      return;
+    }
     await publishUpdate(message.id);
   }
 }

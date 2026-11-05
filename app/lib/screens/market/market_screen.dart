@@ -846,7 +846,9 @@ class _MarketScreenState extends State<MarketScreen> {
     final int totalFarsh = user?.farsh ?? 0;
 
     final zarikVal = totalZarik.toPersian();
+    // Two different things, shown apart: the caravan's banners (won by the caravan) and the member's own
     final beyrahVal = Provider.of<AppRepository>(context).caravanBannerTotal.toPersian();
+    final personalBannersVal = (user?.beyragh ?? 0).toPersian();
     final nakhVal = totalNakh.toPersian();
     final farshVal = totalFarsh.toPersian();
 
@@ -878,6 +880,15 @@ class _MarketScreenState extends State<MarketScreen> {
                   value: zarikVal,
                   isGold: _selectedAssetIndex == 0,
                   onTap: () => setState(() => _selectedAssetIndex = 0),
+                ),
+                const SizedBox(width: 10),
+                // The member's own banners: the same number the panel shows on their wallet
+                _buildAssetPill(
+                  assetKey: 'derafsh',
+                  label: AssetNames.labelFor('درفش'),
+                  value: personalBannersVal,
+                  isGold: _selectedAssetIndex == 4,
+                  onTap: () => setState(() => _selectedAssetIndex = 4),
                 ),
                 const SizedBox(width: 10),
                 _buildAssetPill(

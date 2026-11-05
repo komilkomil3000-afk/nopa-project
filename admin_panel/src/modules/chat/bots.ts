@@ -213,15 +213,39 @@ export async function runChallengeReminders(now = new Date()): Promise<void> {
   }
 }
 
-/** A challenge whose card failed to appear gets it on the next round. */
+/**
+ * A running challenge whose card is missing somewhere gets it on the next round: never posted at all, posted to
+ * only some caravans (one failed), or a caravan made after it started. Only the missing cards are posted.
+ */
 export async function runCardRepair(now = new Date()): Promise<void> {
-  const since = new Date(now.getTime() - 24 * 3600 * 1000);
-  const missing = await prisma.challenge.findMany({
-    where: { chatTopics: { none: {} }, OR: [{ createdAt: { gte: since } }, { startDate: { gte: since, lte: now } }] },
-    select: { id: true },
-    take: 20,
+  const running = await prisma.challenge.findMany({
+    where: {
+      rankingFinalizedAt: null,
+      AND: [
+        { OR: [{ startDate: null }, { startDate: { lte: now } }] },
+        { OR: [{ dueDate: null }, { dueDate: { gt: now } }] },
+      ],
+    },
+    select: { id: true, category: true, caravanId: true, recipientIds: true, chatTopics: { select: { spaceId: true } } },
+    orderBy: { createdAt: 'desc' },
+    take: 100,
   });
-  for (const c of missing) await syncChallengeCards(c.id);
+  if (running.length === 0) return;
+  // Each live caravan's challenge group; a caravan without one yet counts as missing
+  const caravans = await prisma.caravan.findMany({ where: { isDeleted: false }, select: { id: true } });
+  const groups = await prisma.chatSpace.findMany({ where: { key: { in: caravans.map(c => `challenges:${c.id}`) } }, select: { id: true, caravanId: true } });
+  const groupOf = new Map(groups.map(g => [g.caravanId, g.id]));
+
+  const gaps = running.filter(c => {
+    const have = new Set(c.chatTopics.map(t => t.spaceId));
+    if (c.category === 'individual') return have.size < c.recipientIds.length;
+    if (c.caravanId) return have.size === 0;
+    // For every caravan: each live caravan's group must have it
+    return caravans.some(cv => { const g = groupOf.get(cv.id); return !g || !have.has(g); });
+  });
+  for (const c of gaps.slice(0, 10)) {
+    await syncChallengeCards(c.id, { onlyMissing: true }).catch(e => console.error('runCardRepair:', e?.message || e));
+  }
 }
 
 /** Uploads never attached to a message, and not kept by a competition work. */

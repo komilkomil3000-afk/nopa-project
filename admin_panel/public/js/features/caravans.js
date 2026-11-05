@@ -923,9 +923,16 @@ function crvPaint(caravan, detail) {
     el.innerHTML = (members.length ? members.map(m => crvMemberRow(m, cId)).join('') : '<div class="lsv-col-empty">این کاروان هنوز عضوی ندارد.</div>') + addRow;
   });
 
-  // The assets column: students' totals; progress comes with the details
+  // The assets column: the server's totals, the same ones «برترین کاروان‌ها» in the app counts (students only;
+  // درفش = the caravan's own banners, not its members'). Summing the member list here is only the fallback.
   let sumZarik = 0, sumBeyragh = 0, sumNokh = 0, sumFarsh = 0;
-  if (members.length) {
+  const serverWealth = (detail && detail.wealth) || caravan.wealth || null;
+  if (serverWealth) {
+    sumZarik = Number(serverWealth.zarik ?? 0);
+    sumBeyragh = Number(serverWealth.beyragh ?? 0);
+    sumNokh = Number(serverWealth.nakh ?? serverWealth.nokh ?? 0);
+    sumFarsh = Number(serverWealth.farsh ?? 0);
+  } else if (members.length) {
     members.forEach(m => {
       sumZarik += Number(m.zarikBalance ?? m.zarik ?? m.assets?.zarik ?? 0);
       sumBeyragh += Number(m.beyragh ?? m.derafsh ?? m.assets?.beyragh ?? 0);
@@ -1610,7 +1617,13 @@ window.loadCaravanDetails = async function(caravanId) {
     
     const members = caravan.membersList || caravan.members || [];
     let sumZarik = 0, sumBeyragh = 0, sumNokh = 0, sumFarsh = 0;
-    if (members.length > 0) {
+    // The server's totals first (as the app counts them: students only, درفش = the caravan's banners)
+    if (caravan.wealth) {
+      sumZarik = Number(caravan.wealth.zarik ?? 0);
+      sumBeyragh = Number(caravan.wealth.beyragh ?? 0);
+      sumNokh = Number(caravan.wealth.nakh ?? caravan.wealth.nokh ?? 0);
+      sumFarsh = Number(caravan.wealth.farsh ?? 0);
+    } else if (members.length > 0) {
       members.forEach(m => {
         sumZarik += Number(m.zarikBalance ?? m.zarik ?? m.assets?.zarik ?? 0);
         sumBeyragh += Number(m.beyragh ?? m.derafsh ?? m.assets?.beyragh ?? 0);
