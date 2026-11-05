@@ -215,6 +215,7 @@ model Submission {
   status         String    @default("pending") // "pending" | "approved" | "rejected"
   score          Int       @default(0)
   mentorFeedback String?
+  quizAnswers    Json?     // quiz: the option picked for each question (-1 = blank), graded on the server
   submittedAt    DateTime  @default(now())
 
   // Relations

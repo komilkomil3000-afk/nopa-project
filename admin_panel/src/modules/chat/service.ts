@@ -137,7 +137,7 @@ export const MESSAGE_INCLUDE = {
   reactions: { select: { type: true, userId: true } },
   pollVotes: { select: { option: true, userId: true } },
   tags: { select: { tag: { select: { id: true, name: true, color: true, visibility: true } } } },
-  topic: { select: { id: true, status: true, challengeId: true } },
+  topic: { select: { id: true, status: true, challengeId: true, challenge: { select: { type: true } } } },
   replyTo: { select: { id: true, body: true, deletedAt: true, sender: { select: { name: true } } } },
 } satisfies Prisma.ChatMessageInclude;
 
@@ -161,7 +161,8 @@ export function serializeMessage(m: MessageRow) {
     mentorMark: m.marks.includes('mentor'),
     // Replies under a message: a challenge always has them; elsewhere a moderator opens them
     threadOpen: m.marks.includes('thread') || !!m.topic || m.threadReplies > 0,
-    topic: m.topic,
+    // quiz: a «چالش تستی», answered by picking options under the card instead of chatting
+    topic: m.topic && { id: m.topic.id, status: m.topic.status, challengeId: m.topic.challengeId, quiz: m.topic.challenge?.type === 'quiz' || m.topic.challenge?.type === 'step_by_step_quiz' },
     pollVotes: m.pollVotes,
     tags: m.tags.map(t => t.tag).filter(t => t.visibility === 'public'),
     body: deleted ? '' : m.body,

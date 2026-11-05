@@ -14,6 +14,7 @@ import 'package:nopa_app/screens/chat/chat_widgets.dart';
 import 'package:nopa_app/services/audio_exclusivity_service.dart';
 import 'package:nopa_app/services/chat_downloads.dart';
 import 'package:nopa_app/services/chat_repository.dart';
+import 'package:nopa_app/services/chat_thread_seen.dart';
 import 'package:nopa_app/widgets/app_toast.dart';
 import 'package:nopa_app/widgets/fa_text.dart';
 import 'package:nopa_app/widgets/safe_avatar.dart';
@@ -385,10 +386,16 @@ class _ChatMessageBubbleState extends State<ChatMessageBubble> {
   }
 
   /// The way into the conversation under this message, with the faces of who is talking there.
-  Widget _threadBox() {
-    final fg = _mineLook ? ChatTheme.accent : ChatTheme.goldTitle;
+  Widget _threadBox() => ListenableBuilder(listenable: ChatThreadSeen.instance, builder: (context, _) => _threadBoxContent());
+
+  Widget _threadBoxContent() {
+    // Cream on every bubble, green or lavender alike
+    const fg = ChatTheme.accent;
     final faces = m.threadPeople.take(4).toList();
-    final label = m.threadReplies > 0 ? 'ورود به گفتگو · ${m.threadReplies} پاسخ' : 'ورود به گفتگو';
+    final unread = m.topicQuiz ? 0 : ChatThreadSeen.instance.unread(m);
+    final label = m.topicQuiz
+        ? 'ورود به چالش تستی'
+        : (m.threadReplies > 0 ? 'ورود به گفتگو · ${m.threadReplies} پاسخ' : 'ورود به گفتگو');
     return GestureDetector(
       onTap: widget.onOpenThread,
       child: Container(
@@ -404,6 +411,19 @@ class _ChatMessageBubbleState extends State<ChatMessageBubble> {
             Icon(Icons.forum_rounded, size: 16, color: fg),
             const SizedBox(width: 6),
             Expanded(child: Text(label, maxLines: 1, overflow: TextOverflow.ellipsis, style: ChatTheme.caption.copyWith(color: fg, fontWeight: FontWeight.bold, fontSize: 11.5))),
+            // New replies since this user last opened the conversation
+            if (unread > 0)
+              Container(
+                margin: const EdgeInsetsDirectional.only(end: 6),
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
+                constraints: const BoxConstraints(minWidth: 20),
+                decoration: BoxDecoration(color: fg, borderRadius: BorderRadius.circular(10)),
+                child: Text(
+                  unread > 99 ? '+۹۹ جدید' : '$unread جدید',
+                  textAlign: TextAlign.center,
+                  style: ChatTheme.caption.copyWith(color: ChatTheme.ink, fontWeight: FontWeight.bold, fontSize: 10.5),
+                ),
+              ),
             if (faces.isNotEmpty)
               SizedBox(
                 width: 20.0 + (faces.length - 1) * 13,

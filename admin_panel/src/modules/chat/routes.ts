@@ -9,6 +9,7 @@ import { correctEvaluation, fileObjection, getEvaluation, myReport, payEvaluatio
 import { askJudge, getTiers, judgeEntry, judgeList, myQuestions, saveTiers, submitEntry } from './intergroup';
 import { exportTopic, exportTopicLink, mentorDashboard, reportMessage, serveTopicExport, topicInsight } from './reports';
 import { myCases, openSupport, rateCase } from './support';
+import { getTopicQuiz, submitTopicQuiz, topicQuizResults } from './quiz';
 import { coverUpload, memberProfile, setSpaceCover, setSpaceSlogan, spaceMedia, spaceProfile } from './profiles';
 
 const router = Router();
@@ -92,6 +93,9 @@ router.post('/topics/:id/correct', correctEvaluation as any);
 router.get('/topics/:id/my-report', myReport as any);
 router.post('/topics/:id/objection', fileObjection as any);
 router.get('/topics/:id/insight', topicInsight as any);
+router.get('/topics/:id/quiz', getTopicQuiz as any);
+router.post('/topics/:id/quiz', submitTopicQuiz as any);
+router.get('/topics/:id/quiz/results', topicQuizResults as any);
 router.get('/topics/:id/export', exportTopic as any);
 router.post('/topics/:id/export-link', exportTopicLink as any);
 

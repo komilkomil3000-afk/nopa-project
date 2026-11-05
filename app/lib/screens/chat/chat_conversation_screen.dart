@@ -26,6 +26,8 @@ import 'package:nopa_app/services/local_cache.dart';
 import 'package:nopa_app/widgets/app_toast.dart';
 import 'package:nopa_app/widgets/fa_text.dart';
 import 'package:image/image.dart' as img;
+import 'package:nopa_app/screens/chat/chat_quiz_panel.dart';
+import 'package:nopa_app/services/chat_thread_seen.dart';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 import 'package:provider/provider.dart';
@@ -70,6 +72,7 @@ class _ChatConversationScreenState extends State<ChatConversationScreen> {
     AppRepository().chatScreenOpened();
     _chat.watch(widget.spaceId, threadRootId: _threadId);
     _chat.open(widget.spaceId, threadRootId: _threadId).then((_) => _chat.markRead(widget.spaceId));
+    if (_threadId != null) WidgetsBinding.instance.addPostFrameCallback((_) => _markThreadSeen());
     _chat.people(widget.spaceId).then((people) {
       if (mounted) setState(() => _people = people);
     });
@@ -94,6 +97,7 @@ class _ChatConversationScreenState extends State<ChatConversationScreen> {
     AppRepository().chatScreenClosed();
     dismissChatMessageMenu();
     _chat.unwatch(widget.spaceId, threadRootId: _threadId);
+    if (_threadId != null) _markThreadSeen();
     _chat.removeListener(_markReadWhileOpen);
     _chat.commandResult.removeListener(_showCommandResult);
     _scroll.dispose();
@@ -152,6 +156,7 @@ class _ChatConversationScreenState extends State<ChatConversationScreen> {
   }
 
   void _markReadWhileOpen() {
+    if (_threadId != null) _markThreadSeen();
     final space = _chat.spaceById(widget.spaceId);
     if (space != null && space.unread > 0 && mounted) _chat.markRead(widget.spaceId);
   }
@@ -650,15 +655,25 @@ class _ChatConversationScreenState extends State<ChatConversationScreen> {
                             children: [
                               // With the keyboard open the conversation needs every pixel
                               // The challenge brief stays in view; a plain thread's origin gives way to the keyboard
-              if (widget.threadRoot != null && (widget.threadRoot!.kind == 'challenge' || MediaQuery.viewInsetsOf(context).bottom == 0)) _threadOrigin(),
+              if (widget.threadRoot != null && !_quizThread && (widget.threadRoot!.kind == 'challenge' || MediaQuery.viewInsetsOf(context).bottom == 0)) _threadOrigin(),
                               if (space?.type == 'support') _caseBar(),
-                              Expanded(child: _list(messages, space, myId)),
+                              Expanded(
+                                child: _quizThread
+                                    ? ChatQuizPanel(
+                                        topicId: widget.threadRoot!.topicId!,
+                                        status: _rootStatus() ?? 'open',
+                                        header: _threadOrigin(),
+                                        onOpenResults: () => _openInfo(_currentRoot ?? widget.threadRoot!, space),
+                                      )
+                                    : _list(messages, space, myId),
+                              ),
                             ],
                           ),
                         ],
                       ),
                     ),
-                    _canWrite(space) ? _composer() : _readOnlyBar(threadClosed),
+                    // A quiz challenge's page is the quiz itself: nothing to type
+                    if (!_quizThread) _canWrite(space) ? _composer() : _readOnlyBar(threadClosed),
                     if (_emojiOpen) _emojiPanel(),
                   ],
                 );
@@ -674,6 +689,24 @@ class _ChatConversationScreenState extends State<ChatConversationScreen> {
   bool _reactionsClosed(ChatMessage m) => _threadIsClosed || (m.topicId != null && m.topicStatus != null && m.topicStatus != 'open');
 
   bool get _threadIsClosed => widget.threadRoot?.topicId != null && _rootStatus() != 'open';
+
+  /// The thread's root as the conversation currently has it (fresher than the one this screen was opened with).
+  ChatMessage? get _currentRoot {
+    if (_threadId == null) return null;
+    for (final m in _chat.messagesOf(widget.spaceId)) {
+      if (m.id == _threadId) return m;
+    }
+    return null;
+  }
+
+  /// Under a quiz challenge the page is the quiz, not a conversation.
+  bool get _quizThread => widget.threadRoot?.topicId != null && (widget.threadRoot!.topicQuiz || _currentRoot?.topicQuiz == true);
+
+  /// Everything under the open thread counts as seen, for the «n جدید» on its «ورود به گفتگو».
+  void _markThreadSeen() {
+    final root = _currentRoot ?? widget.threadRoot;
+    if (root != null) ChatThreadSeen.instance.markSeen(root.id, root.threadReplies);
+  }
 
   String? _rootStatus() {
     for (final m in _chat.messagesOf(widget.spaceId)) {

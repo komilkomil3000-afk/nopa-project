@@ -10,6 +10,7 @@ import '../core/constants/api_constants.dart';
 import '../models/chat_models.dart';
 import 'api_service.dart';
 import 'chat_local_store.dart';
+import 'chat_thread_seen.dart';
 
 /// All chat state: conversations, open message lists, the socket and the send queue.
 class ChatRepository extends ChangeNotifier {
@@ -93,6 +94,7 @@ class ChatRepository extends ChangeNotifier {
     if (enabled && (_socket == null || _userId != userId)) {
       _userId = userId;
       _connect();
+      ChatThreadSeen.instance.load(userId);
       refreshSpaces();
       _offlineTimer ??= Timer.periodic(offlinePollInterval, (_) => _pollWhileOffline());
     } else if (!enabled && _socket != null) {

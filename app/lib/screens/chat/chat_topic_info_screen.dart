@@ -2,6 +2,7 @@ import 'package:nopa_app/widgets/nopa_modal_shell.dart';
 import 'package:nopa_app/core/avatar_catalog.dart';
 import 'package:nopa_app/screens/chat/chat_widgets.dart';
 import 'package:nopa_app/screens/chat/chat_profile_screen.dart';
+import 'package:nopa_app/screens/chat/chat_quiz_results.dart';
 import 'dart:io' as io;
 
 import 'package:file_picker/file_picker.dart';
@@ -83,6 +84,7 @@ class _ChatTopicInfoScreenState extends State<ChatTopicInfoScreen> {
   String get _topicId => widget.card.topicId!;
   bool get _interGroup => widget.card.meta?['category'] == 'inter_group';
   String get _challengeId => widget.card.meta?['challengeId']?.toString() ?? '';
+  bool get _quiz => widget.card.topicQuiz;
 
   @override
   void initState() {
@@ -99,6 +101,11 @@ class _ChatTopicInfoScreenState extends State<ChatTopicInfoScreen> {
   }
 
   Future<void> _load() async {
+    if (_quiz) {
+      // ChatQuizResults loads its own data
+      if (mounted) setState(() => _loading = false);
+      return;
+    }
     if (widget.moderator) {
       final evaluation = await _chat.api('GET', '/chat/topics/$_topicId/evaluation');
       final insight = await _chat.api('GET', '/chat/topics/$_topicId/insight');
@@ -185,10 +192,17 @@ class _ChatTopicInfoScreenState extends State<ChatTopicInfoScreen> {
                   if ((meta['description'] ?? '').toString().isNotEmpty) Padding(padding: const EdgeInsets.only(top: 6), child: Text(meta['description'].toString(), style: ChatTheme.body)),
                   if (meta['reward'] != null) Padding(padding: const EdgeInsets.only(top: 6), child: Text('جایزه: ${meta['reward']}', style: ChatTheme.caption)),
                   const SizedBox(height: 14),
-                  if (_interGroup) InterGroupSection(challengeId: _challengeId, mentor: widget.moderator, spaceId: widget.spaceId),
-                  if (!_interGroup && !widget.moderator) _studentReport(),
-                  if (!_interGroup && widget.moderator) ..._mentorPanel(),
-                  if (_insight != null) _insightCard(),
+                  // A quiz is graded and paid by the system: closing it and everyone's answers, nothing to evaluate
+                  if (_quiz)
+                    ChatQuizResults(
+                      topicId: _topicId,
+                      moderator: widget.moderator,
+                      onOpenMember: (id) => Navigator.of(context).push(MaterialPageRoute(builder: (_) => ChatMemberProfileScreen(spaceId: widget.spaceId, userId: id))),
+                    ),
+                  if (!_quiz && _interGroup) InterGroupSection(challengeId: _challengeId, mentor: widget.moderator, spaceId: widget.spaceId),
+                  if (!_quiz && !_interGroup && !widget.moderator) _studentReport(),
+                  if (!_quiz && !_interGroup && widget.moderator) ..._mentorPanel(),
+                  if (!_quiz && _insight != null) _insightCard(),
                 ],
               ),
               ),

@@ -631,144 +631,176 @@ export async function getChallenges(req: AuthRequest, res: Response) {
   }
 }
 
-export async function submitQuiz(req: AuthRequest, res: Response) {
+export class QuizError extends Error {
+  constructor(public status: number, message: string) { super(message); }
+}
+
+const ALREADY_TAKEN = 'شما قبلاً در این آزمون شرکت کرده‌اید و ثبت مجدد امکان‌پذیر نیست';
+
+/** The questions of a quiz challenge, in the one stored shape ({ q, options, correct }). */
+export function quizQuestionsOf(challenge: { questions: string | null }): { q: string; options: string[]; correct: number }[] {
+  let list: any[] = [];
+  try { list = challenge.questions ? JSON.parse(challenge.questions) : []; } catch { list = []; }
+  if (!Array.isArray(list)) return [];
+  return list.map((item: any) => ({
+    q: String(item?.q ?? item?.question ?? ''),
+    options: Array.isArray(item?.options) ? item.options.map((o: any) => String(o)) : [],
+    correct: Number(item?.correct ?? item?.correctIndex ?? 0) || 0,
+  }));
+}
+
+export const isQuizType = (type?: string | null) => type === 'quiz' || type === 'step_by_step_quiz';
+
+/**
+ * The options a student picked, one per question (-1 = left blank). Submissions saved before answers were stored
+ * are read back from their answer text («n. question: option»).
+ */
+export function storedQuizAnswers(sub: { quizAnswers?: unknown; answerText?: string | null }, questions: { options: string[] }[]): number[] {
+  if (Array.isArray(sub.quizAnswers)) return questions.map((_, i) => (Number.isInteger((sub.quizAnswers as any[])[i]) ? (sub.quizAnswers as number[])[i] : -1));
+  const lines = String(sub.answerText || '').split('\n');
+  return questions.map((q, i) => {
+    const line = lines.find(l => l.startsWith(`${i + 1}. `));
+    if (!line) return -1;
+    return q.options.findIndex(o => line.endsWith(`: ${o}`));
+  });
+}
+
+/**
+ * Grades a student's quiz on the server and pays its reward, once. Used by the challenges tab and by the quiz
+ * under the challenge's card in chat. Throws QuizError with the message the student should see.
+ */
+export async function gradeAndSaveQuiz(challengeId: string, user: { id: string; role: string }, answers: any[]) {
+  if (isMentorRole(user.role) || user.role === 'admin') {
+    throw new QuizError(403, 'راهبر و مدیر در چالش شرکت نمی‌کنند و فقط آن را مدیریت می‌کنند');
+  }
+  if (!Array.isArray(answers)) throw new QuizError(400, 'فرمت پاسخ‌ها نامعتبر است');
+
+  const challenge = await prisma.challenge.findUnique({ where: { id: challengeId } });
+  if (!challenge || !isQuizType(challenge.type)) throw new QuizError(404, 'آزمون مورد نظر یافت نشد');
+  if (challenge.recipientIds.length > 0 && !challenge.recipientIds.includes(user.id)) throw new QuizError(403, 'این آزمون برای شما تعیین نشده است');
+  if (challenge.startDate && new Date() < challenge.startDate) throw new QuizError(400, 'این آزمون هنوز شروع نشده است');
+  if (challenge.dueDate && new Date() > challenge.dueDate) throw new QuizError(400, 'مهلت شرکت در این آزمون به پایان رسیده است');
+
+  const student = await prisma.user.findUnique({ where: { id: user.id }, select: { id: true, caravanId: true } });
+  // Verify student belongs to this caravan if caravan-locked
+  if (challenge.caravanId && student?.caravanId && student.caravanId !== challenge.caravanId) {
+    throw new QuizError(403, 'این آزمون متعلق به کاروان شما نیست');
+  }
+
+  // The mentor closed it from «اطلاعات چالش»: no more answers, from chat or from the challenges tab
+  const ownTopics = await prisma.chatTopic.findMany({
+    where: {
+      challengeId,
+      OR: [{ recipientId: user.id }, ...(student?.caravanId ? [{ recipientId: null, space: { caravanId: student.caravanId } }] : [])],
+    },
+    select: { status: true },
+  });
+  if (ownTopics.length > 0 && ownTopics.every(t => t.status !== 'open')) throw new QuizError(400, 'این آزمون توسط راهبر بسته شده است');
+
+  // Prevent multiple submissions / repeat coin exploitation
+  if (await prisma.submission.findFirst({ where: { challengeId, studentId: user.id }, select: { id: true } })) {
+    throw new QuizError(400, ALREADY_TAKEN);
+  }
+
+  const questionsList = quizQuestionsOf(challenge);
+  const picked = questionsList.map((q, i) => {
+    const a = Number(answers[i]);
+    return Number.isInteger(a) && a >= 0 && a < q.options.length ? a : -1;
+  });
+  const correctCount = questionsList.filter((q, i) => picked[i] === q.correct).length;
+
+  // The challenge decides the asset and the range; the final amount follows the share of correct answers
+  const assetType = challenge.rewardAssetType === 'nakh' ? 'nakh' : 'zarik';
+  const assetNames = await getAssetNames();
+  const assetLabel = assetType === 'nakh' ? assetNames.nakh : assetNames.zarik;
+  let calculatedReward: number;
+  if (challenge.category === 'inter_group') {
+    calculatedReward = 0; // inter-group challenges pay only the caravan's banner, awarded by the admin's ranking
+  } else if (challenge.rewardMax > 0) {
+    const share = questionsList.length > 0 ? correctCount / questionsList.length : 0;
+    calculatedReward = Math.round(challenge.rewardMin + (challenge.rewardMax - challenge.rewardMin) * share);
+  } else {
+    calculatedReward = correctCount * 10; // legacy quizzes without a range
+  }
+
+  let submission: any;
+  let updatedUser: any;
   try {
-    if (!req.user) {
-      return res.status(401).json({ error: 'کاربر احراز هویت نشده است' });
-    }
-
-    if (isMentorRole(req.user.role) || req.user.role === 'admin') {
-      return res.status(403).json({ error: 'راهبر و مدیر در چالش شرکت نمی‌کنند و فقط آن را مدیریت می‌کنند' });
-    }
-
-    const { id } = req.params;
-    const { answers } = req.body; // Array of selected options indices
-
-    if (!Array.isArray(answers)) {
-      return res.status(400).json({ error: 'فرمت پاسخ‌ها نامعتبر است' });
-    }
-
-    const challenge = await prisma.challenge.findUnique({
-      where: { id },
-      include: { caravan: true }
-    });
-
-    if (!challenge || (challenge.type !== 'quiz' && challenge.type !== 'step_by_step_quiz')) {
-      return res.status(404).json({ error: 'آزمون مورد نظر یافت نشد' });
-    }
-
-    if (challenge.recipientIds.length > 0 && !challenge.recipientIds.includes(req.user.id)) {
-      return res.status(403).json({ error: 'این آزمون برای شما تعیین نشده است' });
-    }
-    if (challenge.startDate && new Date() < challenge.startDate) {
-      return res.status(400).json({ error: 'این آزمون هنوز شروع نشده است' });
-    }
-    if (challenge.dueDate && new Date() > challenge.dueDate) {
-      return res.status(400).json({ error: 'مهلت شرکت در این آزمون به پایان رسیده است' });
-    }
-
-    // Verify student belongs to this caravan if caravan-locked
-    if (challenge.caravanId) {
-      const student = await prisma.user.findUnique({
-        where: { id: req.user.id },
-        select: { id: true, caravanId: true }
-      });
-      if (student?.caravanId && student.caravanId !== challenge.caravanId) {
-        return res.status(403).json({ error: 'این آزمون متعلق به کاروان شما نیست' });
-      }
-    }
-
-    // Prevent multiple submissions / repeat coin exploitation
-    const existingSubmission = await prisma.submission.findFirst({
-      where: { challengeId: id, studentId: req.user.id }
-    });
-    if (existingSubmission) {
-      return res.status(400).json({ error: 'شما قبلاً در این آزمون شرکت کرده‌اید و ثبت مجدد امکان‌پذیر نیست' });
-    }
-
-    const questionsList = challenge.questions ? JSON.parse(challenge.questions) : [];
-    let correctCount = 0;
-
-    for (let i = 0; i < questionsList.length; i++) {
-      if (answers[i] === (questionsList[i].correct ?? questionsList[i].correctIndex)) {
-        correctCount++;
-      }
-    }
-
-    // The challenge decides the asset and the range; the final amount follows the share of correct answers
-    const assetType = challenge.rewardAssetType === 'nakh' ? 'nakh' : 'zarik';
-    const assetNames = await getAssetNames();
-    const assetLabel = assetType === 'nakh' ? assetNames.nakh : assetNames.zarik;
-    let calculatedReward: number;
-    if (challenge.category === 'inter_group') {
-      calculatedReward = 0; // inter-group challenges pay only the caravan's banner, awarded by the admin's ranking
-    } else if (challenge.rewardMax > 0) {
-      const share = questionsList.length > 0 ? correctCount / questionsList.length : 0;
-      calculatedReward = Math.round(challenge.rewardMin + (challenge.rewardMax - challenge.rewardMin) * share);
-    } else {
-      calculatedReward = correctCount * 10; // legacy quizzes without a range
-    }
-
-    let submission: any;
-    let updatedUser: any;
-
     await prisma.$transaction(async (tx) => {
-      // Save submission record
       submission = await tx.submission.create({
         data: {
-          challengeId: id,
-          studentId: req.user!.id,
+          challengeId,
+          studentId: user.id,
           status: 'approved',
           score: correctCount,
+          quizAnswers: picked,
           mentorFeedback: `ثبت خودکار پاسخنامه آزمون. نمره: ${correctCount}/${questionsList.length}`,
           answerText: questionsList
-            .map((q: any, i: number) => `${i + 1}. ${q.q ?? q.question ?? ''}: ${Array.isArray(q.options) && q.options[answers[i]] !== undefined ? q.options[answers[i]] : '-'}`)
-            .join('\n')
-        }
+            .map((q, i) => `${i + 1}. ${q.q}: ${picked[i] >= 0 ? q.options[picked[i]] : '-'}`)
+            .join('\n'),
+        },
       });
 
       if (calculatedReward > 0) {
         await changeBalance(tx, {
-          userId: req.user!.id,
+          userId: user.id,
           asset: assetType,
           amount: calculatedReward,
           sourceType: 'challenge_quiz',
           sourceId: submission.id,
           reason: `پاداش شرکت در آزمون چالش: ${challenge.title}`,
-          createdBy: req.user!.id,
-          zarikCategory: 'Quiz Rewards'
+          createdBy: user.id,
+          zarikCategory: 'Quiz Rewards',
         });
       }
-      updatedUser = await tx.user.findUnique({
-        where: { id: req.user!.id }
-      });
+      updatedUser = await tx.user.findUnique({ where: { id: user.id } });
     });
+  } catch (error: any) {
+    // Unique (challengeId, studentId): a concurrent duplicate submit lost the race -> nothing was credited
+    if (error?.code === 'P2002') throw new QuizError(400, ALREADY_TAKEN);
+    throw error;
+  }
 
-    // Result notification: score plus the asset that was added
-    await prisma.notification.create({
-      data: {
-        userId: req.user.id,
-        title: calculatedReward > 0 ? 'ثبت پاداش آزمون' : 'نتیجه آزمون',
-        message: `آزمون "${challenge.title}" بررسی شد. پاسخ‌های صحیح: ${correctCount} از ${questionsList.length}.` +
-          (calculatedReward > 0 ? ` مقدار پاداش: +${calculatedReward} ${assetLabel} به حساب شما اضافه شد.` : ''),
-        type: 'reward'
-      }
-    });
+  // Result notification: score plus the asset that was added
+  await prisma.notification.create({
+    data: {
+      userId: user.id,
+      title: calculatedReward > 0 ? 'ثبت پاداش آزمون' : 'نتیجه آزمون',
+      message: `آزمون "${challenge.title}" بررسی شد. پاسخ‌های صحیح: ${correctCount} از ${questionsList.length}.` +
+        (calculatedReward > 0 ? ` مقدار پاداش: +${calculatedReward} ${assetLabel} به حساب شما اضافه شد.` : ''),
+      type: 'reward',
+    },
+  });
 
-    res.json({
+  return {
+    challenge,
+    questions: questionsList,
+    picked,
+    submission,
+    result: {
       score: correctCount,
       total: questionsList.length,
       rewardZarik: assetType === 'zarik' ? calculatedReward : 0,
       rewardAmount: calculatedReward,
       rewardAssetType: assetType,
+      rewardLabel: assetLabel,
       zarikBalance: updatedUser.zarikBalance,
-      submissionId: submission.id
-    });
-  } catch (error: any) {
-    // Unique (challengeId, studentId): a concurrent duplicate submit lost the race -> nothing was credited
-    if (error?.code === 'P2002') {
-      return res.status(400).json({ error: 'شما قبلاً در این آزمون شرکت کرده‌اید و ثبت مجدد امکان‌پذیر نیست' });
+      submissionId: submission.id,
+      // Right or wrong per question, for this student only
+      results: questionsList.map((q, i) => picked[i] === q.correct),
+    },
+  };
+}
+
+export async function submitQuiz(req: AuthRequest, res: Response) {
+  try {
+    if (!req.user) {
+      return res.status(401).json({ error: 'کاربر احراز هویت نشده است' });
     }
+    const { result } = await gradeAndSaveQuiz(req.params.id, req.user, req.body?.answers);
+    res.json(result);
+  } catch (error: any) {
+    if (error instanceof QuizError) return res.status(error.status).json({ error: error.message });
     console.error('submitQuiz error:', error);
     res.status(500).json({ error: 'خطایی در تصحیح و ثبت آزمون رخ داد' });
   }

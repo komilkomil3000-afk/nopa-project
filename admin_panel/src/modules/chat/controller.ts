@@ -204,8 +204,10 @@ export const sendMessage = handler(async (req, res, actor) => {
   if (threadRootId) {
     const root = await prisma.chatMessage.findUnique({ where: { id: threadRootId }, select: { spaceId: true, threadRootId: true, marks: true, threadReplies: true } });
     if (!root || root.spaceId !== space.id || root.threadRootId) throw new ChatError(404, 'پیام یافت نشد');
-    const topic = await prisma.chatTopic.findUnique({ where: { messageId: threadRootId }, include: { challenge: { select: { category: true, rankingFinalizedAt: true } } } });
+    const topic = await prisma.chatTopic.findUnique({ where: { messageId: threadRootId }, include: { challenge: { select: { category: true, rankingFinalizedAt: true, type: true } } } });
     if (topic && topic.status !== 'open') throw new ChatError(403, 'این چالش بسته شده است');
+    // A quiz challenge is answered by picking options under its card; its thread is not a conversation
+    if (topic && ['quiz', 'step_by_step_quiz'].includes(topic.challenge.type) && !canModerate(actor, space)) throw new ChatError(403, 'این چالش تستی است؛ گزینه‌ها را انتخاب و پاسخ را ثبت کنید');
     if (space.type === 'arena' && !canReplyInArena(actor, topic)) {
       throw new ChatError(403, 'در میدان آثار فقط در گفت‌وگوی یک چالش فراگروهیِ باز می‌توانید بنویسید');
     }

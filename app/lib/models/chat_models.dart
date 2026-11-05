@@ -144,6 +144,8 @@ class ChatMessage {
   final Map<String, dynamic>? meta;
   final String? topicId;
   final String? topicStatus;
+  /// The challenge is a quiz («چالش تستی»): its thread is answered by picking options, not by chatting.
+  final bool topicQuiz;
   final bool best;
   /// «شاهد امتیاز» and «پاسخ نهایی گروه»: marks a mentor puts on a message, shown on it to everyone.
   final bool evidence;
@@ -184,6 +186,7 @@ class ChatMessage {
     required this.meta,
     required this.topicId,
     required this.topicStatus,
+    this.topicQuiz = false,
     required this.best,
     this.evidence = false,
     this.finalMark = false,
@@ -230,6 +233,7 @@ class ChatMessage {
       meta: json['meta'] is Map ? Map<String, dynamic>.from(json['meta'] as Map) : null,
       topicId: topic?['id'],
       topicStatus: topic?['status'],
+      topicQuiz: topic?['quiz'] == true,
       best: json['best'] == true,
       evidence: json['evidence'] == true,
       finalMark: json['final'] == true,
