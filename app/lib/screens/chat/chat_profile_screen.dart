@@ -383,7 +383,7 @@ class _ChatSpaceProfileScreenState extends State<ChatSpaceProfileScreen> {
               ],
             ],
           ),
-          _SharedMedia(spaceId: widget.spaceId, withSessions: space?.isPrivate != true),
+          _SharedMedia(spaceId: widget.spaceId),
         ];
       },
     );
@@ -559,7 +559,7 @@ class _ChatMemberProfileScreenState extends State<ChatMemberProfileScreen> {
             ],
           ),
           if (stats != null) _Participation(stats: stats, onReportCard: canReport ? () => _openReportCard(p) : null),
-          _SharedMedia(spaceId: widget.spaceId, userId: space?.isPrivate == true ? null : widget.userId, withSessions: space?.isPrivate != true),
+          _SharedMedia(spaceId: widget.spaceId, userId: space?.isPrivate == true ? null : widget.userId),
         ];
       },
     );
@@ -890,12 +890,13 @@ class _Fact extends StatelessWidget {
   }
 }
 
-/// Tabs of what was shared: photos, voices, links and (in groups and channels) sessions.
+/// Tabs of what was shared: photos, voices, links and sessions. Every conversation has sessions (a private
+/// one carries its personal challenges). [userId] narrows photos, voices and links to one member; sessions
+/// always list all of the conversation's challenges and threads.
 class _SharedMedia extends StatefulWidget {
   final String spaceId;
   final String? userId;
-  final bool withSessions;
-  const _SharedMedia({required this.spaceId, this.userId, required this.withSessions});
+  const _SharedMedia({required this.spaceId, this.userId});
 
   @override
   State<_SharedMedia> createState() => _SharedMediaState();
@@ -923,11 +924,14 @@ class _SharedMediaState extends State<_SharedMedia> {
 
   _MediaFeed _feedOf(String kind) => _feeds.putIfAbsent(kind, _MediaFeed.new);
 
+  /// The member whose items a tab shows; sessions are the whole conversation's.
+  String? _userFor(String kind) => kind == 'session' ? null : widget.userId;
+
   List<(String, String)> get _tabs => [
         ('image', 'عکس‌ها'),
         ('audio', 'صوت‌ها'),
         ('link', 'لینک‌ها'),
-        if (widget.withSessions) ('session', 'نشست‌ها'),
+        ('session', 'نشست‌ها'),
       ];
 
   @override
@@ -958,7 +962,7 @@ class _SharedMediaState extends State<_SharedMedia> {
     final feed = _feedOf(kind);
     if (feed.loaded || feed.loading) return;
     feed.loading = true;
-    final list = await _chat.media(widget.spaceId, kind, userId: widget.userId, limit: _pageSize);
+    final list = await _chat.media(widget.spaceId, kind, userId: _userFor(kind), limit: _pageSize);
     if (!mounted) return;
     setState(() {
       feed.items.addAll(list);
@@ -987,7 +991,7 @@ class _SharedMediaState extends State<_SharedMedia> {
     }
     if (feed.exhausted) return;
     setState(() => feed.loading = true);
-    final list = await _chat.media(widget.spaceId, _kind, userId: widget.userId, before: feed.items.last['createdAt']?.toString(), limit: _pageSize);
+    final list = await _chat.media(widget.spaceId, _kind, userId: _userFor(_kind), before: feed.items.last['createdAt']?.toString(), limit: _pageSize);
     if (!mounted) return;
     final known = feed.items.map((e) => e['id']).toSet();
     final fresh = list.where((e) => !known.contains(e['id'])).toList();

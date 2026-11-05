@@ -245,24 +245,24 @@ export const spaceMedia = handler(async (req, res, actor) => {
   }
 
   if (kind === 'session') {
-    // Sessions live in groups and channels; a private conversation has none
-    if (space.type === 'direct' || space.type === 'support') return res.json([]);
+    // Every conversation has sessions: a private one carries the personal challenges sent in it.
+    // With userId, only the sessions that member started or replied in, filtered in the query so a page stays full.
+    let joinedIds: string[] | undefined;
+    if (userId) {
+      joinedIds = (await prisma.chatMessage.findMany({
+        where: { spaceId: space.id, senderId: userId, threadRootId: { not: null } }, distinct: ['threadRootId'], select: { threadRootId: true },
+      })).map(r => r.threadRootId!).filter(Boolean);
+    }
     const rows = await prisma.chatMessage.findMany({
       where: {
         spaceId: space.id, threadRootId: null, deletedAt: null, ...olderThan,
-        OR: [{ threadReplies: { gt: 0 } }, { topic: { isNot: null } }],
+        OR: [{ threadReplies: { gt: 0 } }, { topic: { isNot: null } }, { kind: 'challenge' }],
+        ...(userId ? { AND: [{ OR: [{ senderId: userId }, { id: { in: joinedIds! } }] }] } : {}),
       },
       orderBy: { createdAt: 'desc' }, take: limit,
       select: { id: true, body: true, kind: true, meta: true, threadReplies: true, createdAt: true, topic: { select: { id: true, status: true } } },
     });
-    let list = rows;
-    if (userId) {
-      const joined = new Set((await prisma.chatMessage.findMany({
-        where: { threadRootId: { in: rows.map(r => r.id) }, senderId: userId }, distinct: ['threadRootId'], select: { threadRootId: true },
-      })).map(r => r.threadRootId));
-      list = rows.filter(r => joined.has(r.id));
-    }
-    return res.json(list.map(m => ({
+    return res.json(rows.map(m => ({
       id: m.id, kind: m.kind, threadReplies: m.threadReplies, createdAt: m.createdAt, topicId: m.topic?.id ?? null, topicStatus: m.topic?.status ?? null,
       title: String((m.meta as any)?.title || m.body || 'گفتگو').slice(0, 160),
     })));
