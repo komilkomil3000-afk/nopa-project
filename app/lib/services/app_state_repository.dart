@@ -302,6 +302,10 @@ class AppRepository extends ChangeNotifier with WidgetsBindingObserver {
   /// The server says holdings moved: the user's own come first (when among them), then every list follows.
   Future<void> _onServerAssetsChanged() async {
     if (!_apiService.isAuthenticated) return;
+    // A caravan's banners change with no person in the event's list: refetch them on every change, not only every ~30 s
+    if (!currentUser.role.isChannelManager) {
+      fetchCaravanBanners().catchError((e) => debugPrint('fetchCaravanBanners error: $e'));
+    }
     if (ChatRepository.instance.lastAssetUserIds.contains(currentUser.id)) {
       final user = await _apiService.getMe();
       if (user != null) {

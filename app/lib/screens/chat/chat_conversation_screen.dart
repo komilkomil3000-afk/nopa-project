@@ -32,6 +32,7 @@ import 'package:nopa_app/services/chat_thread_seen.dart';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 import 'package:provider/provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 /// A conversation, or with [threadRoot] the replies under one message.
 class ChatConversationScreen extends StatefulWidget {
@@ -67,6 +68,33 @@ class _ChatConversationScreenState extends State<ChatConversationScreen> {
 
   String? get _threadId => widget.threadRoot?.id;
 
+  /// Threads whose brief the reader folded to one line, so a long challenge leaves room for the conversation.
+  /// Remembered per thread across visits.
+  static const String _foldedKey = 'chat_folded_origins';
+  static Set<String>? _foldedOrigins;
+  bool get _originFolded => _threadId != null && (_foldedOrigins?.contains(_threadId) ?? false);
+
+  Future<void> _loadFoldedOrigins() async {
+    if (_foldedOrigins != null) return;
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      _foldedOrigins = (prefs.getStringList(_foldedKey) ?? const []).toSet();
+    } catch (_) {
+      _foldedOrigins = {};
+    }
+    if (mounted) setState(() {});
+  }
+
+  void _toggleOrigin() {
+    final id = _threadId;
+    if (id == null) return;
+    final set = _foldedOrigins ??= {};
+    setState(() => set.contains(id) ? set.remove(id) : set.add(id));
+    // Keep the list short: only the latest folded threads matter
+    final list = set.toList();
+    SharedPreferences.getInstance().then((p) => p.setStringList(_foldedKey, list.length > 200 ? list.sublist(list.length - 200) : list)).catchError((_) => false);
+  }
+
   /// The space's read position when the screen opened, and the new replies of the thread then.
   int? _readSeqAtOpen;
   int? _lastSeqAtOpen;
@@ -79,6 +107,7 @@ class _ChatConversationScreenState extends State<ChatConversationScreen> {
   void initState() {
     super.initState();
     AppRepository().chatScreenOpened();
+    if (widget.threadRoot != null) _loadFoldedOrigins();
     _chat.watch(widget.spaceId, threadRootId: _threadId);
     // Where the user stopped reading, taken before this visit marks everything read
     final openSpace = _chat.spaceById(widget.spaceId);
@@ -452,8 +481,9 @@ class _ChatConversationScreenState extends State<ChatConversationScreen> {
       if (space?.canTag == true) ...[
         const ChatMenuItem('tag', Icons.label_rounded, 'برچسب'),
         if (_threadId != null) ...[
-          const ChatMenuItem('best', Icons.workspace_premium_rounded, 'بهترین پاسخ'),
-          const ChatMenuItem('evidence', Icons.verified_rounded, 'شاهد امتیاز'),
+          // Marking a good message: it counts in the sender's quality and initiative at evaluation
+          ChatMenuItem('evidence', Icons.verified_rounded, message.evidence ? 'برداشتن نشان «پیام خوب»' : 'نشان «پیام خوب» (شاهد امتیاز)'),
+          ChatMenuItem('best', Icons.workspace_premium_rounded, message.best ? 'برداشتن «بهترین پاسخ»' : 'بهترین پاسخ'),
           if (widget.threadRoot?.topicId != null) const ChatMenuItem('final', Icons.task_alt_rounded, 'پاسخ نهایی گروه'),
         ],
       ],
@@ -512,8 +542,18 @@ class _ChatConversationScreenState extends State<ChatConversationScreen> {
       final ok = await _chat.mark(message, 'mentor');
       if (!ok && mounted) AppToast.error(context, 'ثبت نشان انجام نشد.');
     } else if (action == 'best' || action == 'evidence') {
-      await _chat.mark(message, action);
-      if (mounted) AppToast.success(context, 'ثبت شد.');
+      final removing = action == 'best' ? message.best : message.evidence;
+      final ok = await _chat.mark(message, action);
+      if (!mounted) return;
+      if (!ok) {
+        AppToast.error(context, 'ثبت نشان انجام نشد.');
+      } else if (removing) {
+        AppToast.success(context, 'نشان برداشته شد.');
+      } else {
+        AppToast.success(context, action == 'best'
+            ? 'به‌عنوان بهترین پاسخ نشان شد؛ در ارزیابی این چالش حساب می‌شود.'
+            : 'به‌عنوان پیام خوب نشان شد؛ در امتیاز کیفیت و ابتکار فرستنده حساب می‌شود.');
+      }
     } else if (action == 'report') {
       await _chat.report(message, 'گزارش کاربر');
       if (mounted) AppToast.success(context, 'گزارش شما ثبت شد.');
@@ -965,26 +1005,76 @@ class _ChatConversationScreenState extends State<ChatConversationScreen> {
       if (isChallenge && meta['dueDate'] != null) 'مهلت: ${chatDateText(meta['dueDate'])}',
       if (isChallenge && meta['reward'] != null) 'جایزه: ${meta['reward']}',
     ];
-    return Container(
-      width: double.infinity,
-      constraints: BoxConstraints(maxHeight: MediaQuery.sizeOf(context).height * 0.34),
-      margin: const EdgeInsets.fromLTRB(ChatTheme.gutter, 10, ChatTheme.gutter, 4),
-      padding: const EdgeInsets.all(10),
-      decoration: ChatTheme.card(highlighted: true),
-      child: SingleChildScrollView(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(children: [
-              Expanded(child: Text(meta['tag']?.toString() ?? root.senderName, style: ChatTheme.caption.copyWith(color: ChatTheme.accent))),
-              if (isChallenge) ChatChip(label: topicStatusLabels[status] ?? status, color: status == 'open' ? ChatTheme.accent : ChatTheme.text),
-            ]),
-            const SizedBox(height: 2),
-            Text(title, style: ChatTheme.title.copyWith(fontSize: 15)),
-            if (description.isNotEmpty) Padding(padding: const EdgeInsets.only(top: 6), child: Text(description, style: ChatTheme.body)),
-            for (final f in facts) Padding(padding: const EdgeInsets.only(top: 3), child: Text(f, style: ChatTheme.caption)),
-          ],
-        ),
+    final folded = _originFolded;
+    final space = _chat.spaceById(widget.spaceId);
+    final moderator = space?.canModerate == true;
+    // The fold control: the whole top line toggles, the arrow says which way
+    final toggle = Row(children: [
+      Text(folded ? 'نمایش' : 'جمع کردن', style: ChatTheme.caption.copyWith(color: ChatTheme.accent, fontSize: 11.5)),
+      Icon(folded ? Icons.keyboard_arrow_down_rounded : Icons.keyboard_arrow_up_rounded, color: ChatTheme.accent, size: 20),
+    ]);
+    return AnimatedSize(
+      duration: const Duration(milliseconds: 200),
+      curve: Curves.easeOut,
+      alignment: Alignment.topCenter,
+      child: Container(
+        width: double.infinity,
+        constraints: BoxConstraints(maxHeight: MediaQuery.sizeOf(context).height * 0.34),
+        margin: const EdgeInsets.fromLTRB(ChatTheme.gutter, 10, ChatTheme.gutter, 4),
+        padding: EdgeInsets.fromLTRB(10, folded ? 6 : 8, 10, folded ? 6 : 10),
+        decoration: ChatTheme.card(highlighted: true),
+        child: folded
+            // One line: title, status and the way back to the whole brief
+            ? GestureDetector(
+                behavior: HitTestBehavior.opaque,
+                onTap: _toggleOrigin,
+                child: Row(children: [
+                  Icon(isChallenge ? Icons.local_fire_department_rounded : Icons.forum_rounded, color: ChatTheme.accent, size: 17),
+                  const SizedBox(width: 6),
+                  Expanded(child: Text(title, maxLines: 1, overflow: TextOverflow.ellipsis, style: ChatTheme.title.copyWith(fontSize: 13.5))),
+                  if (isChallenge) ...[
+                    const SizedBox(width: 6),
+                    ChatChip(label: topicStatusLabels[status] ?? status, color: status == 'open' ? ChatTheme.accent : ChatTheme.text),
+                  ],
+                  const SizedBox(width: 4),
+                  toggle,
+                ]),
+              )
+            : SingleChildScrollView(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    GestureDetector(
+                      behavior: HitTestBehavior.opaque,
+                      onTap: _toggleOrigin,
+                      child: Row(children: [
+                        Expanded(child: Text(meta['tag']?.toString() ?? root.senderName, style: ChatTheme.caption.copyWith(color: ChatTheme.accent))),
+                        if (isChallenge) ChatChip(label: topicStatusLabels[status] ?? status, color: status == 'open' ? ChatTheme.accent : ChatTheme.text),
+                        const SizedBox(width: 6),
+                        toggle,
+                      ]),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(title, style: ChatTheme.title.copyWith(fontSize: 15)),
+                    if (description.isNotEmpty) Padding(padding: const EdgeInsets.only(top: 6), child: Text(description, style: ChatTheme.body)),
+                    for (final f in facts) Padding(padding: const EdgeInsets.only(top: 3), child: Text(f, style: ChatTheme.caption)),
+                    // The way to the evaluation, in plain sight instead of only behind the header
+                    if (isChallenge && root.topicId != null && !_quizThread)
+                      Padding(
+                        padding: const EdgeInsets.only(top: 8),
+                        child: GestureDetector(
+                          onTap: () => _openInfo(_currentRoot ?? root, space),
+                          child: Row(mainAxisSize: MainAxisSize.min, children: [
+                            Icon(moderator ? Icons.fact_check_rounded : Icons.info_outline_rounded, color: ChatTheme.accent, size: 16),
+                            const SizedBox(width: 4),
+                            Text(moderator ? 'ارزیابی، سهم مشارکت و پرداخت پاداش' : 'اطلاعات چالش و نتیجه‌ی من',
+                                style: ChatTheme.caption.copyWith(color: ChatTheme.accent, fontWeight: FontWeight.bold, decoration: TextDecoration.underline, decorationColor: ChatTheme.accent)),
+                          ]),
+                        ),
+                      ),
+                  ],
+                ),
+              ),
       ),
     );
   }

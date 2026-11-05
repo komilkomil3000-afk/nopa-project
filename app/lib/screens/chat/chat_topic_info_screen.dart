@@ -202,7 +202,8 @@ class _ChatTopicInfoScreenState extends State<ChatTopicInfoScreen> {
                   if (!_quiz && _interGroup) InterGroupSection(challengeId: _challengeId, mentor: widget.moderator, spaceId: widget.spaceId),
                   if (!_quiz && !_interGroup && !widget.moderator) _studentReport(),
                   if (!_quiz && !_interGroup && widget.moderator) ..._mentorPanel(),
-                  if (!_quiz && _insight != null) _insightCard(),
+                  // A mentor reads the analysis above the people (inside the panel); others see it here
+                  if (!_quiz && _insight != null && !(widget.moderator && !_interGroup)) _insightCard(),
                 ],
               ),
               ),
@@ -259,32 +260,138 @@ class _ChatTopicInfoScreenState extends State<ChatTopicInfoScreen> {
     }
   }
 
+  String get _asset => _evaluation?['topic']?['assetLabel']?.toString() ?? 'کلاف';
+  int get _max => (_evaluation?['topic']?['max'] as num?)?.toInt() ?? 10;
+
+  /// Three steps, in the order a mentor does them, at the top of the page.
+  Widget _guide() {
+    Widget step(String n, String text) => Padding(
+          padding: const EdgeInsets.only(top: 6),
+          child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Container(
+              width: 20,
+              height: 20,
+              alignment: Alignment.center,
+              decoration: BoxDecoration(color: ChatTheme.accent, borderRadius: BorderRadius.circular(10)),
+              child: Text(n, style: ChatTheme.caption.copyWith(color: ChatTheme.surfaceBottom, fontWeight: FontWeight.bold, fontSize: 11)),
+            ),
+            const SizedBox(width: 8),
+            Expanded(child: Text(text, style: ChatTheme.caption.copyWith(color: ChatTheme.text, fontSize: 12.5, height: 1.6))),
+          ]),
+        );
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: ChatTheme.accent.withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(ChatTheme.radius),
+        border: Border.all(color: ChatTheme.accent.withValues(alpha: 0.45)),
+      ),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Row(children: [
+          const Icon(Icons.lightbulb_outline_rounded, color: ChatTheme.accent, size: 18),
+          const SizedBox(width: 6),
+          Text('ارزیابی در سه قدم', style: ChatTheme.title.copyWith(color: ChatTheme.accent)),
+        ]),
+        step('۱', 'در گفتگوی چالش روی پیام خوب هر نفر بزنید و «نشان پیام خوب» یا «بهترین پاسخ» را انتخاب کنید؛ این پیام‌ها امتیاز کیفیت و ابتکار او را بالا می‌برند.'),
+        step('۲', 'پایین همین صفحه برای هر نفر «سهم مشارکت» را انتخاب کنید. سیستم از روی گفتگو یک سهم پیشنهاد کرده که از قبل انتخاب شده است؛ اگر قبول ندارید عوضش کنید.'),
+        step('۳', 'با «تأیید و پرداخت» پاداش همان نفر (یا با «پرداخت همه» پاداش همه) به حسابش می‌رود. بعد از پرداخت، تغییر فقط با «اصلاح» ممکن است.'),
+      ]),
+    );
+  }
+
+  /// Who is here, who is paid and what the challenge pays at most.
+  Widget _summary() {
+    final paid = _rows.where((r) => r['paid'] == true).length;
+    final messages = (_evaluation?['topic']?['messageCount'] as num?)?.toInt() ?? 0;
+    Widget tile(String value, String label) => Expanded(
+          child: Container(
+            padding: const EdgeInsets.symmetric(vertical: 8),
+            decoration: ChatTheme.card(),
+            child: Column(children: [
+              Text(value, style: ChatTheme.title.copyWith(color: ChatTheme.accent, fontSize: 15)),
+              const SizedBox(height: 2),
+              Text(label, style: ChatTheme.caption.copyWith(fontSize: 11), textAlign: TextAlign.center),
+            ]),
+          ),
+        );
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: Row(children: [
+        tile('${_rows.length}', 'شرکت‌کننده'),
+        const SizedBox(width: 6),
+        tile('$paid از ${_rows.length}', 'پرداخت‌شده'),
+        const SizedBox(width: 6),
+        tile('$messages', 'پیام در گفتگو'),
+        const SizedBox(width: 6),
+        tile('$_max', 'سقف پاداش ($_asset)'),
+      ]),
+    );
+  }
+
   List<Widget> _mentorPanel() {
     final status = _status;
+    final unpaid = _rows.where((r) => r['paid'] != true).toList();
+    final unpaidTotal = unpaid.fold<int>(0, (sum, r) => sum + participationShare(_max, _statuses[r['userId']] ?? 'tired'));
     return [
+      if (!_legacy) _guide(),
+      _summary(),
       Wrap(
         spacing: 8,
         runSpacing: 8,
         children: [
-          if (status == 'open') ChatButton(label: 'بستن چالش', onPressed: _busy ? null : () => _run('POST', '/chat/topics/$_topicId/close', done: 'چالش بسته شد.')),
+          if (status == 'open') ChatButton(label: 'بستن چالش', primary: false, onPressed: _busy ? null : () => _run('POST', '/chat/topics/$_topicId/close', done: 'چالش بسته شد.')),
           if (status == 'closed') ChatButton(label: 'بازکردن دوباره', primary: false, onPressed: _busy ? null : () => _run('POST', '/chat/topics/$_topicId/reopen')),
-          if (_rows.any((r) => r['paid'] != true) && !_legacy) ChatButton(label: 'تأیید و پرداخت همه', onPressed: _busy ? null : () => _saveAndPay()),
+          if (unpaid.isNotEmpty && !_legacy) ChatButton(label: 'پرداخت همه (${unpaid.length} نفر · $unpaidTotal $_asset)', onPressed: _busy ? null : _confirmPayAll),
           ChatButton(label: 'خروجی', primary: false, onPressed: _export),
         ],
       ),
-      const SizedBox(height: 10),
-      if (!_legacy)
-        Padding(
-          padding: const EdgeInsets.only(bottom: 10),
-          child: Text(
-            'برای هر نفر وضعیت مشارکت را انتخاب کنید؛ مقدار کلاف قبل از تأیید روی دکمه‌ی همان نفر نوشته شده است. با «تأیید و پرداخت» همان نفر (یا «تأیید و پرداخت همه») پاداش به حسابش اضافه می‌شود. پس از پرداخت، برای تغییر از «اصلاح» استفاده کنید.',
-            style: ChatTheme.caption.copyWith(fontSize: 13),
-          ),
-        ),
-      if (_legacy) Padding(padding: const EdgeInsets.only(bottom: 10), child: Text('این چالش زریکی است و از صفحه‌ی بررسی پاسخ‌ها پرداخت می‌شود.', style: ChatTheme.caption.copyWith(fontSize: 13))),
+      const SizedBox(height: 12),
+      if (_legacy) Padding(padding: const EdgeInsets.only(bottom: 10), child: Text('پاداش این چالش زریک یا کلاف نیست و از صفحه‌ی بررسی پاسخ‌ها پرداخت می‌شود.', style: ChatTheme.caption.copyWith(fontSize: 13))),
+      if (_insight != null) ...[_insightCard(), const SizedBox(height: 12)],
+      Text('ارزیابی هر نفر', style: ChatTheme.title.copyWith(fontSize: 15)),
+      const SizedBox(height: 8),
       if (_rows.isEmpty) Text('هنوز کسی در این چالش شرکت نکرده است.', style: ChatTheme.caption.copyWith(fontSize: 13)),
       for (final row in _rows) _evaluationRow(row, status),
     ];
+  }
+
+  /// Paying everyone is not undone with one tap: say who and how much first.
+  Future<void> _confirmPayAll() async {
+    final unpaid = _rows.where((r) => r['paid'] != true).toList();
+    final ok = await showNopaDialog<bool>(
+      context: context,
+      builder: (ctx) => Directionality(
+        textDirection: TextDirection.rtl,
+        child: AlertDialog(
+          backgroundColor: ChatTheme.surfaceBottom,
+          shape: ChatTheme.dialogShape,
+          title: Text('پرداخت پاداش همه', style: ChatTheme.title),
+          content: SingleChildScrollView(
+            child: Column(crossAxisAlignment: CrossAxisAlignment.start, mainAxisSize: MainAxisSize.min, children: [
+              for (final r in unpaid)
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 4),
+                  child: Row(children: [
+                    Expanded(child: Text((r['user'] as Map?)?['name']?.toString() ?? '', style: ChatTheme.body)),
+                    Text(
+                      '${participationLevels[_statuses[r['userId']]]?.label ?? ''} · ${participationShare(_max, _statuses[r['userId']] ?? 'tired')} $_asset',
+                      style: ChatTheme.caption,
+                    ),
+                  ]),
+                ),
+              const SizedBox(height: 6),
+              Text('بعد از پرداخت، تغییر فقط با «اصلاح» ممکن است.', style: ChatTheme.caption),
+            ]),
+          ),
+          actions: [
+            ChatButton(label: 'انصراف', primary: false, onPressed: () => Navigator.pop(ctx, false)),
+            ChatButton(label: 'پرداخت', onPressed: () => Navigator.pop(ctx, true)),
+          ],
+        ),
+      ),
+    );
+    if (ok == true) await _saveAndPay();
   }
 
   Future<void> _export() async {
@@ -298,15 +405,39 @@ class _ChatTopicInfoScreenState extends State<ChatTopicInfoScreen> {
     final criteria = Map<String, dynamic>.from(row['criteria'] as Map);
     final flags = (row['flags'] as List).map((f) => f.toString()).toList();
     final evidence = (row['evidenceMessages'] as List?) ?? const [];
-    final max = (_evaluation?['topic']?['max'] as num?)?.toInt() ?? 10;
+    final max = _max;
     final paid = row['paid'] == true;
     final level = _statuses[id] ?? 'tired';
     final value = paid ? (row['finalNakh'] as num).toInt() : participationShare(max, level);
+    final suggestedStatus = row['suggestedStatus']?.toString();
+    final previous = row['previousCount'] != null && row['previousCount'] > 0 ? row['previousAverage'] : null;
+
+    Widget meter(String label, String hint, num? v) {
+      final n = (v ?? 0).clamp(0, 100).toDouble();
+      return Padding(
+        padding: const EdgeInsets.only(top: 5),
+        child: Row(children: [
+          SizedBox(
+            width: 92,
+            child: Tooltip(message: hint, child: Text(label, style: ChatTheme.caption.copyWith(fontSize: 11.5))),
+          ),
+          Expanded(
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(4),
+              child: LinearProgressIndicator(value: n / 100, minHeight: 6, backgroundColor: ChatTheme.stroke.withValues(alpha: 0.35), color: ChatTheme.lavender),
+            ),
+          ),
+          SizedBox(width: 30, child: Text('${n.round()}', textAlign: TextAlign.left, style: ChatTheme.caption.copyWith(fontSize: 11.5, color: ChatTheme.text))),
+        ]),
+      );
+    }
+
+    Widget sectionLabel(String text) => Padding(padding: const EdgeInsets.only(top: 12, bottom: 2), child: Text(text, style: ChatTheme.caption.copyWith(color: ChatTheme.accent, fontWeight: FontWeight.bold)));
 
     return Container(
-      margin: const EdgeInsets.only(bottom: 10),
+      margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(12),
-      decoration: ChatTheme.card(),
+      decoration: ChatTheme.card(highlighted: !paid),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -317,30 +448,62 @@ class _ChatTopicInfoScreenState extends State<ChatTopicInfoScreen> {
                 : () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => ChatMemberProfileScreen(spaceId: widget.spaceId, userId: user['id'].toString()))),
             child: Row(
               children: [
-                SafeAvatar(imageUrl: user['avatarUrl'], name: user['name'] ?? '', radius: 16, gender: user['gender'], isMentor: AvatarCatalog.isMentorRole(user['role'])),
+                SafeAvatar(imageUrl: user['avatarUrl'], name: user['name'] ?? '', radius: 18, gender: user['gender'], isMentor: AvatarCatalog.isMentorRole(user['role'])),
                 const SizedBox(width: 8),
-                Expanded(child: Text(user['name'] ?? '', style: ChatTheme.title)),
-                Text('سهم ${row['share']}٪ · امتیاز ${row['score']}', style: ChatTheme.caption),
+                Expanded(
+                  child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                    Text(user['name'] ?? '', style: ChatTheme.title),
+                    Text('${row['usefulMessages']} پیام مفید · ${row['share']}٪ از کل گفتگو', style: ChatTheme.caption.copyWith(fontSize: 11.5)),
+                  ]),
+                ),
+                paid
+                    ? const ChatChip(label: 'پرداخت شد', color: Color(0xFF12945F), icon: Icons.check_rounded, filled: true)
+                    : const ChatChip(label: 'منتظر پرداخت', color: ChatTheme.accent),
               ],
             ),
           ),
-          const SizedBox(height: 6),
-          Text('موضوع ${criteria['relevance']} · کیفیت ${criteria['quality']} · همکاری ${criteria['collaboration']} · ابتکار ${criteria['initiative']}', style: ChatTheme.caption),
-          Text('${row['usefulMessages']} پیام مفید · پیشنهاد سیستم: ${row['suggested']} کلاف'
-              '${row['previousCount'] != null && row['previousCount'] > 0 ? ' · میانگین قبلی ${row['previousAverage']}' : ''}', style: ChatTheme.caption),
-          if (flags.isNotEmpty) Padding(padding: const EdgeInsets.only(top: 4), child: Wrap(spacing: 4, children: [for (final f in flags) ChatChip(label: f, color: ChatTheme.danger)])),
-          for (final e in evidence) Padding(padding: const EdgeInsets.only(top: 4), child: Text('«${e['body']}»', style: ChatTheme.caption, maxLines: 2, overflow: TextOverflow.ellipsis)),
-          if (row['objection'] != null) Padding(padding: const EdgeInsets.only(top: 4), child: Text('اعتراض: ${row['objection']}', style: ChatTheme.caption.copyWith(color: ChatTheme.danger))),
+
+          // What the system read from the conversation: a guide, the mentor decides
+          sectionLabel('تحلیل سیستم (فقط راهنماست؛ تصمیم با شماست)'),
+          Wrap(crossAxisAlignment: WrapCrossAlignment.center, children: [
+            Text('امتیاز کلی: ', style: ChatTheme.caption),
+            Text('${row['score']} از ۱۰۰', style: ChatTheme.caption.copyWith(color: ChatTheme.text, fontWeight: FontWeight.bold)),
+            if (previous != null) Text('  ·  میانگین چالش‌های قبلی: $previous', style: ChatTheme.caption.copyWith(fontSize: 11.5)),
+          ]),
+          meter('ارتباط با موضوع', 'چقدر پیام‌ها به موضوع چالش مربوط بوده‌اند', criteria['relevance'] as num?),
+          meter('کیفیت', 'پیام‌های پرمحتوا و تکراری‌نبودن؛ «پیام خوب» آن را بالا می‌برد', criteria['quality'] as num?),
+          meter('همکاری', 'پاسخ به دیگران و واکنش‌هایی که گرفته است', criteria['collaboration'] as num?),
+          meter('ابتکار', 'پیام‌های نشان‌شده، فایل فرستادن و شروع گفتگو', criteria['initiative'] as num?),
+          if (flags.isNotEmpty) Padding(padding: const EdgeInsets.only(top: 6), child: Wrap(spacing: 4, runSpacing: 4, children: [for (final f in flags) ChatChip(label: f, color: ChatTheme.danger, icon: Icons.warning_amber_rounded)])),
+
+          if (evidence.isNotEmpty) ...[
+            sectionLabel('بهترین پیام‌های او'),
+            for (final e in evidence)
+              Container(
+                width: double.infinity,
+                margin: const EdgeInsets.only(top: 4),
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+                decoration: BoxDecoration(
+                  color: ChatTheme.surfaceBottom,
+                  borderRadius: BorderRadius.circular(8),
+                  border: const Border(right: BorderSide(color: ChatTheme.lavender, width: 3)),
+                ),
+                child: Text('${e['body']}', style: ChatTheme.caption.copyWith(color: ChatTheme.text), maxLines: 3, overflow: TextOverflow.ellipsis),
+              ),
+          ],
+
+          if (row['objection'] != null) Padding(padding: const EdgeInsets.only(top: 8), child: Text('اعتراض: ${row['objection']}', style: ChatTheme.caption.copyWith(color: ChatTheme.danger))),
           if (row['objectionStatus'] == 'pending')
             Padding(
               padding: const EdgeInsets.only(top: 6),
               child: Wrap(spacing: 8, children: [
-                ChatButton(label: 'پذیرش', primary: false, onPressed: () => _answerObjection(id, true, value)),
-                ChatButton(label: 'رد', primary: false, onPressed: () => _answerObjection(id, false, value)),
+                ChatButton(label: 'پذیرش اعتراض', primary: false, onPressed: () => _answerObjection(id, true, value)),
+                ChatButton(label: 'رد اعتراض', primary: false, onPressed: () => _answerObjection(id, false, value)),
               ]),
             ),
-          const SizedBox(height: 6),
-          Text('وضعیت مشارکت', style: ChatTheme.caption),
+
+          // The mentor's decision
+          sectionLabel(paid ? 'سهم مشارکت (پرداخت شده)' : 'سهم مشارکت را انتخاب کنید'),
           const SizedBox(height: 4),
           Wrap(
             spacing: 6,
@@ -348,26 +511,51 @@ class _ChatTopicInfoScreenState extends State<ChatTopicInfoScreen> {
             children: [
               for (final e in participationLevels.entries)
                 ChoiceChip(
-                  label: Text('${e.value.label} ${e.value.percent}٪', style: ChatTheme.caption.copyWith(color: level == e.key ? ChatTheme.surfaceBottom : ChatTheme.text)),
+                  avatar: suggestedStatus == e.key ? Icon(Icons.auto_awesome_rounded, size: 14, color: level == e.key ? ChatTheme.surfaceBottom : ChatTheme.accent) : null,
+                  label: Text('${e.value.label} ${e.value.percent}٪ · ${participationShare(max, e.key)}',
+                      style: ChatTheme.caption.copyWith(color: level == e.key ? ChatTheme.surfaceBottom : ChatTheme.text, fontWeight: level == e.key ? FontWeight.bold : null)),
                   selected: level == e.key,
                   showCheckmark: false,
                   selectedColor: ChatTheme.accent,
                   backgroundColor: Colors.transparent,
+                  side: BorderSide(color: (level == e.key ? ChatTheme.accent : ChatTheme.stroke).withValues(alpha: 0.7)),
                   onSelected: paid ? null : (_) => setState(() => _statuses[id] = e.key),
                 ),
             ],
           ),
-          const SizedBox(height: 4),
+          if (suggestedStatus != null && participationLevels[suggestedStatus] != null)
+            Padding(
+              padding: const EdgeInsets.only(top: 6),
+              child: Row(children: [
+                const Icon(Icons.auto_awesome_rounded, size: 13, color: ChatTheme.accent),
+                const SizedBox(width: 4),
+                Expanded(child: Text('پیشنهاد سیستم: ${participationLevels[suggestedStatus]!.label}${!paid && level != suggestedStatus ? ' (شما چیز دیگری انتخاب کرده‌اید)' : ''}', style: ChatTheme.caption.copyWith(fontSize: 11.5))),
+                if (!paid && level != suggestedStatus)
+                  GestureDetector(
+                    onTap: () => setState(() => _statuses[id] = suggestedStatus),
+                    child: Text('برگرداندن', style: ChatTheme.caption.copyWith(color: ChatTheme.accent, fontWeight: FontWeight.bold)),
+                  ),
+              ]),
+            ),
+          const SizedBox(height: 10),
           Row(
             children: [
-              Text('پاداش: $value کلاف', style: ChatTheme.title),
+              Text('پاداش: ', style: ChatTheme.body),
+              Text('$value $_asset', style: ChatTheme.title.copyWith(color: ChatTheme.accent, fontSize: 16)),
               if (paid) ...[const Spacer(), ChatButton(label: 'اصلاح', primary: false, onPressed: () => _correct(id, value))],
             ],
           ),
-          if (!paid) TextField(controller: _reasons[id], style: ChatTheme.caption.copyWith(color: ChatTheme.text), decoration: chatField('توضیح برای دانش‌آموز (اختیاری)')),
+          if (paid && (row['reason'] ?? '').toString().isNotEmpty) Padding(padding: const EdgeInsets.only(top: 4), child: Text('توضیح شما: ${row['reason']}', style: ChatTheme.caption)),
+          if (!paid) ...[
+            const SizedBox(height: 6),
+            TextField(controller: _reasons[id], style: ChatTheme.caption.copyWith(color: ChatTheme.text), decoration: chatField('توضیح برای دانش‌آموز (اختیاری)')),
+          ],
           if (!paid && !_legacy) ...[
             const SizedBox(height: 8),
-            ChatButton(label: 'تأیید و پرداخت $value کلاف', onPressed: _busy ? null : () => _saveAndPay(onlyUserId: id)),
+            SizedBox(
+              width: double.infinity,
+              child: ChatButton(label: 'تأیید و پرداخت $value $_asset', onPressed: _busy ? null : () => _saveAndPay(onlyUserId: id)),
+            ),
           ],
         ],
       ),
@@ -418,7 +606,7 @@ class _ChatTopicInfoScreenState extends State<ChatTopicInfoScreen> {
           shape: ChatTheme.dialogShape,
           title: Text('اصلاح نتیجه', style: ChatTheme.title),
           content: Column(mainAxisSize: MainAxisSize.min, children: [
-            TextField(controller: amount, keyboardType: TextInputType.number, style: ChatTheme.body, decoration: chatField('کلاف نهایی')),
+            TextField(controller: amount, keyboardType: TextInputType.number, style: ChatTheme.body, decoration: chatField('$_asset نهایی')),
             const SizedBox(height: 8),
             TextField(controller: reason, style: ChatTheme.body, decoration: chatField('دلیل اصلاح')),
           ]),
@@ -435,13 +623,26 @@ class _ChatTopicInfoScreenState extends State<ChatTopicInfoScreen> {
     final insight = _insight!;
     List<String> list(String key) => ((insight[key] as List?) ?? const []).map((e) => e.toString()).toList();
     final topics = ((insight['topics'] as List?) ?? const []).map((t) => t['word'].toString()).join('، ');
-    Widget block(String title, List<String> items) => items.isEmpty
+    final summary = insight['summary']?.toString().trim() ?? '';
+    Widget block(IconData icon, String title, String hint, List<String> items) => items.isEmpty
         ? const SizedBox.shrink()
         : Padding(
-            padding: const EdgeInsets.only(top: 6),
+            padding: const EdgeInsets.only(top: 10),
             child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              Text(title, style: ChatTheme.caption.copyWith(color: ChatTheme.accent)),
-              for (final item in items) Text(item, style: ChatTheme.caption),
+              Row(children: [
+                Icon(icon, size: 15, color: ChatTheme.accent),
+                const SizedBox(width: 4),
+                Text('$title (${items.length})', style: ChatTheme.caption.copyWith(color: ChatTheme.accent, fontWeight: FontWeight.bold)),
+              ]),
+              Text(hint, style: ChatTheme.caption.copyWith(fontSize: 11)),
+              for (final item in items)
+                Padding(
+                  padding: const EdgeInsets.only(top: 3),
+                  child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                    Text('•  ', style: ChatTheme.caption.copyWith(color: ChatTheme.accent)),
+                    Expanded(child: Text(item, style: ChatTheme.caption.copyWith(color: ChatTheme.text))),
+                  ]),
+                ),
             ]),
           );
     return Container(
@@ -451,11 +652,17 @@ class _ChatTopicInfoScreenState extends State<ChatTopicInfoScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('تحلیل گفتگو', style: ChatTheme.title),
-          Text(insight['summary']?.toString() ?? '', style: ChatTheme.caption),
-          if (topics.isNotEmpty) Padding(padding: const EdgeInsets.only(top: 4), child: Text('موضوع‌های پرتکرار: $topics', style: ChatTheme.caption)),
-          block('پرسش‌های بی‌پاسخ', list('unanswered')),
-          block('نقاط مبهم', list('confusing')),
+          Row(children: [
+            const Icon(Icons.insights_rounded, size: 18, color: ChatTheme.lavender),
+            const SizedBox(width: 6),
+            Text('تحلیل کلی گفتگو', style: ChatTheme.title),
+          ]),
+          const SizedBox(height: 2),
+          Text('خلاصه‌ای که سیستم از کل گفتگو ساخته؛ کمک می‌کند پیش از ارزیابی بدانید گفتگو کجا رفت و چه چیزی جا ماند.', style: ChatTheme.caption.copyWith(fontSize: 11)),
+          if (summary.isNotEmpty) Padding(padding: const EdgeInsets.only(top: 8), child: Text(summary, style: ChatTheme.body)),
+          if (topics.isNotEmpty) Padding(padding: const EdgeInsets.only(top: 6), child: Text('موضوع‌های پرتکرار: $topics', style: ChatTheme.caption)),
+          block(Icons.help_outline_rounded, 'پرسش‌های بی‌پاسخ', 'بهتر است پیش از بستن چالش به این‌ها جواب داده شود.', list('unanswered')),
+          block(Icons.blur_on_rounded, 'نقاط مبهم', 'جاهایی که اعضا سردرگم بوده‌اند.', list('confusing')),
         ],
       ),
     );
