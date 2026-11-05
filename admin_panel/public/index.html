@@ -4198,6 +4198,31 @@
       </div>
     </div>
 
+  <!-- One of the person's own messages, opened from the bell (js/layout/topnav.js: openInboxMessage) -->
+  <div id="inbox-msg-modal" class="modal-overlay lse-overlay u-z-z-modal" data-style="display:none">
+    <div class="lse lse-sm">
+      <header class="lse-head lse-head-plain">
+        <div class="lse-id">
+          <span class="lse-id-icon is-accent"><i class="fa-solid fa-bell" id="inbox-msg-icon"></i></span>
+          <div class="lse-id-text"><h3 id="inbox-msg-title">پیام</h3><span id="inbox-msg-time"></span></div>
+        </div>
+        <button type="button" class="lsv-round" data-click="NopaActions.hide" data-click-args="[&quot;inbox-msg-modal&quot;]" title="بستن" aria-label="بستن"><i class="fa-solid fa-xmark"></i></button>
+      </header>
+      <div class="lse-body">
+        <section class="lse-card">
+          <p class="inbox-msg-text" id="inbox-msg-text"></p>
+        </section>
+      </div>
+      <footer class="lse-foot">
+        <span class="lse-foot-note" id="inbox-msg-kind"></span>
+        <div class="lse-foot-actions">
+          <button type="button" class="lse-btn" data-click="NopaActions.hide" data-click-args="[&quot;inbox-msg-modal&quot;]">بستن</button>
+          <button type="button" class="lsv-pill" id="inbox-msg-go" hidden><i class="fa-solid fa-arrow-left"></i> <span>رفتن به گفتگو</span></button>
+        </div>
+      </footer>
+    </div>
+  </div>
+
   <!-- Login: opened from the landing page (or on an expired session); same form and handler as before -->
   <div id="login-modal" class="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="login-title">
     <div class="login-card glass">

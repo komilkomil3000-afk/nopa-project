@@ -275,6 +275,33 @@
     renderBadge();
   }
 
+  // A click on one of the person's own messages opens it in full (#inbox-msg-modal) and marks it read.
+  // Chat and support messages also get a button to the conversation (chat tab), when the person may open it.
+  const INBOX_KINDS = {
+    chat: { icon: 'fa-solid fa-comments', label: 'پیام گفتگو', tab: 'chat-tab' },
+    support: { icon: 'fa-solid fa-headset', label: 'پشتیبانی', tab: 'chat-tab' },
+    reward: { icon: 'fa-solid fa-gift', label: 'جایزه' },
+    challenge: { icon: 'fa-solid fa-fire', label: 'چالش' },
+  };
+  function openInboxMessage(id) {
+    const n = window.NopaInbox && NopaInbox.state.items.find(x => x.id === id);
+    const modal = $('inbox-msg-modal');
+    if (!n || !modal) return;
+    const kind = INBOX_KINDS[n.type] || { icon: 'fa-solid fa-bell', label: 'اعلان' };
+    $('inbox-msg-title').textContent = n.title || 'پیام';
+    $('inbox-msg-time').textContent = when(n.createdAt);
+    $('inbox-msg-text').textContent = n.message || '';
+    $('inbox-msg-icon').className = kind.icon;
+    $('inbox-msg-kind').textContent = kind.label;
+    const goBtn = $('inbox-msg-go');
+    const tab = kind.tab && NopaRouter.TABS[kind.tab] && isAllowed(kind.tab) ? kind.tab : null;
+    goBtn.hidden = !tab;
+    goBtn.onclick = tab ? () => { NopaModal.close(modal); go(tab); } : null;
+    closeMenus();
+    NopaModal.open(modal);
+    NopaInbox.markRead(id);
+  }
+
   function renderSupport(items) {
     const recent = items
       .filter(i => i.recent && i.recent.length)
@@ -444,7 +471,7 @@
     $('attention-dropdown').addEventListener('click', e => {
       const own = e.target.closest('[data-inbox-id]');
       // stopPropagation: the list re-renders, and a detached target would read as a click outside the menu
-      if (own) { e.stopPropagation(); NopaInbox.markRead(own.dataset.inboxId); return; }
+      if (own) { e.stopPropagation(); openInboxMessage(own.dataset.inboxId); return; }
       const link = e.target.closest('a[data-tab]');
       if (!link || e.ctrlKey || e.metaKey) return;
       e.preventDefault();

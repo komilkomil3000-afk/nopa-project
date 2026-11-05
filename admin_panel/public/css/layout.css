@@ -436,6 +436,9 @@ body.nav-open .app-header {
   cursor: pointer;
 }
 .inbox-item:hover { background: rgb(var(--fg-rgb) / 0.05); }
+button.inbox-item { cursor: pointer; }
+/* #inbox-msg-modal: one of the person's own messages in full */
+.inbox-msg-text { margin: 0; font-size: var(--text-sm); line-height: 2; color: var(--text); white-space: pre-wrap; overflow-wrap: anywhere; max-height: 60vh; overflow-y: auto; }
 .inbox-item.is-unread { color: var(--text-soft); }
 .inbox-item-head { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
 .inbox-item-head strong { font-size: var(--text-sm); font-weight: 700; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
