@@ -1588,10 +1588,45 @@
             <form class="lse-form" id="sec-release-form" data-submit="secSaveRelease" data-submit-args="[&quot;$event&quot;]">
               <div class="lse-body">
                 <section class="lse-card">
-                  <h4 class="lse-card-title"><i class="fa-solid fa-code-branch"></i> نسخه و لینک</h4>
+                  <h4 class="lse-card-title"><i class="fa-solid fa-code-branch"></i> شماره نسخه</h4>
                   <label class="lse-field"><span>شماره نسخه <b class="lse-req">*</b></span><input type="text" id="rel-version" class="input-ctrl" dir="ltr" placeholder="1.2.0" maxlength="30" required></label>
-                  <label class="lse-field"><span>لینک دانلود <b class="lse-req">*</b></span><input type="url" id="rel-url" class="input-ctrl" dir="ltr" placeholder="https://nopa-app.ir/downloads/nopa-1.2.0.apk" maxlength="1000" required></label>
-                  <p class="lse-hint">شماره نسخه باید همان <code>version</code> فایل pubspec.yaml نسخه جدید باشد (بدون +build هم قابل قبول است). هر کاربری که نسخه‌اش پایین‌تر باشد پیام به‌روزرسانی می‌بیند.</p>
+                  <p class="lse-hint">همان شماره‌ای که <code>node scripts/release_app.js</code> در پایان چاپ می‌کند (یا <code>version</code> فایل pubspec.yaml بدون +build). هر کاربری که نسخه‌اش پایین‌تر باشد پیام به‌روزرسانی می‌بیند.</p>
+                </section>
+                <!-- One APK per CPU architecture (flutter build apk --split-per-abi); the app downloads the one of the phone.
+                     Each row: upload the file here (uploads/apk) or paste a link. js/features/access.js → secUploadApk -->
+                <section class="lse-card">
+                  <h4 class="lse-card-title"><i class="fa-solid fa-microchip"></i> فایل‌ها به تفکیک معماری <small>دست‌کم یکی</small></h4>
+                  <div class="rel-abis">
+                    <div class="rel-abi">
+                      <span class="rel-abi-name"><strong dir="ltr">arm64-v8a</strong><small>تقریباً همه‌ی گوشی‌های امروزی</small></span>
+                      <input type="url" id="rel-url-arm64-v8a" class="input-ctrl" dir="ltr" placeholder="لینک فایل یا بارگذاری" maxlength="1000">
+                      <label class="lse-btn rel-abi-up" for="rel-file-arm64-v8a"><i class="fa-solid fa-upload"></i> بارگذاری</label>
+                      <input type="file" id="rel-file-arm64-v8a" accept=".apk" hidden data-change="secUploadApk" data-change-args="[&quot;arm64-v8a&quot;, &quot;$this&quot;]">
+                      <span class="rel-abi-state" id="rel-state-arm64-v8a"></span>
+                    </div>
+                    <div class="rel-abi">
+                      <span class="rel-abi-name"><strong dir="ltr">armeabi-v7a</strong><small>گوشی‌های قدیمی ۳۲ بیتی</small></span>
+                      <input type="url" id="rel-url-armeabi-v7a" class="input-ctrl" dir="ltr" placeholder="لینک فایل یا بارگذاری" maxlength="1000">
+                      <label class="lse-btn rel-abi-up" for="rel-file-armeabi-v7a"><i class="fa-solid fa-upload"></i> بارگذاری</label>
+                      <input type="file" id="rel-file-armeabi-v7a" accept=".apk" hidden data-change="secUploadApk" data-change-args="[&quot;armeabi-v7a&quot;, &quot;$this&quot;]">
+                      <span class="rel-abi-state" id="rel-state-armeabi-v7a"></span>
+                    </div>
+                    <div class="rel-abi">
+                      <span class="rel-abi-name"><strong dir="ltr">x86_64</strong><small>شبیه‌سازها و تعداد کمی تبلت</small></span>
+                      <input type="url" id="rel-url-x86_64" class="input-ctrl" dir="ltr" placeholder="لینک فایل یا بارگذاری" maxlength="1000">
+                      <label class="lse-btn rel-abi-up" for="rel-file-x86_64"><i class="fa-solid fa-upload"></i> بارگذاری</label>
+                      <input type="file" id="rel-file-x86_64" accept=".apk" hidden data-change="secUploadApk" data-change-args="[&quot;x86_64&quot;, &quot;$this&quot;]">
+                      <span class="rel-abi-state" id="rel-state-x86_64"></span>
+                    </div>
+                    <div class="rel-abi">
+                      <span class="rel-abi-name"><strong>نسخه‌ی کامل</strong><small>اختیاری و معمولاً لازم نیست؛ روی نسخه‌های تفکیکی نصب‌شده نصب نمی‌شود</small></span>
+                      <input type="url" id="rel-url-universal" class="input-ctrl" dir="ltr" placeholder="لینک فایل یا بارگذاری" maxlength="1000">
+                      <label class="lse-btn rel-abi-up" for="rel-file-universal"><i class="fa-solid fa-upload"></i> بارگذاری</label>
+                      <input type="file" id="rel-file-universal" accept=".apk" hidden data-change="secUploadApk" data-change-args="[&quot;universal&quot;, &quot;$this&quot;]">
+                      <span class="rel-abi-state" id="rel-state-universal"></span>
+                    </div>
+                  </div>
+                  <p class="lse-hint">فایل‌ها را از <code>app/build/releases/</code> بردارید (نام هر فایل معماری‌اش را دارد). اپ فایل معماری گوشی را دانلود می‌کند؛ اگر برای آن معماری فایلی نباشد، نسخه‌ی کامل و بعد arm64-v8a را می‌گیرد. نسخه‌های قدیمی اپ همیشه نسخه‌ی کامل (یا در نبودش arm64-v8a) را می‌گیرند.</p>
                 </section>
                 <section class="lse-card">
                   <h4 class="lse-card-title"><i class="fa-solid fa-list-ul"></i> تغییرات این نسخه <small>اختیاری</small></h4>

@@ -49,7 +49,9 @@ gzip -t "$WORK/db.sql.gz"
 
 # 2 + 3. Files
 [ -d "$CHAT_FILES_DIR" ] && tar -czf "$WORK/chat-files.tar.gz" -C "$CHAT_FILES_DIR" .
-[ -d "$APP_DIR/uploads" ] && tar -czf "$WORK/uploads.tar.gz" -C "$APP_DIR/uploads" .
+# uploads/apk (the app's release files, tens of MB each) is left out: they are build output, kept on the
+# release machine (app/build/releases/) and uploaded again from the panel if ever lost
+[ -d "$APP_DIR/uploads" ] && tar -czf "$WORK/uploads.tar.gz" --exclude=./apk -C "$APP_DIR/uploads" .
 
 # 4. Secrets
 [ -f "$APP_DIR/.env" ] && cp "$APP_DIR/.env" "$WORK/app.env"

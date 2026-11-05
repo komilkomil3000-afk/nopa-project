@@ -99,8 +99,13 @@ class CustomDrawer extends StatelessWidget {
           NopaModalAction(
             label: 'دانلود و به‌روزرسانی',
             onPressed: () async {
+              // the file for this phone's processor (AppUpdateService.pickDownload)
+              if (found.downloadUrl.isEmpty) {
+                if (d.mounted) AppToast.error(d, 'فایل این نسخه برای پردازنده‌ی گوشی شما (${found.abi}) هنوز منتشر نشده است. کمی بعد دوباره امتحان کنید.');
+                return;
+              }
               final uri = Uri.tryParse(found.downloadUrl);
-              if (uri == null || found.downloadUrl.isEmpty || !await launchUrl(uri, mode: LaunchMode.externalApplication)) {
+              if (uri == null || !await launchUrl(uri, mode: LaunchMode.externalApplication)) {
                 if (d.mounted) AppToast.error(d, 'لینک دانلود در دسترس نیست.');
                 return;
               }

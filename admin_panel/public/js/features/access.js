@@ -373,17 +373,32 @@ function secDrawRelease() {
   const set = !!r.version;
   const notes = Array.isArray(r.notes) ? r.notes : [];
   const when = r.updatedAt ? new Date(r.updatedAt).toLocaleDateString('fa-IR') : '';
+  const links = secReleaseLinks(r);
   box.innerHTML = `
     <div class="lst-mini-stats">
       <div class="lst-mini-stat"><span class="stat-label">آخرین نسخه</span><span class="stat-value keep-latin ${set ? 'u-c-success-text' : 'u-c-text-soft'}" dir="ltr">${set ? esc(r.version) : '—'}</span></div>
+      <div class="lst-mini-stat"><span class="stat-label">فایل‌ها</span><span class="stat-value u-c-info-text">${crvFa(links.length)}</span></div>
       <div class="lst-mini-stat"><span class="stat-label">تغییرات</span><span class="stat-value u-c-info-text">${crvFa(notes.length)}</span></div>
     </div>
     <p class="lse-hint">${set
-      ? `لینک: <a href="${esc(r.downloadUrl)}" target="_blank" rel="noopener noreferrer" dir="ltr">${esc(r.downloadUrl.length > 48 ? r.downloadUrl.slice(0, 45) + '…' : r.downloadUrl)}</a>${when ? ' · ' + when : ''}${r.source === 'env' ? ' · از تنظیمات سرور (nopa.env)' : ''}`
+      ? `${links.map(l => `<a href="${esc(l.url)}" target="_blank" rel="noopener noreferrer" dir="ltr">${esc(l.label)}</a>`).join(' · ') || 'بدون فایل'}${when ? ' · ' + when : ''}${r.source === 'env' ? ' · از تنظیمات سرور (nopa.env)' : ''}`
       : 'هنوز نسخه‌ای اعلام نشده؛ اپ همیشه پیام «آخرین نسخه را دارید» نشان می‌دهد.'}</p>
     <div class="lst-quick">
       <button type="button" class="lst-quick-btn" data-click="secOpenRelease"><i class="fa-solid fa-cloud-arrow-up"></i> ${set ? 'ثبت نسخه جدید' : 'اعلام نسخه'}</button>
     </div>`;
+}
+
+// One APK per CPU architecture; 'universal' is the all-in-one file (downloadUrl on the server)
+const SEC_ABIS = ['arm64-v8a', 'armeabi-v7a', 'x86_64'];
+const SEC_ABI_LABEL = { 'arm64-v8a': 'arm64-v8a', 'armeabi-v7a': 'armeabi-v7a', x86_64: 'x86_64', universal: 'نسخه‌ی کامل' };
+let secUploading = 0;
+
+function secReleaseLinks(r) {
+  const d = (r && r.downloads) || {};
+  return [
+    ...SEC_ABIS.filter(a => d[a]).map(a => ({ label: a, url: d[a] })),
+    ...(r && r.downloadUrl ? [{ label: 'کامل', url: r.downloadUrl }] : []),
+  ];
 }
 
 window.secOpenRelease = function() {
@@ -391,7 +406,12 @@ window.secOpenRelease = function() {
   if (!modal) return;
   const r = window.secRelease || {};
   document.getElementById('rel-version').value = r.version || '';
-  document.getElementById('rel-url').value = r.downloadUrl || '';
+  [...SEC_ABIS, 'universal'].forEach(abi => {
+    const input = document.getElementById(`rel-url-${abi}`);
+    if (input) input.value = abi === 'universal' ? (r.downloadUrl || '') : ((r.downloads || {})[abi] || '');
+    const state = document.getElementById(`rel-state-${abi}`);
+    if (state) { state.textContent = ''; state.className = 'rel-abi-state'; }
+  });
   document.getElementById('rel-notes').value = (Array.isArray(r.notes) ? r.notes : []).join('\n');
   modal.style.display = 'flex';
   modal.style.zIndex = 'var(--z-modal)';
@@ -413,12 +433,12 @@ async function secPutRelease(body, okMsg) {
       const r = await request('/api/v1/admin/app-release').catch(() => null);
       if (r && r.ok) { window.secRelease = await r.json().catch(() => window.secRelease); secDrawRelease(); }
     };
-    if (old.version && old.downloadUrl) {
+    if (old.version && (old.downloadUrl || Object.keys(old.downloads || {}).length)) {
       NopaUndo.afterEdit({
         message: okMsg,
         url: '/api/v1/admin/app-release',
-        // the server reads all three fields every time
-        revert: { version: old.version, downloadUrl: old.downloadUrl, notes: Array.isArray(old.notes) ? old.notes : [] },
+        // the server reads every field every time
+        revert: { version: old.version, downloadUrl: old.downloadUrl || '', downloads: old.downloads || {}, notes: Array.isArray(old.notes) ? old.notes : [] },
         done: reload,
       });
     } else {
@@ -435,15 +455,62 @@ window.secSaveRelease = function(e) {
   // Persian/Arabic digits typed on a Persian keyboard → ASCII
   const version = document.getElementById('rel-version').value.trim()
     .replace(/[۰-۹]/g, d => String(d.charCodeAt(0) - 0x06F0)).replace(/[٠-٩]/g, d => String(d.charCodeAt(0) - 0x0660));
-  const downloadUrl = document.getElementById('rel-url').value.trim();
+  const read = abi => (document.getElementById(`rel-url-${abi}`)?.value || '').trim();
+  const downloadUrl = read('universal');
+  const downloads = {};
+  SEC_ABIS.forEach(abi => { if (read(abi)) downloads[abi] = read(abi); });
   const notes = document.getElementById('rel-notes').value.split('\n').map(s => s.trim()).filter(Boolean);
-  if (!version || !downloadUrl) return;
-  secPutRelease({ version, downloadUrl, notes }, `نسخه ${version} منتشر شد`);
+  if (!version) return;
+  if (secUploading) return showToast('صبر کنید تا بارگذاری فایل‌ها تمام شود.', 'info');
+  if (!downloadUrl && !Object.keys(downloads).length) return showToast('دست‌کم برای یکی از معماری‌ها فایل بارگذاری کنید یا لینک بگذارید.', 'error');
+  if (!downloads['arm64-v8a'] && !downloadUrl) showToast('فایل arm64-v8a ندارید؛ بیشتر گوشی‌ها همین معماری را دارند.', 'info');
+  secPutRelease({ version, downloadUrl, downloads, notes }, `نسخه ${version} منتشر شد`);
+};
+
+// Uploads one APK into uploads/apk and puts its link in that architecture's field (saved with «انتشار»).
+// XMLHttpRequest instead of fetch: the upload shows its progress (an APK is tens of megabytes).
+window.secUploadApk = function(abi, input) {
+  const file = input && input.files && input.files[0];
+  input.value = '';
+  if (!file) return;
+  const state = document.getElementById(`rel-state-${abi}`);
+  const button = document.querySelector(`label[for="rel-file-${abi}"]`);
+  const say = (text, cls) => { if (state) { state.textContent = text; state.className = `rel-abi-state${cls ? ' ' + cls : ''}`; } };
+  if (!/\.apk$/i.test(file.name)) return say('فقط فایل apk', 'is-error');
+  // the release script names each file after its architecture: catch a file put in the wrong row
+  const named = ['arm64-v8a', 'armeabi-v7a', 'x86_64'].find(a => file.name.includes(a));
+  if (named && named !== abi) say(`هشدار: نام فایل «${named}» است ولی در ردیف ${SEC_ABI_LABEL[abi]} گذاشته شد.`, 'is-error');
+
+  const mb = n => (n / 1024 / 1024).toFixed(1).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+  const form = new FormData();
+  form.append('abi', abi);
+  form.append('apk', file);
+  const xhr = new XMLHttpRequest();
+  xhr.open('POST', '/api/v1/admin/app-release/apk');
+  const token = NopaAuth.getToken();
+  if (token) xhr.setRequestHeader('Authorization', `Bearer ${token}`);
+  xhr.setRequestHeader('X-Nopa-Client', 'panel');
+  secUploading++;
+  if (button) button.classList.add('is-busy');
+  xhr.upload.onprogress = e => { if (e.lengthComputable) say(`در حال بارگذاری ${Math.round((e.loaded / e.total) * 100)}٪ از ${mb(e.total)} مگابایت`); };
+  const finish = () => { secUploading--; if (button) button.classList.remove('is-busy'); };
+  xhr.onerror = () => { finish(); say('بارگذاری انجام نشد؛ اتصال را بررسی کنید.', 'is-error'); };
+  xhr.onload = () => {
+    finish();
+    let data = {};
+    try { data = JSON.parse(xhr.responseText || '{}'); } catch (_) { /* not JSON */ }
+    if (xhr.status === 413) return say('حجم فایل از حد مجاز سرور بیشتر است (client_max_body_size در nginx).', 'is-error');
+    if (xhr.status < 200 || xhr.status >= 300 || !data.url) return say(data.error || `بارگذاری انجام نشد (${xhr.status})`, 'is-error');
+    const field = document.getElementById(`rel-url-${abi}`);
+    if (field) field.value = location.origin + data.url;
+    say(`بارگذاری شد (${mb(data.size || file.size)} مگابایت) — برای اعمال، «انتشار» را بزنید.`, 'is-ok');
+  };
+  xhr.send(form);
 };
 
 window.secClearRelease = async function() {
   if (!(await NopaConfirm('اعلان نسخه جدید متوقف شود؟ اپ دیگر پیام به‌روزرسانی نشان نمی‌دهد.'))) return;
-  secPutRelease({ version: '', downloadUrl: '', notes: [] }, 'اعلان نسخه جدید متوقف شد');
+  secPutRelease({ version: '', downloadUrl: '', downloads: {}, notes: [] }, 'اعلان نسخه جدید متوقف شد');
 };
 
 window.secOpenBlacklist = function() {

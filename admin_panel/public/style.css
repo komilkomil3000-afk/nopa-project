@@ -1805,3 +1805,25 @@ body.modal-open {
 .nopa-confirm-alt { background: transparent; border: 1px solid var(--border-strong); color: var(--text-soft); }
 .nopa-confirm-alt.is-danger { background: rgb(var(--danger-rgb) / 0.12); border-color: rgb(var(--danger-rgb) / 0.55); color: var(--danger-text); }
 .nopa-confirm-alt.is-danger:hover { background: var(--danger); border-color: var(--danger); color: var(--on-fill); }
+
+/* ==================== App release: one APK per architecture (#sec-release-modal, js/features/access.js) ==================== */
+.rel-abis { display: flex; flex-direction: column; gap: 10px; }
+.rel-abi {
+  display: grid;
+  grid-template-columns: minmax(130px, 0.8fr) minmax(0, 2fr) auto;
+  grid-template-areas: "name url up" "state state state";
+  align-items: center;
+  gap: 4px 10px;
+}
+.rel-abi-name { grid-area: name; display: flex; flex-direction: column; line-height: 1.4; }
+.rel-abi-name small { color: var(--text-muted); font-size: var(--text-2xs, 0.7rem); }
+.rel-abi > .input-ctrl { grid-area: url; min-width: 0; }
+.rel-abi-up { grid-area: up; cursor: pointer; white-space: nowrap; }
+.rel-abi-up.is-busy { pointer-events: none; opacity: 0.6; }
+.rel-abi-state { grid-area: state; font-size: var(--text-2xs, 0.7rem); color: var(--text-muted); }
+.rel-abi-state:empty { display: none; }
+.rel-abi-state.is-ok { color: var(--success-text); }
+.rel-abi-state.is-error { color: var(--danger-text); }
+@media (max-width: 600px) {
+  .rel-abi { grid-template-columns: 1fr auto; grid-template-areas: "name up" "url url" "state state"; }
+}

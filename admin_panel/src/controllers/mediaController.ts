@@ -176,6 +176,8 @@ function walkUploads(dir: string, rel: string, depth: number, out: { path: strin
     const abs = path.join(dir, e.name);
     const relPath = rel ? `${rel}/${e.name}` : e.name;
     if (e.isDirectory()) {
+      // uploads/apk holds the app's release files: managed from the app-release tile, not the media library
+      if (depth === 0 && e.name === 'apk') continue;
       if (depth < 4) walkUploads(abs, relPath, depth + 1, out);
     } else if (e.isFile()) {
       try {
