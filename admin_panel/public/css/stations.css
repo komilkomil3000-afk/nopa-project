@@ -2981,3 +2981,34 @@ button.nbr-rank-row:hover { background: rgb(var(--primary-rgb) / 0.08); }
 .nal-pct { display: inline-block; width: 54px; height: 6px; border-radius: 99px; background: rgb(var(--primary-rgb) / 0.12); overflow: hidden; vertical-align: middle; }
 .nal-pct i { display: block; height: 100%; background: #F59E0B; }
 .nal-pct.is-done i { background: #10B981; }
+
+/* ==================== Challenges: «فرهنگ اصطلاحات» (js/features/challenges.js, chlRenderGlossary) ==================== */
+.chl-gls .lst-tile-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.chl-gls-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+.chl-gls-card {
+  --gls-color: var(--primary);
+  display: flex; flex-direction: column; gap: 10px; min-width: 0;
+  padding: 14px; border-radius: 16px;
+  background: var(--app-card-bg, rgb(var(--primary-rgb) / 0.05));
+  border: 1px solid color-mix(in srgb, var(--gls-color) 35%, transparent);
+}
+.chl-gls-head { display: flex; align-items: center; gap: 10px; min-width: 0; }
+.chl-gls-icon {
+  flex: none; width: 40px; height: 40px; border-radius: 50%; display: grid; place-items: center;
+  color: var(--gls-color); background: color-mix(in srgb, var(--gls-color) 16%, transparent);
+}
+.chl-gls-name { display: flex; flex-direction: column; min-width: 0; }
+.chl-gls-name strong { color: var(--text); }
+.chl-gls-name small { color: var(--text-muted); font-size: var(--text-2xs, 0.7rem); }
+.chl-gls-name code { direction: ltr; unicode-bidi: isolate; }
+.chl-gls-def { margin: 0; color: var(--text-soft, var(--text)); font-size: var(--text-xs, 0.8rem); line-height: 1.8; }
+.chl-gls-facts { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; font-size: var(--text-xs, 0.8rem); }
+.chl-gls-facts li { display: grid; grid-template-columns: 16px auto 1fr; gap: 6px; align-items: baseline; }
+.chl-gls-facts i { color: var(--gls-color); }
+.chl-gls-facts span { color: var(--text-muted); }
+.chl-gls-facts b { font-weight: 600; color: var(--text); min-width: 0; overflow-wrap: anywhere; }
+.chl-gls-old { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; font-size: var(--text-2xs, 0.7rem); color: var(--text-muted); }
+.chl-gls-old s { opacity: 0.75; }
+@media (max-width: 900px) {
+  .chl-gls-grid { grid-template-columns: 1fr; }
+}

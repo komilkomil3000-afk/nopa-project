@@ -1926,6 +1926,20 @@ class HttpApiService {
     return [];
   }
 
+  /// Admin-editable names of the three challenge categories («فرهنگ اصطلاحات»): [{key, label, shortLabel, ...}].
+  Future<List<dynamic>> getChallengeTaxonomy() async {
+    try {
+      final response = await _get(Uri.parse('$baseUrl/challenge-taxonomy'), headers: _getHeaders());
+      if (response.statusCode == 200) {
+        final dynamic data = await parseJsonAsync(response.body);
+        if (data is List) return data;
+      }
+    } catch (e) {
+      debugPrint('getChallengeTaxonomy error: $e');
+    }
+    return [];
+  }
+
   /// Admin-editable display names of the assets: [{key, nameFa}].
   Future<List<dynamic>> getAssetTypes() async {
     try {

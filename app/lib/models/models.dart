@@ -43,7 +43,7 @@ class ChallengeModel {
   final bool isByAdmin;
   final String? creatorName;
   final String? targetAudienceLabel;
-  final String? category; // 'individual' (فردی), 'group' (گروهی), 'inter_group' (میان گروهی)
+  final String? category; // 'individual' (چالش شخصی), 'intra_group' (چالش گروهی), 'inter_group' (چالش فراگروهی); names in ChallengeTaxonomy
   final DateTime? createdAt;
   final int? durationDays;
   // Answers of the viewer's own students (filled for mentors only)

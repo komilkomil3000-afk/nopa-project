@@ -110,14 +110,12 @@ export async function createChallenge(req: AuthRequest, res: Response) {
         category = 'individual';
       }
     } else if (req.user.role === 'admin') {
-      if (targetMentorId) {
-        creatorId = targetMentorId;
+      // An admin creates «چالش فراگروهی» only (spec Part 1): personal and group challenges are the mentors'.
+      // Older admin challenges for one caravan stay as they are; `targetMentorId` is no longer used.
+      if (caravanId !== undefined && caravanId !== null && caravanId !== '' && caravanId !== 'inter_group') {
+        return res.status(400).json({ error: 'مدیر فقط «چالش فراگروهی» می‌سازد؛ چالش شخصی و گروهی را راهبر هر کاروان می‌سازد' });
       }
-      if (caravanId === 'inter_group') {
-        category = 'inter_group';
-      } else if (caravanId && caravanId !== 'all') {
-        assignedCaravanId = caravanId;
-      }
+      category = 'inter_group';
     }
 
     // Generate readable ID if not provided, e.g. CH + random
@@ -192,7 +190,7 @@ export async function createChallenge(req: AuthRequest, res: Response) {
         await prisma.notification.createMany({
           data: mentors.map(m => ({
             userId: m.id,
-            title: 'چالش عمومی جدید ابلاغ شد',
+            title: 'چالش فراگروهی جدید ابلاغ شد',
             message: `چالش جدید "${title}" توسط ${creatorName} برای تمامی کاروان‌ها منتشر گردید.`,
             type: 'challenge'
           }))
@@ -285,6 +283,11 @@ export async function updateChallenge(req: AuthRequest, res: Response) {
       }
       if (caravanId !== undefined) {
         const isInter = caravanId === 'inter_group';
+        // Only towards «فراگروهی», or keeping an older challenge's own caravan: an admin never makes a caravan challenge
+        const keeps = existing.category !== 'inter_group' && ((caravanId === 'all' || caravanId === '' ? null : caravanId) === existing.caravanId);
+        if (!isInter && !keeps) {
+          return res.status(400).json({ error: 'مدیر فقط «چالش فراگروهی» می‌سازد؛ چالش را نمی‌توان به یک کاروان منتقل کرد' });
+        }
         updateData.caravanId = (caravanId === 'all' || isInter) ? null : caravanId;
         updateData.category = isInter ? 'inter_group' : (existing.recipientIds.length > 0 ? 'individual' : 'intra_group');
       }
@@ -589,9 +592,9 @@ export async function getChallenges(req: AuthRequest, res: Response) {
       } : {
         type: 'all',
         id: 'all',
-        name: 'عمومی (همه کاروان‌ها)',
+        name: 'همه‌ی کاروان‌ها (فراگروهی)',
         mentorName: null,
-        label: 'عمومی (همه کاروان‌ها)'
+        label: 'همه‌ی کاروان‌ها (فراگروهی)'
       };
 
       const mySub = user ? c.submissions.find(s => s.studentId === user.id) : null;

@@ -61,6 +61,7 @@ import { listDrafts, saveDraft, deleteDraft } from '../controllers/draftControll
 import { listAssetTypes, updateAssetType } from '../controllers/assetController';
 import { getEconomyAdmin, updateEconomy } from '../controllers/economyController';
 import { getChallengeRanking, finalizeChallengeRanking, editChallengeRanking } from '../controllers/caravanBannerController';
+import { getChallengeTaxonomy, updateChallengeTaxonomy } from '../controllers/taxonomyController';
 import { getEconomyHubAnalytics } from '../controllers/walletController';
 import { 
   broadcastNotification, 
@@ -156,6 +157,8 @@ router.post('/asset-conversions/:id/cancel', cancelAssetConversion as any);
 router.get('/tickets', getTickets as any);
 router.post('/tickets/:id/reply', replyTicketAdmin as any);
 router.post('/tickets/:id/resolve', resolveTicketAdmin as any);
+router.get('/challenge-taxonomy', getChallengeTaxonomy as any);
+router.put('/challenge-taxonomy', updateChallengeTaxonomy as any);
 router.get('/challenges', getChallenges as any);
 router.post('/challenges', createChallenge as any);
 router.put('/challenges/:id', updateChallenge as any);

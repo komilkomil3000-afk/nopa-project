@@ -10,6 +10,7 @@ import { evaluateMentor as newEvaluateMentor, savePrivateNote, getPrivateNotes }
 import { createChallenge, getChallenges, submitQuiz, updateChallenge } from '../controllers/challengeController';
 import { listAssetTypes } from '../controllers/assetController';
 import { getEconomyRates } from '../controllers/economyController';
+import { getChallengeTaxonomy } from '../controllers/taxonomyController';
 import chatRouter from '../modules/chat/routes';
 import { getMyCaravanBanners } from '../controllers/caravanBannerController';
 import { submitTask, getPendingSubmissions, reviewSubmission, getSubmissionHistory } from '../controllers/submissionController';
@@ -68,6 +69,7 @@ router.post('/challenges', authenticateJWT as any, authorizeRoles('mentor', 'adm
 router.get('/challenges', authenticateJWT as any, getChallenges as any);
 router.get('/assets', authenticateJWT as any, listAssetTypes as any);
 router.get('/economy', authenticateJWT as any, getEconomyRates as any);
+router.get('/challenge-taxonomy', authenticateJWT as any, getChallengeTaxonomy as any);
 router.get('/my-caravan/banners', authenticateJWT as any, getMyCaravanBanners as any);
 router.patch('/challenges/:id', authenticateJWT as any, authorizeRoles('mentor', 'admin') as any, updateChallenge as any);
 router.post('/challenges/:id/submit-quiz', authenticateJWT as any, submitQuiz as any);

@@ -7,18 +7,19 @@ import { refreshUserRooms } from './realtime';
 import { ChatError, directKey, ensureCaravanSpaces, ensureSpace, globalSpace, MESSAGE_INCLUDE, serializeMessage } from './service';
 import { generateInsight } from './insights';
 import { isMentorRole } from '../../utils/roles';
-
-const CATEGORY_LABELS: Record<string, string> = { individual: 'شخصی', intra_group: 'درون‌گروهی', inter_group: 'فراگروهی' };
+import { categoryLabel } from '../../services/challengeTaxonomy';
 
 async function cardMeta(c: Challenge) {
-  const [station, creator] = await Promise.all([
+  const [station, creator, tag] = await Promise.all([
     c.stationId ? prisma.station.findUnique({ where: { id: c.stationId }, select: { title: true } }) : null,
     prisma.user.findUnique({ where: { id: c.createdByMentorId }, select: { name: true, role: true } }),
+    // «شخصی» / «گروهی» / «فراگروهی», as named in the panel's «فرهنگ اصطلاحات»
+    categoryLabel(c.category),
   ]);
   return {
     challengeId: c.id,
     category: c.category,
-    tag: CATEGORY_LABELS[c.category] || 'درون‌گروهی',
+    tag,
     title: c.title,
     description: c.description.slice(0, 3000),
     stationTitle: station?.title || null,

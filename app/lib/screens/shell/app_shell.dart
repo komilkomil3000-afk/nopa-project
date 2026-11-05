@@ -37,7 +37,7 @@ final ValueNotifier<({int category, String id})?> challengeFocusRequest = ValueN
 /// Category tab index of a challenge's raw category text.
 int challengeCategoryIndex(String? rawCategory) {
   final raw = (rawCategory ?? '').toLowerCase();
-  if (raw.contains('inter') || raw.contains('میان')) return 2;
+  if (raw.contains('inter') || raw.contains('فرا') || raw.contains('میان')) return 2;
   if (raw.contains('group') || raw.contains('گروهی')) return 1;
   return 0;
 }

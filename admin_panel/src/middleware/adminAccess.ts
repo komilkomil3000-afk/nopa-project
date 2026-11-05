@@ -86,7 +86,7 @@ const SECTION_RULES: Array<[RegExp, string]> = [
   [/^\/instructors(\/|$)/i, 'instructors'],
   [/^\/(caravans|asset-conversions)(\/|$)/i, 'caravans'],
   [/^\/(lms|stations|courses|quizzes)(\/|$)/i, 'lms'],
-  [/^\/(challenges|submissions|intergroup)(\/|$)/i, 'challenges'],
+  [/^\/(challenges|submissions|intergroup|challenge-taxonomy)(\/|$)/i, 'challenges'],
   [/^\/drafts\/challenge(\/|$)/i, 'challenges'],
   [/^\/drafts\/station(\/|$)/i, 'lms'],
   [/^\/(tickets|messages|support-cases)(\/|$)/i, 'support'],

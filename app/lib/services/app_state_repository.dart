@@ -1,4 +1,5 @@
 import 'package:nopa_app/core/asset_names.dart';
+import '../core/challenge_taxonomy.dart';
 import '../core/economy_rates.dart';
 import 'chat_repository.dart';
 import 'dart:async';
@@ -333,6 +334,9 @@ class AppRepository extends ChangeNotifier with WidgetsBindingObserver {
     final rates = await _apiService.getEconomyRates();
     if (rates != null) EconomyRates.apply(rates);
     if (_assetNamesLoaded) return;
+    // The challenge categories' names come with the asset names: both are admin-editable labels
+    final taxonomy = await _apiService.getChallengeTaxonomy();
+    if (taxonomy.isNotEmpty) ChallengeTaxonomy.apply(taxonomy);
     final rows = await _apiService.getAssetTypes();
     if (rows.isEmpty) return;
     AssetNames.apply(rows);

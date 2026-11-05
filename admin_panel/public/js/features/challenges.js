@@ -12,6 +12,7 @@ window.loadChallengesAndSubmissionsTab = async function() {
   window.chlSetLoading(true);
   try {
     await Promise.all([
+      window.chlLoadTaxonomy(),
       window.loadAdminChallengesData(),
       window.loadAdminSubmissionsData()
     ]);
@@ -113,16 +114,18 @@ function populateCaravanDropdowns(caravans) {
 
   if (filterSelect) {
     const currentVal = filterSelect.value;
-    filterSelect.innerHTML = `<option value="all">همه کاروان‌ها و راهبران</option><option value="public">فقط چالش‌های عمومی (همه کاروان‌ها)</option>` + optionsHtml;
+    filterSelect.innerHTML = `<option value="all">همه کاروان‌ها و راهبران</option><option value="public">فقط چالش‌های فراگروهی (همه‌ی کاروان‌ها)</option>` + optionsHtml;
     filterSelect.value = currentVal || 'all';
   }
 
   if (newChalSelect) {
-    newChalSelect.innerHTML = `<option value="inter_group">عمومی (میان‌گروهی)</option>` + optionsHtml;
+    // An admin creates «چالش فراگروهی» only; personal and group challenges are the mentors' (spec Part 1)
+    newChalSelect.innerHTML = `<option value="inter_group">${esc(chlCatLabel('inter_group'))} (همه‌ی کاروان‌ها)</option>`;
   }
 
   if (editChalSelect) {
-    editChalSelect.innerHTML = `<option value="inter_group">عمومی (میان‌گروهی)</option>` + optionsHtml;
+    // Caravans stay listed only so an older admin challenge for one caravan shows its own; the server refuses moving one there
+    editChalSelect.innerHTML = `<option value="inter_group">${esc(chlCatLabel('inter_group'))} (همه‌ی کاروان‌ها)</option>` + optionsHtml;
   }
 
   if (typeof populateSubmissionsFilterDropdowns === 'function') {
@@ -137,6 +140,13 @@ function chlEmpty(el, text, icon = 'fa-regular fa-folder-open') {
 
 function chlRoundBtn(icon, title, click, args, extra = '') {
   return `<button type="button" class="lsv-round lsv-round-sm${extra ? ' ' + extra : ''}" data-click="${click}" data-click-args="${esc(JSON.stringify(args))}" title="${esc(title)}" aria-label="${esc(title)}"><i class="${icon}"></i></button>`;
+}
+
+/** «شخصی» / «گروهی» / «فراگروهی», as named in «فرهنگ اصطلاحات». */
+function chlCategoryChip(c) {
+  const key = c.category === 'inter_group' || c.category === 'individual' ? c.category : 'intra_group';
+  const icon = key === 'inter_group' ? 'fa-globe' : key === 'individual' ? 'fa-user' : 'fa-users';
+  return `<span class="chl-chip${key === 'inter_group' ? ' is-accent' : ''}"><i class="fa-solid ${icon}"></i> ${esc(chlCatLabel(key, true))}</span>`;
 }
 
 function chlTypeChip(c) {
@@ -168,7 +178,7 @@ function renderAdminChallenges(challenges) {
       : (c.caravanInfo || null);
     const audienceHtml = audience
       ? `<span><i class="fa-solid fa-users"></i> کاروان: ${esc(audience.name)} · راهبر: ${esc(audience.mentorName || 'نامشخص')}</span>`
-      : '<span><i class="fa-solid fa-globe"></i> عمومی (همه کاروان‌ها)</span>';
+      : '<span><i class="fa-solid fa-globe"></i> همه‌ی کاروان‌ها</span>';
 
     const approved = c.approvedSubmissions || (c.submissions ? c.submissions.filter(x => x.status === 'approved').length : 0);
     const pending = c.pendingSubmissions || (c.submissions ? c.submissions.filter(x => x.status === 'pending' || x.status === 'PENDING_REVIEW').length : 0);
@@ -180,6 +190,7 @@ function renderAdminChallenges(challenges) {
       <article class="chl-card chl-card-open" role="button" tabindex="0" data-click="openChallengeDetail" data-click-args="${esc(JSON.stringify([id]))}" title="مشاهده جزئیات چالش">
         <div class="chl-card-top">
           <span class="chl-id">${esc(id)}</span>
+          ${chlCategoryChip(c)}
           ${chlTypeChip(c)}
         </div>
         <h5 class="chl-card-title">${esc(c.title)}</h5>
@@ -327,7 +338,7 @@ window.handleChallengeAudienceChange = function(mode) {
     note = document.createElement('div');
     note.id = `${mode}-chal-banner-note`;
     note.style.cssText = 'font-size: var(--text-xs); color: var(--accent-text); background: rgb(var(--accent-rgb) / 0.1); border: 1px solid rgb(var(--accent-rgb) / 0.3); border-radius: 8px; padding: 8px 12px; margin-bottom: 14px; line-height: 1.7;';
-    note.innerHTML = 'پاداش چالش میان‌گروهی فقط <b>درفش</b> است: پس از پاسخ کاروان‌ها، در بخش «رتبه‌بندی» کاروان‌های اول تا سوم را تایید کنید؛ به ترتیب درفش طلایی، نقره‌ای و برنزی می‌گیرند و بقیه‌ی کاروان‌های شرکت‌کننده درفش پارچه‌ای.';
+    note.innerHTML = `در ${esc(chlCatLabel('inter_group'))} کاروان‌ها <b>درفش</b> می‌گیرند و اعضا زریک و کلاف به نسبت مشارکت: پس از پایان چالش، در بخش «رتبه‌بندی» کاروان‌های اول تا سوم را تایید کنید؛ به ترتیب درفش طلایی، نقره‌ای و برنزی می‌گیرند و بقیه‌ی کاروان‌های شرکت‌کننده درفش پارچه‌ای.`;
     rangeRow.parentElement.insertBefore(note, rangeRow);
   }
   if (note) note.style.display = inter ? 'block' : 'none';
@@ -1297,11 +1308,13 @@ window.renderChallengeInsights = function() {
     const rows = [
       ['آزمون مرحله‌ای', quiz],
       ['تشریحی', challenges.length - quiz],
-      ['میان‌گروهی (درفش)', challenges.filter(c => c.category === 'inter_group').length],
+      [chlCatLabel('individual'), challenges.filter(c => c.category === 'individual').length],
+      [chlCatLabel('intra_group'), challenges.filter(c => c.category === 'intra_group').length],
+      [chlCatLabel('inter_group'), challenges.filter(c => c.category === 'inter_group').length],
       ['ساخته‌ی مدیر', byAdmin],
       ['ساخته‌ی راهبران', challenges.length - byAdmin]
     ];
-    typesEl.innerHTML = `<div class="lst-legend">${rows.map(([label, n]) => `<div class="lst-legend-row"><span>${label}</span><strong>${n}</strong></div>`).join('')}</div>`;
+    typesEl.innerHTML = `<div class="lst-legend">${rows.map(([label, n]) => `<div class="lst-legend-row"><span>${esc(label)}</span><strong>${n}</strong></div>`).join('')}</div>`;
   }
 
   const pendEl = document.getElementById('chl-bento-pending');
@@ -2401,4 +2414,109 @@ window.chlRenderCaravanBoard = function() {
         <span class="chl-board-pts" title="امتیاز گروهی"><b>${lmsFaDigits(c.groupPoints || 0)}</b><small>امتیاز</small></span>
       </div>`;
   }).join('')}</div>`;
+};
+
+// ==================== «فرهنگ اصطلاحات»: THE THREE CHALLENGE CATEGORIES ====================
+// One source of truth for the names (GET/PUT /api/v1/admin/challenge-taxonomy, a SystemSetting row on the server; the
+// app reads the same list). Keys and who creates each category are fixed by the code; admins edit names and text.
+// Built-in copy so the tab never shows an old or empty name while the request runs.
+const CHL_TAXONOMY_DEFAULTS = [
+  { key: 'individual', label: 'چالش شخصی', shortLabel: 'شخصی', icon: 'user', color: '#7C9CF5', creator: 'راهبر', target: 'یک عضو یا گروهی انتخاب‌شده از اعضای کاروان', definition: '', rewards: '', conversation: '', replaces: [] },
+  { key: 'intra_group', label: 'چالش گروهی', shortLabel: 'گروهی', icon: 'users', color: '#DFB690', creator: 'راهبر', target: 'همه‌ی اعضای کاروان راهبر', definition: '', rewards: '', conversation: '', replaces: [] },
+  { key: 'inter_group', label: 'چالش فراگروهی', shortLabel: 'فراگروهی', icon: 'globe', color: '#CD8449', creator: 'مدیر', target: 'همه‌ی کاروان‌ها', definition: '', rewards: '', conversation: '', replaces: [] },
+];
+window.chlTaxonomy = window.chlTaxonomy || CHL_TAXONOMY_DEFAULTS;
+let chlCanEditGlossary = true;
+window.addEventListener('nopa:accesschange', e => {
+  const access = e.detail || {};
+  chlCanEditGlossary = !!access.all || access.sections?.challenges === 'edit';
+  window.chlRenderGlossary();
+});
+
+/** Name of a category: the full one («چالش فراگروهی») or the short one for tags («فراگروهی»). */
+function chlCatLabel(key, short = false) {
+  const entry = (window.chlTaxonomy || CHL_TAXONOMY_DEFAULTS).find(t => t.key === key)
+    || CHL_TAXONOMY_DEFAULTS.find(t => t.key === key) || CHL_TAXONOMY_DEFAULTS[1];
+  return short ? entry.shortLabel : entry.label;
+}
+window.chlCatLabel = chlCatLabel;
+
+window.chlLoadTaxonomy = async function() {
+  try {
+    const list = await NopaApi.json('/api/v1/admin/challenge-taxonomy');
+    if (Array.isArray(list) && list.length) window.chlTaxonomy = list;
+  } catch (e) {
+    console.error('challenge taxonomy load error:', e);
+  }
+  window.chlRenderGlossary();
+};
+
+window.chlRenderGlossary = function() {
+  const box = document.getElementById('chl-gls-grid');
+  if (!box) return;
+  const edit = document.getElementById('chl-gls-edit');
+  if (edit) edit.hidden = !chlCanEditGlossary;
+  const draw = () => {
+    box.innerHTML = window.chlTaxonomy.map(t => {
+      const facts = [
+        ['fa-user-pen', 'سازنده', t.creator],
+        ['fa-bullseye', 'مخاطب', t.target],
+        ['fa-coins', 'پاداش', t.rewards],
+        ['fa-comments', 'گفتگو', t.conversation],
+      ].filter(([, , v]) => v);
+      return `
+        <article class="chl-gls-card" data-anim-key="gls:${esc(t.key)}" data-style="--gls-color:${esc(t.color)}">
+          <header class="chl-gls-head">
+            <span class="chl-gls-icon"><i class="fa-solid fa-${esc(t.icon)}"></i></span>
+            <span class="chl-gls-name"><strong>${esc(t.label)}</strong><small>برچسب کوتاه: ${esc(t.shortLabel)} · <code>${esc(t.key)}</code></small></span>
+          </header>
+          ${t.definition ? `<p class="chl-gls-def">${esc(t.definition)}</p>` : ''}
+          <ul class="chl-gls-facts">${facts.map(([icon, k, v]) => `<li><i class="fa-solid ${icon}"></i><span>${esc(k)}</span><b>${esc(v)}</b></li>`).join('')}</ul>
+          ${(t.replaces || []).length ? `<div class="chl-gls-old"><span>جایگزین اصطلاحات قدیمی:</span>${t.replaces.map(r => `<s class="chl-chip">${esc(r)}</s>`).join('')}</div>` : ''}
+        </article>`;
+    }).join('');
+  };
+  if (window.NopaFlip?.render) window.NopaFlip.render(box, draw); else draw();
+};
+
+window.chlOpenGlossaryEditor = function() {
+  const modal = document.getElementById('chl-gls-modal');
+  const body = document.getElementById('chl-gls-form-body');
+  if (!modal || !body) return;
+  const field = (key, name, label, value, attrs = '') =>
+    `<label class="lse-field"><span>${label}</span><input type="text" class="input-ctrl" data-gls="${key}.${name}" value="${esc(value)}" ${attrs}></label>`;
+  body.innerHTML = window.chlTaxonomy.map(t => `
+    <section class="lse-card">
+      <h4 class="lse-card-title"><i class="fa-solid fa-${esc(t.icon)}"></i> ${esc(t.label)} <small class="lse-hint">سازنده: ${esc(t.creator)} (ثابت)</small></h4>
+      <div class="lse-grid lse-grid-2">
+        ${field(t.key, 'label', 'نام کامل <b class="lse-req">*</b>', t.label, 'maxlength="40" required')}
+        ${field(t.key, 'shortLabel', 'برچسب کوتاه (کارت‌ها و زبانه‌ها) <b class="lse-req">*</b>', t.shortLabel, 'maxlength="20" required')}
+        ${field(t.key, 'target', 'مخاطب <b class="lse-req">*</b>', t.target, 'maxlength="120" required')}
+        ${field(t.key, 'icon', 'آیکون (نام Font Awesome، مثل users)', t.icon, 'maxlength="40" pattern="[a-z0-9-]+" required dir="ltr"')}
+        <label class="lse-field"><span>رنگ</span><input type="color" class="input-ctrl" data-gls="${t.key}.color" value="${esc(t.color)}"></label>
+      </div>
+      <label class="lse-field"><span>تعریف <b class="lse-req">*</b></span><textarea class="input-ctrl" rows="2" maxlength="400" data-gls="${t.key}.definition" required>${esc(t.definition)}</textarea></label>
+    </section>`).join('');
+  modal.style.display = 'flex';
+  modal.style.zIndex = 'var(--z-modal)';
+};
+
+window.chlSaveGlossary = async function(e) {
+  if (e) e.preventDefault();
+  const payload = {};
+  document.querySelectorAll('#chl-gls-form-body [data-gls]').forEach(input => {
+    const [key, name] = input.getAttribute('data-gls').split('.');
+    (payload[key] = payload[key] || {})[name] = input.value.trim();
+  });
+  try {
+    const list = await NopaApi.json('/api/v1/admin/challenge-taxonomy', { method: 'PUT', body: JSON.stringify(payload) });
+    if (Array.isArray(list)) window.chlTaxonomy = list;
+    NopaActions.hide('chl-gls-modal');
+    showToast('فرهنگ اصطلاحات ذخیره شد؛ اپ و پنل از این نام‌ها استفاده می‌کنند.', 'success');
+    window.chlRenderGlossary();
+    // names inside cards, selects and tiles follow at once
+    window.loadAdminChallengesData();
+  } catch (err) {
+    showToast(err.message || 'خطا در ذخیره‌ی فرهنگ اصطلاحات', 'error');
+  }
 };

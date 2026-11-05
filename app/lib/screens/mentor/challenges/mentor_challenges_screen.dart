@@ -5,6 +5,7 @@ import 'package:nopa_app/screens/shell/app_shell.dart' show challengeFocusReques
 import 'package:nopa_app/core/economy_rates.dart';
 import 'package:nopa_app/widgets/tap_expander.dart';
 import 'package:nopa_app/core/asset_names.dart';
+import 'package:nopa_app/core/challenge_taxonomy.dart';
 import 'dart:async';
 import 'package:nopa_app/widgets/app_toast.dart';
 import 'package:flutter/material.dart' hide Text;
@@ -159,11 +160,11 @@ class _ChallengesScreenState extends State<MentorChallengesScreen> {
         status = 'started';
       }
 
-      // Determine category (0: فردی, 1: گروهی, 2: میان گروهی)
+      // Determine category (0: شخصی, 1: گروهی, 2: فراگروهی)
       String category = 'individual';
       final String rawCat = (c.category ?? '').toLowerCase();
 
-      if (rawCat.contains('inter') || rawCat.contains('میان')) {
+      if (rawCat.contains('inter') || rawCat.contains('فرا') || rawCat.contains('میان')) {
         category = 'inter_group';
       } else if (rawCat.contains('group') || rawCat.contains('گروهی')) {
         category = 'group';
@@ -609,9 +610,9 @@ class _ChallengesScreenState extends State<MentorChallengesScreen> {
         statusColor = const Color(0xFF9E9AC0);
       }
 
-      String category = 'intra_group'; // درون گروهی
+      String category = 'intra_group'; // شخصی و گروهی
       final String rawCat = (c.category ?? '').toLowerCase();
-      if (rawCat.contains('inter') || rawCat.contains('میان')) {
+      if (rawCat.contains('inter') || rawCat.contains('فرا') || rawCat.contains('میان')) {
         category = 'inter_group';
       }
 
@@ -759,7 +760,7 @@ class _ChallengesScreenState extends State<MentorChallengesScreen> {
                 ],
               ),
               const SizedBox(height: 24),
-              // Mentor Category Tabs: [درون گروهی] [میان گروهی]
+              // Mentor Category Tabs: [شخصی و گروهی] [فراگروهی] (names from «فرهنگ اصطلاحات»)
               _buildMentorCategoryTabsBar(),
               const SizedBox(height: 18),
             ],
@@ -846,28 +847,28 @@ class _ChallengesScreenState extends State<MentorChallengesScreen> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceAround,
             children: [
-              // درون گروهی
+              // چالش شخصی و گروهی (the mentor's own)
               TapExpander(child: GestureDetector(
                 onTap: () => _goToPage(_mentorPageCtrl, 0),
                 behavior: HitTestBehavior.opaque,
                 child: Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
                   child: Text(
-                    'درون گروهی',
+                    '${ChallengeTaxonomy.shortLabel('individual')} و ${ChallengeTaxonomy.shortLabel('intra_group')}',
                     style: AppTypography.h2.copyWith(color: _mentorSelectedCategoryIndex == 0
                           ? const Color(0xFFDFB690)
                           : const Color(0xFF8E88B0)),
                   ),
                 ),
               )),
-              // میان گروهی
+              // چالش فراگروهی
               TapExpander(child: GestureDetector(
                 onTap: () => _goToPage(_mentorPageCtrl, 1),
                 behavior: HitTestBehavior.opaque,
                 child: Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
                   child: Text(
-                    'میان گروهی',
+                    ChallengeTaxonomy.shortLabel('inter_group'),
                     style: AppTypography.h2.copyWith(color: _mentorSelectedCategoryIndex == 1
                           ? const Color(0xFFDFB690)
                           : const Color(0xFF8E88B0)),
@@ -1118,12 +1119,12 @@ class _ChallengesScreenState extends State<MentorChallengesScreen> {
     );
   }
 
-  /// Category Tabs: فردی / گروهی / میان گروهی (Strictly equal distances with گروهی dead-center)
+  /// Category Tabs: شخصی / گروهی / فراگروهی (names from «فرهنگ اصطلاحات») (Strictly equal distances with گروهی dead-center)
   Widget _buildCategoryTabsBar() {
     final tabs = [
-      {'title': 'فردی', 'index': 0},
-      {'title': 'گروهی', 'index': 1},
-      {'title': 'میان گروهی', 'index': 2},
+      {'title': ChallengeTaxonomy.shortLabel('individual'), 'index': 0},
+      {'title': ChallengeTaxonomy.shortLabel('intra_group'), 'index': 1},
+      {'title': ChallengeTaxonomy.shortLabel('inter_group'), 'index': 2},
     ];
 
     return Directionality(

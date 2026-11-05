@@ -3198,7 +3198,7 @@
             <div class="chl-toolbar">
               <select aria-label="فیلتر کاروان" id="filter-challenges-caravan" data-change="filterChallengesList" class="select-ctrl">
                 <option value="all">همه کاروان‌ها و راهبران</option>
-                <option value="public">فقط چالش‌های عمومی (همه کاروان‌ها)</option>
+                <option value="public">فقط چالش‌های فراگروهی (همه‌ی کاروان‌ها)</option>
               </select>
               <select aria-label="فیلتر سازنده" id="filter-challenges-creator" data-change="filterChallengesList" class="select-ctrl">
                 <option value="all">همه سازندگان (مدیر و راهبر)</option>
@@ -3248,6 +3248,15 @@
             </div>
           </div>
 
+          <!-- «فرهنگ اصطلاحات»: the three challenge categories, editable (js/features/challenges.js, chlRenderGlossary) -->
+          <div class="lst-tile glass chl-main chl-gls" data-requires-section="challenges">
+            <div class="lst-tile-head">
+              <h4 class="lst-tile-title"><i class="fa-solid fa-book-open"></i> فرهنگ اصطلاحات <span class="lst-tile-sub">سه دسته‌ی چالش؛ همین نام‌ها در اپ و پنل نمایش داده می‌شوند</span></h4>
+              <button type="button" id="chl-gls-edit" class="lsv-round" data-click="chlOpenGlossaryEditor" title="ویرایش اصطلاحات" aria-label="ویرایش اصطلاحات"><i class="fa-solid fa-pen"></i></button>
+            </div>
+            <div id="chl-gls-grid" class="chl-gls-grid"></div>
+          </div>
+
           <div class="lst-tile glass chl-main">
             <div class="lst-tile-head">
               <h4 class="lst-tile-title"><i class="fa-solid fa-clipboard-check"></i> بررسی و ارزیابی پاسخ‌های ارسالی دانش‌آموزان <span id="badge-submissions-filtered-count" class="lst-tile-sub">۰ پاسخ</span></h4>
@@ -3284,6 +3293,29 @@
             </div>
 
             <div id="admin-submissions-list" class="chl-subs"></div>
+          </div>
+        </div>
+
+        <!-- «فرهنگ اصطلاحات» editor: names and text of the three categories (keys and creators are fixed) -->
+        <div id="chl-gls-modal" class="modal-overlay lse-overlay u-z-z-modal" data-style="display:none">
+          <div class="lse lse-editor">
+            <header class="lse-head lse-head-plain">
+              <div class="lse-id">
+                <span class="lse-id-icon is-accent"><i class="fa-solid fa-book-open"></i></span>
+                <div class="lse-id-text"><h3>ویرایش فرهنگ اصطلاحات</h3><span>چالش شخصی، چالش گروهی و چالش فراگروهی</span></div>
+              </div>
+              <button type="button" class="lsv-round" data-click="NopaActions.hide" data-click-args='["chl-gls-modal"]' title="بستن" aria-label="بستن"><i class="fa-solid fa-xmark"></i></button>
+            </header>
+            <form class="lse-form" data-submit="chlSaveGlossary" data-submit-args='["$event"]'>
+              <div class="lse-body" id="chl-gls-form-body"></div>
+              <footer class="lse-foot">
+                <span class="lse-foot-note"><i class="fa-solid fa-circle-info"></i> دسته‌ها و اینکه چه کسی هر کدام را می‌سازد ثابت است؛ فقط نام و توضیح تغییر می‌کند.</span>
+                <div class="lse-foot-actions">
+                  <button type="button" class="lse-btn" data-click="NopaActions.hide" data-click-args='["chl-gls-modal"]'>انصراف</button>
+                  <button type="submit" class="lsv-pill"><i class="fa-solid fa-check"></i> ذخیره</button>
+                </div>
+              </footer>
+            </form>
           </div>
         </div>
       </section>
@@ -4240,9 +4272,9 @@
                     </select>
                   </label>
                   <label class="lse-field">
-                    <span>کاروان و راهبر هدف <b class="lse-req">*</b></span>
+                    <span>نوع و مخاطب چالش <b class="lse-req">*</b></span>
                     <select id="new-chal-caravan-id" class="select-ctrl" data-change="handleChallengeAudienceChange" data-change-args="[&quot;new&quot;]" required>
-                      <option value="inter_group">عمومی (میان‌گروهی)</option>
+                      <option value="inter_group">چالش فراگروهی (همه‌ی کاروان‌ها)</option>
                     </select>
                     <small id="new-chal-mentor-notice" class="lse-hint" data-style="display: none"></small>
                   </label>
@@ -4389,7 +4421,7 @@
                   <label class="lse-field">
                     <span>کاروان و راهبر هدف</span>
                     <select id="edit-chal-caravan-id" class="select-ctrl" data-change="handleChallengeAudienceChange" data-change-args="[&quot;edit&quot;]">
-                      <option value="inter_group">عمومی (میان‌گروهی)</option>
+                      <option value="inter_group">چالش فراگروهی (همه‌ی کاروان‌ها)</option>
                     </select>
                     <small id="edit-chal-mentor-notice" class="lse-hint" data-style="display: none"></small>
                   </label>
