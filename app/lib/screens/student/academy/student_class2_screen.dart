@@ -72,7 +72,29 @@ class _Class2ScreenState extends State<StudentClass2Screen> {
   String get _answeredPrefsKey =>
       'answered_quizzes_${Provider.of<AppRepository>(context, listen: false).currentUser.id}';
 
+  /// The quiz the admin made for a part (matched by its clip, else by its order); null when there is none.
+  Map<String, dynamic>? _quizOfPart(Map<String, dynamic> session, int clipIndex) {
+    final clips = session['videoClips'] as List? ?? [];
+    final clipId = (clipIndex >= 0 && clipIndex < clips.length && clips[clipIndex] is Map) ? clips[clipIndex]['id']?.toString() : null;
+    final quizzes = (session['quizzes'] as List? ?? []).whereType<Map>().toList();
+    Map? found;
+    for (final q in quizzes) {
+      if (clipId != null && q['clipId']?.toString() == clipId) { found = q; break; }
+    }
+    found ??= quizzes.where((q) => q['clipId'] == null && q['orderIndex'] == clipIndex + 1).firstOrNull;
+    if (found == null) return null;
+    try {
+      final parsed = jsonDecode(found['questionsJson']?.toString() ?? '');
+      if (parsed is! List || parsed.isEmpty) return null;
+    } catch (_) {
+      return null;
+    }
+    return Map<String, dynamic>.from(found);
+  }
+
+  /// A part without a quiz never blocks the next one (no made-up quiz is shown instead).
   bool _isAnswered(Map<String, dynamic> session, int clipIndex) {
+    if (_quizOfPart(session, clipIndex) == null) return true;
     final key = _passedKey(session, clipIndex);
     return _answeredQuizzes.contains(key) || _passedQuizzes.contains(key);
   }
@@ -151,7 +173,15 @@ class _Class2ScreenState extends State<StudentClass2Screen> {
 
   /// A part (after the first) opens only after the previous part's quiz is answered.
   bool _isPartLocked(Map<String, dynamic> session, int clipIndex) =>
-      (clipIndex > 0 && !_isAnswered(session, clipIndex - 1)) || _clipUnlockTime(session, clipIndex) != null;
+      (clipIndex > 0 && !_isStationPassed && !_isAnswered(session, clipIndex - 1)) || _clipUnlockTime(session, clipIndex) != null;
+
+  /// A station the user already went past: content the admin added or changed later never locks it again.
+  bool get _isStationPassed {
+    final user = Provider.of<AppRepository>(context, listen: false).currentUser;
+    final level = user.levelFrame < 1 ? 1 : user.levelFrame;
+    final reached = (level - 1) > user.completedStationsCount ? (level - 1) : user.completedStationsCount;
+    return _currentStationIndex < reached;
+  }
 
   /// Mentors are not bound by the release schedule (the server does the same for stations).
   bool get _isMentorUser {
@@ -606,7 +636,7 @@ class _Class2ScreenState extends State<StudentClass2Screen> {
   /// previous lesson has been answered.
   bool _isSessionLocked(List<Map<String, dynamic>> sessions, int sIndex) {
     if (sIndex >= 0 && sIndex < sessions.length && _sessionOpensAt(sessions[sIndex]) != null) return true;
-    if (sIndex <= 0 || sIndex >= sessions.length) return false;
+    if (sIndex <= 0 || sIndex >= sessions.length || _isStationPassed) return false;
     final prev = sessions[sIndex - 1];
     final prevClips = prev['videoClips'] as List? ?? [];
     for (int i = 0; i < prevClips.length; i++) {
@@ -1379,39 +1409,15 @@ class _Class2ScreenState extends State<StudentClass2Screen> {
 
   void _showPartMiniQuiz(int partIndex) {
     final session = _activeSession;
-    final quizzes = session?['quizzes'] as List? ?? [];
-
-    String? currentQuizId;
-    List<dynamic> quizQuestions = [];
-    if (quizzes.isNotEmpty) {
-      for (var q in quizzes) {
-        if (q['orderIndex'] == partIndex + 1) {
-          currentQuizId = q['id']?.toString();
-          if (q['questionsJson'] != null) {
-            try {
-              final parsed = jsonDecode(q['questionsJson'].toString());
-              if (parsed is List) quizQuestions = parsed;
-            } catch (_) {}
-          }
-          break;
-        }
-      }
+    final quiz = session == null ? null : _quizOfPart(session, partIndex);
+    if (quiz == null) {
+      // No quiz was made for this part in the panel: nothing is shown and nothing is blocked.
+      if (mounted) setState(() => _isMiniQuizShowing = false);
+      AppToast.info(context, 'برای این پارت آزمونی ثبت نشده است.');
+      return;
     }
-
-    if (quizQuestions.isEmpty) {
-      quizQuestions = [
-        {
-          'question': 'سوال ارزیابی پارت ${_toFarsiDigit(partIndex + 1)}: مفهوم اصلی تدریس شده در این پارت چیست؟',
-          'options': [
-            'شناخت و تقویت ویژگی‌های فردی',
-            'مدیریت زمان و هماهنگی کاروانی',
-            'حل مسئله در شرایط پیچیده',
-            'همه موارد فوق',
-          ],
-          'correctIndex': 3,
-        }
-      ];
-    }
+    final String? currentQuizId = quiz['id']?.toString();
+    final List<dynamic> quizQuestions = jsonDecode(quiz['questionsJson'].toString()) as List;
 
     int currentQuestionIndex = 0;
     // One attempt only: once answered, the quiz can just be viewed.

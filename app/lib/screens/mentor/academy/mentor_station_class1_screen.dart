@@ -19,10 +19,11 @@ import 'package:nopa_app/core/constants/api_constants.dart';
 import 'package:nopa_app/models/station.dart';
 import 'package:nopa_app/services/app_state_repository.dart';
 import 'package:nopa_app/services/api_service.dart';
-import 'package:nopa_app/services/local_cache.dart';
 import 'package:nopa_app/widgets/station_progress_stepper.dart';
 import 'package:nopa_app/widgets/zoomable_image.dart';
 import 'package:nopa_app/screens/student/academy/student_class2_screen.dart';
+import 'package:nopa_app/utils/mentor_contact.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class MentorStationClass1Screen extends StatefulWidget {
   const MentorStationClass1Screen({super.key});
@@ -1495,37 +1496,45 @@ class _MentorStationScreenState extends State<MentorStationClass1Screen> {
     ),
   );
 
-  Widget _buildDialogPillBadge(String label) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6.5),
-      decoration: BoxDecoration(
-        color: Colors.transparent,
-        borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: const Color(0xFF7A709E), width: 1.1),
-      ),
-      child: Text(
-        label,
-        style: AppTypography.bodyMedium.copyWith(color: Color(0xFFDDD9EE)),
-      ),
-    );
-  }
-
-  Widget _buildDialogRow({required String label, required Widget content}) {
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.center,
-      children: [
-        _buildDialogPillBadge(label),
-        const SizedBox(width: 12),
-        Expanded(child: content),
-      ],
-    );
-  }
-
-  /// Follow-up dialog for sending message to student (matching ContactUsDialog template and style)
+  /// «پیگیری»: two ways to reach the member — a phone call, or their private chat in Nopa.
   void _openFollowUpDialog(Map<String, dynamic> member) {
     final name = member['name']?.toString() ?? 'دانش‌آموز کاروان';
-    final phone = member['phoneNumber']?.toString() ?? '';
-    final controller = DraftTextController(draftKey: 'mentor_followup.${member['id']}');
+    final phone = (member['phoneNumber']?.toString() ?? '').trim();
+    final memberId = member['id']?.toString() ?? '';
+
+    Widget option({required IconData icon, required String title, required String subtitle, required VoidCallback onTap}) {
+      return TapExpander(
+        child: GestureDetector(
+          behavior: HitTestBehavior.opaque,
+          onTap: onTap,
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+            decoration: BoxDecoration(
+              color: const Color(0xFF1E1D38),
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(color: const Color(0xFF7A709E), width: 1.1),
+            ),
+            child: Row(
+              children: [
+                Icon(icon, color: const Color(0xFFE5B888), size: 24),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(title, style: AppTypography.h3Strong),
+                      const SizedBox(height: 2),
+                      Text(subtitle, style: AppTypography.caption.copyWith(color: const Color(0xFFDDD9EE))),
+                    ],
+                  ),
+                ),
+                const Icon(Icons.chevron_left_rounded, color: Color(0xFFDDD9EE)),
+              ],
+            ),
+          ),
+        ),
+      );
+    }
 
     showNopaModal<void>(
       context,
@@ -1533,42 +1542,12 @@ class _MentorStationScreenState extends State<MentorStationClass1Screen> {
       builder: (dialogCtx) {
         return NopaModalShell(
           maxWidth: 420,
-          headerIcon: Icons.chat_bubble_outline_rounded,
-          title: 'پیام به دانش‌آموز',
+          headerIcon: Icons.support_agent_rounded,
+          title: 'پیگیری $name',
           padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 22),
           actions: [
             NopaModalAction(
-              label: 'ارسال پیام',
-              onPressed: () async {
-                            final text = controller.text.trim();
-                            if (text.isEmpty) {
-                              AppToast.error(
-                                context,
-                                'لطفاً متن پیام را وارد کنید',
-                              );
-                              return;
-                            }
-                            final sent = await HttpApiService().sendMentorMessage(
-                              title: 'پیام راهبر',
-                              message: text,
-                              caravanId: Provider.of<AppRepository>(context, listen: false).activeCaravanId,
-                              userId: member['id']?.toString(),
-                            );
-                            if (!dialogCtx.mounted || !mounted) return;
-                            if (sent == null) {
-                              AppToast.error(context, 'ارسال پیام انجام نشد. دوباره تلاش کنید.');
-                              return;
-                            }
-                            controller.clearDraft();
-                            Navigator.pop(dialogCtx);
-                            AppToast.info(
-                              context,
-                              'پیام برای $name با موفقیت ارسال شد.',
-                            );
-                          },
-            ),
-            NopaModalAction(
-              label: 'لغو',
+              label: 'بستن',
               variant: NopaModalActionVariant.secondary,
               onPressed: () => Navigator.pop(dialogCtx),
             ),
@@ -1577,90 +1556,32 @@ class _MentorStationScreenState extends State<MentorStationClass1Screen> {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-                    // 1. Student Name
-                    _buildDialogRow(
-                      label: 'نام دانش‌آموز:',
-                      content: Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 14,
-                          vertical: 8,
-                        ),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFF1E1D38),
-                          borderRadius: BorderRadius.circular(10),
-                          border: Border.all(
-                            color: const Color(0xFF7A709E),
-                            width: 1.1,
-                          ),
-                        ),
-                        child: Text(
-                          name,
-                          style: AppTypography.h3Strong,
-                        ),
-                      ),
-                    ),
-
-                    if (phone.isNotEmpty) ...[
-                      const SizedBox(height: 12),
-                      // 2. Phone
-                      _buildDialogRow(
-                        label: 'شماره تماس:',
-                        content: Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 14,
-                            vertical: 8,
-                          ),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFF1E1D38),
-                            borderRadius: BorderRadius.circular(10),
-                            border: Border.all(
-                              color: const Color(0xFF7A709E),
-                              width: 1.1,
-                            ),
-                          ),
-                          child: Text(
-                            phone,
-                            textDirection: TextDirection.ltr,
-                            textAlign: TextAlign.right,
-                            style: AppTypography.bodyMedium.copyWith(color: Color(0xFFDDD9EE)),
-                          ),
-                        ),
-                      ),
-                    ],
-
-                    const SizedBox(height: 12),
-
-                    // 3. Message Text input
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        _buildDialogPillBadge('متن پیام:'),
-                        const SizedBox(height: 8),
-                        Container(
-                          decoration: BoxDecoration(
-                            color: const Color(0xFF1E1D38),
-                            borderRadius: BorderRadius.circular(14),
-                            border: Border.all(
-                              color: const Color(0xFF7A709E),
-                              width: 1.1,
-                            ),
-                          ),
-                          child: TextField(
-                            controller: controller,
-                            maxLines: 4,
-                            style: AppTypography.bodyMedium,
-                            decoration: InputDecoration(
-                              hintText:
-                                  'متن پیام یا پیگیری آموزشی برای این عضو را بنویسید...',
-                              hintStyle: AppTypography.bodyMedium.copyWith(color: Color(0xFF7E789F)),
-                              contentPadding: EdgeInsets.all(12),
-                              border: InputBorder.none,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-
+              option(
+                icon: Icons.call_rounded,
+                title: 'تماس تلفنی',
+                subtitle: phone.isEmpty ? 'شماره‌ای ثبت نشده است' : phone,
+                onTap: () async {
+                  if (phone.isEmpty) {
+                    AppToast.error(context, 'شماره تماسی برای این عضو ثبت نشده است.');
+                    return;
+                  }
+                  Navigator.pop(dialogCtx);
+                  final ok = await launchUrl(Uri(scheme: 'tel', path: phone));
+                  if (!ok && mounted) AppToast.error(context, 'امکان باز کردن شماره‌گیر وجود ندارد.');
+                },
+              ),
+              const SizedBox(height: 10),
+              option(
+                icon: Icons.chat_bubble_outline_rounded,
+                title: 'پیام در چت نپا',
+                subtitle: 'گفتگوی شخصی با $name',
+                onTap: () async {
+                  if (memberId.isEmpty) return;
+                  Navigator.pop(dialogCtx);
+                  if (!mounted) return;
+                  await openChatWithUser(context, memberId);
+                },
+              ),
             ],
           ),
         );

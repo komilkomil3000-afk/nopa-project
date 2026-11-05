@@ -134,6 +134,24 @@ class Station {
       final v = json[key]?.toString().trim() ?? '';
       if (v.isNotEmpty) return v;
     }
+    // Same fallback as the admin panel's preview: the first gallery picture (a video entry's cover)
+    var gallery = json['animations'];
+    if (gallery is! List && json['animationsJson'] is String) {
+      try {
+        gallery = jsonDecode(json['animationsJson'] as String);
+      } catch (_) {}
+    }
+    if (gallery is List) {
+      final isImage = RegExp(r'.(jpe?g|png|webp|gif|avif|bmp|svg)$', caseSensitive: false);
+      for (final item in gallery) {
+        if (item is! Map) continue;
+        final cover = item['coverImageUrl']?.toString().trim() ?? '';
+        if (cover.isNotEmpty) return cover;
+        final url = (item['url'] ?? item['videoUrl'])?.toString().trim() ?? '';
+        final path = Uri.tryParse(url)?.path ?? url;
+        if (url.isNotEmpty && isImage.hasMatch(path)) return url;
+      }
+    }
     return '';
   }
 

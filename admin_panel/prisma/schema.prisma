@@ -20,6 +20,7 @@ model User {
   panelAccess                  Boolean?       // null = follow role default; true/false = per-user override
   zarikBalance                 Int            @default(0)
   levelFrame                   Int            @default(1)
+  completedStationsHigh        Int            @default(0) // most stations ever completed; editing content never locks passed stations
   mentorLevel                  Int            @default(1) // 1: Junior, 2: Senior, 3: Master
   nationalId                   String?
   dateOfBirth                  String?

@@ -185,6 +185,29 @@ async function renumberStationsAround(tx: any, stationId: string, number: number
   }
 }
 
+/** A part that has a video must have a real quiz (no made-up one is ever shown to students). Throws a 400-style error naming the parts. */
+async function assertClipsHaveQuiz(tx: any, clipIds: string[]) {
+  if (clipIds.length === 0) return;
+  const clips = await tx.videoClip.findMany({
+    where: { id: { in: clipIds } },
+    select: { id: true, title: true, clipOrder: true, videoUrl: true, sessionId: true, session: { select: { title: true } } },
+    orderBy: [{ sessionId: 'asc' }, { clipOrder: 'asc' }]
+  });
+  const quizzes = await tx.quiz.findMany({
+    where: { sessionId: { in: Array.from(new Set(clips.map((c: any) => c.sessionId))) as string[] } },
+    select: { clipId: true, orderIndex: true, sessionId: true, questionsJson: true }
+  });
+  const hasQuestions = (json: string) => {
+    try { const a = JSON.parse(json || '[]'); return Array.isArray(a) && a.length > 0; } catch (_) { return false; }
+  };
+  const missing = clips.filter((c: any) => String(c.videoUrl || '').trim() &&
+    !quizzes.some((q: any) => q.sessionId === c.sessionId && (q.clipId === c.id || (!q.clipId && q.orderIndex === c.clipOrder)) && hasQuestions(q.questionsJson)));
+  if (missing.length > 0) {
+    const names = missing.map((c: any) => `«${c.title || 'پارت ' + c.clipOrder}» (جلسه ${c.session?.title || ''})`).join('، ');
+    throw Object.assign(new Error(`برای هر پارت باید آزمونک ساخته شود. آزمونک این پارت‌ها ثبت نشده است: ${names}`), { statusCode: 400 });
+  }
+}
+
 export const createOrUpdateStation = async (req: Request, res: Response) => {
   try {
     const { id, title, subtitle, description, stayDuration, animationCount, animationTitle, animationUrl, animations, animationsJson, iconUrl, orderIndex, releaseDate, releaseTime, scoringCriteriaJson, categories, instructors, schedule, category, sessionsCount, isLocked, status, scheduledUnlockTime, requirePreviousComplete, targetCaravansJson } = req.body;
@@ -473,28 +496,38 @@ export const createOrUpdateStation = async (req: Request, res: Response) => {
 
             const incomingQuizzes = sess.quizzes || (sess.quiz ? [sess.quiz] : []);
             if (incomingQuizzes.length > 0) {
-              await tx.quiz.deleteMany({
-                where: { sessionId: dbSession.id }
-              });
+              // Quizzes are updated in place (never deleted and recreated): deleting one would wipe the students'
+              // submissions and progress, locking stations they had already passed.
+              const existingQuizzes = await tx.quiz.findMany({ where: { sessionId: dbSession.id } });
+              const keptQuizIds = new Set<string>();
               for (let q = 0; q < incomingQuizzes.length; q++) {
                 const quizPayload = incomingQuizzes[q];
                 const matchedClip = savedClips.find(c => c.clipOrder === (quizPayload.orderIndex || q + 1)) || savedClips[q];
-                await tx.quiz.create({
-                  data: {
-                    sessionId: dbSession.id,
-                    clipId: matchedClip ? matchedClip.id : (quizPayload.clipId || undefined),
-                    title: quizPayload.title || `آزمونک پارت ${q + 1}`,
-                    questionsJson: typeof quizPayload.questionsJson === 'string' 
-                        ? quizPayload.questionsJson 
-                        : JSON.stringify(quizPayload.questionsJson || []),
-                    rewardZarik: quizReward(quizPayload.rewardZarik),
-                    rewardNakh: parseInt(quizPayload.rewardNakh) || 0,
-                    rewardFarsh: parseInt(quizPayload.rewardFarsh) || 0,
-                    orderIndex: parseInt(quizPayload.orderIndex) || (q + 1)
-                  }
-                });
+                const quizData = {
+                  clipId: matchedClip ? matchedClip.id : (quizPayload.clipId || undefined),
+                  title: quizPayload.title || `آزمونک پارت ${q + 1}`,
+                  questionsJson: typeof quizPayload.questionsJson === 'string' 
+                      ? quizPayload.questionsJson 
+                      : JSON.stringify(quizPayload.questionsJson || []),
+                  rewardZarik: quizReward(quizPayload.rewardZarik),
+                  rewardNakh: parseInt(quizPayload.rewardNakh) || 0,
+                  rewardFarsh: parseInt(quizPayload.rewardFarsh) || 0,
+                  orderIndex: parseInt(quizPayload.orderIndex) || (q + 1)
+                };
+                const existing = existingQuizzes.find(x => !keptQuizIds.has(x.id) && quizPayload.id && x.id === quizPayload.id)
+                  || existingQuizzes.find(x => !keptQuizIds.has(x.id) && quizData.clipId && x.clipId === quizData.clipId);
+                if (existing) {
+                  keptQuizIds.add(existing.id);
+                  await tx.quiz.update({ where: { id: existing.id }, data: quizData });
+                } else {
+                  const created = await tx.quiz.create({ data: { sessionId: dbSession.id, ...quizData } });
+                  keptQuizIds.add(created.id);
+                }
               }
+              const staleIds = existingQuizzes.filter(x => !keptQuizIds.has(x.id)).map(x => x.id);
+              if (staleIds.length > 0) await tx.quiz.deleteMany({ where: { id: { in: staleIds } } });
             }
+            await assertClipsHaveQuiz(tx, savedClips.map(c => c.id));
           }
         }
       }
@@ -505,7 +538,7 @@ export const createOrUpdateStation = async (req: Request, res: Response) => {
     res.json({ message: 'ساختار منزلگاه با موفقیت ذخیره شد', data: result });
   } catch (error: any) {
     console.error('createOrUpdateStation error:', error);
-    res.status(500).json({ error: error.message || 'Internal Server Error' });
+    res.status(error.statusCode || 500).json({ error: error.message || 'Internal Server Error' });
   }
 };
 
@@ -750,6 +783,11 @@ export const batchSaveStationContent = async (req: Request, res: Response) => {
         }
       }
 
+      // Every touched part with a video must have a quiz
+      if (Array.isArray(clips)) {
+        await assertClipsHaveQuiz(tx, clips.filter((c: any) => c && c.id).map((c: any) => String(c.id)));
+      }
+
       // 4. Update categories if any
       const { categories } = req.body;
       if (Array.isArray(categories)) {
@@ -770,7 +808,7 @@ export const batchSaveStationContent = async (req: Request, res: Response) => {
     res.json({ message: 'کلیه تغییرات با موفقیت ثبت نهایی شد' });
   } catch (error: any) {
     console.error('batchSaveStationContent error:', error);
-    res.status(500).json({ error: error.message || 'خطا در ثبت نهایی تغییرات' });
+    res.status(error.statusCode || 500).json({ error: error.message || 'خطا در ثبت نهایی تغییرات' });
   }
 };
 

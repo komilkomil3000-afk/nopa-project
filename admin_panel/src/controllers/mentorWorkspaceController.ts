@@ -443,7 +443,7 @@ export async function getMentorCaravanProgress(req: AuthRequest, res: Response) 
         id: st.id,
         title: st.title,
         description: st.subtitle || st.description || 'توضیحات منزلگاه',
-        imageUrl: st.iconUrl,
+        imageUrl: st.iconUrl || stationAnimations.map((a: any) => a?.coverImageUrl || (/.(jpe?g|png|webp|gif|avif|bmp|svg)$/i.test(String(a?.url || a?.videoUrl || '').split('?')[0]) ? (a.url || a.videoUrl) : '')).find((x: string) => x) || '',
         orderIndex: st.orderIndex,
         classCategories,
         skillSessions,

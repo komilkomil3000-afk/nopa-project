@@ -893,6 +893,7 @@
           <button type="button" class="lse-btn" data-click="lmsEditorClipAlwaysOpen" data-click-args="${args(clip.id)}"><i class="fa-solid fa-unlock"></i> همیشه باز</button>
         </div>
         <div class="lse-quizzes">
+          ${quizzes.length || !String(val(`clip.${clip.id}.videoUrl`) || '').trim() ? '' : '<div class="lse-quiz-missing" style="color:#e5484d;font-size:12px;margin-bottom:6px"><i class="fa-solid fa-triangle-exclamation"></i> این پارت آزمونک ندارد؛ ساخت آزمونک الزامی است و بدون آن ذخیره نمی‌شود.</div>'}
           ${quizzes.map(q => `
             <div class="lse-quiz">
               <i class="fa-solid fa-circle-question"></i>
@@ -1318,6 +1319,18 @@
       render();
       showToast('عنوان منزلگاه نمی‌تواند خالی باشد.', 'error');
       document.getElementById('lse-st-title')?.focus();
+      return;
+    }
+
+    // Every part that has a video needs a quiz: nothing is saved until all of them have one
+    const noQuiz = [];
+    window.lmsOrderedCategories(st).forEach(c => sessionsOf(c).forEach(sess => (sess.videoClips || []).forEach((clip, k) => {
+      if (String(val(`clip.${clip.id}.videoUrl`) || '').trim() && !quizzesOfClip(sess, clip, k).length) {
+        noQuiz.push(`«${val(`clip.${clip.id}.title`) || 'پارت ' + (k + 1)}» (${sess.title || 'جلسه'})`);
+      }
+    })));
+    if (noQuiz.length) {
+      showToast('ابتدا برای هر پارت آزمونک بسازید. آزمونک ندارد: ' + noQuiz.join('، '), 'error');
       return;
     }
 

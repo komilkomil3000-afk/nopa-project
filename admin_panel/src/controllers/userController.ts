@@ -28,7 +28,15 @@ async function countCompletedStations(userId: string): Promise<number> {
     if (clipIds.every(id => doneIds.has(id))) count++;
     else break;
   }
-  return count;
+  // Never go backwards: when the admin later edits, adds or replaces parts of stations the user already passed,
+  // those stations (and the ones after) must not lock again.
+  const u = await prisma.user.findUnique({ where: { id: userId }, select: { completedStationsHigh: true } });
+  const high = u?.completedStationsHigh ?? 0;
+  if (count > high) {
+    await prisma.user.update({ where: { id: userId }, data: { completedStationsHigh: count } }).catch(() => {});
+    return count;
+  }
+  return Math.min(high, stations.length);
 }
 
 export async function getMe(req: AuthRequest, res: Response) {
