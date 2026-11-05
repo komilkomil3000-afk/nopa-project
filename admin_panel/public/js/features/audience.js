@@ -17,6 +17,7 @@ const USR_ROLES = {
   mentor: { label: 'راهبر', icon: 'fa-user-tie' },
   sub_admin: { label: 'ادمین محتوا', icon: 'fa-user-gear' },
   channel_manager: { label: 'مسئول کانال‌ها', icon: 'fa-tower-broadcast' },
+  support: { label: 'پشتیبانی', icon: 'fa-headset' },
   admin: { label: 'سوپر ادمین', icon: 'fa-user-shield' },
 };
 const USR_MENTOR_LEVELS = { 1: 'راهبر مقدماتی', 2: 'راهبر پیشرفته', 3: 'راهبر ارشد' };

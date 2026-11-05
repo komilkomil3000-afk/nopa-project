@@ -1,5 +1,5 @@
 import prisma from '../../config/db';
-import { ChatPermissions, DEFAULT_CHAT_PERMISSIONS, isChannelManagerRole, isMentorRole, isSubAdminRole, parseChatPermissions, ROLE_CHANNEL_MANAGER } from '../../utils/roles';
+import { ChatPermissions, DEFAULT_CHAT_PERMISSIONS, isChannelManagerRole, isMentorRole, isSubAdminRole, isSupportRole, parseChatPermissions, ROLE_CHANNEL_MANAGER } from '../../utils/roles';
 
 export type SpaceType = 'announcements' | 'public' | 'arena' | 'mediaqa' | 'mentors' | 'caravan' | 'challenges' | 'media' | 'direct' | 'support';
 
@@ -35,7 +35,19 @@ export async function loadActor(userId: string): Promise<ChatActor | null> {
 
 const isAdmin = (a: ChatActor) => String(a.role).toLowerCase() === 'admin' || isSubAdminRole(a.role);
 const isManager = (a: ChatActor) => isChannelManagerRole(a.role);
+const isSupport = (a: ChatActor) => isSupportRole(a.role);
 const leadsCaravan = (a: ChatActor, s: SpaceRef) => !!s.caravanId && a.mentoredCaravanIds.includes(s.caravanId);
+
+/** People who run the platform rather than compete in it: they may see every caravan's work at any time. */
+export function isStaff(a: { role: string }): boolean {
+  const r = String(a.role).toLowerCase();
+  return r === 'admin' || isSubAdminRole(r) || isChannelManagerRole(r) || isSupportRole(r);
+}
+
+/** Admins and support staff can delete a group; a mentor asks for it through support. */
+export function canDeleteGroup(a: ChatActor): boolean {
+  return isAdmin(a) || isSupport(a) || (isManager(a) && a.permissions.enterGroups);
+}
 
 /**
  * Who sees a space. Caravan spaces follow the caravan itself, so a transfer between caravans needs no
@@ -49,14 +61,14 @@ export function canSee(a: ChatActor, s: SpaceRef, isMember: boolean): boolean {
     case 'mediaqa':
       return true;
     case 'support':
-      return isMember || isAdmin(a) || (isManager(a) && a.permissions.privateChats);
+      return isMember || isAdmin(a) || isSupport(a) || (isManager(a) && a.permissions.privateChats);
     case 'mentors':
-      return isAdmin(a) || isManager(a) || isMentorRole(a.role);
+      return isAdmin(a) || isManager(a) || isSupport(a) || isMentorRole(a.role);
     case 'caravan':
     case 'challenges':
-      return isAdmin(a) || leadsCaravan(a, s) || a.caravanId === s.caravanId || (isManager(a) && a.permissions.enterGroups);
+      return isAdmin(a) || isSupport(a) || leadsCaravan(a, s) || a.caravanId === s.caravanId || (isManager(a) && a.permissions.enterGroups);
     case 'media':
-      return isMember || isAdmin(a) || leadsCaravan(a, s) || (isManager(a) && a.permissions.enterGroups);
+      return isMember || isAdmin(a) || isSupport(a) || leadsCaravan(a, s) || (isManager(a) && a.permissions.enterGroups);
     default:
       return isMember;
   }
@@ -69,8 +81,8 @@ export function canPostTopLevel(a: ChatActor, s: SpaceRef): boolean {
     case 'public':
       return isAdmin(a) || (isManager(a) && a.permissions.publishChannels);
     case 'arena':
-      // Mentors speak in the arena with the admin; students answer only in their own caravan's challenge group
-      return isAdmin(a) || isMentorRole(a.role);
+      // The arena's feed is the admin's; mentors write only inside an open cross-caravan challenge (see canReplyInArena)
+      return isAdmin(a);
     case 'challenges':
       return isAdmin(a) || leadsCaravan(a, s);
     default:
@@ -78,9 +90,19 @@ export function canPostTopLevel(a: ChatActor, s: SpaceRef): boolean {
   }
 }
 
-/** Answering under a message. The inter-group arena is for mentors and the admin: students and rival caravans never talk directly there. */
+/**
+ * Answering under a message. The inter-group arena is for mentors and the admin: students and rival caravans never
+ * talk directly there, and a mentor's place is the thread of an open cross-caravan challenge (canReplyInArena).
+ */
 export function canReply(a: ChatActor, s: SpaceRef): boolean {
   return s.type !== 'arena' || isAdmin(a) || isMentorRole(a.role);
+}
+
+/** The thread a mentor may write in: a cross-caravan challenge whose conversation is open and not yet ranked. */
+export function canReplyInArena(a: ChatActor, topic: { status: string; challenge: { category: string; rankingFinalizedAt: Date | null } } | null): boolean {
+  if (isAdmin(a)) return true;
+  if (!isMentorRole(a.role) || !topic) return false;
+  return topic.challenge.category === 'inter_group' && topic.status === 'open' && !topic.challenge.rankingFinalizedAt;
 }
 
 /** Pin, delete others' messages, mute. Private conversations have no moderators. */
@@ -108,8 +130,9 @@ export async function canStartDirect(a: ChatActor, otherId: string): Promise<boo
   if (!other) return false;
 
   if (isAdmin(a)) return true;
+  if (isSupport(a)) return isMentorRole(other.role);
   if (isMentorRole(a.role)) {
-    return String(other.role).toLowerCase() === 'admin' || (!!other.caravanId && a.mentoredCaravanIds.includes(other.caravanId));
+    return String(other.role).toLowerCase() === 'admin' || isSupportRole(other.role) || (!!other.caravanId && a.mentoredCaravanIds.includes(other.caravanId));
   }
   if (a.caravanId && isMentorRole(other.role)) {
     const caravan = await prisma.caravan.findFirst({ where: { id: a.caravanId, mentorId: otherId }, select: { id: true } });

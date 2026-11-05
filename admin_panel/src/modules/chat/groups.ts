@@ -2,10 +2,12 @@ import crypto from 'crypto';
 import prisma from '../../config/db';
 import { logAdminAction } from '../../controllers/adminController';
 import { isChannelManagerRole, isMentorRole } from '../../utils/roles';
-import { ChatActor } from './access';
+import { canDeleteGroup, ChatActor } from './access';
 import { handler } from './http';
+import { publishMessage } from './publish';
 import { emitToSpace, refreshUserRooms } from './realtime';
 import { ChatError } from './service';
+import { ensureOpenCase, supportSpaceOf } from './support';
 
 const isAdmin = (a: ChatActor) => ['admin', 'sub_admin'].includes(String(a.role).toLowerCase());
 
@@ -111,13 +113,38 @@ export const removeGroupMember = handler(async (req, res, actor) => {
   res.json({ success: true });
 });
 
-/** Deleting removes the group and its messages for everyone, so it goes in the audit log. */
+/**
+ * Deleting removes the group and its messages for everyone, so it goes in the audit log.
+ * Only admins and support (and channel managers who may enter groups) delete; a mentor asks via requestGroupDeletion.
+ */
 export const deleteGroup = handler(async (req, res, actor) => {
-  const group = await requireGroup(actor, req.params.id);
+  const group = await prisma.chatSpace.findFirst({ where: { id: req.params.id, type: 'media' } });
+  if (!group) throw new ChatError(404, 'گروه یافت نشد');
+  if (!canDeleteGroup(actor)) {
+    throw new ChatError(403, isMentorRole(actor.role) ? 'حذف گروه فقط از طریق پشتیبانی ممکن است؛ درخواست حذف بفرستید' : 'حذف این گروه برای شما مجاز نیست');
+  }
   const members = await prisma.chatMember.findMany({ where: { spaceId: group.id }, select: { userId: true } });
   emitToSpace(group.id, 'space:update', { spaceId: group.id });
   await prisma.chatSpace.delete({ where: { id: group.id } });
   await logAdminAction(actor.id, actor.name, 'DELETE_CHAT_GROUP', 'ChatSpace', group.id, group.title, req.ip || '');
   await refreshUserRooms(members.map(m => m.userId));
   res.json({ success: true });
+});
+
+/**
+ * A mentor asks for a group to be deleted. The request is written in the mentor's own support conversation, which opens
+ * a support case; support or an admin then deletes the group. Body: { reason? }.
+ */
+export const requestGroupDeletion = handler(async (req, res, actor) => {
+  const group = await requireGroup(actor, req.params.id);
+  const reason = String(req.body?.reason || '').trim().slice(0, 500);
+  const body = `درخواست حذف گروه «${group.title}» (شناسه: ${group.id})${reason ? `\nدلیل: ${reason}` : ''}`;
+  const space = await supportSpaceOf(actor.id);
+  const { message, created } = await publishMessage({
+    spaceId: space.id, senderId: actor.id, body, attachmentIds: [], mentions: [],
+    meta: { groupDeletionRequest: true, groupId: group.id, groupTitle: group.title },
+  });
+  if (created) await ensureOpenCase(space.id, actor.id, body, message.seq);
+  await refreshUserRooms([actor.id]);
+  res.status(201).json({ success: true, supportSpaceId: space.id });
 });

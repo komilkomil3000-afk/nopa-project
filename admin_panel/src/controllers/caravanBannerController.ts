@@ -134,8 +134,10 @@ export async function finalizeChallengeRanking(req: AuthRequest, res: Response) 
     if (req.body?.preview === true) {
       return res.json({ preview: true, total: plan.reduce((sum, p) => sum + p.amount, 0), paidMembers: plan.filter(p => p.amount > 0).length, members: plan.length, unconfirmed });
     }
-    if (unconfirmed.length > 0 && req.body?.acceptUnconfirmed !== true) {
-      return res.status(400).json({ error: `سطح اعضای این کاروان‌ها تأیید نشده است: ${unconfirmed.join('، ')}` });
+    // No bypass: a member's payout is their share of the reward, so it cannot be paid before their mentor (or the admin,
+    // on the mentor's behalf) confirms how much they took part
+    if (unconfirmed.length > 0) {
+      return res.status(400).json({ error: `مشارکت اعضای این کاروان‌ها هنوز تأیید نشده است: ${unconfirmed.join('، ')}`, unconfirmed });
     }
 
     await prisma.$transaction(async (tx) => {

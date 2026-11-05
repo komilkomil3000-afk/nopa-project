@@ -6,16 +6,18 @@ import prisma from '../../config/db';
 import { AuthRequest } from '../../middleware/auth';
 import { ALLOWED_UPLOADS } from '../../controllers/mediaController';
 import { getChatSettings } from '../../services/chatSettings';
-import { canModerate, canPostTopLevel, canReply, canStartDirect, canTag, ChatActor } from './access';
+import { canModerate, canPostTopLevel, canReply, canReplyInArena, canStartDirect, canTag, ChatActor } from './access';
 import { blockedWord, runCommand } from './bots';
 import { handler, requireMessage, requireSpace } from './http';
 import { notifyAbsent, publishMessage, publishUpdate } from './publish';
 import { emitToSpace, isOnline, refreshUserRooms } from './realtime';
 import { peopleOf } from './profiles';
 import { ensureOpenCase } from './support';
-import { recordArenaSubmission } from './intergroup';
+import { recordArenaSubmission, resolveActorCaravan } from './intergroup';
+import { sealedMessageIds } from './arenaPrivacy';
+import { isMentorRole, isSupportRole } from '../../utils/roles';
 import {
-  attachmentKind, CHAT_FILES_DIR, ChatError, directKey, findVisibleSpace, MAX_BODY, MESSAGE_INCLUDE, PAGE_SIZE,
+  attachmentKind, CHAT_FILES_DIR, caravanIdsOf, ChatError, directKey, findVisibleSpace, MAX_BODY, MESSAGE_INCLUDE, PAGE_SIZE,
   randomStorageName, REACTION_TYPES, serializeMessage, STAR_REACTION, signFileUrl, verifyFileToken, visibleSpaces,
 } from './service';
 
@@ -38,8 +40,12 @@ export const chatUpload = multer({
   },
 });
 
-export const listSpaces = handler(async (_req, res, actor) => {
-  const { spaces, members } = await visibleSpaces(actor);
+export const listSpaces = handler(async (req, res, actor) => {
+  const visible = await visibleSpaces(actor);
+  const members = visible.members;
+  // ?caravanId= narrows the caravan-bound spaces to one caravan (support's caravan selector); the rest stay
+  const only = req.query.caravanId ? String(req.query.caravanId) : null;
+  const spaces = only ? visible.spaces.filter(s => !s.caravanId || s.caravanId === only) : visible.spaces;
   const ids = spaces.map(s => s.id);
   const [lastMessages, directMembers] = await Promise.all([
     prisma.chatMessage.findMany({
@@ -83,6 +89,17 @@ export const listSpaces = handler(async (_req, res, actor) => {
   }));
 });
 
+/** The caravans the caller works across, for the caravan selector (support, admins, channel managers, multi-caravan mentors). */
+export const listCaravans = handler(async (_req, res, actor) => {
+  const ids = await caravanIdsOf(actor);
+  const caravans = await prisma.caravan.findMany({
+    where: { id: { in: ids }, isDeleted: false },
+    select: { id: true, name: true, coverImageUrl: true, memberCount: true, mentor: { select: { id: true, name: true } } },
+    orderBy: { name: 'asc' },
+  });
+  res.json(caravans);
+});
+
 /** People the caller may start a private conversation with. */
 export const listContacts = handler(async (_req, res, actor) => {
   const select = { id: true, name: true, avatarUrl: true, role: true, gender: true };
@@ -93,10 +110,14 @@ export const listContacts = handler(async (_req, res, actor) => {
     return res.json(caravan?.mentor ? [caravan.mentor] : []);
   }
   if (actor.mentoredCaravanIds.length) {
-    const people = await prisma.user.findMany({ where: { OR: [{ caravanId: { in: actor.mentoredCaravanIds }, role: 'student' }, { role: 'admin' }] }, select, orderBy: { name: 'asc' } });
+    const people = await prisma.user.findMany({ where: { OR: [{ caravanId: { in: actor.mentoredCaravanIds }, role: 'student' }, { role: { in: ['admin', 'support'] } }] }, select, orderBy: { name: 'asc' } });
     return res.json(people);
   }
   if (role === 'admin' || role === 'sub_admin') {
+    const people = await prisma.user.findMany({ where: { role: { in: ['mentor', 'SUPER_MENTOR'] } }, select, orderBy: { name: 'asc' } });
+    return res.json(people);
+  }
+  if (isSupportRole(role)) {
     const people = await prisma.user.findMany({ where: { role: { in: ['mentor', 'SUPER_MENTOR'] } }, select, orderBy: { name: 'asc' } });
     return res.json(people);
   }
@@ -129,9 +150,10 @@ export const listMessages = handler(async (req, res, actor) => {
   const threadRootId = req.query.threadRootId ? String(req.query.threadRootId) : null;
   const tagId = req.query.tagId ? String(req.query.tagId) : undefined;
   const stationId = req.query.stationId ? String(req.query.stationId) : undefined;
+  const sealed = await sealedMessageIds(actor, space);
 
   const rows = await prisma.chatMessage.findMany({
-    where: { spaceId: space.id, threadRootId, stationId, seq: { lt: beforeSeq, gt: afterSeq }, ...(tagId ? { tags: { some: { tagId } } } : {}) },
+    where: { spaceId: space.id, threadRootId, stationId, seq: { lt: beforeSeq, gt: afterSeq }, id: { notIn: sealed }, ...(tagId ? { tags: { some: { tagId } } } : {}) },
     orderBy: { seq: afterSeq ? 'asc' : 'desc' },
     take: PAGE_SIZE,
     include: MESSAGE_INCLUDE,
@@ -144,7 +166,7 @@ export const listMessages = handler(async (req, res, actor) => {
   const roots = ordered.filter(m => !m.threadRootId && m.threadReplies > 0).map(m => m.id);
   const replies = roots.length
     ? await prisma.chatMessage.findMany({
-        where: { threadRootId: { in: roots }, senderId: { not: null }, deletedAt: null },
+        where: { threadRootId: { in: roots }, senderId: { not: null }, deletedAt: null, id: { notIn: sealed } },
         distinct: ['threadRootId', 'senderId'], orderBy: { createdAt: 'desc' },
         select: { threadRootId: true, sender: { select: { id: true, name: true, avatarUrl: true, role: true, gender: true } } },
       })
@@ -174,15 +196,25 @@ export const sendMessage = handler(async (req, res, actor) => {
   if (command !== null) return res.json({ command: true, result: command, clientMessageId: req.body?.clientMessageId });
 
   if (threadRootId ? !canReply(actor, space) : !canPostTopLevel(actor, space)) throw new ChatError(403, 'امکان ارسال پیام در این گفتگو وجود ندارد');
+  // A mentor's file in an open cross-caravan thread of the arena is the caravan's work: its caravan is fixed at send time
+  let submission: { caravanId: string; challengeId: string } | null = null;
   if (threadRootId) {
     const root = await prisma.chatMessage.findUnique({ where: { id: threadRootId }, select: { spaceId: true, threadRootId: true, marks: true, threadReplies: true } });
     if (!root || root.spaceId !== space.id || root.threadRootId) throw new ChatError(404, 'پیام یافت نشد');
-    const topic = await prisma.chatTopic.findUnique({ where: { messageId: threadRootId } });
+    const topic = await prisma.chatTopic.findUnique({ where: { messageId: threadRootId }, include: { challenge: { select: { category: true, rankingFinalizedAt: true } } } });
     if (topic && topic.status !== 'open') throw new ChatError(403, 'این چالش بسته شده است');
+    if (space.type === 'arena' && !canReplyInArena(actor, topic)) {
+      throw new ChatError(403, 'در میدان آثار فقط در گفت‌وگوی یک چالش فراگروهیِ باز می‌توانید بنویسید');
+    }
     // Only a message a moderator opened (or a challenge) takes replies under it
     const open = !!topic || root.marks.includes('thread') || root.threadReplies > 0 || canModerate(actor, space);
     if (!open) throw new ChatError(403, 'گفتگو زیر این پیام باز نشده است');
+    if (space.type === 'arena' && topic && topic.challenge.category === 'inter_group' && isMentorRole(actor.role) && attachmentIds.length > 0) {
+      submission = { caravanId: resolveActorCaravan(actor, req.body?.caravanId), challengeId: topic.challengeId };
+    }
   }
+  // Support staff answer inside a user's support conversation without joining it, like the panel does
+  const answeringSupport = space.type === 'support' && space.key !== `support:${actor.id}` && isSupportRole(actor.role);
   const word = await blockedWord(body);
   if (word) throw new ChatError(400, 'این پیام شامل واژه‌ی نامناسب است');
   if (space.slowSeconds > 0 && !canModerate(actor, space)) {
@@ -199,11 +231,16 @@ export const sendMessage = handler(async (req, res, actor) => {
     threadRootId,
     attachmentIds,
     mentions,
+    meta: submission ? { submission: true, ...submission } : undefined,
+    stayOutside: answeringSupport || undefined,
   });
   if (created) {
     // A mentor's file under an inter-group challenge in the arena is that caravan's work
-    if (space.type === 'arena' && threadRootId) await recordArenaSubmission(actor, space, message);
+    if (submission) await recordArenaSubmission(actor, submission, message);
     if (space.type === 'support' && space.key === `support:${actor.id}`) await ensureOpenCase(space.id, actor.id, body, message.seq);
+    if (answeringSupport) {
+      await prisma.supportCase.updateMany({ where: { spaceId: space.id, status: 'open' }, data: { status: 'reviewing', assigneeId: actor.id } });
+    }
     // Bold/italic markers stay in the chat, not in the notification
     await notifyAbsent(space, actor.id, actor.name, message.body.replace(/\*\*(.+?)\*\*|__(.+?)__/gs, (_m: string, b?: string, i?: string) => b ?? i ?? ''), mentions);
   }
@@ -310,7 +347,7 @@ export const togglePin = handler(async (req, res, actor) => {
 export const listPins = handler(async (req, res, actor) => {
   const { space } = await requireSpace(actor, req.params.id);
   const rows = await prisma.chatMessage.findMany({
-    where: { spaceId: space.id, pinnedAt: { not: null } }, orderBy: { pinnedAt: 'desc' }, take: 20, include: MESSAGE_INCLUDE,
+    where: { spaceId: space.id, pinnedAt: { not: null }, id: { notIn: await sealedMessageIds(actor, space) } }, orderBy: { pinnedAt: 'desc' }, take: 20, include: MESSAGE_INCLUDE,
   });
   res.json(rows.map(serializeMessage));
 });
@@ -324,7 +361,7 @@ export const searchMessages = handler(async (req, res, actor) => {
   const text = top ? q.slice(top[0].length).trim() : q;
   const rows = await prisma.chatMessage.findMany({
     where: {
-      spaceId: space.id, deletedAt: null,
+      spaceId: space.id, deletedAt: null, id: { notIn: await sealedMessageIds(actor, space) },
       ...(text ? { body: { contains: text, mode: 'insensitive' as const } } : {}),
       ...(top ? { reactions: { some: { type: STAR_REACTION } } } : {}),
     },

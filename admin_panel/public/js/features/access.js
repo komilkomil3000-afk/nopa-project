@@ -30,7 +30,7 @@ const SEC_CAPS = [
   ['canCreateChallenges', 'ایجاد چالش'],
   ['canViewGlobalAnalytics', 'آمار کلی'],
 ];
-const SEC_ROLE_ORDER = ['admin', 'sub_admin', 'channel_manager', 'super_mentor', 'mentor', 'student'];
+const SEC_ROLE_ORDER = ['admin', 'sub_admin', 'channel_manager', 'support', 'super_mentor', 'mentor', 'student'];
 
 function secKey(name) { return String(name || '').toLowerCase().replace(/[\s-]/g, '_'); }
 function secIsSuper(r) { return secKey(r.roleName) === 'admin'; }
@@ -38,7 +38,7 @@ function secFind(name) { return (window.secRoles || []).find(r => r.roleName ===
 function secRoleLabel(name) {
   const k = secKey(name);
   const labels = {
-    admin: 'سوپر ادمین', sub_admin: 'ادمین (مدیر محتوایی)', channel_manager: 'مسئول کانال و گروه‌ها',
+    admin: 'سوپر ادمین', sub_admin: 'ادمین (مدیر محتوایی)', channel_manager: 'مسئول کانال و گروه‌ها', support: 'پشتیبانی',
     super_mentor: 'سوپر راهبر', supermentor: 'سوپر راهبر', mentor: 'راهبر', student: 'نوجوان',
     caravan_supervisor: 'راهبر کاروان', content_manager: 'مدیر محتوا',
   };
@@ -49,6 +49,7 @@ function secRoleIcon(name) {
   if (k === 'admin') return 'fa-crown';
   if (k === 'sub_admin' || k === 'content_manager') return 'fa-user-gear';
   if (k === 'channel_manager') return 'fa-comments';
+  if (k === 'support') return 'fa-headset';
   if (k.includes('mentor') || k.includes('supervisor')) return 'fa-user-tie';
   if (k === 'student') return 'fa-user-graduate';
   return 'fa-user-lock';
@@ -448,6 +449,7 @@ function roleLabel(role) {
   if (r === 'admin') return 'سوپر ادمین';
   if (r === 'sub_admin') return 'ادمین (مدیر محتوایی)';
   if (r === 'channel_manager') return 'مسئول کانال و گروه‌ها';
+  if (r === 'support') return 'پشتیبانی';
   if (r === 'mentor' || r === 'super_mentor' || r === 'supermentor') return 'مربی';
   return 'دانش‌آموز';
 }
@@ -513,7 +515,7 @@ function setupUserModalAccessControls(role, panelAccess) {
   if (roleSelect) {
     Array.from(roleSelect.options).forEach(opt => {
       // Only a super admin may hand out admin levels
-      opt.hidden = !superAdmin && (opt.value === 'admin' || opt.value === 'sub_admin' || opt.value === 'channel_manager');
+      opt.hidden = !superAdmin && (opt.value === 'admin' || opt.value === 'sub_admin' || opt.value === 'channel_manager' || opt.value === 'support');
     });
     const refresh = () => {
       const group = document.getElementById('panel-access-group');

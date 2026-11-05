@@ -33,6 +33,12 @@ export function emitToSpace(spaceId: string, event: string, payload: unknown): v
   io?.to(`space:${spaceId}`).emit(event, payload);
 }
 
+/** To these people only, in any space: for content not everyone in the space may see. */
+export function emitToUsers(userIds: string[], event: string, payload: unknown): void {
+  if (!io || userIds.length === 0) return;
+  io.to(userIds.map(id => `user:${id}`)).emit(event, payload);
+}
+
 export function isOnline(userId: string): boolean {
   return (io?.sockets.adapter.rooms.get(`user:${userId}`)?.size ?? 0) > 0;
 }

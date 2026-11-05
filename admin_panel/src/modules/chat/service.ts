@@ -5,7 +5,7 @@ import { Prisma } from '@prisma/client';
 import prisma from '../../config/db';
 import { getJwtSecret } from '../../config/secrets';
 import { ChatActor, canSee, SpaceRef } from './access';
-import { isMentorRole } from '../../utils/roles';
+import { isMentorRole, isSupportRole } from '../../utils/roles';
 
 export const CHAT_FILES_DIR = process.env.CHAT_FILES_DIR || path.join(__dirname, '../../../chat-files');
 export const REACTION_TYPES = ['like', 'dislike', 'idea', 'flower', 'thanks', 'bravo', 'agree', 'question', 'confused', 'star']; // the first five are offered; the rest are kept for old reactions
@@ -41,10 +41,10 @@ export async function ensureSpace(key: string, data: { type: string; title: stri
   return space;
 }
 
-/** Caravan ids a user's spaces come from. Admins and channel managers work across all of them. */
-async function caravanIdsOf(actor: ChatActor): Promise<string[]> {
+/** Caravan ids a user's spaces come from. Admins, channel managers and support work across all of them. */
+export async function caravanIdsOf(actor: ChatActor): Promise<string[]> {
   const role = String(actor.role).toLowerCase();
-  if (role === 'admin' || role === 'sub_admin' || role === 'channel_manager') {
+  if (role === 'admin' || role === 'sub_admin' || role === 'channel_manager' || isSupportRole(role)) {
     return (await prisma.caravan.findMany({ select: { id: true } })).map(c => c.id);
   }
   return Array.from(new Set([...actor.mentoredCaravanIds, ...(actor.caravanId ? [actor.caravanId] : [])]));
@@ -87,6 +87,8 @@ export async function visibleSpaces(actor: ChatActor) {
         { type: { in: ['announcements', 'public', 'arena', 'mentors', 'mediaqa'] } },
         { caravanId: { in: caravanIds } },
         { id: { in: Array.from(members.keys()) } },
+        // Support staff answer from the app: every user's support conversation with an unresolved case
+        ...(isSupportRole(actor.role) ? [{ type: 'support', supportCases: { some: { status: { not: 'resolved' } } } }] : []),
       ],
     },
     include: { caravan: { select: { name: true, coverImageUrl: true } } },

@@ -42,10 +42,12 @@ export async function ensureOpenCase(spaceId: string, userId: string, body: stri
   });
   if (!created) return found;
 
-  const staff = await prisma.user.findMany({ where: { role: { in: ['admin', 'sub_admin'] } }, select: { id: true, role: true } });
+  const staff = await prisma.user.findMany({ where: { role: { in: ['admin', 'sub_admin', 'support'] } }, select: { id: true, role: true } });
   const row = await prisma.rolePermission.findUnique({ where: { roleName: 'sub_admin' } });
   const grants = parseSectionGrants(row?.permissionsJson);
-  const targets = staff.filter(s => s.role === 'admin' || grants.support);
+  const targets = staff.filter(s => s.role === 'admin' || s.role === 'support' || grants.support);
+  // Support answers from the app: the new case's conversation joins their open sockets at once
+  await refreshUserRooms(staff.filter(s => s.role === 'support').map(s => s.id));
   if (targets.length) {
     await prisma.notification.createMany({
       data: targets.map(a => ({ userId: a.id, title: 'پرونده‌ی جدید پشتیبانی', message: found.subject, type: 'alert' })),

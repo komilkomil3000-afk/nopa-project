@@ -382,13 +382,15 @@ window.submitChallengeRanking = async function(challengeId, places) {
   }
   const preview = await NopaApi.json(`/api/v1/admin/challenges/${challengeId}/ranking`, { method: 'POST', body: JSON.stringify({ ranking, preview: true }) }).catch(e => ({ error: e.message }));
   if (preview.error) { showToast(preview.error, 'error'); return; }
-  const warning = preview.unconfirmed.length ? ` سطح اعضای این کاروان‌ها تأیید نشده و بدون جایزه می‌مانند: ${preview.unconfirmed.join('، ')}.` : '';
+  // Payout waits until every member's participation is confirmed (by the mentor, or by the admin on their behalf)
+  if (preview.unconfirmed.length) { showToast(`مشارکت اعضای این کاروان‌ها هنوز تأیید نشده است: ${preview.unconfirmed.join('، ')}`, 'error'); return; }
+  const warning = '';
   const question = `${Number(preview.total).toLocaleString('fa-IR')} زریک به ${Number(preview.paidMembers).toLocaleString('fa-IR')} نفر از ${Number(preview.members).toLocaleString('fa-IR')} عضو پرداخت می‌شود.${warning} رتبه‌بندی نهایی است و برنمی‌گردد. ادامه می‌دهید؟`;
   if (!(await NopaConfirm(question))) return;
   const res = await request(`/api/v1/admin/challenges/${challengeId}/ranking`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ ranking, acceptUnconfirmed: true })
+    body: JSON.stringify({ ranking })
   });
   const data = await res.json().catch(() => ({}));
   if (!res.ok) { showToast(data.error || 'خطا در ثبت رتبه‌بندی', 'error'); return; }
@@ -2267,13 +2269,15 @@ window.chlRankApply = async function() {
   const body = JSON.stringify({ ranking, preview: true });
   const preview = await NopaApi.json(`/api/v1/admin/challenges/${id}/ranking`, { method: 'POST', body }).catch(e => ({ error: e.message }));
   if (preview.error) { showToast(preview.error, 'error'); return; }
-  const warning = preview.unconfirmed.length ? ` سطح اعضای این کاروان‌ها تأیید نشده و بدون جایزه می‌مانند: ${preview.unconfirmed.join('، ')}.` : '';
+  // Payout waits until every member's participation is confirmed (by the mentor, or by the admin on their behalf)
+  if (preview.unconfirmed.length) { showToast(`مشارکت اعضای این کاروان‌ها هنوز تأیید نشده است: ${preview.unconfirmed.join('، ')}`, 'error'); return; }
+  const warning = '';
   const question = `${Number(preview.total).toLocaleString('fa-IR')} زریک به ${Number(preview.paidMembers).toLocaleString('fa-IR')} نفر از ${Number(preview.members).toLocaleString('fa-IR')} عضو پرداخت می‌شود.${warning} ادامه می‌دهید؟ (بعداً با «ویرایش رتبه‌بندی» قابل اصلاح است.)`;
   if (!(await NopaConfirm(question))) return;
   const res = await request(`/api/v1/admin/challenges/${id}/ranking`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ ranking, acceptUnconfirmed: true })
+    body: JSON.stringify({ ranking })
   });
   const data = await res.json().catch(() => ({}));
   if (!res.ok) { showToast(data.error || 'خطا در ثبت رتبه‌بندی', 'error'); return; }

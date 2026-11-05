@@ -472,7 +472,7 @@ export async function getStatsOverview(req: AuthRequest, res: Response) {
       .sort((a, b) => b.videoSeconds - a.videoSeconds);
 
     // roles
-    const ROLE_LABELS: Record<string, string> = { student: 'دانش‌آموز', mentor: 'راهبر', SUPER_MENTOR: 'راهبر ارشد', admin: 'مدیر', sub_admin: 'مدیر بخش', channel_manager: 'مدیر کانال' };
+    const ROLE_LABELS: Record<string, string> = { student: 'دانش‌آموز', mentor: 'راهبر', SUPER_MENTOR: 'راهبر ارشد', admin: 'مدیر', sub_admin: 'مدیر بخش', channel_manager: 'مدیر کانال', support: 'پشتیبانی' };
     const roleMap = new Map<string, { role: string; label: string; people: number; appSeconds: number; videoSeconds: number }>();
     people.forEach(p => {
       const row = roleMap.get(p.role) || { role: p.role, label: ROLE_LABELS[p.role] || p.role, people: 0, appSeconds: 0, videoSeconds: 0 };

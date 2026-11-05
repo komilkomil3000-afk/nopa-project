@@ -8,6 +8,9 @@ import { handler } from './http';
 import { publishBotMessage, publishUpdate } from './publish';
 import { normalizeStatus, PARTICIPATION_KEYS, ParticipationStatus, shareOf } from './participation';
 import { ChatError, globalSpace, signFileUrl } from './service';
+import { judgingOpen } from './arenaPrivacy';
+
+export { judgingOpen };
 
 /** The mentor's participation status of a member: flagbearer 100, active 75, semi 50, companion 25, tired 0 percent. */
 export const TIERS = PARTICIPATION_KEYS;
@@ -21,9 +24,22 @@ async function requireInterChallenge(id: string) {
   return challenge;
 }
 
-/** Works stay private until the deadline passes or the admin opens judging: a mentor must not read a rival early. */
-export function judgingOpen(c: { dueDate: Date | null; judgingStartedAt: Date | null }, now = new Date()): boolean {
-  return !!c.judgingStartedAt || (!!c.dueDate && c.dueDate <= now);
+/**
+ * The caravan an action is for. Never guessed for a mentor of several caravans: they must name it, or the work,
+ * question or participation would land on whichever caravan happens to come first.
+ * `members` lets a student act for their own caravan (asking the judges).
+ */
+export function resolveActorCaravan(actor: ChatActor, requested?: unknown, opts: { members?: boolean } = {}): string {
+  const wanted = requested ? String(requested) : null;
+  if (wanted) {
+    if (isAdmin(actor) || actor.mentoredCaravanIds.includes(wanted) || (opts.members && actor.caravanId === wanted)) return wanted;
+    throw new ChatError(403, 'این کار مخصوص راهبر همین کاروان است');
+  }
+  if (actor.mentoredCaravanIds.length === 1) return actor.mentoredCaravanIds[0];
+  if (actor.mentoredCaravanIds.length > 1) throw new ChatError(400, 'شما راهبر چند کاروان هستید؛ کاروان را مشخص کنید');
+  if (opts.members && actor.caravanId) return actor.caravanId;
+  if (isAdmin(actor)) throw new ChatError(400, 'کاروان را مشخص کنید');
+  throw new ChatError(400, 'کاروانی برای شما ثبت نشده است');
 }
 
 /** A member's prize: the banner's amount times the participation the mentor confirmed, rounded up. A tired member's share is never redistributed. */
@@ -47,17 +63,10 @@ export function rankScore(input: { judgeAverage: number; activeShare: number; on
   return Math.round((input.judgeAverage * w.judges + input.activeShare * w.coverage + delivery * w.delivery) / 100);
 }
 
-async function caravanOfActor(actor: ChatActor, requested?: string): Promise<string> {
-  const caravanId = requested || actor.mentoredCaravanIds[0] || actor.caravanId;
-  if (!caravanId) throw new ChatError(400, 'کاروانی برای شما ثبت نشده است');
-  if (!isAdmin(actor) && !actor.mentoredCaravanIds.includes(caravanId)) throw new ChatError(403, 'این کار مخصوص راهبر همین کاروان است');
-  return caravanId;
-}
-
 /** The caravan's official work. It can be replaced until the deadline. */
 export const submitEntry = handler(async (req, res, actor) => {
   const challenge = await requireInterChallenge(req.params.id);
-  const caravanId = await caravanOfActor(actor, req.body?.caravanId);
+  const caravanId = resolveActorCaravan(actor, req.body?.caravanId);
   if (challenge.rankingFinalizedAt) throw new ChatError(400, 'این رقابت پایان یافته است');
   const body = String(req.body?.body || '').trim().slice(0, 8000);
   if (!body) throw new ChatError(400, 'متن اثر الزامی است');
@@ -81,8 +90,7 @@ export const submitEntry = handler(async (req, res, actor) => {
 
 export const askJudge = handler(async (req, res, actor) => {
   const challenge = await requireInterChallenge(req.params.id);
-  const caravanId = actor.caravanId || actor.mentoredCaravanIds[0];
-  if (!caravanId) throw new ChatError(400, 'کاروانی برای شما ثبت نشده است');
+  const caravanId = resolveActorCaravan(actor, req.body?.caravanId, { members: true });
   const body = String(req.body?.body || '').trim().slice(0, 500);
   if (!body) throw new ChatError(400, 'متن پرسش الزامی است');
   res.status(201).json(await prisma.interGroupQuestion.create({ data: { challengeId: challenge.id, caravanId, userId: actor.id, body } }));
@@ -135,40 +143,80 @@ async function usefulByUser(challengeId: string, caravanId: string): Promise<Map
   return out;
 }
 
+export type RosterRow = { userId: string; caravanId: string; tier: Tier | null };
+
+/**
+ * Who competes for which caravan in a challenge. A confirmed participation row fixes the student's caravan for that
+ * challenge: transferring afterwards moves neither their prize nor their place. A student without a row counts for
+ * the caravan they are in now (and is "unconfirmed" until their mentor confirms them).
+ */
+export async function challengeRoster(challengeId: string, caravanIds: string[]): Promise<RosterRow[]> {
+  const wanted = new Set(caravanIds);
+  const tiers = await prisma.interGroupMemberTier.findMany({ where: { challengeId } });
+  const tierOf = new Map(tiers.map(t => [t.userId, t]));
+  const [current, stillStudents] = await Promise.all([
+    prisma.user.findMany({ where: { caravanId: { in: caravanIds }, role: 'student' }, select: { id: true, caravanId: true } }),
+    prisma.user.findMany({ where: { id: { in: tiers.map(t => t.userId) }, role: 'student' }, select: { id: true } }),
+  ]);
+  const rows = new Map<string, RosterRow>();
+  for (const s of stillStudents) {
+    const t = tierOf.get(s.id)!;
+    if (wanted.has(t.caravanId)) rows.set(s.id, { userId: s.id, caravanId: t.caravanId, tier: normalizeStatus(t.tier) });
+  }
+  for (const u of current) {
+    if (!tierOf.has(u.id)) rows.set(u.id, { userId: u.id, caravanId: u.caravanId!, tier: null });
+  }
+  return Array.from(rows.values());
+}
+
+const PERSON = { id: true, name: true, avatarUrl: true, gender: true } as const;
+
 export const getTiers = handler(async (req, res, actor) => {
   const challenge = await requireInterChallenge(req.params.id);
-  const caravanId = await caravanOfActor(actor, req.query.caravanId ? String(req.query.caravanId) : undefined);
-  const members = await prisma.user.findMany({ where: { caravanId, role: 'student' }, select: { id: true, name: true, avatarUrl: true, gender: true } });
-  const [saved, useful] = await Promise.all([
-    prisma.interGroupMemberTier.findMany({ where: { challengeId: challenge.id, caravanId } }),
+  const caravanId = resolveActorCaravan(actor, req.query.caravanId);
+  const [roster, current, useful] = await Promise.all([
+    challengeRoster(challenge.id, [caravanId]),
+    prisma.user.findMany({ where: { caravanId, role: 'student' }, select: { id: true } }),
     usefulByUser(challenge.id, caravanId),
   ]);
+  const people = await prisma.user.findMany({ where: { id: { in: roster.map(r => r.userId) } }, select: PERSON });
+  const nowHere = new Set(current.map(c => c.id));
+  // Members who joined from a caravan that already confirmed them stay with that caravan for this challenge
+  const elsewhere = await prisma.interGroupMemberTier.findMany({
+    where: { challengeId: challenge.id, userId: { in: current.map(c => c.id) }, caravanId: { not: caravanId } }, select: { userId: true },
+  });
+  const elsewhereUsers = await prisma.user.findMany({ where: { id: { in: elsewhere.map(e => e.userId) } }, select: PERSON });
   res.json({
     caravanId,
-    rows: members.map(m => {
-      const s = saved.find(x => x.userId === m.id);
-      const messages = useful.get(m.id) || 0;
-      return { user: m, usefulMessages: messages, suggested: suggestTier(messages), tier: normalizeStatus(s?.tier) ?? suggestTier(messages), confirmed: !!s };
-    }),
+    rows: roster.map(r => {
+      const messages = useful.get(r.userId) || 0;
+      return {
+        user: people.find(p => p.id === r.userId), usefulMessages: messages, suggested: suggestTier(messages),
+        tier: r.tier ?? suggestTier(messages), confirmed: r.tier !== null, movedOut: !nowHere.has(r.userId), locked: false,
+      };
+    }).concat(elsewhereUsers.map(u => ({
+      user: u, usefulMessages: 0, suggested: 'tired' as Tier, tier: 'tired' as Tier, confirmed: true, movedOut: false, locked: true,
+    }))),
   });
 });
 
-/** Body: { caravanId?, tiers: { [userId]: tier } }. */
+/** Body: { caravanId?, tiers: { [userId]: tier } }. Covers the caravan's roster for this challenge (see challengeRoster). */
 export const saveTiers = handler(async (req, res, actor) => {
   const challenge = await requireInterChallenge(req.params.id);
   if (challenge.rankingFinalizedAt) throw new ChatError(400, 'این رقابت پایان یافته است');
-  const caravanId = await caravanOfActor(actor, req.body?.caravanId);
+  const caravanId = resolveActorCaravan(actor, req.body?.caravanId);
   const tiers: Record<string, string> = req.body?.tiers || {};
-  const members = await prisma.user.findMany({ where: { caravanId, role: 'student' }, select: { id: true } });
-  for (const m of members) {
-    const tier = tiers[m.id];
+  const roster = await challengeRoster(challenge.id, [caravanId]);
+  for (const m of roster) {
+    const tier = tiers[m.userId];
     if (!tier) throw new ChatError(400, 'وضعیت مشارکت همه‌ی اعضا را مشخص کنید');
     if (!(PARTICIPATION_KEYS as string[]).includes(tier)) throw new ChatError(400, 'وضعیت انتخاب‌شده معتبر نیست');
   }
-  await prisma.$transaction(members.map(m => prisma.interGroupMemberTier.upsert({
-    where: { challengeId_userId: { challengeId: challenge.id, userId: m.id } },
-    update: { tier: tiers[m.id], caravanId, confirmedBy: actor.id },
-    create: { challengeId: challenge.id, caravanId, userId: m.id, tier: tiers[m.id], confirmedBy: actor.id },
+  // The caravan is never rewritten: a member confirmed by another caravan is not in this roster at all
+  await prisma.$transaction(roster.map(m => prisma.interGroupMemberTier.upsert({
+    where: { challengeId_userId: { challengeId: challenge.id, userId: m.userId } },
+    update: { tier: tiers[m.userId], confirmedBy: actor.id },
+    create: { challengeId: challenge.id, caravanId, userId: m.userId, tier: tiers[m.userId], confirmedBy: actor.id },
   })));
   res.json({ success: true });
 });
@@ -179,24 +227,24 @@ export const RANK_TIERS = ['gold', 'silver', 'bronze'] as const;
 export async function interGroupBoard(challengeId: string) {
   const challenge = await requireInterChallenge(challengeId);
   const { config } = await getEconomyPolicy();
-  const [entries, caravans, tiers, questions] = await Promise.all([
+  const [entries, caravans, questions] = await Promise.all([
     prisma.interGroupEntry.findMany({ where: { challengeId }, include: { scores: true } }),
-    prisma.caravan.findMany({ select: { id: true, name: true, mentor: { select: { name: true } }, members: { where: { role: 'student' }, select: { id: true } } } }),
-    prisma.interGroupMemberTier.findMany({ where: { challengeId } }),
+    prisma.caravan.findMany({ select: { id: true, name: true, mentor: { select: { name: true } } } }),
     prisma.interGroupQuestion.findMany({ where: { challengeId }, orderBy: { createdAt: 'desc' } }),
   ]);
+  const roster = await challengeRoster(challengeId, caravans.map(c => c.id));
 
   const rows = caravans.map(c => {
     const entry = entries.find(e => e.caravanId === c.id);
-    const own = tiers.filter(t => t.caravanId === c.id);
-    const active = own.filter(t => normalizeStatus(t.tier) !== 'tired').length;
+    const own = roster.filter(r => r.caravanId === c.id);
+    const active = own.filter(r => r.tier !== null && r.tier !== 'tired').length;
     const judgeAverage = entry && entry.scores.length ? Math.round(entry.scores.reduce((s, x) => s + x.score, 0) / entry.scores.length) : 0;
-    const activeShare = c.members.length ? Math.round((active / c.members.length) * 100) : 0;
+    const activeShare = own.length ? Math.round((active / own.length) * 100) : 0;
     const onTime = !!entry && (!challenge.dueDate || entry.submittedAt <= challenge.dueDate);
     return {
-      caravanId: c.id, name: c.name, mentorName: c.mentor?.name || null, members: c.members.length,
+      caravanId: c.id, name: c.name, mentorName: c.mentor?.name || null, members: own.length,
       anonCode: entry?.anonCode ?? null, delivered: !!entry, onTime, judgeCount: entry?.scores.length ?? 0, judgeAverage,
-      tiersConfirmed: own.length === c.members.length && c.members.length > 0, activeShare,
+      tiersConfirmed: own.length > 0 && own.every(r => r.tier !== null), activeShare,
       score: entry ? rankScore({ judgeAverage, activeShare, onTime, delivered: true }, config) : 0,
     };
   }).sort((a, b) => b.score - a.score);
@@ -216,33 +264,30 @@ export const adminBoard = handler(async (req, res) => {
   res.json({ challenge: { id: challenge.id, title: challenge.title, dueDate: challenge.dueDate, finalized: !!challenge.rankingFinalizedAt, judgingOpen: judgingOpen(challenge) }, rows, questions });
 });
 
-/** The money a finished ranking pays. Used for the preview and for the payment itself, so they agree. */
+/**
+ * The money a finished ranking pays. Used for the preview and for the payment itself, so they agree.
+ * Each student is paid with the caravan they competed for (challengeRoster), not the one they are in today.
+ */
 export async function prizePlan(challengeId: string, ranking: string[], participating: string[]) {
   const { config } = await getEconomyPolicy();
-  const tiers = await prisma.interGroupMemberTier.findMany({ where: { challengeId } });
-  const members = await prisma.user.findMany({ where: { caravanId: { in: participating }, role: 'student' }, select: { id: true, caravanId: true } });
+  const roster = await challengeRoster(challengeId, participating);
   const submissions = await prisma.submission.findMany({ where: { challengeId }, select: { studentId: true } });
   const answered = new Set(submissions.map(s => s.studentId));
-  return members.map(m => {
-    const place = ranking.indexOf(m.caravanId!);
+  return roster.map(m => {
+    const place = ranking.indexOf(m.caravanId);
     const rankTier = place >= 0 ? RANK_TIERS[place] : 'cloth' as const;
-    // Run without the chat there are no confirmed levels: whoever answered took part fully
-    const tier = normalizeStatus(tiers.find(t => t.userId === m.id)?.tier) ?? (answered.has(m.id) ? 'flagbearer' : 'tired');
-    return { userId: m.id, caravanId: m.caravanId!, rankTier, tier, amount: memberPrize(rankTier, tier, config) };
+    // A new ranking is refused while anyone is unconfirmed (unconfirmedCaravans). The fallback only reproduces what
+    // rankings confirmed before that rule paid, so correcting them charges or pays the true difference.
+    const tier = m.tier ?? (answered.has(m.userId) ? 'flagbearer' : 'tired');
+    return { userId: m.userId, caravanId: m.caravanId, rankTier, tier, amount: memberPrize(rankTier, tier, config) };
   });
 }
 
-/** Caravans that delivered a work but whose members' effort nobody confirmed. */
+/** Participating caravans with at least one member whose participation nobody confirmed. Ranking waits for them. */
 export async function unconfirmedCaravans(challengeId: string, participating: { id: string; name: string }[]) {
-  const entries = await prisma.interGroupEntry.count({ where: { challengeId } });
-  if (entries === 0) return [];
-  const tiers = await prisma.interGroupMemberTier.groupBy({ by: ['caravanId'], where: { challengeId }, _count: { _all: true } });
-  const out = [];
-  for (const c of participating) {
-    const members = await prisma.user.count({ where: { caravanId: c.id, role: 'student' } });
-    if ((tiers.find(t => t.caravanId === c.id)?._count._all ?? 0) < members) out.push(c.name);
-  }
-  return out;
+  const roster = await challengeRoster(challengeId, participating.map(c => c.id));
+  const open = new Set(roster.filter(r => r.tier === null).map(r => r.caravanId));
+  return participating.filter(c => open.has(c.id)).map(c => c.name);
 }
 
 /** The competition is over: its conversations stop. */
@@ -289,19 +334,17 @@ const RANK_LABELS = ['مقام اول', 'مقام دوم', 'مقام سوم'];
 
 /**
  * A mentor's reply with a file under an inter-group challenge in the arena is the caravan's work for that challenge.
- * It is marked on the message (so a rank can be shown on it later) and kept as the caravan's entry for the admin's ranking.
- * Text-only replies stay ordinary discussion. Never throws: a failure here must not lose the message.
+ * The message is marked at creation (sendMessage passes the meta, so it is sealed from rivals from the first moment)
+ * and kept here as the caravan's entry for the admin's ranking. The caravan was resolved by the sender
+ * (resolveActorCaravan), never guessed. Text-only replies stay ordinary discussion.
+ * Never throws: a failure here must not lose the message.
  */
-export async function recordArenaSubmission(actor: ChatActor, space: { id: string; type: string }, message: { id: string; body: string; threadRootId?: string | null; attachments?: { id: string }[] }): Promise<void> {
+export async function recordArenaSubmission(actor: ChatActor, target: { caravanId: string; challengeId: string }, message: { id: string; body: string; attachments?: { id: string }[] }): Promise<void> {
   try {
-    if (space.type !== 'arena' || !message.threadRootId || !message.attachments?.length) return;
-    if (!isMentorRole(actor.role) || actor.mentoredCaravanIds.length === 0) return;
-    const topic = await prisma.chatTopic.findUnique({ where: { messageId: message.threadRootId }, include: { challenge: true } });
-    if (!topic || topic.challenge.category !== 'inter_group') return;
-    const challenge = topic.challenge;
-    const caravanId = actor.mentoredCaravanIds[0];
-    const meta = { submission: true, caravanId, challengeId: challenge.id };
-    await prisma.chatMessage.update({ where: { id: message.id }, data: { meta } });
+    if (!message.attachments?.length || !isMentorRole(actor.role)) return;
+    const challenge = await prisma.challenge.findUnique({ where: { id: target.challengeId } });
+    if (!challenge || challenge.category !== 'inter_group') return;
+    const { caravanId } = target;
     if (!challenge.rankingFinalizedAt && !judgingOpen(challenge)) {
       const body = (message.body || '').trim().slice(0, 8000) || 'اثر پیوست‌شده';
       const attachmentId = message.attachments[0].id;
@@ -316,7 +359,6 @@ export async function recordArenaSubmission(actor: ChatActor, space: { id: strin
         await tx.interGroupEntry.create({ data: { challengeId: challenge.id, caravanId, anonCode: count + 1, body, fileUrl: attachmentId, submittedBy: actor.id } });
       });
     }
-    await publishUpdate(message.id);
   } catch (e) {
     console.error('recordArenaSubmission error:', e);
   }

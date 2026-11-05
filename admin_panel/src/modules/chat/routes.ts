@@ -4,7 +4,7 @@ import { authenticateJWT, AuthRequest } from '../../middleware/auth';
 import { requireChatEnabled } from '../../services/chatSettings';
 import * as chat from './controller';
 import { createTag, archiveTag, closeTopic, listTags, reopenTopic, setFinalAnswer, toggleMark, toggleMessageTag, topicByChallenge } from './topics';
-import { addGroupMembers, createGroup, deleteGroup, groupCandidates, listGroups, removeGroupMember, renameGroup } from './groups';
+import { addGroupMembers, createGroup, deleteGroup, groupCandidates, listGroups, removeGroupMember, renameGroup, requestGroupDeletion } from './groups';
 import { correctEvaluation, fileObjection, getEvaluation, myReport, payEvaluation, resolveObjection, saveEvaluation } from './evaluation';
 import { askJudge, getTiers, judgeEntry, judgeList, saveTiers, submitEntry } from './intergroup';
 import { exportTopic, exportTopicLink, mentorDashboard, reportMessage, serveTopicExport, topicInsight } from './reports';
@@ -47,6 +47,7 @@ function coverMiddleware(req: AuthRequest, res: Response, next: NextFunction) {
 
 router.get('/status',(_req, res) => res.json({ enabled: true }));
 router.get('/spaces', chat.listSpaces as any);
+router.get('/caravans', chat.listCaravans as any);
 router.get('/contacts', chat.listContacts as any);
 router.post('/direct', chat.openDirect as any);
 router.get('/spaces/:id/messages', chat.listMessages as any);
@@ -101,6 +102,7 @@ router.get('/groups/candidates', groupCandidates as any);
 router.post('/groups', createGroup as any);
 router.patch('/groups/:id', renameGroup as any);
 router.delete('/groups/:id', deleteGroup as any);
+router.post('/groups/:id/deletion-request', requestGroupDeletion as any);
 router.post('/groups/:id/members', addGroupMembers as any);
 router.delete('/groups/:id/members/:userId', removeGroupMember as any);
 

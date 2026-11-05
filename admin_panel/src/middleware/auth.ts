@@ -2,7 +2,7 @@ import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
 import prisma from '../config/db';
 import { getJwtSecret } from '../config/secrets';
-import { channelManagerMayCall, isChannelManagerRole } from '../utils/roles';
+import { channelManagerMayCall, isChannelManagerRole, isSupportRole, supportMayCall } from '../utils/roles';
 
 export interface AuthRequest extends Request {
   user?: {
@@ -112,7 +112,7 @@ export function authenticateJWT(req: AuthRequest, res: Response, next: NextFunct
   verifyAccessToken(authHeader.split(' ')[1], clientIp).then(result => {
     if (!result.ok) return res.status(result.status).json({ error: result.error });
     const apiPath = req.originalUrl.split('?')[0].replace(/^\/api\/v1/, '');
-    if (isChannelManagerRole(result.user.role) && !channelManagerMayCall(apiPath)) {
+    if ((isChannelManagerRole(result.user.role) && !channelManagerMayCall(apiPath)) || (isSupportRole(result.user.role) && !supportMayCall(apiPath))) {
       return res.status(403).json({ error: 'شما دسترسی لازم برای این عملیات را ندارید' });
     }
     req.user = result.user;

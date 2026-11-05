@@ -1,7 +1,7 @@
 import { NextFunction, Response } from 'express';
 import prisma from '../config/db';
 import { AuthRequest } from '../middleware/auth';
-import { isChannelManagerRole, isMentorRole, isSubAdminRole } from '../utils/roles';
+import { isChannelManagerRole, isMentorRole, isSubAdminRole, isSupportRole } from '../utils/roles';
 
 export const CHAT_MODES = ['off', 'pilot', 'on'] as const;
 export type ChatMode = typeof CHAT_MODES[number];
@@ -48,7 +48,7 @@ export function canUseChat(user: { role?: string | null; caravanId?: string | nu
   if (settings.mode === 'on') return true;
   if (settings.mode === 'off') return false;
   const role = String(user.role || '').toLowerCase();
-  if (role === 'admin' || isSubAdminRole(role) || isMentorRole(role) || isChannelManagerRole(role)) return true;
+  if (role === 'admin' || isSubAdminRole(role) || isMentorRole(role) || isChannelManagerRole(role) || isSupportRole(role)) return true;
   return !!user.caravanId && settings.pilotCaravanIds.includes(user.caravanId);
 }
 

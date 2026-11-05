@@ -10,7 +10,7 @@ import { createQuizMock } from './quizController';
 import { sendSystemNotification } from './notificationController';
 import bcrypt from 'bcryptjs';
 import { AuthRequest } from '../middleware/auth';
-import { ASSIGNABLE_ROLES, ROLE_ADMIN, ROLE_STUDENT, parseSectionGrants } from '../utils/roles';
+import { ASSIGNABLE_ROLES, ROLE_ADMIN, ROLE_STUDENT, SUPER_ADMIN_ONLY_ROLES, parseSectionGrants } from '../utils/roles';
 import { avatarFor, normalizeGender } from '../utils/avatar';
 import { presenceOf, usageSummary } from '../services/presence';
 import { setCachedSiteAvatar } from '../services/siteAvatars';
@@ -530,7 +530,7 @@ export async function createUser(req: AuthRequest, res: Response) {
       return res.status(400).json({ error: 'نقش انتخاب‌شده نامعتبر است' });
     }
     // Only a super admin can create admin / sub admin accounts
-    if ((role === ROLE_ADMIN || role === 'sub_admin' || role === 'channel_manager') && canonicalRole(req.user?.role) !== ROLE_ADMIN) {
+    if (SUPER_ADMIN_ONLY_ROLES.includes(role) && canonicalRole(req.user?.role) !== ROLE_ADMIN) {
       return res.status(403).json({ error: 'ایجاد حساب مدیر فقط برای سوپر ادمین مجاز است' });
     }
     

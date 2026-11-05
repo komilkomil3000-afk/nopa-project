@@ -2,6 +2,7 @@ import { Response } from 'express';
 import { AuthRequest } from '../../middleware/auth';
 import { ChatActor, loadActor } from './access';
 import { ChatError, findVisibleSpace } from './service';
+import { isSealedFor } from './arenaPrivacy';
 import prisma from '../../config/db';
 
 type Handler = (req: AuthRequest, res: Response, actor: ChatActor) => Promise<unknown>;
@@ -31,5 +32,7 @@ export async function requireMessage(actor: ChatActor, messageId: string) {
   const message = await prisma.chatMessage.findUnique({ where: { id: messageId } });
   if (!message) throw new ChatError(404, 'پیام یافت نشد');
   const { space } = await requireSpace(actor, message.spaceId);
+  // A rival's sealed work in the arena looks the same as a missing message
+  if (await isSealedFor(actor, message, space.type)) throw new ChatError(404, 'پیام یافت نشد');
   return { message, space };
 }

@@ -9,17 +9,22 @@ export function isMentorRole(role?: string | null): boolean {
  *   admin      - super admin, unrestricted in the panel (can change roles and grant access)
  *   sub_admin  - content admin, limited to the panel sections a super admin granted
  *   channel_manager - runs the channels and helps keep the groups in order; can reach chat and nothing else
+ *   support    - answers support conversations and helps every caravan, one caravan at a time; chat only
  *   mentor     - mentor (legacy value SUPER_MENTOR is treated as a mentor)
  *   student
  */
 export const ROLE_ADMIN = 'admin';
 export const ROLE_SUB_ADMIN = 'sub_admin';
 export const ROLE_CHANNEL_MANAGER = 'channel_manager';
+export const ROLE_SUPPORT = 'support';
 export const ROLE_MENTOR = 'mentor';
 export const ROLE_STUDENT = 'student';
 
 /** Roles a super admin may assign from the panel. */
-export const ASSIGNABLE_ROLES = [ROLE_ADMIN, ROLE_SUB_ADMIN, ROLE_CHANNEL_MANAGER, ROLE_MENTOR, ROLE_STUDENT];
+export const ASSIGNABLE_ROLES = [ROLE_ADMIN, ROLE_SUB_ADMIN, ROLE_CHANNEL_MANAGER, ROLE_SUPPORT, ROLE_MENTOR, ROLE_STUDENT];
+
+/** Staff roles only a super admin may create or assign. */
+export const SUPER_ADMIN_ONLY_ROLES = [ROLE_ADMIN, ROLE_SUB_ADMIN, ROLE_CHANNEL_MANAGER, ROLE_SUPPORT];
 
 export function isSuperAdminRole(role?: string | null): boolean {
   return String(role || '').toLowerCase() === ROLE_ADMIN;
@@ -31,6 +36,15 @@ export function isSubAdminRole(role?: string | null): boolean {
 
 export function isChannelManagerRole(role?: string | null): boolean {
   return String(role || '').toLowerCase().replace(/[\s-]/g, '_') === ROLE_CHANNEL_MANAGER;
+}
+
+export function isSupportRole(role?: string | null): boolean {
+  return String(role || '').toLowerCase().trim() === ROLE_SUPPORT;
+}
+
+/** The only API areas a support user can call, relative to /api/v1: the chat and their own account. */
+export function supportMayCall(path: string): boolean {
+  return /^\/(auth\/|users\/me(\/|$)|notifications(\/|$)|assets$|chat(\/|$))/i.test(path);
 }
 
 /**

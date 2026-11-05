@@ -8,6 +8,7 @@ import { canModerate, canTag, ChatActor } from './access';
 import { handler, requireSpace } from './http';
 import { isOnline, onlineUserIds } from './realtime';
 import { ChatError, signFileUrl } from './service';
+import { sealedMessageIds } from './arenaPrivacy';
 
 const PERSON_SELECT = { id: true, name: true, avatarUrl: true, role: true, gender: true };
 const PUBLIC_TYPES = new Set(['announcements', 'public', 'arena', 'mediaqa']);
@@ -190,10 +191,11 @@ export const spaceMedia = handler(async (req, res, actor) => {
   const limit = Math.min(Math.max(Math.floor(Number(req.query.limit)) || MEDIA_LIMIT, 1), MEDIA_LIMIT);
   const beforeRaw = typeof req.query.before === 'string' ? new Date(req.query.before) : null;
   const olderThan = beforeRaw && !isNaN(beforeRaw.getTime()) ? { createdAt: { lt: beforeRaw } } : {};
+  const sealed = await sealedMessageIds(actor, space);
 
   if (kind === 'image' || kind === 'audio') {
     const rows = await prisma.chatAttachment.findMany({
-      where: { spaceId: space.id, kind, messageId: { not: null }, message: { deletedAt: null }, ...olderThan, ...(userId ? { uploaderId: userId } : {}) },
+      where: { spaceId: space.id, kind, messageId: { not: null, notIn: sealed }, message: { deletedAt: null }, ...olderThan, ...(userId ? { uploaderId: userId } : {}) },
       orderBy: { createdAt: 'desc' }, take: limit,
       select: { id: true, name: true, kind: true, createdAt: true, messageId: true },
     });
@@ -202,7 +204,7 @@ export const spaceMedia = handler(async (req, res, actor) => {
 
   if (kind === 'link') {
     const rows = await prisma.chatMessage.findMany({
-      where: { spaceId: space.id, deletedAt: null, body: { contains: 'http' }, ...olderThan, ...(userId ? { senderId: userId } : {}) },
+      where: { spaceId: space.id, deletedAt: null, id: { notIn: sealed }, body: { contains: 'http' }, ...olderThan, ...(userId ? { senderId: userId } : {}) },
       orderBy: { createdAt: 'desc' }, take: limit,
       select: { id: true, body: true, createdAt: true, sender: { select: { name: true } } },
     });
