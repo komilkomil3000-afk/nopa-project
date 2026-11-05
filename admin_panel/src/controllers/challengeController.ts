@@ -9,15 +9,22 @@ import { changeBalance } from '../services/ledger';
 import { removeChallengeCards, syncChallengeCardsQuietly } from '../modules/chat/topics';
 import { EconomyConfig, getEconomyPolicy } from '../services/economy';
 
+/** What a mentor may award for a personal or group challenge. Banners (درفش/بیرق) come only from the admin's cross-caravan ranking. */
+export const MENTOR_REWARD_ASSETS = ['zarik', 'nakh'] as const;
+
 /**
- * Personal and group challenges pay nakh, from rewardMin up to the policy's ceiling.
- * An older app version still sends a zarik range: its numbers mean nothing in nakh, so the full range applies.
+ * Personal and group challenges pay zarik or nakh (کلاف), from rewardMin up to that asset's ceiling in the money rules.
+ * Nothing else: an unknown or banner asset is refused, never silently turned into another one. A missing asset is nakh.
  */
 function parseRewardRange(body: any, config: EconomyConfig): { error: string } | { data: { rewardAssetType: string; rewardMin: number; rewardMax: number } } {
-  const ceiling = config.challengeMaxNakh;
-  const inNakh = String(body.rewardAssetType || 'nakh').toLowerCase() === 'nakh';
-  const rewardMin = inNakh ? Number(body.rewardMin ?? 0) : 0;
-  const rewardMax = inNakh ? Number(body.rewardMax || ceiling) : ceiling;
+  const asset = String(body.rewardAssetType || 'nakh').toLowerCase();
+  if (!(MENTOR_REWARD_ASSETS as readonly string[]).includes(asset)) {
+    return { error: 'پاداش چالش شخصی و گروهی فقط زریک یا کلاف است؛ درفش فقط از رتبه‌بندی چالش فراگروهی داده می‌شود' };
+  }
+  const ceiling = asset === 'zarik' ? config.challengeMaxZarik : config.challengeMaxNakh;
+  const label = asset === 'zarik' ? 'زریک' : 'کلاف';
+  const rewardMin = Number(body.rewardMin ?? 0);
+  const rewardMax = Number(body.rewardMax || ceiling);
   if (!Number.isInteger(rewardMin) || !Number.isInteger(rewardMax) || rewardMin < 0 || rewardMax < 0) {
     return { error: 'حداقل و حداکثر جایزه باید عدد صحیح نامنفی باشند' };
   }
@@ -25,9 +32,9 @@ function parseRewardRange(body: any, config: EconomyConfig): { error: string } |
     return { error: 'حداقل جایزه نمی‌تواند از حداکثر بیشتر باشد' };
   }
   if (rewardMax > ceiling) {
-    return { error: `سقف جایزه‌ی هر چالش ${ceiling} کلاف است` };
+    return { error: `سقف جایزه‌ی هر چالش ${ceiling} ${label} است` };
   }
-  return { data: { rewardAssetType: 'nakh', rewardMin, rewardMax } };
+  return { data: { rewardAssetType: asset, rewardMin, rewardMax } };
 }
 
 /**

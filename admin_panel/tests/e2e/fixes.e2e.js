@@ -107,14 +107,16 @@ run(async () => {
   assert.equal(report.finalNakh, 6); assert.equal(report.objectionResponse, 'حق با شماست');
   console.log('4.7 OK');
 
-  // A3: an old zarik challenge is never paid in kalaf
+  // A3: a zarik challenge is paid in zarik from the conversation (spec Part 3.1), never in kalaf
   const legacy = await prisma.challenge.create({ data: { id: 'LEGACY1', title: 'قدیمی', description: 'd', type: 'skill', rewardAssetType: 'zarik', rewardMax: 200, rewardZarik: 200, createdByMentorId: mA.id, caravanId: cA.id } });
   await call(mA, 'PATCH', `/challenges/${legacy.id}`, { title: 'قدیمی ۲' });
   await wait(400);
   const legacyTopic = await prisma.chatTopic.findFirst({ where: { challengeId: legacy.id } });
   await prisma.chatMessage.create({ data: { spaceId: chA.id, seq: 9000, senderId: a1.id, body: 'این پاسخ من است چون باید بررسی شود', threadRootId: legacyTopic.messageId } });
   await call(mA, 'POST', `/chat/topics/${legacyTopic.id}/close`);
-  assert.equal((await call(mA, 'GET', `/chat/topics/${legacyTopic.id}/evaluation`)).body.topic.legacy, true);
+  const legacyEval = (await call(mA, 'GET', `/chat/topics/${legacyTopic.id}/evaluation`)).body.topic;
+  assert.equal(legacyEval.legacy, false);
+  assert.equal(legacyEval.asset, 'zarik');
   assert.equal((await call(mA, 'PUT', `/chat/topics/${legacyTopic.id}/evaluation`, { rows: [{ userId: a1.id, finalNakh: 1, reason: 'x' }] })).status, 400);
   console.log('A3 OK');
 

@@ -85,9 +85,15 @@ run(async () => {
 
   const over = await call(m1, 'POST', '/challenges', { title: 't', description: 'd', type: 'skill', rewardAssetType: 'nakh', rewardMin: 0, rewardMax: 50, allMembers: true });
   assert.equal(over.status, 400);
-  const legacy = await call(m1, 'POST', '/challenges', { title: 'old', description: 'd', type: 'skill', rewardAssetType: 'zarik', rewardMin: 50, rewardMax: 200, allMembers: true });
+  // A mentor awards zarik or کلاف (each capped by the money rules), never a banner
+  const inZarik = await call(m1, 'POST', '/challenges', { title: 'z', description: 'd', type: 'skill', rewardAssetType: 'zarik', rewardMin: 50, rewardMax: 200, allMembers: true });
+  assert.equal(inZarik.status, 201);
+  assert.deepEqual([inZarik.body.rewardAssetType, inZarik.body.rewardMin, inZarik.body.rewardMax], ['zarik', 50, 200]);
+  assert.equal((await call(m1, 'POST', '/challenges', { title: 'z', description: 'd', type: 'skill', rewardAssetType: 'zarik', rewardMax: 60000, allMembers: true })).status, 400, 'zarik ceiling');
+  assert.equal((await call(m1, 'POST', '/challenges', { title: 'b', description: 'd', type: 'skill', rewardAssetType: 'derafsh', allMembers: true })).status, 400, 'no banners from a mentor');
+  const legacy = await call(m1, 'POST', '/challenges', { title: 'old', description: 'd', type: 'skill', allMembers: true });
   assert.equal(legacy.status, 201);
-  assert.deepEqual([legacy.body.rewardAssetType, legacy.body.rewardMin, legacy.body.rewardMax], ['nakh', 0, 10]); console.log('challenge rewards in nakh, capped OK');
+  assert.deepEqual([legacy.body.rewardAssetType, legacy.body.rewardMin, legacy.body.rewardMax], ['nakh', 0, 10]); console.log('mentor rewards: zarik or nakh, capped OK');
   const sub1 = await prisma.submission.create({ data: { challengeId: legacy.body.id, studentId: s1.id, status: 'pending' } });
   const n0 = (await prisma.user.findUnique({ where: { id: s1.id } })).nakh;
   const rev = await Promise.all([1, 2, 3, 4].map(() => call(m1, 'PATCH', `/submissions/${sub1.id}/review`, { status: 'approved', score: 7 })));

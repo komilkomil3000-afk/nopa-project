@@ -190,6 +190,7 @@ model Challenge {
   stationId         String?
   rankingFinalizedAt DateTime?                              // inter-group: when the admin confirmed the caravans' ranking
   judgingStartedAt  DateTime?                                // inter-group: works are final and judges can read them
+  rewardPlan        Json?                                    // inter-group: the admin's per-member base reward by rank, { zarik: {gold,silver,bronze,cloth}, nakh: {...} }; null = the money rules' defaults
   startDate         DateTime?                                // challenge opens at this moment (null = already open)
   dueDate           DateTime?
   createdAt         DateTime     @default(now())

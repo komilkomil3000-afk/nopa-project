@@ -14,6 +14,7 @@ export async function getEconomyRates(_req: AuthRequest, res: Response) {
       allowBuyNakh: config.allowBuyNakh,
       zarikPerNakh: config.zarikPerNakh,
       challengeMaxNakh: config.challengeMaxNakh,
+      challengeMaxZarik: config.challengeMaxZarik,
       nakhValue: nakhValue(config),
     });
   } catch (error) {

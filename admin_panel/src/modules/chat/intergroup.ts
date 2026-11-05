@@ -6,7 +6,8 @@ import { isMentorRole } from '../../utils/roles';
 import { ChatActor } from './access';
 import { handler } from './http';
 import { publishBotMessage, publishUpdate } from './publish';
-import { normalizeStatus, PARTICIPATION_KEYS, ParticipationStatus, shareOf } from './participation';
+import { normalizeStatus, PARTICIPATION, PARTICIPATION_KEYS, ParticipationStatus, shareOf } from './participation';
+import { RewardPlan, rewardPlanOf, shareOfPercent } from './settlement';
 import { ChatError, globalSpace, signFileUrl } from './service';
 import { judgingOpen } from './arenaPrivacy';
 
@@ -268,8 +269,9 @@ export const adminBoard = handler(async (req, res) => {
  * The money a finished ranking pays. Used for the preview and for the payment itself, so they agree.
  * Each student is paid with the caravan they competed for (challengeRoster), not the one they are in today.
  */
-export async function prizePlan(challengeId: string, ranking: string[], participating: string[]) {
+export async function prizePlan(challengeId: string, ranking: string[], participating: string[], plan?: RewardPlan) {
   const { config } = await getEconomyPolicy();
+  const base = plan ?? rewardPlanOf((await prisma.challenge.findUnique({ where: { id: challengeId }, select: { rewardPlan: true } })) ?? {}, config);
   const roster = await challengeRoster(challengeId, participating);
   const submissions = await prisma.submission.findMany({ where: { challengeId }, select: { studentId: true } });
   const answered = new Set(submissions.map(s => s.studentId));
@@ -279,7 +281,11 @@ export async function prizePlan(challengeId: string, ranking: string[], particip
     // A new ranking is refused while anyone is unconfirmed (unconfirmedCaravans). The fallback only reproduces what
     // rankings confirmed before that rule paid, so correcting them charges or pays the true difference.
     const tier = m.tier ?? (answered.has(m.userId) ? 'flagbearer' : 'tired');
-    return { userId: m.userId, caravanId: m.caravanId, rankTier, tier, amount: memberPrize(rankTier, tier, config) };
+    const percent = PARTICIPATION[tier].percent;
+    const zarik = shareOfPercent(base.zarik[rankTier], percent);
+    const nakh = shareOfPercent(base.nakh[rankTier], percent);
+    // `amount` stays the zarik part for callers that predate کلاف prizes
+    return { userId: m.userId, caravanId: m.caravanId, rankTier, tier, zarik, nakh, amount: zarik };
   });
 }
 
@@ -297,23 +303,18 @@ export async function closeCompetitionTopics(challengeId: string) {
   for (const t of topics) await publishUpdate(t.messageId);
 }
 
-export async function payPrizes(tx: Prisma.TransactionClient, challenge: { id: string; title: string }, plan: { userId: string; amount: number }[], actorId: string) {
+/** Pays each member's zarik and کلاف. The ledger's unique key (source, member, asset) makes a second payment impossible. */
+export async function payPrizes(tx: Prisma.TransactionClient, challenge: { id: string; title: string }, plan: { userId: string; zarik: number; nakh: number }[], actorId: string) {
   for (const row of plan) {
     await changeBalance(tx, {
-      userId: row.userId, asset: 'zarik', amount: row.amount, sourceType: 'intergroup_prize', sourceId: challenge.id,
+      userId: row.userId, asset: 'zarik', amount: row.zarik, sourceType: 'intergroup_prize', sourceId: challenge.id,
       reason: `جایزه‌ی چالش فراگروهی: ${challenge.title}`, createdBy: actorId, zarikCategory: 'Special Campaigns',
     });
+    await changeBalance(tx, {
+      userId: row.userId, asset: 'nakh', amount: row.nakh, sourceType: 'intergroup_prize', sourceId: challenge.id,
+      reason: `جایزه‌ی چالش فراگروهی: ${challenge.title}`, createdBy: actorId,
+    });
   }
-}
-
-/** Results with something good to say about each work: the place for praise, not comparison. */
-export async function publishResults(challengeId: string, title: string, ranking: string[]) {
-  const arena = await globalSpace('arena');
-  const entries = await prisma.interGroupEntry.findMany({ where: { challengeId }, include: { scores: { take: 1 } } });
-  const caravans = await prisma.caravan.findMany({ where: { id: { in: entries.map(e => e.caravanId) } }, select: { id: true, name: true } });
-  const places = ranking.map((id, i) => ({ place: i + 1, name: caravans.find(c => c.id === id)?.name || '' }));
-  const strengths = entries.map(e => ({ name: caravans.find(c => c.id === e.caravanId)?.name || '', strength: e.scores[0]?.strength || null })).filter(s => s.strength);
-  await publishBotMessage({ spaceId: arena.id, botKey: 'challenge', kind: 'result', body: `نتیجه‌ی ${title}`, meta: { title, places, strengths } });
 }
 
 export const answerQuestion = handler(async (req, res) => {

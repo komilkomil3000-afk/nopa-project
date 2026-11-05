@@ -362,12 +362,14 @@ window.openChallengeRanking = async function(challengeId) {
     const places = Math.min(3, data.caravans.length);
     const placeLabel = ['رتبه‌ی اول (' + tierName.gold + ')', 'رتبه‌ی دوم (' + tierName.silver + ')', 'رتبه‌ی سوم (' + tierName.bronze + ')'];
     const options = '<option value="">انتخاب کاروان...</option>' + data.caravans.map(c => `<option value="${c.id}">${esc(c.name)}${c.mentorName ? ' - ' + esc(c.mentorName) : ''} (${c.answers} پاسخ)</option>`).join('');
-    let html = `<p class="lse-lead"><i class="fa-solid fa-circle-info"></i> ${data.caravans.length} کاروان شرکت کرده‌اند و بقیه ${esc(tierName.cloth)} می‌گیرند. تایید نهایی قابل بازگشت نیست.</p>`;
+    let html = chlRankWaitNote(data.window);
+    html += `<p class="lse-lead"><i class="fa-solid fa-circle-info"></i> ${data.caravans.length} کاروان شرکت کرده‌اند و بقیه ${esc(tierName.cloth)} می‌گیرند. تایید نهایی قابل بازگشت نیست.</p>`;
     for (let i = 0; i < places; i++) {
       html += `<label class="lse-field"><span data-style="color:${[tierColor.gold, tierColor.silver, tierColor.bronze][i]}">${placeLabel[i]}</span>
         <select class="ranking-select select-ctrl">${options}</select></label>`;
     }
-    html += `<button type="button" data-click="submitChallengeRanking" data-click-args="${esc(JSON.stringify([String(challengeId), (places)]))}" class="lsv-pill chl-rank-submit"><i class="fa-solid fa-flag"></i> تایید نهایی و اعطای درفش</button>`;
+    if (data.rewards) html += chlRewardsEditor(data.rewards, true);
+    html += `<button type="button" data-click="submitChallengeRanking" data-click-args="${esc(JSON.stringify([String(challengeId), (places)]))}" class="lsv-pill chl-rank-submit"${data.window && !data.window.open ? ' disabled' : ''}><i class="fa-solid fa-flag"></i> تایید نهایی و اعطای درفش</button>`;
     body.innerHTML = html;
   } catch (e) {
     body.innerHTML = '<div class="u-c-danger-text">خطا در ارتباط با سرور</div>';
@@ -380,17 +382,18 @@ window.submitChallengeRanking = async function(challengeId, places) {
     showToast('برای هر رتبه یک کاروان متفاوت انتخاب کنید.', 'error');
     return;
   }
-  const preview = await NopaApi.json(`/api/v1/admin/challenges/${challengeId}/ranking`, { method: 'POST', body: JSON.stringify({ ranking, preview: true }) }).catch(e => ({ error: e.message }));
+  const rewards = chlReadRewards(document.getElementById('ranking-body'));
+  const preview = await NopaApi.json(`/api/v1/admin/challenges/${challengeId}/ranking`, { method: 'POST', body: JSON.stringify({ ranking, rewards, preview: true }) }).catch(e => ({ error: e.message }));
   if (preview.error) { showToast(preview.error, 'error'); return; }
+  if (preview.window && !preview.window.open) { showToast(preview.window.message, 'error'); return; }
   // Payout waits until every member's participation is confirmed (by the mentor, or by the admin on their behalf)
   if (preview.unconfirmed.length) { showToast(`مشارکت اعضای این کاروان‌ها هنوز تأیید نشده است: ${preview.unconfirmed.join('، ')}`, 'error'); return; }
-  const warning = '';
-  const question = `${Number(preview.total).toLocaleString('fa-IR')} زریک به ${Number(preview.paidMembers).toLocaleString('fa-IR')} نفر از ${Number(preview.members).toLocaleString('fa-IR')} عضو پرداخت می‌شود.${warning} رتبه‌بندی نهایی است و برنمی‌گردد. ادامه می‌دهید؟`;
+  const question = `${chlPayLine(preview)} به ${chlFa(preview.paidMembers)} نفر از ${chlFa(preview.members)} عضو پرداخت می‌شود. رتبه‌بندی نهایی است و برنمی‌گردد. ادامه می‌دهید؟`;
   if (!(await NopaConfirm(question))) return;
   const res = await request(`/api/v1/admin/challenges/${challengeId}/ranking`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ ranking })
+    body: JSON.stringify({ ranking, rewards })
   });
   const data = await res.json().catch(() => ({}));
   if (!res.ok) { showToast(data.error || 'خطا در ثبت رتبه‌بندی', 'error'); return; }
@@ -2134,6 +2137,54 @@ function chlRankPlaces() {
   return chlRank ? Math.min(3, chlRank.data.caravans.length) : 0;
 }
 
+// ---- per-member base reward of a cross-caravan challenge, by rank tier (زریک and کلاف) ----
+const CHL_RW_TIERS = [['gold', 'طلایی'], ['silver', 'نقره‌ای'], ['bronze', 'برنزی'], ['cloth', 'پارچه‌ای']];
+
+/** The reward table: editable before the ranking is confirmed (and while correcting it), read-only after. */
+function chlRewardsEditor(rewards, editable) {
+  const names = window.assetNamesMap || {};
+  const zarik = names.zarik || 'زریک', nakh = names.nakh || 'کلاف';
+  const cell = (asset, tier) => {
+    const v = Number(rewards?.[asset]?.[tier] ?? 0);
+    return editable
+      ? `<input type="number" min="0" step="1" class="input-ctrl" data-rw="${asset}.${tier}" value="${esc(String(v))}" aria-label="${esc(asset === 'zarik' ? zarik : nakh)}">`
+      : `<span>${v.toLocaleString('fa-IR')}</span>`;
+  };
+  return `
+    <div class="chl-rw">
+      <span class="lse-card-title"><i class="fa-solid fa-coins"></i> پاداش پایه‌ی هر عضو بر اساس رتبه</span>
+      <div class="chl-rw-grid">
+        <span class="chl-rw-head">رتبه</span><span class="chl-rw-head">${esc(zarik)}</span><span class="chl-rw-head">${esc(nakh)}</span>
+        ${CHL_RW_TIERS.map(([k, label]) => `<span class="chl-rw-tier">${esc(label)}</span>${cell('zarik', k)}${cell('nakh', k)}`).join('')}
+      </div>
+      <p class="lse-hint">سهم هر عضو = پاداش پایه × درصد مشارکتی که راهبر تأیید کرده است (پرچمدار ۱۰۰، فعال ۷۵، نیمه‌فعال ۵۰، همراه ۲۵، خسته ۰). درصد استفاده‌نشده میان بقیه پخش نمی‌شود.</p>
+    </div>`;
+}
+
+/** Reads the table back into { zarik: {gold..cloth}, nakh: {...} }, or null when it is not on screen. */
+function chlReadRewards(root) {
+  const inputs = root ? root.querySelectorAll('[data-rw]') : [];
+  if (!inputs.length) return null;
+  const out = { zarik: {}, nakh: {} };
+  inputs.forEach(input => {
+    const [asset, tier] = input.getAttribute('data-rw').split('.');
+    out[asset][tier] = Math.max(0, Math.floor(Number(input.value) || 0));
+  });
+  return out;
+}
+
+/** The notice shown while ranking cannot happen yet: before the deadline and before every caravan delivered. */
+function chlRankWaitNote(win) {
+  if (!win || win.open) return '';
+  return `<div class="chl-rank-wait"><i class="fa-solid fa-hourglass-half"></i><span>${esc(win.message || 'رتبه‌بندی فقط در پایان چالش ممکن است.')} (${lmsFaDigits(win.delivered)} از ${lmsFaDigits(win.expected)} کاروان اثرشان را فرستاده‌اند.)</span></div>`;
+}
+
+const chlFa = n => Number(n || 0).toLocaleString('fa-IR');
+function chlPayLine(p) {
+  const names = window.assetNamesMap || {};
+  return `${chlFa(p.total)} ${names.zarik || 'زریک'}${p.totalNakh ? ` و ${chlFa(p.totalNakh)} ${names.nakh || 'کلاف'}` : ''}`;
+}
+
 async function chlRankLoad(id, animate) {
   const box = document.getElementById('chl-dv-rank');
   if (!box) return;
@@ -2166,6 +2217,9 @@ async function chlRankLoad(id, animate) {
 function chlRankRender(el) {
   const r = chlRank;
   if (!r) return;
+  // what the admin typed in the reward table survives a redraw
+  const typed = chlReadRewards(el);
+  if (typed) r.rewards = typed;
   const { data } = r;
   if (!data.caravans.length) {
     el.innerHTML = '<div class="lst-empty"><i class="fa-regular fa-folder-open"></i> هنوز هیچ کاروانی در این چالش پاسخ نداده است، پس رتبه‌بندی ممکن نیست.</div>';
@@ -2192,13 +2246,14 @@ function chlRankRender(el) {
   }).join('');
   let note;
   let actions;
+  const closed = !r.finalized && data.window && !data.window.open;
   if (!r.finalized) {
     note = `<i class="fa-solid fa-wand-magic-sparkles"></i> ترتیب پیشنهادی بر اساس بیشترین پاسخ تایید شده است. با کشیدن کاروان‌ها آن را تغییر دهید؛ ${places === 1 ? 'اولین' : `${lmsFaDigits(places)} کاروان اول`} درفش طلایی تا برنزی می‌گیرند و بقیه ${esc(tiers.cloth)}. رتبه‌بندی هنوز اعمال نشده است.`;
     actions = `
-      <button type="button" class="lsv-pill" data-click="chlRankApply"><i class="fa-solid fa-flag"></i> تایید و اعمال رتبه‌بندی</button>
+      <button type="button" class="lsv-pill" data-click="chlRankApply"${closed ? ' disabled' : ''}><i class="fa-solid fa-flag"></i> تایید و اعمال رتبه‌بندی</button>
       <button type="button" class="lse-btn" data-click="chlRankReset"><i class="fa-solid fa-rotate-left"></i> بازگشت به پیشنهاد خودکار</button>`;
   } else if (r.editing) {
-    note = '<i class="fa-solid fa-pen"></i> در حال ویرایش رتبه‌بندی: کاروان‌ها را بکشید و ذخیره کنید؛ فقط تفاوت جایزه‌ها به اعضا افزوده یا از آن‌ها کسر می‌شود.';
+    note = '<i class="fa-solid fa-pen"></i> در حال ویرایش رتبه‌بندی یا پاداش: کاروان‌ها را بکشید یا مقادیر را تغییر دهید و ذخیره کنید؛ فقط تفاوت جایزه‌ها (زریک و کلاف) به اعضا افزوده یا از آن‌ها کسر می‌شود.';
     actions = `
       <button type="button" class="lsv-pill" data-click="chlRankSaveEdit"><i class="fa-solid fa-check"></i> ذخیره اصلاح رتبه‌بندی</button>
       <button type="button" class="lse-btn" data-click="chlRankCancelEdit">انصراف</button>`;
@@ -2207,8 +2262,10 @@ function chlRankRender(el) {
     actions = '<button type="button" class="lsv-pill" data-click="chlRankStartEdit"><i class="fa-solid fa-pen"></i> ویرایش رتبه‌بندی</button>';
   }
   el.innerHTML = `
+    ${chlRankWaitNote(!r.finalized ? data.window : null)}
     <p class="lse-lead">${note}</p>
     <div class="chl-rank-list${draggable ? ' is-editable' : ''}">${rows}</div>
+    ${data.rewards ? chlRewardsEditor(r.rewards || data.rewards, draggable) : ''}
     <div class="chl-rank-actions">${actions}</div>`;
 }
 
@@ -2253,7 +2310,10 @@ window.chlRankCancelEdit = function() {
   if (!chlRank) return;
   chlRank.editing = false;
   chlRank.order = chlRank.before || chlRank.order;
-  chlRankRender(document.getElementById('chl-dv-rank'));
+  chlRank.rewards = null;
+  const el = document.getElementById('chl-dv-rank');
+  if (el) el.querySelectorAll('[data-rw]').forEach(input => input.remove());
+  chlRankRender(el);
 };
 
 async function chlRankRefreshAfter(id) {
@@ -2266,18 +2326,20 @@ window.chlRankApply = async function() {
   if (!chlRank || chlRank.finalized) return;
   const id = chlRank.id;
   const ranking = chlRank.order.slice(0, chlRankPlaces());
-  const body = JSON.stringify({ ranking, preview: true });
+  const rewards = chlReadRewards(document.getElementById('chl-dv-rank'));
+  if (rewards) chlRank.rewards = rewards;
+  const body = JSON.stringify({ ranking, rewards, preview: true });
   const preview = await NopaApi.json(`/api/v1/admin/challenges/${id}/ranking`, { method: 'POST', body }).catch(e => ({ error: e.message }));
   if (preview.error) { showToast(preview.error, 'error'); return; }
+  if (preview.window && !preview.window.open) { showToast(preview.window.message, 'error'); return; }
   // Payout waits until every member's participation is confirmed (by the mentor, or by the admin on their behalf)
   if (preview.unconfirmed.length) { showToast(`مشارکت اعضای این کاروان‌ها هنوز تأیید نشده است: ${preview.unconfirmed.join('، ')}`, 'error'); return; }
-  const warning = '';
-  const question = `${Number(preview.total).toLocaleString('fa-IR')} زریک به ${Number(preview.paidMembers).toLocaleString('fa-IR')} نفر از ${Number(preview.members).toLocaleString('fa-IR')} عضو پرداخت می‌شود.${warning} ادامه می‌دهید؟ (بعداً با «ویرایش رتبه‌بندی» قابل اصلاح است.)`;
+  const question = `${chlPayLine(preview)} به ${chlFa(preview.paidMembers)} نفر از ${chlFa(preview.members)} عضو پرداخت می‌شود. نتیجه‌ی کاروان‌ها در «میدان آثار» و جزئیات هر کاروان در «گروه چالش‌ها»ی خودش منتشر و گفت‌وگوها بسته می‌شوند. ادامه می‌دهید؟ (بعداً با «ویرایش رتبه‌بندی» قابل اصلاح است.)`;
   if (!(await NopaConfirm(question))) return;
   const res = await request(`/api/v1/admin/challenges/${id}/ranking`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ ranking })
+    body: JSON.stringify({ ranking, rewards })
   });
   const data = await res.json().catch(() => ({}));
   if (!res.ok) { showToast(data.error || 'خطا در ثبت رتبه‌بندی', 'error'); return; }
@@ -2289,16 +2351,19 @@ window.chlRankSaveEdit = async function() {
   if (!chlRank || !chlRank.finalized) return;
   const id = chlRank.id;
   const ranking = chlRank.order.slice(0, chlRankPlaces());
-  const preview = await NopaApi.json(`/api/v1/admin/challenges/${id}/ranking`, { method: 'PUT', body: JSON.stringify({ ranking, preview: true }) }).catch(e => ({ error: e.message }));
+  const rewards = chlReadRewards(document.getElementById('chl-dv-rank'));
+  const preview = await NopaApi.json(`/api/v1/admin/challenges/${id}/ranking`, { method: 'PUT', body: JSON.stringify({ ranking, rewards, preview: true }) }).catch(e => ({ error: e.message }));
   if (preview.error) { showToast(preview.error, 'error'); return; }
-  if (preview.unchanged) { showToast('ترتیب تغییری نکرده است.', 'info'); window.chlRankCancelEdit(); return; }
-  const fa = n => Number(n).toLocaleString('fa-IR');
-  const question = `با این اصلاح ${fa(preview.increase)} زریک به اعضا اضافه و ${fa(preview.decrease)} زریک از اعضا کسر می‌شود (${fa(preview.members)} نفر تغییر می‌کنند). ادامه می‌دهید؟`;
+  if (preview.unchanged) { showToast('ترتیب و پاداش تغییری نکرده است.', 'info'); window.chlRankCancelEdit(); return; }
+  const fa = chlFa;
+  const names = window.assetNamesMap || {};
+  const z = names.zarik || 'زریک', k = names.nakh || 'کلاف';
+  const question = `با این اصلاح ${fa(preview.increase)} ${z} و ${fa(preview.increaseNakh)} ${k} به اعضا اضافه و ${fa(preview.decrease)} ${z} و ${fa(preview.decreaseNakh)} ${k} از اعضا کسر می‌شود (${fa(preview.members)} نفر تغییر می‌کنند). ادامه می‌دهید؟`;
   if (!(await NopaConfirm(question))) return;
   const res = await request(`/api/v1/admin/challenges/${id}/ranking`, {
     method: 'PUT',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ ranking })
+    body: JSON.stringify({ ranking, rewards })
   });
   const data = await res.json().catch(() => ({}));
   if (!res.ok) { showToast(data.error || 'خطا در اصلاح رتبه‌بندی', 'error'); return; }

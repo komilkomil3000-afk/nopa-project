@@ -7,9 +7,11 @@ export interface EconomyConfig {
   allowBuyNakh: boolean;      // may students turn zarik into nakh
   zarikPerNakh: number;       // price of one nakh while allowBuyNakh is on
   challengeMaxNakh: number;   // highest nakh a personal or group challenge can pay
+  challengeMaxZarik: number;  // highest zarik a personal or group challenge can pay
   evaluationWeights: { relevance: number; quality: number; collaboration: number; initiative: number }; // percent, must total 100
   interGroup: {
     prizes: { gold: number; silver: number; bronze: number; cloth: number }; // zarik per member, by rank
+    nakhPrizes: { gold: number; silver: number; bronze: number; cloth: number }; // nakh (کلاف) per member, by rank; 0 = none
     tiers: { full: number; partner: number; minimal: number };               // percent of the prize, by effort
     rankWeights: { judges: number; coverage: number; delivery: number };     // percent, must total 100
   };
@@ -21,9 +23,12 @@ export const DEFAULT_ECONOMY: EconomyConfig = {
   allowBuyNakh: false,
   zarikPerNakh: 500,
   challengeMaxNakh: 10,
+  // Same worth as the nakh ceiling (10 nakh × 5,000 zarik): a zarik challenge cannot pay more than a nakh one
+  challengeMaxZarik: 50000,
   evaluationWeights: { relevance: 30, quality: 30, collaboration: 20, initiative: 20 },
   interGroup: {
     prizes: { gold: 20000, silver: 15000, bronze: 10000, cloth: 2500 },
+    nakhPrizes: { gold: 0, silver: 0, bronze: 0, cloth: 0 },
     tiers: { full: 100, partner: 60, minimal: 25 },
     rankWeights: { judges: 60, coverage: 25, delivery: 15 },
   },
@@ -40,6 +45,11 @@ export async function getEconomyPolicy(): Promise<EconomyPolicy> {
   const policy = row
     ? { version: row.version, config: { ...DEFAULT_ECONOMY, ...(row.config as unknown as EconomyConfig) } }
     : { version: 0, config: DEFAULT_ECONOMY };
+  // Policies saved before a field existed get its default (nested groups too)
+  if (row) {
+    const saved = row.config as any;
+    policy.config.interGroup = { ...DEFAULT_ECONOMY.interGroup, ...(saved?.interGroup ?? {}) };
+  }
   cached = { policy, at: Date.now() };
   return policy;
 }
@@ -74,6 +84,19 @@ function positiveInts(values: Record<string, unknown>): boolean {
   return Object.values(values).every(v => Number.isInteger(v) && (v as number) > 0);
 }
 
+export type RankTier = 'gold' | 'silver' | 'bronze' | 'cloth';
+export type RankRewards = Record<RankTier, number>;
+
+/** One asset's amounts per rank: whole, not negative, and never more for a lower place. Null = valid. */
+export function rankRewardError(r: Partial<Record<RankTier, unknown>> | null | undefined): string | null {
+  if (!r) return 'مقادیر ناقص است';
+  const values = [r.gold, r.silver, r.bronze, r.cloth];
+  if (!values.every(v => Number.isInteger(v) && (v as number) >= 0)) return 'مقدار هر رتبه باید عدد صحیح نامنفی باشد';
+  const [gold, silver, bronze, cloth] = values as number[];
+  if (!(gold >= silver && silver >= bronze && bronze >= cloth)) return 'جایزه‌ی رتبه‌ی بالاتر نمی‌تواند کمتر باشد';
+  return null;
+}
+
 function percents(values: Record<string, unknown>): boolean {
   return Object.values(values).every(v => Number.isInteger(v) && (v as number) >= 0 && (v as number) <= 100);
 }
@@ -91,11 +114,15 @@ export function parseEconomyConfig(raw: any): { error: string } | { config: Econ
     allowBuyNakh: raw.allowBuyNakh === true,
     zarikPerNakh: raw.zarikPerNakh,
     challengeMaxNakh: raw.challengeMaxNakh,
+    challengeMaxZarik: raw.challengeMaxZarik ?? DEFAULT_ECONOMY.challengeMaxZarik,
     evaluationWeights: {
       relevance: weightsE?.relevance, quality: weightsE?.quality, collaboration: weightsE?.collaboration, initiative: weightsE?.initiative,
     },
     interGroup: {
       prizes: { gold: prizes.gold, silver: prizes.silver, bronze: prizes.bronze, cloth: prizes.cloth },
+      nakhPrizes: {
+        gold: g?.nakhPrizes?.gold ?? 0, silver: g?.nakhPrizes?.silver ?? 0, bronze: g?.nakhPrizes?.bronze ?? 0, cloth: g?.nakhPrizes?.cloth ?? 0,
+      },
       tiers: { full: tiers.full, partner: tiers.partner, minimal: tiers.minimal },
       rankWeights: { judges: weights.judges, coverage: weights.coverage, delivery: weights.delivery },
     },
@@ -106,6 +133,8 @@ export function parseEconomyConfig(raw: any): { error: string } | { config: Econ
   if (!positiveInts(config.interGroup.prizes)) return { error: 'جایزه‌ی هر رتبه باید عدد صحیح مثبت باشد' };
   const { gold, silver, bronze, cloth } = config.interGroup.prizes;
   if (!(gold >= silver && silver >= bronze && bronze >= cloth)) return { error: 'جایزه‌ی رتبه‌ی بالاتر نمی‌تواند کمتر باشد' };
+  const rankError = rankRewardError(config.interGroup.nakhPrizes);
+  if (rankError) return { error: `کلاف فراگروهی: ${rankError}` };
   if (!percents(config.interGroup.tiers)) return { error: 'ضریب سطوح باید بین ۰ تا ۱۰۰ باشد' };
   if (!percents(config.interGroup.rankWeights)) return { error: 'وزن معیارها باید بین ۰ تا ۱۰۰ باشد' };
   if (config.interGroup.rankWeights.judges + config.interGroup.rankWeights.coverage + config.interGroup.rankWeights.delivery !== 100) {

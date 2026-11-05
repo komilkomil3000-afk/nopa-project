@@ -14,7 +14,11 @@ const ECONOMY_GROUPS = [
       ['zarikPerNakh', 'قیمت هر کلاف، اگر خرید فعال باشد (زریک)'],
     ],
   },
-  { title: 'چالش‌های شخصی و درون‌گروهی', icon: 'fa-user-group', fields: [['challengeMaxNakh', 'سقف جایزه‌ی هر چالش (کلاف)']] },
+  {
+    title: 'چالش شخصی و چالش گروهی (پاداش راهبر)', icon: 'fa-user-group',
+    hint: 'راهبر فقط زریک یا کلاف می‌دهد؛ درفش فقط از رتبه‌بندی چالش فراگروهی می‌آید.',
+    fields: [['challengeMaxNakh', 'سقف جایزه‌ی هر چالش (کلاف)'], ['challengeMaxZarik', 'سقف جایزه‌ی هر چالش (زریک)']],
+  },
   {
     title: 'وزن معیارهای ارزیابی چالش', icon: 'fa-scale-balanced', sum: true,
     fields: [
@@ -31,6 +35,16 @@ const ECONOMY_GROUPS = [
       ['interGroup.prizes.silver', 'رتبه‌ی دوم'],
       ['interGroup.prizes.bronze', 'رتبه‌ی سوم'],
       ['interGroup.prizes.cloth', 'سایر کاروان‌ها'],
+    ],
+  },
+  {
+    title: 'جایزه‌ی فراگروهی برای هر فرد (کلاف)', icon: 'fa-ribbon',
+    hint: 'پیش‌فرض هر چالش فراگروهی؛ مدیر هنگام رتبه‌بندی می‌تواند برای همان چالش تغییرش دهد. ۰ یعنی بدون کلاف.',
+    fields: [
+      ['interGroup.nakhPrizes.gold', 'رتبه‌ی اول (طلایی)'],
+      ['interGroup.nakhPrizes.silver', 'رتبه‌ی دوم (نقره‌ای)'],
+      ['interGroup.nakhPrizes.bronze', 'رتبه‌ی سوم (برنزی)'],
+      ['interGroup.nakhPrizes.cloth', 'سایر کاروان‌ها (پارچه‌ای)'],
     ],
   },
   {
@@ -59,7 +73,7 @@ let ecoSaved = null;   // the config as last loaded (to tell unsaved changes)
 let ecoLoadedOnce = false;
 
 function economyReadForm() {
-  const config = { evaluationWeights: {}, interGroup: { prizes: {}, tiers: {}, rankWeights: {} } };
+  const config = { evaluationWeights: {}, interGroup: { prizes: {}, nakhPrizes: {}, tiers: {}, rankWeights: {} } };
   ECONOMY_GROUPS.forEach(group => group.fields.forEach(([key, , type]) => {
     const input = document.getElementById(economyInputId(key));
     const path = economyPath(key);
@@ -177,6 +191,8 @@ window.ecoCheck = function() {
   if (c.allowBuyNakh && !c.zarikPerNakh) issues.push('خرید کلاف فعال است اما قیمت هر کلاف صفر است');
   const p = c.interGroup.prizes;
   if (!(p.gold >= p.silver && p.silver >= p.bronze && p.bronze >= p.cloth)) issues.push('جایزه‌های فراگروهی از رتبه‌ی اول به پایین نزولی نیستند');
+  const k = c.interGroup.nakhPrizes;
+  if (!(k.gold >= k.silver && k.silver >= k.bronze && k.bronze >= k.cloth)) issues.push('کلاف‌های فراگروهی از رتبه‌ی اول به پایین نزولی نیستند');
   const dirty = ecoSaved && JSON.stringify(economyReadForm()) !== JSON.stringify(ecoNormalize(ecoSaved));
 
   ecoSet('eco-bento-health', el => {
@@ -193,7 +209,7 @@ window.ecoCheck = function() {
 };
 // The saved config in the form's shape (same keys, same order) so it can be compared with economyReadForm()
 function ecoNormalize(config) {
-  const out = { evaluationWeights: {}, interGroup: { prizes: {}, tiers: {}, rankWeights: {} } };
+  const out = { evaluationWeights: {}, interGroup: { prizes: {}, nakhPrizes: {}, tiers: {}, rankWeights: {} } };
   ECONOMY_GROUPS.forEach(group => group.fields.forEach(([key, , type]) => {
     const path = economyPath(key);
     const parent = path.slice(0, -1).reduce((o, k) => o[k], out);

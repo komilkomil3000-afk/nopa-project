@@ -2,7 +2,8 @@ import { Response } from 'express';
 import prisma from '../config/db';
 import { AuthRequest } from '../middleware/auth';
 import { getAssetNames } from '../utils/assetNames';
-import { applyRankBadges, closeCompetitionTopics, payPrizes, prizePlan, publishResults, unconfirmedCaravans } from '../modules/chat/intergroup';
+import { applyRankBadges, closeCompetitionTopics, payPrizes, prizePlan, unconfirmedCaravans } from '../modules/chat/intergroup';
+import { parseRewardPlan, postSettlement, RANK_ORDER, RANKING_CLOSED_MESSAGE, rankingWindow, RewardPlan, rewardPlanOf, TIER_LABEL } from '../modules/chat/settlement';
 import { getEconomyPolicy } from '../services/economy';
 import { changeBalance } from '../services/ledger';
 
@@ -57,25 +58,30 @@ async function participatingCaravans(challengeId: string) {
   }));
 }
 
-/** Admin: the participating caravans (and the result once it was confirmed). */
+/** Admin: the participating caravans, the reward plan, whether ranking is open yet (and the result once confirmed). */
 export async function getChallengeRanking(req: AuthRequest, res: Response) {
   try {
     const { id } = req.params;
     const challenge = await prisma.challenge.findUnique({ where: { id } });
     if (!challenge) return res.status(404).json({ error: 'چالش یافت نشد' });
     if (challenge.category !== 'inter_group') {
-      return res.status(400).json({ error: 'رتبه‌بندی فقط برای چالش‌های میان‌گروهی است' });
+      return res.status(400).json({ error: 'رتبه‌بندی فقط برای چالش‌های فراگروهی است' });
     }
     const caravans = await participatingCaravans(id);
     const banners = await prisma.caravanBanner.findMany({ where: { challengeId: id }, orderBy: [{ rank: 'asc' }] });
     const { config } = await getEconomyPolicy();
+    const window = await rankingWindow(challenge);
     // What the panel proposes before the admin arranges it: most approved answers, then most answers, then group points
     const suggested = [...caravans]
       .sort((a, b) => b.approved - a.approved || b.answers - a.answers || b.groupPoints - a.groupPoints)
       .map(c => c.id);
     res.json({
-      challenge: { id: challenge.id, title: challenge.title, finalized: !!challenge.rankingFinalizedAt },
+      challenge: { id: challenge.id, title: challenge.title, finalized: !!challenge.rankingFinalizedAt, dueDate: challenge.dueDate },
       prizes: config.interGroup.prizes,
+      rewards: rewardPlanOf(challenge, config),
+      ownRewards: !!challenge.rewardPlan,
+      window: { ...window, message: window.open ? null : RANKING_CLOSED_MESSAGE },
+      tiers: RANK_ORDER.map(t => ({ key: t, label: TIER_LABEL[t] })),
       caravans,
       suggested,
       result: banners.map(b => ({
@@ -91,10 +97,34 @@ export async function getChallengeRanking(req: AuthRequest, res: Response) {
   }
 }
 
+/** The admin's plan from the body, or the challenge's saved one / the money rules. */
+async function planFromRequest(req: AuthRequest, challenge: { rewardPlan?: unknown }): Promise<{ plan: RewardPlan; changed: boolean } | { error: string }> {
+  const { config } = await getEconomyPolicy();
+  if (req.body?.rewards === undefined || req.body?.rewards === null) return { plan: rewardPlanOf(challenge, config), changed: false };
+  const parsed = parseRewardPlan(req.body.rewards);
+  if ('error' in parsed) return parsed;
+  return { plan: parsed.plan, changed: true };
+}
+
+const totals = (plan: { zarik: number; nakh: number }[]) => ({
+  zarik: plan.reduce((sum, p) => sum + p.zarik, 0),
+  nakh: plan.reduce((sum, p) => sum + p.nakh, 0),
+});
+
+function bannerRows(caravans: { id: string }[], ranking: string[]) {
+  return caravans.map(c => {
+    const idx = ranking.indexOf(c.id);
+    return idx >= 0
+      ? { caravanId: c.id, tier: MEDALS[idx] as string, rank: idx + 1 }
+      : { caravanId: c.id, tier: 'cloth', rank: null as number | null };
+  });
+}
+
 /**
- * Admin confirms the ranking: 1st/2nd/3rd get the gold/silver/bronze banner, every other participating
- * caravan gets the cloth banner. Final: a ranking can be confirmed only once per challenge.
- * Body: { ranking: [caravanId1, caravanId2, caravanId3] } (as many places as there are caravans, max 3).
+ * Admin confirms the ranking at the end of the challenge: 1st/2nd/3rd get the gold/silver/bronze banner, every other
+ * participating caravan the cloth one. Each member is paid zarik and کلاف: base of the rank tier × participation %.
+ * Final: a ranking can be confirmed only once per challenge (corrections go through editChallengeRanking).
+ * Body: { ranking: [caravanId1, caravanId2, caravanId3], rewards?: { zarik: {gold..cloth}, nakh: {...} }, preview?: true }.
  */
 export async function finalizeChallengeRanking(req: AuthRequest, res: Response) {
   try {
@@ -102,7 +132,7 @@ export async function finalizeChallengeRanking(req: AuthRequest, res: Response) 
     const challenge = await prisma.challenge.findUnique({ where: { id } });
     if (!challenge) return res.status(404).json({ error: 'چالش یافت نشد' });
     if (challenge.category !== 'inter_group') {
-      return res.status(400).json({ error: 'رتبه‌بندی فقط برای چالش‌های میان‌گروهی است' });
+      return res.status(400).json({ error: 'رتبه‌بندی فقط برای چالش‌های فراگروهی است' });
     }
     if (challenge.rankingFinalizedAt) {
       return res.status(409).json({ error: 'رتبه‌بندی این چالش قبلاً تایید شده است' });
@@ -121,19 +151,22 @@ export async function finalizeChallengeRanking(req: AuthRequest, res: Response) 
     if (ranking.some(cid => !participating.has(cid))) {
       return res.status(400).json({ error: 'کاروان انتخاب‌شده در این چالش شرکت نکرده است' });
     }
+    const chosen = await planFromRequest(req, challenge);
+    if ('error' in chosen) return res.status(400).json({ error: chosen.error });
 
-    const rows = caravans.map(c => {
-      const idx = ranking.indexOf(c.id);
-      return idx >= 0
-        ? { caravanId: c.id, tier: MEDALS[idx] as string, rank: idx + 1 }
-        : { caravanId: c.id, tier: 'cloth', rank: null as number | null };
-    });
-
-    const plan = await prizePlan(id, ranking, caravans.map(c => c.id));
+    const rows = bannerRows(caravans, ranking);
+    const plan = await prizePlan(id, ranking, caravans.map(c => c.id), chosen.plan);
     const unconfirmed = await unconfirmedCaravans(id, caravans);
+    const window = await rankingWindow(challenge);
+    const sum = totals(plan);
     if (req.body?.preview === true) {
-      return res.json({ preview: true, total: plan.reduce((sum, p) => sum + p.amount, 0), paidMembers: plan.filter(p => p.amount > 0).length, members: plan.length, unconfirmed });
+      return res.json({
+        preview: true, total: sum.zarik, totalNakh: sum.nakh, paidMembers: plan.filter(p => p.zarik > 0 || p.nakh > 0).length, members: plan.length,
+        unconfirmed, window: { ...window, message: window.open ? null : RANKING_CLOSED_MESSAGE }, rewards: chosen.plan,
+      });
     }
+    // Strictly at the end of the challenge
+    if (!window.open) return res.status(400).json({ error: RANKING_CLOSED_MESSAGE, window });
     // No bypass: a member's payout is their share of the reward, so it cannot be paid before their mentor (or the admin,
     // on the mentor's behalf) confirms how much they took part
     if (unconfirmed.length > 0) {
@@ -143,7 +176,8 @@ export async function finalizeChallengeRanking(req: AuthRequest, res: Response) 
     await prisma.$transaction(async (tx) => {
       const claimed = await tx.challenge.updateMany({
         where: { id, rankingFinalizedAt: null },
-        data: { rankingFinalizedAt: new Date() },
+        // The plan actually paid is kept, so a later correction computes the true difference
+        data: { rankingFinalizedAt: new Date(), rewardPlan: chosen.plan as any },
       });
       if (claimed.count !== 1) throw new Error('ALREADY_FINALIZED');
       await tx.caravanBanner.createMany({
@@ -155,25 +189,25 @@ export async function finalizeChallengeRanking(req: AuthRequest, res: Response) 
     // Tell every member and the mentor of each caravan
     const names = await getAssetNames();
     const caravanIds = rows.map(r => r.caravanId);
-    const students = await prisma.user.findMany({ where: { caravanId: { in: caravanIds } }, select: { id: true, caravanId: true } });
     const caravanRows = await prisma.caravan.findMany({ where: { id: { in: caravanIds } }, select: { id: true, mentorId: true } });
     const notes: { userId: string; title: string; message: string; type: string }[] = [];
     for (const r of rows) {
       const bannerName = names[TIER_KEYS[r.tier]];
       const msg = r.rank
-        ? `کاروان شما در چالش میان‌گروهی "${challenge.title}" رتبه‌ی ${['اول', 'دوم', 'سوم'][r.rank - 1]} شد و ${bannerName} دریافت کرد.`
-        : `کاروان شما در چالش میان‌گروهی "${challenge.title}" شرکت کرد و ${bannerName} دریافت کرد.`;
-      const recipients = new Set<string>(students.filter(m => m.caravanId === r.caravanId).map(m => m.id));
+        ? `کاروان شما در چالش فراگروهی "${challenge.title}" رتبه‌ی ${['اول', 'دوم', 'سوم'][r.rank - 1]} شد و ${bannerName} دریافت کرد.`
+        : `کاروان شما در چالش فراگروهی "${challenge.title}" شرکت کرد و ${bannerName} دریافت کرد.`;
+      const recipients = new Set<string>(plan.filter(p => p.caravanId === r.caravanId).map(p => p.userId));
       const mentorId = caravanRows.find(c => c.id === r.caravanId)?.mentorId;
       if (mentorId) recipients.add(mentorId);
       for (const userId of recipients) notes.push({ userId, title: `${names.derafsh} کاروان`, message: msg, type: 'reward' });
     }
     if (notes.length > 0) await prisma.notification.createMany({ data: notes });
-    await publishResults(id, challenge.title, ranking).catch(e => console.error('publishResults error:', e));
+    // Caravans' places in the arena thread; each caravan's members only in its own challenge group; then the threads close
+    await postSettlement(challenge, rows, plan);
     await closeCompetitionTopics(id).catch(e => console.error('closeCompetitionTopics error:', e));
     await applyRankBadges(id);
 
-    res.json({ success: true, result: rows, paid: plan.reduce((sum, p) => sum + p.amount, 0) });
+    res.json({ success: true, result: rows, paid: sum.zarik, paidNakh: sum.nakh });
   } catch (error: any) {
     if (error?.message === 'ALREADY_FINALIZED') {
       return res.status(409).json({ error: 'رتبه‌بندی این چالش قبلاً تایید شده است' });
@@ -184,8 +218,8 @@ export async function finalizeChallengeRanking(req: AuthRequest, res: Response) 
 }
 
 /**
- * Admin corrects an already confirmed ranking. The banners are replaced and every member is paid (or charged) only
- * the difference between the new and the old prize. Body: { ranking: [...], preview?: true }.
+ * Admin corrects an already confirmed ranking and/or its reward plan. The banners are replaced and every member is paid
+ * (or charged) only the difference, in zarik and in کلاف. Body: { ranking: [...], rewards?, preview?: true }.
  * A member who already spent the prize makes the change impossible (the ledger refuses a negative balance).
  */
 export async function editChallengeRanking(req: AuthRequest, res: Response) {
@@ -194,7 +228,7 @@ export async function editChallengeRanking(req: AuthRequest, res: Response) {
     const challenge = await prisma.challenge.findUnique({ where: { id } });
     if (!challenge) return res.status(404).json({ error: 'چالش یافت نشد' });
     if (challenge.category !== 'inter_group') {
-      return res.status(400).json({ error: 'رتبه‌بندی فقط برای چالش‌های میان‌گروهی است' });
+      return res.status(400).json({ error: 'رتبه‌بندی فقط برای چالش‌های فراگروهی است' });
     }
     if (!challenge.rankingFinalizedAt) {
       return res.status(409).json({ error: 'رتبه‌بندی این چالش هنوز تایید نشده است' });
@@ -210,43 +244,48 @@ export async function editChallengeRanking(req: AuthRequest, res: Response) {
     if (ranking.some(cid => !participating.includes(cid))) {
       return res.status(400).json({ error: 'کاروان انتخاب‌شده در این چالش شرکت نکرده است' });
     }
+    const { config } = await getEconomyPolicy();
+    const oldRewards = rewardPlanOf(challenge, config);
+    const chosen = await planFromRequest(req, challenge);
+    if ('error' in chosen) return res.status(400).json({ error: chosen.error });
 
     const oldBanners = await prisma.caravanBanner.findMany({ where: { challengeId: id, rank: { not: null } }, orderBy: { rank: 'asc' } });
     const oldRanking = oldBanners.map(b => b.caravanId);
-    if (oldRanking.join() === ranking.join()) return res.json({ success: true, unchanged: true });
+    const sameRewards = JSON.stringify(oldRewards) === JSON.stringify(chosen.plan);
+    if (oldRanking.join() === ranking.join() && sameRewards) return res.json({ success: true, unchanged: true });
 
-    const oldPlan = await prizePlan(id, oldRanking, participating);
-    const newPlan = await prizePlan(id, ranking, participating);
-    const oldAmount = new Map(oldPlan.map(p => [p.userId, p.amount]));
+    const oldPlan = await prizePlan(id, oldRanking, participating, oldRewards);
+    const newPlan = await prizePlan(id, ranking, participating, chosen.plan);
+    const oldOf = new Map(oldPlan.map(p => [p.userId, p]));
     const deltas = newPlan
-      .map(p => ({ userId: p.userId, amount: p.amount - (oldAmount.get(p.userId) || 0) }))
-      .filter(d => d.amount !== 0);
+      .map(p => ({ userId: p.userId, zarik: p.zarik - (oldOf.get(p.userId)?.zarik || 0), nakh: p.nakh - (oldOf.get(p.userId)?.nakh || 0) }))
+      .filter(d => d.zarik !== 0 || d.nakh !== 0);
     if (req.body?.preview === true) {
+      const up = (k: 'zarik' | 'nakh') => deltas.filter(d => d[k] > 0).reduce((sum, d) => sum + d[k], 0);
+      const down = (k: 'zarik' | 'nakh') => deltas.filter(d => d[k] < 0).reduce((sum, d) => sum - d[k], 0);
       return res.json({
-        preview: true,
-        increase: deltas.filter(d => d.amount > 0).reduce((sum, d) => sum + d.amount, 0),
-        decrease: deltas.filter(d => d.amount < 0).reduce((sum, d) => sum - d.amount, 0),
-        members: deltas.length,
+        preview: true, increase: up('zarik'), decrease: down('zarik'), increaseNakh: up('nakh'), decreaseNakh: down('nakh'), members: deltas.length,
       });
     }
 
-    const rows = caravans.map(c => {
-      const idx = ranking.indexOf(c.id);
-      return idx >= 0
-        ? { caravanId: c.id, tier: MEDALS[idx] as string, rank: idx + 1 }
-        : { caravanId: c.id, tier: 'cloth', rank: null as number | null };
-    });
+    const rows = bannerRows(caravans, ranking);
     const revision = new Date().toISOString();
     try {
       await prisma.$transaction(async (tx) => {
         for (const d of deltas) {
+          const reason = `اصلاح رتبه‌بندی چالش فراگروهی: ${challenge.title}`;
           await changeBalance(tx, {
-            userId: d.userId, asset: 'zarik', amount: d.amount, sourceType: 'intergroup_prize_edit', sourceId: `${id}:${revision}`,
-            reason: `اصلاح رتبه‌بندی چالش فراگروهی: ${challenge.title}`, createdBy: req.user!.id, zarikCategory: 'Special Campaigns',
+            userId: d.userId, asset: 'zarik', amount: d.zarik, sourceType: 'intergroup_prize_edit', sourceId: `${id}:${revision}`,
+            reason, createdBy: req.user!.id, zarikCategory: 'Special Campaigns',
+          });
+          await changeBalance(tx, {
+            userId: d.userId, asset: 'nakh', amount: d.nakh, sourceType: 'intergroup_prize_edit', sourceId: `${id}:${revision}`,
+            reason, createdBy: req.user!.id,
           });
         }
         await tx.caravanBanner.deleteMany({ where: { challengeId: id } });
         await tx.caravanBanner.createMany({ data: rows.map(r => ({ ...r, challengeId: id, awardedBy: req.user!.id })) });
+        await tx.challenge.update({ where: { id }, data: { rewardPlan: chosen.plan as any } });
       });
     } catch (e: any) {
       if (e?.message === 'INSUFFICIENT_BALANCE') {
@@ -257,21 +296,21 @@ export async function editChallengeRanking(req: AuthRequest, res: Response) {
 
     const names = await getAssetNames();
     const caravanIds = rows.map(r => r.caravanId);
-    const students = await prisma.user.findMany({ where: { caravanId: { in: caravanIds } }, select: { id: true, caravanId: true } });
     const mentors = await prisma.caravan.findMany({ where: { id: { in: caravanIds } }, select: { id: true, mentorId: true } });
     const notes: { userId: string; title: string; message: string; type: string }[] = [];
     for (const r of rows) {
       const old = oldBanners.find(b => b.caravanId === r.caravanId)?.rank ?? null;
-      if (old === r.rank) continue;
+      if (old === r.rank && sameRewards) continue;
       const msg = r.rank
-        ? `رتبه‌ی کاروان شما در چالش میان‌گروهی "${challenge.title}" اصلاح شد: رتبه‌ی ${['اول', 'دوم', 'سوم'][r.rank - 1]} و ${names[TIER_KEYS[r.tier]]}.`
-        : `رتبه‌ی کاروان شما در چالش میان‌گروهی "${challenge.title}" اصلاح شد و ${names[TIER_KEYS.cloth]} دریافت کرد.`;
-      const recipients = new Set<string>(students.filter(m => m.caravanId === r.caravanId).map(m => m.id));
+        ? `نتیجه‌ی کاروان شما در چالش فراگروهی "${challenge.title}" اصلاح شد: رتبه‌ی ${['اول', 'دوم', 'سوم'][r.rank - 1]} و ${names[TIER_KEYS[r.tier]]}.`
+        : `نتیجه‌ی کاروان شما در چالش فراگروهی "${challenge.title}" اصلاح شد و ${names[TIER_KEYS.cloth]} دریافت کرد.`;
+      const recipients = new Set<string>(newPlan.filter(p => p.caravanId === r.caravanId).map(p => p.userId));
       const mentorId = mentors.find(c => c.id === r.caravanId)?.mentorId;
       if (mentorId) recipients.add(mentorId);
       for (const userId of recipients) notes.push({ userId, title: `${names.derafsh} کاروان`, message: msg, type: 'reward' });
     }
     if (notes.length > 0) await prisma.notification.createMany({ data: notes });
+    await postSettlement(challenge, rows, newPlan, true);
     await applyRankBadges(id);
 
     res.json({ success: true, result: rows });

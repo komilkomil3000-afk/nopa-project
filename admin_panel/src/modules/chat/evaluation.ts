@@ -151,16 +151,29 @@ export async function buildEvaluation(topicId: string) {
   return { topic, rows: scored, messages: rows };
 }
 
-/** The kalaf a challenge can pay. The ceiling of the money rules binds even a challenge made before them. */
-async function rangeOf(c: { rewardMin: number; rewardMax: number }) {
+/** The asset a personal or group challenge pays: zarik or nakh (کلاف). The amounts below (`finalNakh`) are in this asset. */
+function assetOf(c: { rewardAssetType: string }): 'zarik' | 'nakh' {
+  return c.rewardAssetType === 'zarik' ? 'zarik' : 'nakh';
+}
+const assetLabel = (c: { rewardAssetType: string }) => (assetOf(c) === 'zarik' ? 'زریک' : 'کلاف');
+
+/**
+ * What a challenge can pay, in its own asset. The ceiling of the money rules binds even a challenge made before them.
+ * An old zarik challenge without a range pays its fixed amount (rewardZarik).
+ */
+async function rangeOf(c: { rewardMin: number; rewardMax: number; rewardAssetType: string; rewardZarik?: number }) {
   const { config } = await getEconomyPolicy();
-  const max = Math.min(c.rewardMax || config.challengeMaxNakh, config.challengeMaxNakh);
+  const zarik = assetOf(c) === 'zarik';
+  const ceiling = zarik ? config.challengeMaxZarik : config.challengeMaxNakh;
+  const own = c.rewardMax || (zarik ? c.rewardZarik || 0 : 0) || ceiling;
+  const max = Math.min(own, ceiling);
   return { min: Math.min(c.rewardMin || 0, max), max };
 }
 
-/** Old challenges that pay zarik keep their own review path: their numbers mean nothing in kalaf. */
-function assertPaysKalaf(c: { rewardAssetType: string }) {
-  if (c.rewardAssetType !== 'nakh') throw new ChatError(400, 'این چالش زریکی است و از صفحه‌ی بررسی پاسخ‌ها پرداخت می‌شود');
+/** Only zarik and nakh are paid from a conversation; a cross-caravan challenge pays through the admin's ranking. */
+function assertChatPayable(c: { rewardAssetType: string; category: string }) {
+  if (c.category === 'inter_group') throw new ChatError(400, 'جایزه‌ی چالش فراگروهی از مسیر رتبه‌بندی پرداخت می‌شود');
+  if (!['zarik', 'nakh'].includes(c.rewardAssetType)) throw new ChatError(400, 'پاداش این چالش زریک یا کلاف نیست');
 }
 
 /** A challenge whose time is over closes by itself, so the mentor can evaluate it without closing it by hand. */
@@ -182,7 +195,7 @@ export const getEvaluation = handler(async (req, res, actor) => {
   const range = await rangeOf(topic.challenge);
 
   res.json({
-    topic: { id: topic.id, status: topic.status, title: topic.challenge.title, min: range.min, max: range.max, statuses: PARTICIPATION_KEYS.map(k => ({ key: k, ...PARTICIPATION[k] })), messageCount: messages.length, legacy: topic.challenge.rewardAssetType !== 'nakh' },
+    topic: { id: topic.id, status: topic.status, title: topic.challenge.title, min: range.min, max: range.max, statuses: PARTICIPATION_KEYS.map(k => ({ key: k, ...PARTICIPATION[k] })), messageCount: messages.length, asset: assetOf(topic.challenge), assetLabel: assetLabel(topic.challenge), legacy: !['zarik', 'nakh'].includes(topic.challenge.rewardAssetType) },
     rows: rows.map(r => {
       const s = saved.find(x => x.userId === r.userId);
       const suggestedStatus = suggestStatus(r.score);
@@ -217,7 +230,7 @@ export const saveEvaluation = handler(async (req, res, actor) => {
   if (!moderator) throw new ChatError(403, 'این بخش مخصوص راهبر است');
   await closeIfDue(req.params.id);
   const { topic, rows } = await buildEvaluation(req.params.id);
-  assertPaysKalaf(topic.challenge);
+  assertChatPayable(topic.challenge);
   const range = await rangeOf(topic.challenge);
   const input: any[] = Array.isArray(req.body?.rows) ? req.body.rows : [];
   const alreadyPaid = new Set((await prisma.challengeEvaluation.findMany({ where: { topicId: topic.id, paidAt: { not: null } }, select: { userId: true } })).map(r => r.userId));
@@ -245,9 +258,8 @@ export const saveEvaluation = handler(async (req, res, actor) => {
 export const payEvaluation = handler(async (req, res, actor) => {
   const { topic, moderator } = await requireTopic(actor, req.params.id);
   if (!moderator) throw new ChatError(403, 'این بخش مخصوص راهبر است');
-  if (topic.challenge.category === 'inter_group') throw new ChatError(400, 'جایزه‌ی چالش فراگروهی از مسیر رتبه‌بندی پرداخت می‌شود');
+  assertChatPayable(topic.challenge);
   await closeIfDue(req.params.id);
-  assertPaysKalaf(topic.challenge);
   const wanted: string[] | null = Array.isArray(req.body?.userIds) && req.body.userIds.length ? req.body.userIds.map(String) : null;
   const rows = await prisma.challengeEvaluation.findMany({ where: { topicId: topic.id, paidAt: null, ...(wanted ? { userId: { in: wanted } } : {}) } });
   if (rows.length === 0) throw new ChatError(400, 'ارزیابی ثبت‌شده‌ای وجود ندارد؛ وضعیت مشارکت را انتخاب و دوباره تأیید کنید');
@@ -279,12 +291,12 @@ export const payEvaluation = handler(async (req, res, actor) => {
         update: { status: 'approved', score: row.finalNakh, mentorFeedback: row.reason },
         create: { challengeId: topic.challengeId, studentId: row.userId, status: 'approved', score: row.finalNakh, mentorFeedback: row.reason, answerText: finalAnswer || 'ارزیابی از گفتگوی چالش' },
       });
-      if (row.finalNakh > 0) await creditChallengeReward(tx, { submissionId: submission.id, studentId: row.userId, asset: 'nakh', amount: row.finalNakh, title: topic.challenge.title, actorId: actor.id });
+      if (row.finalNakh > 0) await creditChallengeReward(tx, { submissionId: submission.id, studentId: row.userId, asset: assetOf(topic.challenge), amount: row.finalNakh, title: topic.challenge.title, actorId: actor.id });
       await tx.submissionEvent.create({
         data: { submissionId: submission.id, challengeId: topic.challengeId, studentId: row.userId, action: 'approved', feedback: row.reason, score: row.finalNakh, actorId: actor.id, actorName: actor.name },
       });
       await tx.notification.create({
-        data: { userId: row.userId, title: 'نتیجه‌ی چالش', message: `در چالش «${topic.challenge.title}» با وضعیت «${PARTICIPATION[normalizeStatus(row.status) ?? 'tired'].label}» ${row.finalNakh} کلاف گرفتید.`, type: 'reward' },
+        data: { userId: row.userId, title: 'نتیجه‌ی چالش', message: `در چالش «${topic.challenge.title}» با وضعیت «${PARTICIPATION[normalizeStatus(row.status) ?? 'tired'].label}» ${row.finalNakh} ${assetLabel(topic.challenge)} گرفتید.`, type: 'reward' },
       });
     }
   });
@@ -301,11 +313,12 @@ export const payEvaluation = handler(async (req, res, actor) => {
 });
 
 /** A change after payment: the difference moves in the ledger, the first payment stays on record. */
-async function applyCorrection(actor: { id: string }, topic: { id: string; challengeId: string; challenge: { title: string; rewardMax: number; rewardMin: number } }, userId: string, finalNakh: number, reason: string) {
+async function applyCorrection(actor: { id: string }, topic: { id: string; challengeId: string; challenge: { title: string; rewardMax: number; rewardMin: number; rewardAssetType: string; rewardZarik?: number } }, userId: string, finalNakh: number, reason: string) {
   const row = await prisma.challengeEvaluation.findUnique({ where: { topicId_userId: { topicId: topic.id, userId } } });
   if (!row?.paidAt) throw new ChatError(404, 'پرداختی برای این فرد ثبت نشده است');
   const range = await rangeOf(topic.challenge);
-  if (!Number.isInteger(finalNakh) || finalNakh < range.min || finalNakh > range.max) throw new ChatError(400, 'مقدار کلاف معتبر نیست');
+  const label = assetLabel(topic.challenge);
+  if (!Number.isInteger(finalNakh) || finalNakh < range.min || finalNakh > range.max) throw new ChatError(400, `مقدار ${label} معتبر نیست`);
   if (!reason) throw new ChatError(400, 'دلیل اصلاح الزامی است');
   const delta = finalNakh - row.finalNakh;
   if (delta === 0) return 0;
@@ -316,13 +329,13 @@ async function applyCorrection(actor: { id: string }, topic: { id: string; chall
       if (updated.count !== 1) throw new ChatError(409, 'این ردیف هم‌زمان تغییر کرده است');
       await tx.submission.updateMany({ where: { challengeId: topic.challengeId, studentId: userId }, data: { score: finalNakh } });
       await changeBalance(tx, {
-        userId, asset: 'nakh', amount: delta, sourceType: 'evaluation_correction', sourceId: crypto.randomUUID(),
+        userId, asset: assetOf(topic.challenge), amount: delta, sourceType: 'evaluation_correction', sourceId: crypto.randomUUID(),
         reason: `اصلاح ارزیابی چالش «${topic.challenge.title}»: ${reason}`, createdBy: actor.id,
       });
-      await tx.notification.create({ data: { userId, title: 'اصلاح نتیجه‌ی چالش', message: `نتیجه‌ی چالش «${topic.challenge.title}» به ${finalNakh} کلاف اصلاح شد. ${reason}`, type: 'reward' } });
+      await tx.notification.create({ data: { userId, title: 'اصلاح نتیجه‌ی چالش', message: `نتیجه‌ی چالش «${topic.challenge.title}» به ${finalNakh} ${label} اصلاح شد. ${reason}`, type: 'reward' } });
     });
   } catch (e: any) {
-    if (e?.message === 'INSUFFICIENT_BALANCE') throw new ChatError(400, 'موجودی کلاف این فرد برای کسر کافی نیست؛ او آن را تبدیل کرده است');
+    if (e?.message === 'INSUFFICIENT_BALANCE') throw new ChatError(400, `موجودی ${label} این فرد برای کسر کافی نیست؛ او آن را خرج یا تبدیل کرده است`);
     throw e;
   }
   return delta;

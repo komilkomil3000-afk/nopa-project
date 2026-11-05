@@ -1932,6 +1932,13 @@ body.lse-open #nopa-toast-container { bottom: 92px; }
 .chl-rank-tier { flex: 0 0 auto; font-size: 10.5px; font-weight: 700; color: var(--accent-text); }
 .chl-rank-item.is-cloth .chl-rank-tier { color: var(--text-muted); }
 .chl-rank-actions { display: flex; flex-wrap: wrap; gap: 10px; }
+/* Per-member base reward of a cross-caravan challenge, by rank tier (زریک and کلاف) */
+.chl-rw { display: flex; flex-direction: column; gap: 8px; margin-block: 12px; }
+.chl-rw-grid { display: grid; grid-template-columns: minmax(84px, 1.2fr) 1fr 1fr; gap: 8px; align-items: center; }
+.chl-rw-head { font-size: var(--text-2xs, 0.7rem); color: var(--text-muted); }
+.chl-rw-tier { font-weight: 600; }
+.chl-rw-grid .input-ctrl { min-width: 0; height: 34px; }
+.chl-rank-wait { display: flex; gap: 8px; align-items: flex-start; padding: 10px 12px; border-radius: 12px; background: var(--warning-soft, rgba(234, 179, 8, 0.12)); color: var(--text); }
 .lms-drag-ghost-chl-rank { box-shadow: 0 18px 40px rgb(var(--shade-rgb) / 0.35); border-color: rgb(var(--primary-rgb) / 0.5); }
 
 /* Caravan standings tile on the overview */
