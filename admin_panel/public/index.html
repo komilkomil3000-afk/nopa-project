@@ -981,7 +981,6 @@
         <div id="wlt-overview-view">
           <div class="lms-head-actions u-flex u-justify-end u-items-center u-mb-20">
             <div class="u-flex u-gap-10">
-              <button type="button" class="btn-action" data-click="openWalletPromo"><i class="fa-solid fa-gift"></i> زریک هدیه</button>
               <button type="button" class="btn-primary u-bgc-primary" data-click="openWalletAdjust"><i class="fa-solid fa-plus"></i> تراکنش جدید</button>
             </div>
           </div>
@@ -1043,7 +1042,6 @@
               <h4 class="lst-tile-title"><i class="fa-solid fa-bolt"></i> دسترسی سریع</h4>
               <div class="lst-quick">
                 <button type="button" class="lst-quick-btn" data-click="openWalletAdjust"><i class="fa-solid fa-plus"></i> تراکنش جدید</button>
-                <button type="button" class="lst-quick-btn" data-click="openWalletPromo"><i class="fa-solid fa-gift"></i> زریک هدیه</button>
                 <button type="button" class="lst-quick-btn" data-click="exportCurrentLeague" data-click-args="[&quot;excel&quot;]"><i class="fa-solid fa-file-excel"></i> خروجی لیگ</button>
                 <button type="button" class="lst-quick-btn" data-click="loadWallet"><i class="fa-solid fa-sync"></i> بروزرسانی</button>
               </div>
@@ -1094,7 +1092,6 @@
               <div class="lsv-notch-wrap"><nav class="lsv-notch" id="wlt-circles" aria-label="افراد لیگ"></nav></div>
               <div class="lsv-round-group">
                 <button type="button" class="lsv-round" data-click="adjustActiveWallet" title="تراکنش جدید" aria-label="تراکنش جدید"><i class="fa-solid fa-plus"></i></button>
-                <button type="button" class="lsv-round" data-click="promoActiveWallet" title="زریک هدیه" aria-label="زریک هدیه"><i class="fa-solid fa-gift"></i></button>
                 <button type="button" class="lsv-round" data-click="reportActiveWallet" title="گزارش کامل" aria-label="گزارش کامل"><i class="fa-solid fa-chart-line"></i></button>
               </div>
             </header>
@@ -1125,7 +1122,7 @@
             <header class="lse-head lse-head-plain">
               <div class="lse-id">
                 <span class="lse-id-icon is-accent"><i class="fa-solid fa-coins"></i></span>
-                <div class="lse-id-text"><h3 id="wlt-adjust-title">تراکنش جدید</h3><span>واریز یا کسر دارایی، با ثبت در لاگ حسابرسی</span></div>
+                <div class="lse-id-text"><h3 id="wlt-adjust-title">تراکنش جدید</h3><span>واریز، کسر یا هدیه‌ی دارایی (برای هدیه، دسته‌ی «کمپین ویژه»)</span></div>
               </div>
               <button type="button" class="lsv-round" data-click="NopaActions.hide" data-click-args="[&quot;wlt-adjust-modal&quot;]" title="بستن" aria-label="بستن"><i class="fa-solid fa-xmark"></i></button>
             </header>
@@ -1139,9 +1136,10 @@
                       <option value="caravan">یک کاروان (گروه)</option>
                     </select>
                   </label>
-                  <label class="lse-field" id="adj-user-field"><span>کاربر هدف <b class="lse-req">*</b></span>
-                    <select id="zarik-target-user" class="select-ctrl"><option value="">انتخاب کاربر...</option></select>
-                  </label>
+                  <div class="lse-field" id="adj-user-field"><span>کاربر هدف <b class="lse-req">*</b></span>
+                    <input type="search" id="zarik-user-search" class="input-ctrl" placeholder="جستجوی نام یا شماره تلفن..." aria-label="جستجوی کاربر" autocomplete="off" data-input="wltUserSearch">
+                    <select id="zarik-target-user" class="select-ctrl" aria-label="کاربر هدف"><option value="">انتخاب کاربر...</option></select>
+                  </div>
                   <label class="lse-field" id="adj-caravan-field" hidden><span>کاروان هدف <b class="lse-req">*</b></span>
                     <select id="adj-target-caravan" class="select-ctrl"><option value="">انتخاب کاروان...</option></select>
                   </label>
@@ -1184,40 +1182,6 @@
                 <div class="lse-foot-actions">
                   <button type="button" class="lse-btn" data-click="NopaActions.hide" data-click-args="[&quot;wlt-adjust-modal&quot;]">انصراف</button>
                   <button type="submit" class="lsv-pill"><i class="fa-solid fa-check"></i> اعمال تراکنش</button>
-                </div>
-              </footer>
-            </form>
-          </div>
-        </div>
-
-        <!-- Promotional Zarik -->
-        <div id="wlt-promo-modal" class="modal-overlay lse-overlay u-z-z-modal" data-style="display:none">
-          <div class="lse lse-sm">
-            <header class="lse-head lse-head-plain">
-              <div class="lse-id">
-                <span class="lse-id-icon is-accent"><i class="fa-solid fa-gift"></i></span>
-                <div class="lse-id-text"><h3>زریک هدیه</h3><span>اعطای زریک برای کمپین‌های تبلیغاتی (دسته‌ی کمپین ویژه)</span></div>
-              </div>
-              <button type="button" class="lsv-round" data-click="NopaActions.hide" data-click-args="[&quot;wlt-promo-modal&quot;]" title="بستن" aria-label="بستن"><i class="fa-solid fa-xmark"></i></button>
-            </header>
-            <form id="zarik-promo-form" class="lse-form">
-              <div class="lse-body">
-                <section class="lse-card">
-                  <h4 class="lse-card-title"><i class="fa-solid fa-gift"></i> هدیه</h4>
-                  <label class="lse-field"><span>کاربر <b class="lse-req">*</b></span>
-                    <select id="promo-target-user" class="select-ctrl" required><option value="">انتخاب کاربر...</option></select>
-                  </label>
-                  <div class="lse-grid lse-grid-2">
-                    <label class="lse-field"><span>تعداد زریک <b class="lse-req">*</b></span><input type="number" min="1" id="promo-amount" class="input-ctrl" required></label>
-                    <label class="lse-field"><span>توضیحات کمپین <b class="lse-req">*</b></span><input type="text" id="promo-reason" class="input-ctrl" required></label>
-                  </div>
-                </section>
-              </div>
-              <footer class="lse-foot">
-                <span class="lse-foot-note"><i class="fa-solid fa-circle-info"></i> در دفتر تراکنش‌ها ثبت می‌شود</span>
-                <div class="lse-foot-actions">
-                  <button type="button" class="lse-btn" data-click="NopaActions.hide" data-click-args="[&quot;wlt-promo-modal&quot;]">انصراف</button>
-                  <button type="submit" class="lsv-pill"><i class="fa-solid fa-gift"></i> اعطای زریک</button>
                 </div>
               </footer>
             </form>
@@ -2368,9 +2332,12 @@
                   <button type="button" class="chm-icon-btn" id="chm-filter-toggle" title="فیلتر برچسب و منزلگاه" aria-label="فیلتر برچسب و منزلگاه"><i class="fa-solid fa-filter"></i></button>
                   <button type="button" class="chm-icon-btn" id="chm-pins-toggle" title="پیام‌های سنجاق‌شده" aria-label="پیام‌های سنجاق‌شده"><i class="fa-solid fa-thumbtack"></i></button>
                   <button type="button" class="chm-icon-btn" id="chm-mute-toggle" title="بی‌صدا کردن اعلان" aria-label="بی‌صدا کردن اعلان"><i class="fa-solid fa-bell"></i></button>
+                  <button type="button" class="chm-icon-btn" id="chm-info-toggle" title="اطلاعات گفتگو، اعضا و رسانه" aria-label="اطلاعات گفتگو"><i class="fa-solid fa-circle-info"></i></button>
+                  <button type="button" class="chm-icon-btn" id="chm-export" title="خروجی این گفتگوی چالش" aria-label="خروجی گفتگو" hidden><i class="fa-solid fa-file-export"></i></button>
                   <button type="button" class="chm-icon-btn" id="chm-refresh" title="بازخوانی" aria-label="بازخوانی"><i class="fa-solid fa-rotate"></i></button>
                 </div>
               </header>
+              <aside class="chm-info" id="chm-info" hidden aria-label="اطلاعات گفتگو"></aside>
               <div class="chm-threadbar" id="chm-threadbar" hidden>
                 <button type="button" class="chm-pill-btn" id="chm-thread-back"><i class="fa-solid fa-arrow-right"></i>بازگشت</button>
                 <i class="fa-solid fa-comments"></i><span>گفتگو زیر پیام: <b id="chm-thread-title"></b></span>
@@ -2408,6 +2375,7 @@
                 </div>
                 <form class="chm-composer" id="chm-composer" autocomplete="off">
                   <button type="button" class="chm-icon-btn" id="chm-attach" title="پیوست فایل" aria-label="پیوست فایل"><i class="fa-solid fa-paperclip"></i></button>
+                  <button type="button" class="chm-icon-btn" id="chm-emoji" title="شکلک" aria-label="شکلک"><i class="fa-regular fa-face-smile"></i></button>
                   <button type="button" class="chm-icon-btn" id="chm-templates" title="قالب‌های پیام" aria-label="قالب‌های پیام"><i class="fa-solid fa-bolt"></i></button>
                   <button type="button" class="chm-icon-btn" id="chm-sched-toggle" title="زمان‌بندی" aria-label="زمان‌بندی"><i class="fa-regular fa-clock"></i></button>
                   <button type="button" class="chm-icon-btn" id="chm-poll-btn" title="نظرسنجی" aria-label="نظرسنجی"><i class="fa-solid fa-square-poll-vertical"></i></button>

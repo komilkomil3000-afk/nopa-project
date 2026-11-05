@@ -315,10 +315,6 @@ function setupEventListeners() {
 
   // RBAC switches, blacklist and session revoke live in js/features/access.js (data-change / data-submit)
 
-  // Rewards: Promo Zarik
-  const promoForm = document.getElementById('zarik-promo-form');
-  if (promoForm) promoForm.addEventListener('submit', handlePromoZarik);
-
   // Reward rules form
   const rulesForm = document.getElementById('reward-rules-form');
   if (rulesForm) rulesForm.addEventListener('submit', handleRewardRuleUpsert);
@@ -333,28 +329,6 @@ function setupEventListeners() {
 }
 
 // ---- NEW HANDLERS ----
-async function handlePromoZarik(e) {
-  e.preventDefault();
-  const targetUserId = document.getElementById('promo-target-user').value;
-  const amount = parseInt(document.getElementById('promo-amount').value);
-  const reason = document.getElementById('promo-reason').value;
-
-  try {
-    const res = await request('/api/v1/admin/rewards/grant', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ targetUserId, amount, reason })
-    });
-    const data = await res.json();
-    showToast(res.ok ? data.message : data.error, res.ok ? 'success' : 'error');
-    if (res.ok) {
-      e.target.reset();
-      if (window.NopaActions) NopaActions.hide('wlt-promo-modal');
-      if (typeof window.wltAfterBalanceChange === 'function') window.wltAfterBalanceChange();
-    }
-  } catch (err) { console.error(err); }
-}
-
 async function handleNotificationBroadcast(e) {
   e.preventDefault();
   const targetAudience = document.getElementById('notif-audience').value;

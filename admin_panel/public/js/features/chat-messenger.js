@@ -26,10 +26,13 @@
     { key: 'academy', label: 'آموزگاه', types: ['announcements', 'public'] },
     { key: 'cases', label: 'پرونده‌های پشتیبانی', types: null },
   ];
-  const REACTIONS = {
-    bravo: ['fa-wand-magic-sparkles', 'آفرین'], agree: ['fa-circle-check', 'موافقم'], idea: ['fa-lightbulb', 'ایده‌ی خوب'],
-    question: ['fa-circle-question', 'سؤال دارم'], confused: ['fa-face-confused', 'متوجه نشدم'],
-  };
+  // As in the app (chat_theme.dart): five reactions for everyone and a star only staff give («برتر»);
+  // the older ones are still shown on old messages but no longer offered
+  const REACTIONS = { like: ['👍', 'تایید'], dislike: ['👎', 'مخالف'], idea: ['💡', 'ایده'], flower: ['🌸', 'گل'], thanks: ['🙏', 'ممنون'] };
+  const STAR_REACTION = ['⭐', 'برتر'];
+  const LEGACY_REACTIONS = { bravo: ['👏', 'آفرین'], agree: ['✅', 'موافقم'], question: ['❓', 'سؤال دارم'], confused: ['😕', 'متوجه نشدم'] };
+  const reactionInfo = type => REACTIONS[type] || (type === 'star' ? STAR_REACTION : LEGACY_REACTIONS[type]) || ['⭐', type];
+  const EMOJIS = ['😀','😂','🙂','😍','🥰','😎','🤔','😢','😭','😡','👍','👎','👏','🙏','💪','🎉','🔥','💡','✅','❌','⭐','❤️','🌸','🌹','☀️','🌙','📚','✏️','🏆','🎯'];
   const CASE_STATUS = { open: 'باز', reviewing: 'در بررسی', resolved: 'حل‌شده' };
   const ROLE_LABELS = { admin: 'مدیر', sub_admin: 'ادمین', mentor: 'راهبر', super_mentor: 'راهبر ارشد', channel_manager: 'مسئول کانال' };
   // Tag colours the server accepts (light enough for the app's dark surfaces, topics.ts isReadableColor)
@@ -190,6 +193,8 @@
     tools.hidden = !isCase();
     $('chm-pins-toggle').hidden = isCase() || st.manage;
     $('chm-mute-toggle').hidden = isCase() || st.manage;
+    $('chm-info-toggle').hidden = isCase() || st.manage;
+    $('chm-export').hidden = !(st.thread && st.thread.topic && st.thread.topic.id && !st.manage && curSpace() && curSpace().canModerate);
     $('chm-search-toggle').hidden = isCase() || st.manage;
     $('chm-filter-toggle').hidden = isCase() || st.manage;
     if (isCase()) {
@@ -273,7 +278,7 @@
         <i class="fa-solid fa-comments"></i>${m.threadReplies ? `${esc(fa(m.threadReplies))} پاسخ` : 'ورود به گفتگو'}<i class="fa-solid fa-chevron-left"></i></button>` : '';
     const grouped = {};
     (m.reactions || []).forEach(r => { (grouped[r.type] = grouped[r.type] || []).push(r.userId); });
-    const reactions = Object.keys(grouped).map(type => `<button type="button" class="chm-react-chip${grouped[type].includes(me().id) ? ' is-mine' : ''}" data-react="${esc(type)}" data-mid="${esc(m.id)}" title="${esc((REACTIONS[type] || [])[1] || type)}"><i class="fa-solid ${(REACTIONS[type] || ['fa-face-smile'])[0]}"></i>${esc(fa(grouped[type].length))}</button>`).join('');
+    const reactions = Object.keys(grouped).map(type => `<button type="button" class="chm-react-chip${grouped[type].includes(me().id) ? ' is-mine' : ''}" data-react="${esc(type)}" data-mid="${esc(m.id)}" title="${esc(reactionInfo(type)[1])}"><span class="chm-emoji">${reactionInfo(type)[0]}</span>${esc(fa(grouped[type].length))}</button>`).join('');
     const reply = m.replyTo ? `<button type="button" class="chm-reply" data-goto="${esc(m.replyTo.id)}"><b>${esc(m.replyTo.senderName)}</b><span>${esc(m.replyTo.body || 'پیام حذف شده')}</span></button>` : '';
     const body = m.deleted
       ? '<p class="chm-text is-deleted">این پیام حذف شده است</p>'
@@ -287,7 +292,7 @@
         ${m.botKey && !m.sender ? `<div class="chm-sender"><i class="fa-solid ${m.botKey === 'support' ? 'fa-headset' : 'fa-robot'}"></i>${esc(m.botName || 'ربات نپا')}</div>` : ''}
         ${reply}${att ? `<div class="chm-att">${att}</div>` : ''}${body}${poll}${tags}
         ${reactions ? `<div class="chm-react">${reactions}</div>` : ''}
-        <div class="chm-meta">${m.best ? '<span class="chm-best"><i class="fa-solid fa-award"></i>بهترین پاسخ</span>' : ''}${m.pinned ? '<i class="fa-solid fa-thumbtack"></i>' : ''}${m.edited ? '<span>ویرایش‌شده</span>' : ''}<span>${esc(clock(m.createdAt))}</span></div>
+        <div class="chm-meta">${m.best ? '<span class="chm-best"><i class="fa-solid fa-award"></i>بهترین پاسخ</span>' : ''}${m.final ? '<span class="chm-best"><i class="fa-solid fa-square-check"></i>پاسخ نهایی</span>' : ''}${m.evidence ? '<span class="chm-best"><i class="fa-solid fa-circle-check"></i>پیام خوب</span>' : ''}${m.mentorMark ? '<span class="chm-best"><i class="fa-solid fa-certificate"></i>راهبر</span>' : ''}${m.pinned ? '<i class="fa-solid fa-thumbtack"></i>' : ''}${m.edited ? '<span>ویرایش‌شده</span>' : ''}<span>${esc(clock(m.createdAt))}</span></div>
         ${thread}
       </div>
       ${m.deleted || isCase() ? '' : `<button type="button" class="chm-more" data-more="${esc(m.id)}" aria-label="گزینه‌های پیام" aria-haspopup="menu"><i class="fa-solid fa-ellipsis"></i></button>`}
@@ -398,7 +403,7 @@
     st.active = { kind, id, meta };
     st.reply = null; st.edit = null; st.files = []; st.thread = null; st.view = null;
     st.staffTags = {}; st.tags = null; st.people = null; st.mentions = [];
-    closeMenu();
+    closeMenu(); closeInfo();
     $('chm-empty').hidden = true;
     $('chm-conv').hidden = false;
     $('chm-searchbar').hidden = true;
@@ -418,12 +423,12 @@
     if (!m) return;
     closeMenu();
     st.thread = m; st.reply = null; st.edit = null;
-    renderContext();
+    renderContext(); setHead();
     reloadStream();
   }
   function exitThread() {
     st.thread = null; st.reply = null;
-    renderContext();
+    renderContext(); setHead();
     reloadStream();
   }
 
@@ -605,10 +610,14 @@
     menu.style.top = `${top}px`;
   }
 
-  function openMessageMenu(id, anchor) {
+  async function openMessageMenu(id, anchor) {
     const m = st.messages.find(x => x.id === id);
     if (!m) return;
     const s = curSpace();
+    // Whether the sender is silenced comes from the moderator's list of people
+    if (!st.manage && s && s.canModerate && !st.people) {
+      try { st.people = await api(`${CHAT}/spaces/${s.id}/people`); } catch (e) { st.people = []; }
+    }
     const mine = !!(m.sender && m.sender.id === me().id);
     const moderator = st.manage || !!(s && s.canModerate);
     const canWrite = !!(s && (s.canPost || s.canReply)) && !st.manage;
@@ -622,16 +631,25 @@
     if (m.body) items.push(['copy', 'fa-copy', 'کپی متن']);
     if (mine && m.body && !st.manage && m.kind !== 'card') items.push(['edit', 'fa-pen', 'ویرایش']);
     if (moderator && !st.manage) items.push(['pin', 'fa-thumbtack', m.pinned ? 'برداشتن سنجاق' : 'سنجاق کردن']);
+    if (!st.manage && moderator && m.topic && m.topic.quiz) items.push(['quizResults', 'fa-square-poll-vertical', 'نتایج آزمون']);
+    if (mine && !m.deleted && !st.manage && /mentor|admin/i.test(String(me().role || ''))) items.push(['mentorMark', 'fa-certificate', m.mentorMark ? 'برداشتن نشان راهبر' : 'نشان راهبر']);
     if (tagger) {
       items.push(['tag', 'fa-tag', 'برچسب']);
-      items.push(['best', 'fa-award', m.best ? 'برداشتن «بهترین پاسخ»' : 'بهترین پاسخ']);
-      items.push(['evidence', 'fa-circle-check', 'شاهد امتیاز (روشن/خاموش)']);
+      if (st.thread) {
+        items.push(['evidence', 'fa-circle-check', m.evidence ? 'برداشتن نشان «پیام خوب»' : 'نشان «پیام خوب» (شاهد امتیاز)']);
+        items.push(['best', 'fa-award', m.best ? 'برداشتن «بهترین پاسخ»' : 'بهترین پاسخ']);
+        if (st.thread.topic && st.thread.topic.id) items.push(['final', 'fa-square-check', 'پاسخ نهایی گروه']);
+      }
     }
-    if (moderator && !mine && m.sender) items.push(['mute', 'fa-volume-xmark', 'بی‌صدا تا یک ساعت']);
+    if (moderator && !mine && m.sender && !/mentor|admin|channel/i.test(String(m.sender.role || ''))) {
+      const until = ((st.people || []).find(p => p.id === m.sender.id) || {}).mutedUntil;
+      if (until && new Date(until) > new Date()) items.push(['unmute', 'fa-microphone', 'برداشتن بی‌صدا']);
+      else items.push(['mute', 'fa-volume-xmark', 'بی‌صدا تا یک ساعت', true]);
+    }
     if (!mine && m.sender && !st.manage && s && s.type !== 'direct') items.push(['report', 'fa-flag', 'گزارش تخلف', true]);
     if ((mine || moderator) && !isRoot) items.push(['delete', 'fa-trash', 'حذف', true]);
     const menu = $('chm-menu');
-    menu.innerHTML = (st.manage ? '' : `<div class="chm-menu-react">${Object.keys(REACTIONS).map(k => `<button type="button" data-mreact="${k}" title="${esc(REACTIONS[k][1])}" aria-label="${esc(REACTIONS[k][1])}"><i class="fa-solid ${REACTIONS[k][0]}"></i></button>`).join('')}</div>`) +
+    menu.innerHTML = (st.manage ? '' : `<div class="chm-menu-react">${Object.keys(REACTIONS).concat(moderator ? ['star'] : []).map(k => `<button type="button" data-mreact="${k}" title="${esc(reactionInfo(k)[1])}" aria-label="${esc(reactionInfo(k)[1])}"><span class="chm-emoji">${reactionInfo(k)[0]}</span></button>`).join('')}</div>`) +
       items.map(it => `<button type="button" class="chm-menu-item${it[3] ? ' is-danger' : ''}" role="menuitem" data-mact="${it[0]}"><i class="fa-solid ${it[1]}"></i>${esc(it[2])}</button>`).join('');
     menu.dataset.mid = id;
     anchor.classList.add('is-open');
@@ -662,7 +680,22 @@
         await post(`${CHAT}/messages/${id}/report`, { reason });
         showToast('گزارش ثبت شد و به مدیران می‌رسد.', 'success');
       }
-      else if (act === 'mute') { await post(`${CHAT}/spaces/${m.spaceId}/members/${m.sender.id}/mute`, { minutes: 60 }); showToast(`${m.sender.name} تا یک ساعت نمی‌تواند پیام بفرستد.`, 'success'); }
+      else if (act === 'quizResults') { await openQuizResults(m.topic.id); }
+      else if (act === 'mentorMark') {
+        await post(`${CHAT}/messages/${id}/mark`, { mark: 'mentor' });
+        await refreshActive({ force: true });
+      }
+      else if (act === 'final') {
+        await post(`${CHAT}/topics/${st.thread.topic.id}/final-answer`, { messageId: id });
+        showToast('پاسخ نهایی ثبت شد.', 'success');
+        await refreshActive({ force: true });
+      }
+      else if (act === 'unmute') {
+        await post(`${CHAT}/spaces/${m.spaceId}/members/${m.sender.id}/mute`, { minutes: 0 });
+        st.people = null;
+        showToast('بی‌صدا برداشته شد؛ این عضو دوباره می‌تواند پیام بفرستد.', 'success');
+      }
+      else if (act === 'mute') { await post(`${CHAT}/spaces/${m.spaceId}/members/${m.sender.id}/mute`, { minutes: 60 }); st.people = null; showToast(`${m.sender.name} تا یک ساعت نمی‌تواند پیام بفرستد.`, 'success'); }
       else if (act === 'delete') {
         if (!(await NopaConfirm('این پیام برای همه حذف می‌شود. ادامه می‌دهید؟'))) return;
         // Hidden at once; deleted for everyone only if not undone within 10s
@@ -746,6 +779,22 @@
       showToast(action === 'resolve' ? 'پرونده بسته شد.' : 'پرونده به شما سپرده شد.', 'success');
       setHead(); loadInbox(true);
     } catch (e) { showToast(e.message || 'خطا در ثبت', 'error'); }
+  }
+
+  function showEmojiPicker() {
+    const menu = $('chm-menu');
+    menu.innerHTML = `<div class="chm-emoji-grid">${EMOJIS.map(e => `<button type="button" data-memoji="${e}" aria-label="${e}">${e}</button>`).join('')}</div>`;
+    menu.dataset.mid = '';
+    placeMenu($('chm-emoji'));
+  }
+  function insertEmoji(e) {
+    const el = $('chm-input');
+    const a = el.selectionStart ?? el.value.length;
+    const b = el.selectionEnd ?? a;
+    el.value = el.value.slice(0, a) + e + el.value.slice(b);
+    el.selectionStart = el.selectionEnd = a + e.length;
+    autosize();
+    el.focus();
   }
 
   async function showTemplates() {
@@ -1189,6 +1238,139 @@
     } catch (e) { showToast(e.message || 'خطا در شروع گفتگو', 'error'); }
   }
 
+  // ---------- info panel: group / member profile, photos, voices, links, sessions ----------
+  const MEDIA_TABS = [['image', 'عکس‌ها'], ['audio', 'صدا‌ها'], ['link', 'لینک‌ها'], ['session', 'نشست‌ها']];
+  const info = { space: null, profile: null, member: null, tab: 'image' };
+  const faDate = v => new Date(v).toLocaleDateString('fa-IR', { month: 'short', day: 'numeric' });
+
+  function closeInfo() { $('chm-info').hidden = true; $('chm-info').innerHTML = ''; info.profile = null; info.member = null; }
+
+  async function openInfo() {
+    const s = curSpace();
+    if (!s || isCase()) return;
+    info.space = s; info.member = null; info.profile = null; info.tab = 'image';
+    $('chm-info').hidden = false;
+    $('chm-info').innerHTML = '<div class="chm-info-bar"><button type="button" class="chm-icon-btn" data-iclose aria-label="بستن"><i class="fa-solid fa-arrow-right"></i></button>اطلاعات گفتگو</div><div class="chm-state">در حال بارگذاری...</div>';
+    try { info.profile = await api(`${CHAT}/spaces/${s.id}/profile`); }
+    catch (e) { closeInfo(); showToast(e.message || 'خطا در دریافت اطلاعات', 'error'); return; }
+    renderInfo();
+  }
+
+  async function openMember(userId) {
+    try { info.member = await api(`${CHAT}/spaces/${info.space.id}/members/${userId}`); }
+    catch (e) { showToast(e.message || 'خطا در دریافت پروفایل', 'error'); return; }
+    info.tab = 'image';
+    renderInfo();
+  }
+
+  function statBox(label, value) { return `<span class="chm-info-stat"><b>${esc(value)}</b><small>${esc(label)}</small></span>`; }
+
+  function renderInfo() {
+    const box = $('chm-info');
+    const m = info.member;
+    const pr = info.profile;
+    const bar = `<div class="chm-info-bar"><button type="button" class="chm-icon-btn" data-iclose aria-label="${m ? 'بازگشت' : 'بستن'}"><i class="fa-solid fa-arrow-right"></i></button>${m ? 'پروفایل عضو' : 'اطلاعات گفتگو'}</div>`;
+    let top;
+    if (m) {
+      const stats = [];
+      if (m.rank) stats.push(statBox('رتبه', fa(m.rank)));
+      stats.push(statBox('زریک', fa(m.zarik || 0)), statBox('کلاف', fa(m.nakh || 0)), statBox('قالیچه', fa(m.farsh || 0)), statBox('درفش', fa(m.derafsh || 0)));
+      const sx = m.stats;
+      if (sx) stats.push(statBox('پیام‌ها', `${fa(sx.messages)} (${fa(sx.messageShare)}٪)`), statBox('نشست‌های شرکت‌کرده', `${fa(sx.sessionsJoined)} از ${fa(sx.sessions)}`),
+        statBox('واکنش دریافتی', fa(sx.reactionsReceived)), statBox('روزهای فعال (۳۰ روز)', fa(sx.activeDays)), statBox('آخرین فعالیت', sx.lastActiveAt ? faDate(sx.lastActiveAt) : '—'));
+      const muted = m.mutedUntil && new Date(m.mutedUntil) > new Date();
+      top = `<div class="chm-info-top">${avatar(m)}<h4>${esc(m.name)}</h4>
+        <p>${esc(ROLE_LABELS[String(m.role).toLowerCase()] || 'دانش‌آموز')}${m.caravanName ? ` · ${esc(m.caravanName)}` : ''}${m.online ? ' · آنلاین' : ''}</p>${m.slogan ? `<p>«${esc(m.slogan)}»</p>` : ''}</div>
+        <div class="chm-info-stats">${stats.join('')}</div>
+        <div class="chm-info-actions">${m.id !== me().id ? '<button type="button" class="chm-pill-btn" data-idirect><i class="fa-solid fa-comment"></i>گفتگوی خصوصی</button>' : ''}
+        ${m.mutedUntil !== undefined && m.id !== me().id && info.profile && info.profile.canModerate ? (muted
+          ? '<button type="button" class="chm-pill-btn is-ok" data-imute="0"><i class="fa-solid fa-microphone"></i>برداشتن بی‌صدا</button>'
+          : '<button type="button" class="chm-pill-btn" data-imute="60"><i class="fa-solid fa-volume-xmark"></i>بی‌صدا تا یک ساعت</button>') : ''}</div>`;
+    } else {
+      const stats = [statBox('همسفر', fa(pr.memberCount)), statBox('آنلاین', fa(pr.onlineCount))];
+      if (pr.rank) stats.push(statBox('رتبه‌ی کاروان', fa(pr.rank)));
+      const cover = pr.coverImageUrl && window.nopaImgSrc(pr.coverImageUrl);
+      top = `<div class="chm-info-top">${cover ? `<img class="chm-info-cover" src="${esc(cover)}" alt="" data-zoom="${esc(cover)}">` : avatar(null, TYPE_ICONS[pr.type] || 'fa-comments')}
+        <h4>${esc(pr.title || spaceTitle(info.space))}</h4>${pr.slogan ? `<p>«${esc(pr.slogan)}»</p>` : ''}</div>
+        <div class="chm-info-stats">${stats.join('')}</div>
+        ${(pr.members || []).length ? `<div class="chm-info-section">اعضا</div><div class="chm-info-members">${pr.members.map(p => `<button type="button" class="chm-row" data-imember="${esc(p.id)}">${avatar(p, null, p.online ? ' chm-online' : '')}<span class="chm-row-body"><span class="chm-row-top"><span class="chm-row-title">${esc(p.name)}</span></span><span class="chm-row-bottom"><span class="chm-row-preview">${esc(ROLE_LABELS[String(p.role).toLowerCase()] || 'دانش‌آموز')}</span></span></span></button>`).join('')}</div>` : ''}`;
+    }
+    box.innerHTML = bar + top + `<div class="chm-info-section">رسانه و نشست‌ها</div>
+      <div class="chm-info-tabs">${MEDIA_TABS.map(([k, l]) => `<button type="button" class="chm-chip${k === info.tab ? ' is-active' : ''}" data-itab="${k}">${l}</button>`).join('')}</div>
+      <div class="chm-info-body" id="chm-info-body"><div class="chm-state">در حال بارگذاری...</div></div>`;
+    loadInfoMedia();
+  }
+
+  async function loadInfoMedia() {
+    const tab = info.tab;
+    const uid = info.member ? `&userId=${encodeURIComponent(info.member.id)}` : '';
+    let rows;
+    try { rows = await api(`${CHAT}/spaces/${info.space.id}/media?kind=${tab}${uid}`); }
+    catch (e) { rows = null; }
+    const body = $('chm-info-body');
+    if (!body || tab !== info.tab) return;
+    if (!rows) { body.innerHTML = '<div class="chm-state">خطا در دریافت.</div>'; return; }
+    if (!rows.length) { body.innerHTML = '<div class="chm-state">موردی نیست.</div>'; return; }
+    if (tab === 'image') body.innerHTML = `<div class="chm-media-grid">${rows.map(a => `<img src="${esc(a.url)}" alt="${esc(a.name)}" loading="lazy" data-zoom="${esc(a.url)}">`).join('')}</div>`;
+    else if (tab === 'audio') body.innerHTML = rows.map(a => `<div class="chm-info-item"><audio controls preload="none" src="${esc(a.url)}"></audio><small>${esc(faDate(a.createdAt))}</small></div>`).join('');
+    else if (tab === 'link') body.innerHTML = rows.map(l => `<div class="chm-info-item">${esc(l.body).replace(/(https?:\/\/[^\s]+)/g, '<a href="$1" target="_blank" rel="noopener">$1</a>')}<small>${esc(l.senderName)} · ${esc(faDate(l.createdAt))}</small></div>`).join('');
+    else body.innerHTML = rows.map(t => `<button type="button" class="chm-info-item" data-isession="${esc(t.id)}"><span>${esc(t.title)}</span><small>${esc(fa(t.threadReplies))} پاسخ · ${esc(faDate(t.createdAt))}${t.topicStatus && t.topicStatus !== 'open' ? ' · بسته' : ''}</small></button>`).join('');
+  }
+
+  // Results of a quiz challenge, for the staff: per question, who took it and who has not
+  async function openQuizResults(topicId) {
+    $('chm-info').hidden = false;
+    $('chm-info').innerHTML = '<div class="chm-info-bar"><button type="button" class="chm-icon-btn" data-iclose aria-label="بستن"><i class="fa-solid fa-arrow-right"></i></button>نتایج آزمون</div><div class="chm-state">در حال بارگذاری...</div>';
+    let d;
+    try { d = await api(`${CHAT}/topics/${topicId}/quiz/results`); }
+    catch (e) { closeInfo(); showToast(e.message || 'خطا در دریافت نتایج', 'error'); return; }
+    info.member = null; info.profile = null;
+    const bar = '<div class="chm-info-bar"><button type="button" class="chm-icon-btn" data-iclose aria-label="بستن"><i class="fa-solid fa-arrow-right"></i></button>نتایج آزمون</div>';
+    const avg = d.rows.length ? Math.round(d.rows.reduce((n, r) => n + r.score, 0) / d.rows.length * 10) / 10 : 0;
+    $('chm-info').innerHTML = bar + `<div class="chm-info-stats">${statBox('شرکت‌کننده', fa(d.rows.length))}${statBox('شرکت نکرده', fa(d.notTaken.length))}${statBox('میانگین نمره', fa(avg))}${statBox('وضعیت', d.status === 'open' ? 'باز' : 'بسته')}</div>
+      <div class="chm-info-section">سؤال‌ها (تعداد پاسخ درست)</div>
+      <div class="chm-info-body">${d.questions.map((q, i) => `<div class="chm-info-item"><span>${esc(fa(i + 1))}. ${esc(q.q || '')}</span><small>درست: ${esc(fa(q.rightCount))} از ${esc(fa(d.rows.length))}</small></div>`).join('')}</div>
+      <div class="chm-info-section">نتیجه‌ی شرکت‌کنندگان</div>
+      <div class="chm-info-body">${d.rows.map(r => `<div class="chm-info-item"><span>${esc(r.user.name)}${r.user.caravanName ? ` · ${esc(r.user.caravanName)}` : ''}</span><small>نمره ${esc(fa(r.score))} از ${esc(fa(r.total))}${r.reward ? ` · جایزه ${esc(fa(r.reward))} ${esc(d.rewardLabel)}` : ''} · ${esc(faDate(r.submittedAt))}</small></div>`).join('') || '<div class="chm-state">هنوز کسی شرکت نکرده است.</div>'}</div>
+      ${d.notTaken.length ? `<div class="chm-info-section">هنوز شرکت نکرده‌اند</div><div class="chm-info-body">${d.notTaken.map(u => `<div class="chm-info-item">${esc(u.name)}</div>`).join('')}</div>` : ''}`;
+  }
+
+  function wireInfo() {
+    $('chm-info-toggle').addEventListener('click', () => ($('chm-info').hidden ? openInfo() : closeInfo()));
+    $('chm-info').addEventListener('click', async e => {
+      const t = e.target;
+      if (t.closest('[data-iclose]')) { if (info.member) { info.member = null; renderInfo(); } else closeInfo(); return; }
+      const mem = t.closest('[data-imember]'); if (mem) { openMember(mem.dataset.imember); return; }
+      const tab = t.closest('[data-itab]'); if (tab) { info.tab = tab.dataset.itab; renderInfo(); return; }
+      const z = t.closest('[data-zoom]');
+      if (z) { if (window.NopaLightbox && NopaLightbox.open) NopaLightbox.open(z.dataset.zoom); else window.open(z.dataset.zoom, '_blank', 'noopener'); return; }
+      if (t.closest('[data-idirect]')) { const id = info.member.id; closeInfo(); startDirect(id); return; }
+      const mu = t.closest('[data-imute]');
+      if (mu) {
+        try {
+          await post(`${CHAT}/spaces/${info.space.id}/members/${info.member.id}/mute`, { minutes: Number(mu.dataset.imute) });
+          st.people = null;
+          showToast(mu.dataset.imute === '0' ? 'بی‌صدا برداشته شد.' : 'این عضو تا یک ساعت نمی‌تواند پیام بفرستد.', 'success');
+          openMember(info.member.id);
+        } catch (err) { showToast(err.message || 'خطا', 'error'); }
+        return;
+      }
+      const ses = t.closest('[data-isession]');
+      if (ses) {
+        const id = ses.dataset.isession;
+        closeInfo();
+        if (st.messages.some(x => x.id === id)) enterThread(id);
+        else showToast('این پیام در بخش بارگذاری‌شده نیست؛ پیام‌های قدیمی‌تر را باز کنید.', 'info');
+      }
+    });
+    $('chm-export').addEventListener('click', async () => {
+      const topic = st.thread && st.thread.topic;
+      if (!topic) return;
+      try { const r = await post(`${CHAT}/topics/${topic.id}/export-link`); window.open(r.url, '_blank', 'noopener'); }
+      catch (e) { showToast(e.message || 'خروجی گرفته نشد', 'error'); }
+    });
+  }
+
   // ---------- views + wiring ----------
   function showView(view) {
     document.querySelectorAll('.chm-view').forEach(b => { const on = b.dataset.chmView === view; b.classList.toggle('is-active', on); b.setAttribute('aria-selected', String(on)); });
@@ -1201,6 +1383,8 @@
     if (st.inited || !$('chat-messenger')) return;
     st.inited = true;
     document.querySelectorAll('.chm-view').forEach(b => b.addEventListener('click', () => showView(b.dataset.chmView)));
+    $('chm-emoji').addEventListener('click', e => { e.stopPropagation(); showEmojiPicker(); });
+    wireInfo();
     $('chm-chips').addEventListener('click', e => { const b = e.target.closest('[data-filter]'); if (b) { st.filter = b.dataset.filter; renderList(); } });
     $('chm-filter-text').addEventListener('input', e => { st.text = e.target.value; renderList(); });
     $('chm-list').addEventListener('click', e => {
@@ -1263,6 +1447,8 @@
       const sw = e.target.closest('[data-swatch]');
       const vw = e.target.closest('[data-mview]');
       const mn = e.target.closest('[data-mention]');
+      const em = e.target.closest('[data-memoji]');
+      if (em) { insertEmoji(em.dataset.memoji); closeMenu(); return; }
       if (sw) { $('chm-menu').querySelectorAll('.chm-swatch').forEach(b => { const on = b === sw; b.classList.toggle('is-on', on); b.setAttribute('aria-checked', String(on)); }); return; }
       if (tgDel) { archiveTag(tgDel.dataset.mtagdel, mid); return; }
       if (tg) { toggleTag(mid, tg.dataset.mtag); return; }

@@ -1,7 +1,7 @@
 // Wallet & league tab (#rewards-tab): bento overview of the league (caravans / people) with the platform totals,
 // Zarik by category, the richest people, reward rules and the latest Zarik transactions (#wlt-overview-view), and one
 // person's wallet page (#wlt-detail-view): circles are the people of the current league list; the person's card is
-// linked to their assets and to their Zarik transactions. Dialogs: new transaction, promotional Zarik, reward rule.
+// linked to their assets and to their Zarik transactions. Dialogs: new transaction (also used for gifts), reward rule.
 // Both leaderboards are fetched once and filtered / sorted here, so filters animate through NopaFlip.
 // Styles: css/stations.css (.lst-*, .lsv-*, .crv-*, .wlt-*). Helpers crvAvatar / crvFa / crvArgs / crvInitial /
 // crvFadeOut come from caravans.js and mntFitNotch from mentors.js (they load later, but are only used at run time).
@@ -245,24 +245,40 @@ async function loadLedger() {
 }
 window.loadLedger = loadLedger;
 
-// Users for the two dialogs' pickers (also refreshed by the users tab after a change)
-async function loadAllUsersDropdown() {
+// Users for the transaction dialog's picker. An empty query lists the first 50 users; typing searches the whole
+// user base on the server (name or phone), keeping the chosen person selected.
+function wltFillUserSelect(users) {
+  wltSet('zarik-target-user', sel => {
+    const current = sel.value;
+    const kept = current && !users.some(u => String(u.id) === current) ? wltFind(current) || (allUsersList || []).find(u => String(u.id) === current) : null;
+    const list = kept ? [kept, ...users] : users;
+    sel.innerHTML = '<option value="">' + (users.length ? 'انتخاب کاربر...' : 'کاربری یافت نشد') + '</option>' + list.map(u =>
+      `<option value="${esc(u.id)}">${esc(u.name)} (${esc(u.phoneNumber)})${u.zarikBalance !== undefined ? ` · ${crvFa(u.zarikBalance)} زریک` : ''}</option>`).join('');
+    sel.value = current;
+  });
+}
+let wltUserSearchSeq = 0;
+async function loadAllUsersDropdown(query) {
+  const q = typeof query === 'string' ? query.trim() : '';
+  const seq = ++wltUserSearchSeq;
   try {
-    const res = await request('/api/v1/admin/users?page=1&limit=500');
+    const res = await request(`/api/v1/admin/users?page=1&limit=${q ? 30 : 50}&search=${encodeURIComponent(q)}`, { silent: true });
     const data = await res.json();
-    allUsersList = data.users || [];
-    const options = '<option value="">انتخاب کاربر...</option>' + allUsersList.map(u =>
-      `<option value="${esc(u.id)}">${esc(u.name)} (${esc(u.phoneNumber)}) · ${crvFa(u.zarikBalance)} زریک</option>`).join('');
-    ['zarik-target-user', 'promo-target-user'].forEach(id => wltSet(id, sel => {
-      const current = sel.value;
-      sel.innerHTML = options;
-      sel.value = current;
-    }));
+    if (seq !== wltUserSearchSeq) return; // a newer search replaced this one
+    const users = data.users || [];
+    if (!q) allUsersList = users;
+    wltFillUserSelect(users);
   } catch (err) {
     console.error(err);
   }
 }
 window.loadAllUsersDropdown = loadAllUsersDropdown;
+
+let wltUserSearchTimer = null;
+window.wltUserSearch = function(value) {
+  clearTimeout(wltUserSearchTimer);
+  wltUserSearchTimer = setTimeout(() => loadAllUsersDropdown(document.getElementById('zarik-user-search')?.value || ''), 250);
+};
 
 // ==================== OVERVIEW (BENTO) ====================
 
@@ -419,7 +435,6 @@ window.selectWalletCircle = function(userId) {
   window.loadWalletPage();
 };
 window.adjustActiveWallet = function() { window.openWalletAdjust(window.wltActiveId); };
-window.promoActiveWallet = function() { window.openWalletPromo(window.wltActiveId); };
 window.reportActiveWallet = function() { if (window.wltActiveId) viewUserDetails(window.wltActiveId); };
 
 // Up to 15 people of the current list around the open one (the open one is always there)
@@ -460,7 +475,6 @@ function wltInfoCard(p) {
     </div>
     <div class="mnt-info-actions">
       <button type="button" class="lsv-pill" data-click="adjustActiveWallet"><i class="fa-solid fa-plus"></i> تراکنش جدید</button>
-      <button type="button" class="lse-btn" data-click="promoActiveWallet"><i class="fa-solid fa-gift"></i> زریک هدیه</button>
       ${p.caravanId ? `<button type="button" class="lse-btn" data-click="openUserCaravanPage" data-click-args="${crvArgs(p.caravanId)}"><i class="fa-solid fa-compass"></i> کاروان</button>` : ''}
     </div>`;
 }
@@ -585,7 +599,8 @@ window.openWalletAdjust = function(userId) {
   const uid = typeof userId === 'string' ? userId : ''; // a data-click with no args
   const form = document.getElementById('zarik-adjust-form');
   if (form) form.reset();
-  if (!(allUsersList || []).length) loadAllUsersDropdown().then(() => wltPickUser('zarik-target-user', uid));
+  wltSet('zarik-user-search', el => { el.value = ''; });
+  loadAllUsersDropdown().then(() => wltPickUser('zarik-target-user', uid));
   wltPickUser('zarik-target-user', uid);
   const p = uid && wltFind(uid);
   wltSet('wlt-adjust-title', el => { el.textContent = p ? `تراکنش جدید برای ${p.name}` : 'تراکنش جدید'; });
@@ -627,15 +642,6 @@ window.wltAdjustSync = function() {
 };
 // "adjust" from another list: open the dialog with the person picked
 window.pickZarikTarget = function(userId) { window.openWalletAdjust(String(userId)); };
-
-window.openWalletPromo = function(userId) {
-  const uid = typeof userId === 'string' ? userId : '';
-  const form = document.getElementById('zarik-promo-form');
-  if (form) form.reset();
-  if (!(allUsersList || []).length) loadAllUsersDropdown().then(() => wltPickUser('promo-target-user', uid));
-  wltPickUser('promo-target-user', uid);
-  wltShowModal('wlt-promo-modal');
-};
 
 window.openWalletRule = function(key) {
   const form = document.getElementById('reward-rules-form');

@@ -1,3 +1,4 @@
+import crypto from 'crypto';
 import { Request, Response } from 'express';
 import { isAppClient, logLiveEvent, markAppAway } from '../services/liveActivity';
 import { logUserEvent } from '../services/userLog';
@@ -54,6 +55,12 @@ async function passwordMatches(hash: string | null, typed: string): Promise<bool
   return false;
 }
 
+// One-time login codes («رمز عبور را فراموش کرده‌ام»), keyed by phone number; in memory like the SMS cooldowns.
+const loginCodes = new Map<string, { code: string; expires: number; attempts: number }>();
+// Users who just signed in with such a code may set a new password without the old one, once, for a short while
+const otpPasswordGrants = new Map<string, number>();
+const OTP_GRANT_MS = 30 * 60 * 1000;
+
 export async function verifyPhone(req: Request, res: Response) {
   try {
     const { phoneNumber } = req.body;
@@ -70,6 +77,11 @@ export async function verifyPhone(req: Request, res: Response) {
     const clientIp = getClientIp(req);
     recordSmsDispatch(cleanPhone, clientIp);
 
+    const code = String(crypto.randomInt(10000, 100000));
+    loginCodes.set(cleanPhone, { code, expires: Date.now() + 5 * 60 * 1000, attempts: 0 });
+    // Mock SMS provider (same as requestPasswordResetCode until a real provider is connected)
+    console.log(`[SMS MOCK] Sending login code to ${cleanPhone}: ${code}`);
+
     res.json({ success: true, count: userCount, message: 'کد تایید ارسال شد' });
   } catch (error) {
     console.error('Verify phone error:', error);
@@ -83,6 +95,7 @@ export const requestOtp = verifyPhone;
 export async function login(req: Request, res: Response) {
   try {
     let { phoneNumber, password, role } = req.body;
+    const useOtp = req.body.otp === true;
 
     if (!phoneNumber) {
       return res.status(400).json({ error: 'شماره تلفن الزامی است' });
@@ -97,13 +110,18 @@ export async function login(req: Request, res: Response) {
       return res.status(403).json({ error: 'دسترسی مسدود شده است (IP Blocked)' });
     }
 
-    let user = await prisma.user.findFirst({
-      where: { phoneNumber: cleanPhone, isDeleted: false }
+    // A phone number may belong to more than one account (a student and a mentor): look at all of them,
+    // not an arbitrary first one, so the password that was just set is always checked against its own account
+    let candidates = await prisma.user.findMany({
+      where: { phoneNumber: cleanPhone, isDeleted: false },
+      orderBy: { createdAt: 'asc' }
     });
+    if (role && candidates.some(c => c.role === role)) candidates = candidates.filter(c => c.role === role);
 
-    if (!user) {
+    if (!candidates.length) {
       return res.status(404).json({ error: 'شماره همراه در سیستم ثبت نشده است' });
     }
+    let user = candidates[0];
 
     // Lockout check
     if (user.lockoutUntil && new Date() < user.lockoutUntil) {
@@ -138,11 +156,42 @@ export async function login(req: Request, res: Response) {
       });
     }
 
-    // Password verification: bcrypt only. There is no universal/master password.
+    // Password verification: bcrypt only (or the one-time code sent to the phone). There is no universal/master password.
     let isPasswordCorrect = false;
-    if (rawPassword && user.passwordHash) {
-      isPasswordCorrect = await passwordMatches(user.passwordHash, rawPassword);
+    if (useOtp) {
+      const entry = loginCodes.get(cleanPhone);
+      const typed = toEnglishDigits(rawPassword);
+      if (!entry || entry.expires < Date.now()) {
+        loginCodes.delete(cleanPhone);
+        return res.status(400).json({ error: 'کد تایید منقضی شده است. دوباره درخواست دهید' });
+      }
+      if (entry.code === typed) {
+        loginCodes.delete(cleanPhone);
+        isPasswordCorrect = true;
+        // several accounts on this phone and no role chosen yet: the person picks one first
+        if (candidates.length > 1) {
+          loginCodes.set(cleanPhone, { ...entry, expires: Date.now() + 5 * 60 * 1000 });
+          return res.status(300).json({ profiles: candidates.map(c => ({ id: c.id, name: c.name, role: c.role })) });
+        }
+      } else {
+        entry.attempts += 1;
+        if (entry.attempts >= 5) loginCodes.delete(cleanPhone);
+        return res.status(401).json({ error: 'کد تایید نادرست است' });
+      }
+    } else if (rawPassword) {
+      const matched: typeof candidates = [];
+      for (const c of candidates) {
+        if (c.passwordHash && await passwordMatches(c.passwordHash, rawPassword)) matched.push(c);
+      }
+      if (matched.length) {
+        isPasswordCorrect = true;
+        if (matched.length > 1) {
+          return res.status(300).json({ profiles: matched.map(c => ({ id: c.id, name: c.name, role: c.role })) });
+        }
+        user = matched[0];
+      }
     }
+    if (isPasswordCorrect && useOtp) otpPasswordGrants.set(user.id, Date.now() + OTP_GRANT_MS);
 
     if (!isPasswordCorrect) {
       const updatedAttempts = user.failedLoginAttempts + 1;
@@ -598,15 +647,23 @@ export async function changePassword(req: AuthRequest, res: Response) {
       passwordResetCodes.delete(user.id);
     }
 
-    if (currentPassword && currentPassword.trim().length > 0 && user.passwordHash) {
-      const currentMatch = await passwordMatches(user.passwordHash, String(currentPassword).trim());
-      if (!currentMatch) {
-        const isDefault = await bcrypt.compare('123456', user.passwordHash);
-        if (!isDefault) {
+    // The new password needs proof of who is asking: the SMS code (checked above), the current password, or a
+    // sign-in with a one-time code a moment ago. A wrong current password is never accepted, default or not.
+    const smsProven = smsCode !== undefined && smsCode !== null && String(smsCode).trim() !== '';
+    if (!smsProven) {
+      const hasCurrent = currentPassword && String(currentPassword).trim().length > 0;
+      if (hasCurrent) {
+        if (!(await passwordMatches(user.passwordHash, String(currentPassword).trim()))) {
           return res.status(401).json({ error: 'رمز عبور فعلی وارد شده معتبر نیست' });
+        }
+      } else {
+        const grant = otpPasswordGrants.get(user.id);
+        if (!grant || grant < Date.now()) {
+          return res.status(401).json({ error: 'برای تغییر رمز، رمز فعلی یا کد پیامکی لازم است' });
         }
       }
     }
+    otpPasswordGrants.delete(user.id);
 
     // Stored with English digits; login accepts Persian digits too
     const newHash = await bcrypt.hash(toEnglishDigits(newPassword.trim()), 10);

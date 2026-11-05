@@ -769,7 +769,7 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
   Future<void> _handleLoginForRole(String role) async {
     String phone = _normalizedPhone(_phoneCtrl.text);
     String password = _secretCtrl.text.trim();
-    final response = await _apiService.login(phone, password: password, role: role);
+    final response = await _apiService.login(phone, password: password, role: role, otp: _loginMode == AuthLoginMode.otp);
     _processLoginResponse(response);
   }
 
@@ -804,7 +804,7 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
     }
 
     setState(() => _isLoading = true);
-    final response = await _apiService.login(phone, password: password);
+    final response = await _apiService.login(phone, password: password, otp: _loginMode == AuthLoginMode.otp);
     if (mounted) {
       setState(() => _isLoading = false);
       _processLoginResponse(response);

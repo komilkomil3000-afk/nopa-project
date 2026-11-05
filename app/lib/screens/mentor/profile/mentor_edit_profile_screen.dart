@@ -15,6 +15,7 @@ import 'package:nopa_app/widgets/safe_avatar.dart';
 import 'package:nopa_app/widgets/avatar_picker_sheet.dart';
 
 import 'package:nopa_app/widgets/app_scaffold.dart';
+import 'package:nopa_app/widgets/password_change_dialog.dart';
 import 'package:nopa_app/widgets/nopa_dialog_container.dart';
 
 class MentorEditProfileScreen extends StatefulWidget {
@@ -41,11 +42,6 @@ class _EditProfileScreenState extends State<MentorEditProfileScreen> {
   late TextEditingController _jobCtrl;
   late TextEditingController _resumeCtrl;
 
-  // Password fields
-  late TextEditingController _newPasswordCtrl;
-  late TextEditingController _confirmPasswordCtrl;
-  bool _isNewPasswordVisible = false;
-  bool _isConfirmPasswordVisible = false;
 
   bool _isSaving = false;
 
@@ -74,8 +70,6 @@ class _EditProfileScreenState extends State<MentorEditProfileScreen> {
     _jobCtrl = TextEditingController(text: 'مدرس و راهبر کاروان');
     _resumeCtrl = TextEditingController(text: 'دارای سابقه فعالیت و راهبری در حوزه‌های آموزشی و مهارتی');
 
-    _newPasswordCtrl = TextEditingController();
-    _confirmPasswordCtrl = TextEditingController();
   }
 
   @override
@@ -91,8 +85,6 @@ class _EditProfileScreenState extends State<MentorEditProfileScreen> {
     _educationCtrl.dispose();
     _jobCtrl.dispose();
     _resumeCtrl.dispose();
-    _newPasswordCtrl.dispose();
-    _confirmPasswordCtrl.dispose();
     super.dispose();
   }
 
@@ -172,21 +164,6 @@ class _EditProfileScreenState extends State<MentorEditProfileScreen> {
       return;
     }
 
-    // Password validation if entered
-    final newPassword = _newPasswordCtrl.text.trim();
-    final confirmPassword = _confirmPasswordCtrl.text.trim();
-
-    if (newPassword.isNotEmpty) {
-      if (newPassword.length < 4) {
-        AppToast.error(context, 'رمز عبور باید حداقل ۴ کاراکتر باشد');
-        return;
-      }
-      if (newPassword != confirmPassword) {
-        AppToast.error(context, 'رمز عبور جدید و تکرار آن مطابقت ندارند');
-        return;
-      }
-    }
-
     setState(() => _isSaving = true);
 
     try {
@@ -205,22 +182,17 @@ class _EditProfileScreenState extends State<MentorEditProfileScreen> {
         return;
       }
 
-      if (newPassword.isNotEmpty) {
-        await api.changePassword(null, newPassword);
-      }
-
       if (!mounted) return;
       final repository = Provider.of<AppRepository>(context, listen: false);
       await repository.refreshUser();
 
       if (!mounted) return;
       // The server checks the form, so it is saved now; «لغو» puts the previous details back.
-      // A new password is not taken back: the old one is not known on the device.
       final before = widget.user;
       final rootContext = Navigator.of(context).context;
       AppToast.undoable(
         context,
-        newPassword.isEmpty ? 'تغییرات با موفقیت ذخیره شد' : 'تغییرات ذخیره شد (لغو، رمز عبور جدید را برنمی‌گرداند)',
+        'تغییرات با موفقیت ذخیره شد',
         commit: () async => null,
         onUndo: () async {
           final restoreError = await HttpApiService().completeProfile({
@@ -797,134 +769,8 @@ class _EditProfileScreenState extends State<MentorEditProfileScreen> {
     );
   }
 
-  /// Section for creating/updating fixed password
-  Widget _buildPasswordSection() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        // Section Header
-        Padding(
-          padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
-          child: Row(
-            children: [
-              Text(
-                'ایجاد / تغییر رمز عبور ثابت',
-                style: AppTypography.h3.copyWith(color: AppColors.buttonCamel),
-              ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Container(
-                  height: 1,
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      colors: [
-                        AppColors.buttonCamel.withValues(alpha: 0.5),
-                        Colors.transparent,
-                      ],
-                    ),
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-
-        // Password Inputs Row
-        Row(
-          children: [
-            // New Password Field
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Padding(
-                    padding: EdgeInsets.only(bottom: 6, right: 4),
-                    child: Text(
-                      'رمز عبور جدید',
-                      style: AppTypography.bodyMedium.copyWith(color: Color(0xFF9E9BB8)),
-                    ),
-                  ),
-                  _buildDecoratedInputBox(
-                    child: Row(
-                      children: [
-                        Expanded(
-                          child: TextField(
-                            controller: _newPasswordCtrl,
-                            obscureText: !_isNewPasswordVisible,
-                            style: AppTypography.bodyLarge.copyWith(color: Color(0xFFEAE8F8)),
-                            decoration: InputDecoration(
-                              isDense: true,
-                              border: InputBorder.none,
-                              hintText: 'رمز عبور جدید',
-                              hintStyle: AppTypography.caption.copyWith(color: Colors.white.withValues(alpha: 0.25)),
-                              contentPadding: const EdgeInsets.symmetric(vertical: 8),
-                            ),
-                          ),
-                        ),
-                        TapExpander(child: GestureDetector(
-                          onTap: () => setState(() => _isNewPasswordVisible = !_isNewPasswordVisible),
-                          child: Icon(
-                            _isNewPasswordVisible ? Icons.visibility_outlined : Icons.visibility_off_outlined,
-                            color: const Color(0xFF8E889D),
-                            size: 18,
-                          ),
-                        )),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(width: 14),
-
-            // Confirm Password Field
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Padding(
-                    padding: EdgeInsets.only(bottom: 6, right: 4),
-                    child: Text(
-                      'تکرار رمز عبور',
-                      style: AppTypography.bodyMedium.copyWith(color: Color(0xFF9E9BB8)),
-                    ),
-                  ),
-                  _buildDecoratedInputBox(
-                    child: Row(
-                      children: [
-                        Expanded(
-                          child: TextField(
-                            controller: _confirmPasswordCtrl,
-                            obscureText: !_isConfirmPasswordVisible,
-                            style: AppTypography.bodyLarge.copyWith(color: Color(0xFFEAE8F8)),
-                            decoration: InputDecoration(
-                              isDense: true,
-                              border: InputBorder.none,
-                              hintText: 'تکرار رمز عبور',
-                              hintStyle: AppTypography.caption.copyWith(color: Colors.white.withValues(alpha: 0.25)),
-                              contentPadding: const EdgeInsets.symmetric(vertical: 8),
-                            ),
-                          ),
-                        ),
-                        TapExpander(child: GestureDetector(
-                          onTap: () => setState(() => _isConfirmPasswordVisible = !_isConfirmPasswordVisible),
-                          child: Icon(
-                            _isConfirmPasswordVisible ? Icons.visibility_outlined : Icons.visibility_off_outlined,
-                            color: const Color(0xFF8E889D),
-                            size: 18,
-                          ),
-                        )),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ],
-    );
-  }
+  /// Section for creating/updating the fixed password (the same dialog as the student's editor)
+  Widget _buildPasswordSection() => PasswordChangeSection(phoneNumber: widget.user.phoneNumber);
 }
 
 /// Modal Dialog for Support Change Request

@@ -590,13 +590,14 @@ class HttpApiService {
     return verifyPhone(phoneNumber, websiteSource: websiteSource);
   }
 
-  Future<dynamic> login(String phoneNumber, {String? password, String? role}) async {
+  Future<dynamic> login(String phoneNumber, {String? password, String? role, bool otp = false}) async {
     final targetUrl = Uri.parse('$baseUrl/auth/login');
     debugPrint('🔑 [HttpApiService:Login] Requesting $targetUrl for phone: $phoneNumber');
     try {
       final bodyMap = <String, dynamic>{'phoneNumber': phoneNumber};
       if (password != null) bodyMap['password'] = password;
       if (role != null) bodyMap['role'] = role;
+      if (otp) bodyMap['otp'] = true;
       
       final response = await _post(
         targetUrl,
