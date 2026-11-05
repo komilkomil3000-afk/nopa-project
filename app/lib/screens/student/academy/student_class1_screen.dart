@@ -330,10 +330,10 @@ class _Class1ScreenState extends State<StudentClass1Screen> {
     final int animCount = _allClips
         .where((c) => !StationGalleryItem.isImageUrl(c['videoUrl']?.toString() ?? ''))
         .length;
-    final String animText = '${animCount.toPersian()} قسمت';
+    final String animText = '${(_station?.animationCount ?? animCount).toPersian()} قسمت';
     final String stayText = _station?.stayDuration?.isNotEmpty == true
         ? _station!.stayDuration!
-        : '${((_currentStationIndex + 1) * 3 + 5).toPersian()} روز';
+        : 'نامشخص';
 
     final String currentClipTitle =
         _allClips.isNotEmpty && _currentClipIndex < _allClips.length

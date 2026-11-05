@@ -128,6 +128,7 @@
         case 'title': return st.title || '';
         case 'releaseDate': return dateInput(st.releaseDate);
         case 'stayDuration': return st.stayDuration || '';
+        case 'animationCount': return st.animationCount == null ? '' : String(st.animationCount);
         case 'description': return st.description || '';
         case 'iconUrl': return st.iconUrl || '';
         case 'orderIndex': return String(st.orderIndex ?? '');
@@ -366,6 +367,7 @@
       title: '',
       releaseDate: localDate(new Date()),
       stayDuration: '۲ هفته',
+      animationCount: '',
       description: '',
       iconUrl: '',
       gallery: '[]',
@@ -624,6 +626,10 @@
             <label class="lse-field">
               <span>مدت اقامت</span>
               <input type="text" class="input-ctrl" data-f="station.stayDuration" value="${esc(field('stayDuration'))}" placeholder="مثال: ۲ هفته">
+            </label>
+            <label class="lse-field">
+              <span>تعداد انیمیشن (قسمت)</span>
+              <input type="number" min="0" class="input-ctrl" data-f="station.animationCount" value="${esc(field('animationCount'))}" placeholder="مثال: ۳">
             </label>
           </div>
           <label class="lse-field">
@@ -1074,6 +1080,7 @@
               <dt>عنوان</dt><dd>${esc(d.title)}</dd>
               <dt>تاریخ انتشار</dt><dd>${d.releaseDate ? esc(lmsFaDate(d.releaseDate)) : '—'}</dd>
               <dt>مدت اقامت</dt><dd>${esc(d.stayDuration || '—')}</dd>
+              <dt>تعداد انیمیشن</dt><dd>${esc(d.animationCount || '—')}</dd>
               <dt>معرفی</dt><dd>${esc(d.description || '—')}</dd>
             </dl>
           </section>
@@ -1252,6 +1259,7 @@
       title: d.title.trim(),
       releaseDate: d.releaseDate || undefined,
       stayDuration: d.stayDuration,
+      animationCount: d.animationCount === '' ? null : d.animationCount,
       description: d.description,
       iconUrl: String(d.iconUrl || '').trim(),
       animations,
@@ -1326,6 +1334,7 @@
         description: val('station.description'),
         releaseDate: val('station.releaseDate'),
         stayDuration: val('station.stayDuration'),
+        animationCount: val('station.animationCount'),
         subtitle: st.subtitle || undefined,
         releaseTime: st.releaseTime || undefined
       };

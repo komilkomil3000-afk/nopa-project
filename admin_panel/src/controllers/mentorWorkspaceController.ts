@@ -421,6 +421,24 @@ export async function getMentorCaravanProgress(req: AuthRequest, res: Response) 
         }
       }
 
+      // The station's gallery (نگارستان), same shape as the student's station list
+      let stationAnimations: any[] = [];
+      if (st.animationsJson) {
+        try {
+          const parsed = JSON.parse(st.animationsJson);
+          if (Array.isArray(parsed)) stationAnimations = parsed;
+        } catch (_) {}
+      }
+      if (stationAnimations.length === 0 && st.animationUrl) {
+        stationAnimations.push({
+          id: `anim-${st.id}`,
+          title: st.animationTitle || 'انیمیشن معرفی منزلگاه',
+          url: st.animationUrl,
+          videoUrl: st.animationUrl,
+          description: st.description || ''
+        });
+      }
+
       return {
         id: st.id,
         title: st.title,
@@ -431,8 +449,11 @@ export async function getMentorCaravanProgress(req: AuthRequest, res: Response) 
         skillSessions,
         mediaSessions,
         quizzes: allQuizzes,
-        stayDays: sIdx === 0 ? 'پنج روز' : (sIdx === 1 ? 'ده روز' : (sIdx === 2 ? 'دوازده روز' : 'پانزده روز')),
-        animationEpisodes: sIdx === 0 ? 'یک قسمت' : (sIdx === 1 ? 'دو قسمت' : 'سه قسمت'),
+        stayDuration: st.stayDuration || null,
+        animationCount: (st as any).animationCount ?? null,
+        animations: stationAnimations,
+        animationTitle: st.animationTitle,
+        animationUrl: st.animationUrl,
         categories: st.categories
       };
     });

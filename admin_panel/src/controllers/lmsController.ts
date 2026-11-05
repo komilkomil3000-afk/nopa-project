@@ -187,9 +187,13 @@ async function renumberStationsAround(tx: any, stationId: string, number: number
 
 export const createOrUpdateStation = async (req: Request, res: Response) => {
   try {
-    const { id, title, subtitle, description, stayDuration, animationTitle, animationUrl, animations, animationsJson, iconUrl, orderIndex, releaseDate, releaseTime, scoringCriteriaJson, categories, instructors, schedule, category, sessionsCount, isLocked, status, scheduledUnlockTime, requirePreviousComplete, targetCaravansJson } = req.body;
+    const { id, title, subtitle, description, stayDuration, animationCount, animationTitle, animationUrl, animations, animationsJson, iconUrl, orderIndex, releaseDate, releaseTime, scoringCriteriaJson, categories, instructors, schedule, category, sessionsCount, isLocked, status, scheduledUnlockTime, requirePreviousComplete, targetCaravansJson } = req.body;
     
     const subtitleVal = subtitle || (instructors || schedule || category || sessionsCount ? JSON.stringify({ instructors, schedule, category, sessionsCount }) : null);
+
+    // Admin-entered number of animation episodes (empty / invalid = not set)
+    const animCountParsed = parseInt(String(animationCount ?? ''), 10);
+    const animCountVal: number | null = Number.isFinite(animCountParsed) && animCountParsed >= 0 ? animCountParsed : null;
 
     // Prepare animations JSON and fallback single animationTitle/animationUrl
     let parsedAnimationsJson: string | null = null;
@@ -250,6 +254,7 @@ export const createOrUpdateStation = async (req: Request, res: Response) => {
           subtitle: subtitleVal, 
           description: description !== undefined ? description : '', 
           stayDuration: stayDuration !== undefined ? stayDuration : null,
+          ...(animationCount !== undefined ? { animationCount: animCountVal } : {}),
           orderIndex: orderIndexVal,
           releaseDate: releaseDateVal,
           releaseTime: releaseTime || null,
@@ -297,6 +302,7 @@ export const createOrUpdateStation = async (req: Request, res: Response) => {
             subtitle: subtitleVal, 
             description: description !== undefined ? description : '', 
             stayDuration: stayDuration !== undefined ? stayDuration : null,
+            animationCount: animCountVal,
             animationTitle: effectiveAnimTitle !== undefined ? effectiveAnimTitle : null,
             animationUrl: effectiveAnimUrl !== undefined ? effectiveAnimUrl : null,
             animationsJson: parsedAnimationsJson,

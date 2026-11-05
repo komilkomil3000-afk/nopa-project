@@ -1,6 +1,7 @@
 import 'package:nopa_app/widgets/tap_expander.dart';
 import 'package:nopa_app/core/constants/app_routes.dart';
 import '../../widgets/nopa_modal_shell.dart';
+import '../shell/app_shell.dart' show mainTabNotifier;
 import '../../widgets/nopa_dialog_container.dart';
 import 'dart:async';
 import 'package:nopa_app/widgets/app_toast.dart';
@@ -155,7 +156,7 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
             _showDualRoleSelectionDialog(user);
           } else {
             AuthService.selectedRole = user.role;
-            Navigator.pushReplacementNamed(context, AppRoutes.dashboard, arguments: user.role);
+            await _enterApp(user.role);
           }
           return;
         }
@@ -171,6 +172,33 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
     if (!mounted) return;
     await WelcomeDialog.show(context);
     if (!mounted) return;
+    await _enterApp(role);
+  }
+
+  /// Loads the first page's data behind the loading screen, then opens the app on the home tab
+  /// (so no stale tab such as the profile flashes before the real page).
+  Future<void> _enterApp(UserRole role) async {
+    if (!mounted) return;
+    setState(() => _checkingSession = true);
+    final repo = Provider.of<AppRepository>(context, listen: false);
+    final api = HttpApiService();
+    final minDelay = Future.delayed(const Duration(milliseconds: 2200));
+    try {
+      final jobs = <Future<dynamic>>[
+        api.getStations(),
+        api.getBanners(position: 'home_top'),
+        if (role.isMentorLike) repo.fetchCaravans(),
+        repo.refreshChallenges(),
+        repo.fetchNotifications(),
+      ];
+      await Future.wait(jobs.map((f) => f.catchError((_) => null)))
+          .timeout(const Duration(seconds: 8), onTimeout: () => <dynamic>[]);
+    } catch (e) {
+      debugPrint('Home preload failed: $e');
+    }
+    await minDelay;
+    if (!mounted) return;
+    mainTabNotifier.value = 0;
     Navigator.pushReplacementNamed(context, AppRoutes.dashboard, arguments: role);
   }
 

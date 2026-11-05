@@ -41,6 +41,7 @@ class Station {
   final String? subtitle;
   final String? description;
   final String? stayDuration;
+  final int? animationCount;
   final String? animationTitle;
   final String? animationUrl;
   final List<StationAnimation> animations;
@@ -59,6 +60,7 @@ class Station {
     this.subtitle,
     this.description,
     this.stayDuration,
+    this.animationCount,
     this.animationTitle,
     this.animationUrl,
     this.animations = const [],
@@ -176,6 +178,7 @@ class Station {
       subtitle: json['subtitle']?.toString(),
       description: json['description']?.toString(),
       stayDuration: json['stayDuration']?.toString(),
+      animationCount: int.tryParse(json['animationCount']?.toString() ?? ''),
       animationTitle: json['animationTitle']?.toString(),
       animationUrl: json['animationUrl']?.toString(),
       animations: parsedAnimations,

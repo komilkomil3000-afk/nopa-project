@@ -476,6 +476,7 @@ model Station {
   subtitle            String?
   description         String?
   stayDuration        String?
+  animationCount      Int?     // number of animation episodes shown in the app (set by the admin)
   animationTitle      String?
   animationUrl        String?
   animationsJson      String?  // JSON array of multiple animation slides [{id, title, url, description}]

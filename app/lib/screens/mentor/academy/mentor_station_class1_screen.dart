@@ -239,12 +239,11 @@ class _MentorStationScreenState extends State<MentorStationClass1Screen> {
                     ),
                 ],
                 animText:
-                    currentStationData['animationEpisodes'] ??
-                    '${_currentStationClips.length.toPersianDigits()} قسمت',
+                    '${(int.tryParse(currentStationData['animationCount']?.toString() ?? '') ?? _currentStationClips.length).toPersianDigits()} قسمت',
                 stayText:
-                    currentStationData['stayDuration'] ??
-                    currentStationData['stayDays'] ??
-                    'نامشخص',
+                    (currentStationData['stayDuration']?.toString().trim().isNotEmpty == true)
+                        ? currentStationData['stayDuration'].toString()
+                        : 'نامشخص',
               ),
 
               const SizedBox(height: 12),

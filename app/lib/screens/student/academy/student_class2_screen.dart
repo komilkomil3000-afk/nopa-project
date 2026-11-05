@@ -696,7 +696,7 @@ class _Class2ScreenState extends State<StudentClass2Screen> {
                       child: Directionality(
                         textDirection: TextDirection.rtl,
                         child: Text(
-                          'منزلگاه ${_toFarsiDigit(_stationNumber)}',
+                          _stationTitle,
                           textAlign: TextAlign.right,
                           style: AppTypography.h3.copyWith(color: Color(0xFFEDE8F5)),
                         ),
