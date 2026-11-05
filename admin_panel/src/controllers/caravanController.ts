@@ -4,6 +4,7 @@ import { changeBalance } from '../services/ledger';
 import { CapitalAsset, conversionRule, getEconomyPolicy } from '../services/economy';
 import { AuthRequest } from '../middleware/auth';
 import { refreshUserRooms } from '../modules/chat/realtime';
+import { caravanGroupTitle, customCaravanGroupTitle, setCaravanGroupTitle } from '../modules/chat/service';
 import { isMentorRole } from '../utils/roles';
 
 // Explicit field list for a caravan's mentor: never return the full User row
@@ -444,8 +445,13 @@ export async function getCaravanDetails(req: AuthRequest, res: Response) {
       }
     } catch (_) {}
 
+    // The caravan's chat group carries the caravan's name unless it was given its own
+    const space = await prisma.chatSpace.findUnique({ where: { key: `caravan:${caravan.id}` }, select: { title: true } });
+
     return res.json({
       ...caravan,
+      groupTitle: caravanGroupTitle(caravan.name, space?.title),
+      customGroupTitle: customCaravanGroupTitle(space?.title),
       mentorName: caravan.mentor?.name || 'فاقد راهبر',
       membersList,
       memberCount: membersList.length,
@@ -621,7 +627,9 @@ export async function updateCaravan(req: AuthRequest, res: Response) {
       data: dataToUpdate,
       include: { mentor: { select: MENTOR_PUBLIC_SELECT } }
     });
-    res.json({ message: 'کاروان با موفقیت بروزرسانی شد', caravan: updated });
+    // The name of the caravan's chat group; '' makes it follow the caravan's name again
+    const groupTitle = req.body.groupTitle !== undefined ? await setCaravanGroupTitle(id, req.body.groupTitle) : undefined;
+    res.json({ message: 'کاروان با موفقیت بروزرسانی شد', caravan: updated, ...(groupTitle !== undefined ? { groupTitle } : {}) });
   } catch (error: any) {
     res.status(500).json({ error: error.message });
   }

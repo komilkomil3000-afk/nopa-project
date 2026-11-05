@@ -24,8 +24,37 @@ const GLOBAL_SPACES = [
   { key: 'mentors', type: 'mentors', title: 'اتاق راهبران' },
 ];
 
-/** The name a caravan's group is shown with. */
-export const caravanGroupTitle = (caravanName: string) => `کاروان ${caravanName}`;
+/** Stored title of a caravan group that was never renamed: the group then follows the caravan's name. */
+export const DEFAULT_CARAVAN_GROUP_TITLE = 'گروه کاروان';
+
+/**
+ * The name a caravan's group is shown with: the caravan's own name, unless its mentor or an admin
+ * gave the group another one (stored in ChatSpace.title).
+ */
+export const caravanGroupTitle = (caravanName: string, spaceTitle?: string | null) => {
+  const own = (spaceTitle || '').trim();
+  return own && own !== DEFAULT_CARAVAN_GROUP_TITLE ? own : caravanName;
+};
+
+/** The group's own name, or null while it follows the caravan's name. */
+export const customCaravanGroupTitle = (spaceTitle?: string | null) => {
+  const own = (spaceTitle || '').trim();
+  return own && own !== DEFAULT_CARAVAN_GROUP_TITLE ? own : null;
+};
+
+/**
+ * Renames a caravan's group (at most 60 characters). An empty name, or the caravan's own name,
+ * makes the group follow the caravan's name again. Returns the name now shown.
+ */
+export async function setCaravanGroupTitle(caravanId: string, title: unknown): Promise<string> {
+  const caravan = await prisma.caravan.findUnique({ where: { id: caravanId }, select: { name: true } });
+  if (!caravan) throw new ChatError(404, 'کاروان یافت نشد');
+  await ensureCaravanSpaces(caravanId);
+  const wanted = String(title ?? '').trim().slice(0, 60);
+  const stored = !wanted || wanted === caravan.name.trim() ? DEFAULT_CARAVAN_GROUP_TITLE : wanted;
+  await prisma.chatSpace.update({ where: { key: `caravan:${caravanId}` }, data: { title: stored } });
+  return caravanGroupTitle(caravan.name, stored);
+}
 
 const ensured = new Set<string>();
 
@@ -56,7 +85,7 @@ export async function caravanIdsOf(actor: ChatActor): Promise<string[]> {
 
 export async function ensureCaravanSpaces(caravanId: string) {
   const caravan = `caravan:${caravanId}`, challenges = `challenges:${caravanId}`;
-  if (!ensured.has(caravan)) await ensureSpace(caravan, { type: 'caravan', title: 'گروه کاروان', caravanId }) // shown as caravanGroupTitle(name);
+  if (!ensured.has(caravan)) await ensureSpace(caravan, { type: 'caravan', title: DEFAULT_CARAVAN_GROUP_TITLE, caravanId }); // shown as caravanGroupTitle(name, title)
   if (!ensured.has(challenges)) await ensureSpace(challenges, { type: 'challenges', title: 'گروه چالش‌ها', caravanId });
 }
 

@@ -87,10 +87,12 @@ class _MarketScreenState extends State<MarketScreen> {
   // Leaderboard data (from /leagues/*)
   List<Map<String, dynamic>> _topMembers = [];
   List<Map<String, dynamic>> _topCaravans = [];
+  bool _leaderboardsLoaded = false;
 
   // «برترین‌ها» in the drawer opens this tab scrolled to the rankings (see [MarketScreen.showLeaderboard])
   final GlobalKey _leaderboardKey = GlobalKey();
   int _handledLeaderboardRequest = 0;
+
   List<String> _memberIds = [];
   List<String> _caravanIds = [];
 
@@ -212,7 +214,16 @@ class _MarketScreenState extends State<MarketScreen> {
     }
   }
 
-  Future<void> _refreshAll() => Future.wait([_loadMarketData(), _loadLeaderboards()]);
+  /// Pull to refresh: the leaderboard, plus the caravan's report (mentor) or the user's own assets
+  /// and the rate sheet (student; refreshUser also reloads the economy rules).
+  Future<void> _refreshAll() async {
+    final repository = Provider.of<AppRepository>(context, listen: false);
+    await Future.wait([
+      _loadLeaderboards(),
+      _isMentor ? _loadMarketData() : repository.refreshUser(),
+    ]);
+    if (mounted) _recalculateExchange();
+  }
 
   @override
   void initState() {
@@ -233,19 +244,29 @@ class _MarketScreenState extends State<MarketScreen> {
     super.dispose();
   }
 
-  /// Brings «برترین‌ها» (the last section) into view. Retries for a moment while the tab and its data appear.
+  /// Brings «برترین‌ها» (the last section) into view. It waits until this tab is the visible one and the
+  /// lists above and in it have arrived: scrolling earlier landed on the rate sheet, or was undone when
+  /// the content above grew, and people thought they were on the wrong page.
   void _scrollToLeaderboard([int attempt = 0]) {
     final request = MarketScreen.leaderboardRequests.value;
     if (request == _handledLeaderboardRequest) return;
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!mounted) return;
+      if (!mounted || request != MarketScreen.leaderboardRequests.value) return;
       final target = _leaderboardKey.currentContext;
-      if (target == null) {
-        if (attempt < 20) Future.delayed(const Duration(milliseconds: 100), () => _scrollToLeaderboard(attempt + 1));
-        return;
+      final ready = target != null &&
+          TickerMode.valuesOf(context).enabled && // the tab is the one on screen (IndexedStack mutes the hidden ones)
+          _leaderboardsLoaded &&
+          !(_isMentor && _marketLoading);
+      if (!ready) {
+        if (attempt < 40) Future.delayed(const Duration(milliseconds: 100), () => _scrollToLeaderboard(attempt + 1));
+        if (target == null || attempt < 40) return;
       }
       _handledLeaderboardRequest = request;
-      Scrollable.ensureVisible(target, duration: const Duration(milliseconds: 550), curve: Curves.easeInOutCubic, alignment: 0.0);
+      // Centred on the screen; a section taller than the screen starts at its title instead
+      final box = target.findRenderObject() as RenderBox?;
+      final viewport = Scrollable.maybeOf(target)?.position.viewportDimension ?? 0;
+      final fits = box != null && box.hasSize && box.size.height < viewport;
+      Scrollable.ensureVisible(target, duration: const Duration(milliseconds: 550), curve: Curves.easeInOutCubic, alignment: fits ? 0.5 : 0.0);
     });
   }
 
@@ -519,6 +540,8 @@ class _MarketScreenState extends State<MarketScreen> {
       });
     } catch (e) {
       debugPrint('Error loading leaderboards: $e');
+    } finally {
+      _leaderboardsLoaded = true;
     }
   }
 
@@ -544,7 +567,6 @@ class _MarketScreenState extends State<MarketScreen> {
 
         return RefreshIndicator(
           onRefresh: _refreshAll,
-          notificationPredicate: isMentor ? defaultScrollNotificationPredicate : (_) => false,
           child: SingleChildScrollView(
           physics: const AlwaysScrollableScrollPhysics(),
           child: Column(

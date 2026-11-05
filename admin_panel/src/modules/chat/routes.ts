@@ -10,7 +10,7 @@ import { askJudge, getTiers, judgeEntry, judgeList, myQuestions, saveTiers, subm
 import { exportTopic, exportTopicLink, mentorDashboard, reportMessage, serveTopicExport, topicInsight } from './reports';
 import { myCases, openSupport, rateCase } from './support';
 import { getTopicQuiz, submitTopicQuiz, topicQuizResults } from './quiz';
-import { coverUpload, memberProfile, setSpaceCover, setSpaceSlogan, spaceMedia, spaceProfile } from './profiles';
+import { coverUpload, memberProfile, setSpaceCover, setSpaceSlogan, setSpaceTitle, spaceMedia, spaceProfile } from './profiles';
 
 const router = Router();
 
@@ -64,6 +64,7 @@ router.get('/spaces/:id/profile', spaceProfile as any);
 router.put('/spaces/:id/cover', coverMiddleware as any, setSpaceCover as any);
 router.delete('/spaces/:id/cover', setSpaceCover as any);
 router.put('/spaces/:id/slogan', setSpaceSlogan as any);
+router.put('/spaces/:id/title', setSpaceTitle as any);
 router.get('/spaces/:id/media', spaceMedia as any);
 router.get('/spaces/:id/members/:userId', memberProfile as any);
 router.patch('/messages/:id', chat.editMessage as any);

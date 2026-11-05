@@ -170,6 +170,57 @@ class _ChatSpaceProfileScreenState extends State<ChatSpaceProfileScreen> {
     );
   }
 
+  /// The mentor (or an admin) renames the caravan group. By default it carries the caravan's name;
+  /// an empty name makes it follow the caravan's name again.
+  Future<void> _editTitle() async {
+    final ctrl = TextEditingController(text: (_profile?['groupTitle'] ?? _profile?['title'] ?? '').toString());
+    final value = await showDialog<String>(
+      context: context,
+      builder: (ctx) => Directionality(
+        textDirection: TextDirection.rtl,
+        child: AlertDialog(
+          backgroundColor: ChatTheme.surfaceBottom,
+          title: Text('نام گروه', style: ChatTheme.body),
+          content: TextField(
+            controller: ctrl,
+            maxLength: 60,
+            autofocus: true,
+            style: ChatTheme.body,
+            decoration: InputDecoration(hintText: 'خالی = نام کاروان (${(_profile?['caravanName'] ?? '').toString()})'),
+          ),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('انصراف')),
+            TextButton(onPressed: () => Navigator.pop(ctx, ctrl.text.trim()), child: const Text('ذخیره')),
+          ],
+        ),
+      ),
+    );
+    if (value == null || !mounted) return;
+    final previousTitle = _profile?['title'];
+    final previousOwn = _profile?['groupTitle'];
+    final caravanName = (_profile?['caravanName'] ?? '').toString();
+    final shown = value.isEmpty ? caravanName : value;
+    if ((previousTitle ?? '').toString() == shown) return;
+    // The new name shows at once; it is saved only if not undone within the undo time
+    setState(() => _profile = {...?_profile, 'title': shown, 'groupTitle': value.isEmpty || value == caravanName ? null : value});
+    AppToast.undoable(
+      context,
+      'نام گروه به «$shown» تغییر کرد.',
+      commit: () async {
+        final res = await _chat.api('PUT', '/chat/spaces/${widget.spaceId}/title', body: {'title': value});
+        if (res.ok) {
+          _chat.refreshSpaces();
+          return null;
+        }
+        if (mounted) setState(() => _profile = {...?_profile, 'title': previousTitle, 'groupTitle': previousOwn});
+        return res.error.isNotEmpty ? res.error : 'تغییر نام گروه انجام نشد.';
+      },
+      onUndo: () {
+        if (mounted) setState(() => _profile = {...?_profile, 'title': previousTitle, 'groupTitle': previousOwn});
+      },
+    );
+  }
+
   Future<void> _load() async {
     var profile = await _chat.spaceProfile(widget.spaceId);
     // A server without the profile endpoint yet: what the app already knows of the space and its people
@@ -257,13 +308,13 @@ class _ChatSpaceProfileScreenState extends State<ChatSpaceProfileScreen> {
                   ),
                   const SizedBox(width: 16),
                   InkWell(
-                    onTap: _editSlogan,
+                    onTap: _editTitle,
                     child: Padding(
                       padding: const EdgeInsets.symmetric(vertical: 6),
                       child: Row(children: [
-                        const Icon(Icons.edit_note_rounded, color: ChatTheme.lavender, size: 20),
+                        const Icon(Icons.drive_file_rename_outline_rounded, color: ChatTheme.lavender, size: 20),
                         const SizedBox(width: 6),
-                        Text('بیو / شعار', style: ChatTheme.body.copyWith(color: ChatTheme.lavender, fontSize: 13)),
+                        Text('نام گروه', style: ChatTheme.body.copyWith(color: ChatTheme.lavender, fontSize: 13)),
                       ]),
                     ),
                   ),

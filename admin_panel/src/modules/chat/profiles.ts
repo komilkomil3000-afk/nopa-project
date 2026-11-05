@@ -7,7 +7,7 @@ import { uploadsDir } from '../../controllers/mediaController';
 import { canModerate, canTag, ChatActor } from './access';
 import { handler, requireSpace } from './http';
 import { isOnline, onlineUserIds } from './realtime';
-import { caravanGroupTitle, ChatError, signFileUrl } from './service';
+import { caravanGroupTitle, ChatError, customCaravanGroupTitle, setCaravanGroupTitle, signFileUrl } from './service';
 import { defaultChatImage } from '../../controllers/appImagesController';
 import { sealedMessageIds } from './arenaPrivacy';
 
@@ -74,12 +74,14 @@ export const spaceProfile = handler(async (req, res, actor) => {
     const at = caravans.findIndex(c => c.id === space.caravanId);
     if (at >= 0) { rank = at + 1; caravanName = caravans[at].name; }
   }
-  const title = space.type === 'caravan' && caravanName ? caravanGroupTitle(caravanName) : space.title;
+  const title = space.type === 'caravan' && caravanName ? caravanGroupTitle(caravanName, space.title) : space.title;
+  // the group's own name (null while it follows the caravan's name), for the rename dialog
+  const groupTitle = space.type === 'caravan' ? customCaravanGroupTitle(space.title) : null;
   const hasOwnCover = !!coverImageUrl;
   // no picture of its own: the default the admin set for this kind of space («تصاویر اپلیکیشن»)
   if (!coverImageUrl && space.type !== 'direct') coverImageUrl = await defaultChatImage(space.type);
   res.json({
-    id: space.id, type: space.type, title, caravanName, coverImageUrl, hasOwnCover, slogan, memberCount, onlineCount, rank, members,
+    id: space.id, type: space.type, title, groupTitle, caravanName, coverImageUrl, hasOwnCover, slogan, memberCount, onlineCount, rank, members,
     canModerate: canModerate(actor, space),
     canEditCover: canEditCover(actor, space),
   });
@@ -92,6 +94,18 @@ export const setSpaceSlogan = handler(async (req, res, actor) => {
   const slogan = String(req.body?.slogan ?? '').trim().slice(0, 30) || null;
   await prisma.caravan.update({ where: { id: space.caravanId! }, data: { slogan } });
   res.json({ slogan });
+});
+
+/**
+ * Renames the caravan group; the caravan's mentor or an admin. By default the group carries the caravan's
+ * name; an empty name (or the caravan's own) makes it follow the caravan's name again.
+ */
+export const setSpaceTitle = handler(async (req, res, actor) => {
+  const { space } = await requireSpace(actor, req.params.id);
+  if (!canEditCover(actor, space)) throw new ChatError(403, 'فقط راهبر کاروان می‌تواند نام گروه را تغییر دهد');
+  const title = await setCaravanGroupTitle(space.caravanId!, req.body?.title);
+  const stored = await prisma.chatSpace.findUnique({ where: { id: space.id }, select: { title: true } });
+  res.json({ title, groupTitle: customCaravanGroupTitle(stored?.title) });
 });
 
 const COVER_EXTENSIONS = new Set(['.jpg', '.jpeg', '.png', '.webp']);

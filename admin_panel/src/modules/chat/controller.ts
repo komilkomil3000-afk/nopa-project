@@ -69,7 +69,7 @@ export const listSpaces = handler(async (req, res, actor) => {
     return {
       id: s.id,
       type: s.type,
-      title: peer?.user.name || (s.caravan && s.type === 'caravan' ? caravanGroupTitle(s.caravan.name) : s.title),
+      title: peer?.user.name || (s.caravan && s.type === 'caravan' ? caravanGroupTitle(s.caravan.name, s.title) : s.title),
       // the caravan's own picture first, then the default the admin set for this kind of space («تصاویر اپلیکیشن»)
       coverImageUrl: (s.type === 'caravan' ? s.caravan?.coverImageUrl : null) || (s.type === 'direct' ? null : defaults[s.type] || null),
       peer: peer ? { ...peer.user, online: isOnline(peer.user.id) } : null,

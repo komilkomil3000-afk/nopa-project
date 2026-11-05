@@ -1327,6 +1327,13 @@ window.renderCaravanDrawerData = function(data) {
   const mentorEl = document.getElementById('cd-mentor-name');
   if (mentorEl) mentorEl.innerHTML = `<i class="fa-solid fa-user-tie"></i> مربی: ${esc(data.mentor?.name || data.mentorName || 'بدون راهبر')}`;
   
+  const groupTitleText = document.getElementById('cd-group-title-text');
+  if (groupTitleText) {
+    groupTitleText.textContent = data.customGroupTitle
+      ? `«${data.customGroupTitle}»`
+      : 'به‌طور پیش‌فرض همان نام کاروان';
+  }
+
   const capText = document.getElementById('cd-capacity-text');
   if (capText) capText.innerHTML = `<i class="fa-solid fa-users"></i> ظرفیت: ${data.membersList?.length || data.memberCount || 0} / ${data.capacityLimit || 50} نفر`;
   
@@ -2149,6 +2156,38 @@ window.openChangeMentorForDrawerCaravan = function() {
 };
 window.editDrawerCaravanCapacity = function() {
   return window.editCaravanCapacity(currentDrawerCaravanId);
+};
+
+/** Renames the caravan's chat group; left empty, the group carries the caravan's name again. */
+window.editDrawerCaravanGroupTitle = async function() {
+  const cId = currentDrawerCaravanId;
+  if (!cId) return showToast('شناسه کاروان نامعتبر است', 'error');
+  const before = currentCaravanDrawerData?.customGroupTitle || '';
+  const val = prompt('نام گروه گفتگوی کاروان (خالی بگذارید تا همان نام کاروان باشد):', before || currentCaravanDrawerData?.name || '');
+  if (val === null) return;
+  const title = val.trim().slice(0, 60);
+  try {
+    const res = await request(`/api/v1/admin/caravans/${cId}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ groupTitle: title })
+    });
+    const d = await res.json().catch(() => ({}));
+    if (!res.ok) return showToast(d.error || 'خطا در تغییر نام گروه', 'error');
+    const refresh = () => {
+      if (currentDrawerCaravanId && typeof window.viewCaravanDetails === 'function') window.viewCaravanDetails(currentDrawerCaravanId);
+    };
+    // «لغو» within 10s puts the old name back
+    NopaUndo.afterEdit({
+      message: `نام گروه گفتگو: «${d.groupTitle || title}»`,
+      url: `/api/v1/admin/caravans/${cId}`,
+      method: 'PATCH',
+      body: { groupTitle: title },
+      before: { groupTitle: before },
+      done: refresh,
+    });
+    refresh();
+  } catch (e) { console.error(e); showToast('خطا در ارتباط با سرور', 'error'); }
 };
 window.searchCandidateMembersFromInput = function() {
   return window.searchCandidateMembers(document.getElementById('input-search-candidate-member')?.value);
