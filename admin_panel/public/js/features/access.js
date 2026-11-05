@@ -406,8 +406,24 @@ async function secPutRelease(body, okMsg) {
       body: JSON.stringify(body),
     });
     const data = await res.json().catch(() => ({}));
-    showToast(res.ok ? okMsg : (data.error || 'خطا در ذخیره نسخه'), res.ok ? 'success' : 'error');
-    if (!res.ok) return;
+    if (!res.ok) return showToast(data.error || 'خطا در ذخیره نسخه', 'error');
+    // «لغو» within 10s puts the version announced before back (when there was one)
+    const old = window.secRelease || {};
+    const reload = async () => {
+      const r = await request('/api/v1/admin/app-release').catch(() => null);
+      if (r && r.ok) { window.secRelease = await r.json().catch(() => window.secRelease); secDrawRelease(); }
+    };
+    if (old.version && old.downloadUrl) {
+      NopaUndo.afterEdit({
+        message: okMsg,
+        url: '/api/v1/admin/app-release',
+        // the server reads all three fields every time
+        revert: { version: old.version, downloadUrl: old.downloadUrl, notes: Array.isArray(old.notes) ? old.notes : [] },
+        done: reload,
+      });
+    } else {
+      showToast(okMsg, 'success');
+    }
     window.secRelease = data;
     NopaActions.hide('sec-release-modal');
     secDrawRelease();
@@ -462,18 +478,21 @@ window.secSaveBlacklist = async function(e) {
 
 window.secRemoveBlacklist = async function(value) {
   if (!(await NopaConfirm(`مسدودیت «${value}» برداشته شود؟`))) return;
-  try {
-    const res = await request('/api/v1/admin/security/blacklist', {
+  // Gone from the list at once; lifted on the server only if not undone within 10s
+  NopaUndo.later({
+    message: `مسدودیت «${value}» برداشته شد.`,
+    hide: () => {
+      const before = window.secBlacklist || [];
+      window.secBlacklist = before.filter(b => b.value !== value);
+      window.filterSecRoles();
+      return () => { window.secBlacklist = before; window.filterSecRoles(); };
+    },
+    commit: () => request('/api/v1/admin/security/blacklist', {
       method: 'DELETE',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ value })
-    });
-    const data = await res.json().catch(() => ({}));
-    showToast(res.ok ? data.message : (data.error || 'خطا در حذف'), res.ok ? 'success' : 'error');
-    if (!res.ok) return;
-    window.secBlacklist = (window.secBlacklist || []).filter(b => b.value !== value);
-    window.filterSecRoles();
-  } catch (err) { console.error(err); }
+    }),
+  });
 };
 
 window.secRevokeMode = function() {

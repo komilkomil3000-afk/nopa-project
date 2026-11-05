@@ -40,6 +40,8 @@
     // <a href="#" data-click="…"> is a keyboard-reachable button: never navigate to "#" (the router listens to the hash)
     if (type === 'click' && el.matches('a[href="#"]')) event.preventDefault();
     if (!fn) { console.error(`data-${type}: "${name}" is not a function`); return; }
+    // the row a delete button sits in is hidden while it can be undone (js/ui/undo.js)
+    if (type === 'click' && window.NopaActions) window.NopaActions.lastEl = el;
     const result = fn.apply(window, args(el, type, event));
     if (result === false) event.preventDefault();
   }

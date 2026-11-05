@@ -158,7 +158,17 @@ window.chsSaveBots = async function(event) {
       await NopaApi.json(`/api/v1/admin/chat-manage/bots/${key}`, { method: 'PUT', body: JSON.stringify({ enabled: el.checked, settings }) });
     }
     window.chatBotsCache = null;
-    showToast('ربات‌ها و قالب‌ها ذخیره شدند.', 'success');
+    // «لغو» within 10s sends every bot back as it was
+    const oldBots = ((data && data.bots) || []).map(b => ({ key: b.key, enabled: b.enabled, settings: b.settings || {} }));
+    NopaUndo.after({
+      message: 'ربات‌ها و قالب‌ها ذخیره شدند.',
+      undo: async () => {
+        for (const b of oldBots) {
+          await NopaApi.json(`/api/v1/admin/chat-manage/bots/${b.key}`, { method: 'PUT', body: JSON.stringify({ enabled: b.enabled, settings: b.settings }) });
+        }
+      },
+      done: () => { window.chatBotsCache = null; window.loadChatOps(); },
+    });
     window.chsCloseModal('chs-bots-modal');
     window.loadChatOps();
   } catch (e) {
@@ -300,10 +310,23 @@ window.chsSaveGroup = async function(event) {
   if (!title) return;
   try {
     if (chsGroupId) {
-      await NopaApi.json(`/api/v1/admin/chat-manage/groups/${chsGroupId}`, { method: 'PATCH', body: JSON.stringify({ title }) });
+      const id = chsGroupId;
+      const oldTitle = ((window.chatGroupsCache || []).find(g => g.id === id) || {}).title;
+      await NopaApi.json(`/api/v1/admin/chat-manage/groups/${id}`, { method: 'PATCH', body: JSON.stringify({ title }) });
       opsEl('chs-group-title').textContent = title;
-      showToast('نام گروه ذخیره شد.', 'success');
-      await refreshGroup(chsGroupId);
+      // «لغو» within 10s gives the group its old name back
+      NopaUndo.afterEdit({
+        message: 'نام گروه ذخیره شد.',
+        url: `/api/v1/admin/chat-manage/groups/${id}`,
+        method: 'PATCH',
+        body: { title },
+        before: oldTitle === undefined ? {} : { title: oldTitle },
+        done: ok => {
+          if (ok && chsGroupId === id) opsEl('chs-group-title').textContent = oldTitle;
+          return refreshGroup(id);
+        },
+      });
+      await refreshGroup(id);
     } else {
       const created = await NopaApi.json('/api/v1/admin/chat-manage/groups', { method: 'POST', body: JSON.stringify({ title, caravanId: opsEl('chat-group-caravan').value || undefined, memberIds: [] }) });
       showToast('گروه ساخته شد؛ اعضا را اضافه کنید.', 'success');
@@ -327,23 +350,26 @@ window.chsAddMember = async function() {
   }
 };
 
-window.removeChatGroupMember = async function(id, userId) {
-  try {
-    await NopaApi.json(`/api/v1/admin/chat-manage/groups/${id}/members/${userId}`, { method: 'DELETE' });
-    await refreshGroup(id);
-  } catch (e) {
-    showToast(e.message || 'خطا در حذف عضو', 'error');
-  }
+// Both deletes hide their row at once and reach the server only if not undone within 10s (js/ui/undo.js)
+window.removeChatGroupMember = function(id, userId) {
+  const row = NopaUndo.lastRow();
+  NopaUndo.later({
+    message: 'عضو از گروه حذف شد.',
+    hide: () => NopaUndo.hideEl(row),
+    commit: () => NopaApi.json(`/api/v1/admin/chat-manage/groups/${id}/members/${userId}`, { method: 'DELETE' }),
+    done: () => refreshGroup(id),
+  });
 };
 
 window.deleteChatGroup = async function(id, title) {
+  const row = NopaUndo.lastRow();
   if (!(await NopaConfirm(`گروه «${title}» و همه‌ی پیام‌هایش حذف می‌شود. ادامه می‌دهید؟`))) return;
-  try {
-    await NopaApi.json(`/api/v1/admin/chat-manage/groups/${id}`, { method: 'DELETE' });
-    window.loadChatGroups();
-  } catch (e) {
-    showToast(e.message || 'خطا در حذف گروه', 'error');
-  }
+  NopaUndo.later({
+    message: `گروه «${title}» حذف شد.`,
+    hide: () => NopaUndo.hideEl(row),
+    commit: () => NopaApi.json(`/api/v1/admin/chat-manage/groups/${id}`, { method: 'DELETE' }),
+    done: () => window.loadChatGroups(),
+  });
 };
 
 window.muteChatMember = async function(spaceId, userId, minutes) {

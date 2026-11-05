@@ -1,5 +1,6 @@
 import 'package:nopa_app/core/avatar_catalog.dart';
 import 'dart:io' as io;
+import 'dart:typed_data';
 import 'dart:math' as math;
 import 'package:file_picker/file_picker.dart';
 import 'package:nopa_app/screens/chat/chat_waveform.dart';
@@ -50,6 +51,8 @@ class _ChatSpaceProfileScreenState extends State<ChatSpaceProfileScreen> {
   static const int _shownMembers = 8;
   UserModel get _me => Provider.of<AppRepository>(context, listen: false).currentUser;
   bool _savingCover = false;
+  /// The picture just chosen, shown while it can still be undone (before it is uploaded).
+  Uint8List? _pendingCover;
 
   @override
   void initState() {
@@ -77,18 +80,39 @@ class _ChatSpaceProfileScreenState extends State<ChatSpaceProfileScreen> {
       final dir = await getTemporaryDirectory();
       file = await io.File(p.join(dir.path, 'caravan-cover-${DateTime.now().millisecondsSinceEpoch}.jpg')).writeAsBytes(cropped);
     }
-    setState(() => _savingCover = true);
-    final result = await _chat.setSpaceCover(widget.spaceId, file);
+    if (!mounted) return;
+    // The new picture (or none) shows at once; it is uploaded only if not undone within the undo time
+    final previous = _profile?['coverImageUrl'];
+    final preview = file == null ? null : await file.readAsBytes();
     if (!mounted) return;
     setState(() {
-      _savingCover = false;
-      if (result.ok) _profile = {...?_profile, 'coverImageUrl': result.url};
+      _pendingCover = preview;
+      _profile = {...?_profile, 'coverImageUrl': null};
     });
-    if (result.ok) {
-      AppToast.success(context, remove ? 'عکس گروه حذف شد.' : 'عکس گروه به‌روز شد.');
-    } else {
-      AppToast.error(context, 'تغییر عکس گروه انجام نشد.');
-    }
+    final upload = file;
+    AppToast.undoable(
+      context,
+      remove ? 'عکس گروه حذف شد.' : 'عکس گروه به‌روز شد.',
+      commit: () async {
+        if (mounted) setState(() => _savingCover = true);
+        final result = await _chat.setSpaceCover(widget.spaceId, upload);
+        if (mounted) {
+          setState(() {
+            _savingCover = false;
+            if (identical(_pendingCover, preview)) _pendingCover = null;
+            if (result.ok) _profile = {...?_profile, 'coverImageUrl': result.url};
+          });
+        }
+        return result.ok ? null : 'تغییر عکس گروه انجام نشد.';
+      },
+      onUndo: () {
+        if (!mounted) return;
+        setState(() {
+          if (identical(_pendingCover, preview)) _pendingCover = null;
+          _profile = {...?_profile, 'coverImageUrl': previous};
+        });
+      },
+    );
   }
 
   /// The mentor writes (or clears) the short slogan of the caravan group, 30 characters at most.
@@ -115,15 +139,22 @@ class _ChatSpaceProfileScreenState extends State<ChatSpaceProfileScreen> {
         ),
       ),
     );
-    if (value == null) return;
-    final res = await _chat.api('PUT', '/chat/spaces/${widget.spaceId}/slogan', body: {'slogan': value});
-    if (!mounted) return;
-    if (res.ok) {
-      setState(() => _profile = {...?_profile, 'slogan': value});
-      AppToast.success(context, 'شعار گروه ذخیره شد.');
-    } else {
-      AppToast.error(context, res.error.isNotEmpty ? res.error : 'ذخیره شعار انجام نشد.');
-    }
+    if (value == null || !mounted) return;
+    final previous = _profile?['slogan'];
+    if ((previous ?? '').toString() == value) return;
+    // The new slogan shows at once; it is saved only if not undone within the undo time
+    setState(() => _profile = {...?_profile, 'slogan': value});
+    AppToast.undoable(
+      context,
+      value.isEmpty ? 'شعار گروه حذف شد.' : 'شعار گروه ذخیره شد.',
+      commit: () async {
+        final res = await _chat.api('PUT', '/chat/spaces/${widget.spaceId}/slogan', body: {'slogan': value});
+        return res.ok ? null : (res.error.isNotEmpty ? res.error : 'ذخیره شعار انجام نشد.');
+      },
+      onUndo: () {
+        if (mounted) setState(() => _profile = {...?_profile, 'slogan': previous});
+      },
+    );
   }
 
   Future<void> _load() async {
@@ -173,7 +204,9 @@ class _ChatSpaceProfileScreenState extends State<ChatSpaceProfileScreen> {
           _ProfilePanel(
             children: [
               _IdentityRow(
-                avatar: (profile['coverImageUrl']?.toString() ?? '').isNotEmpty
+                avatar: _pendingCover != null
+                    ? CircleAvatar(radius: 40, backgroundImage: MemoryImage(_pendingCover!))
+                    : (profile['coverImageUrl']?.toString() ?? '').isNotEmpty
                     ? SafeAvatar(imageUrl: profile['coverImageUrl'].toString(), name: profile['title'] ?? '', radius: 40, cacheSize: 320)
                     : ChatIconAvatar(icon: chatSpaceIcon(profile['type'] ?? ''), radius: 40),
                 name: profile['title'] ?? space?.title ?? '',

@@ -845,10 +845,21 @@ async function lmsRemoveInstructorNow(stationId, name) {
   });
   if (!updates.length) return;
   if (!(await NopaConfirm(`«${name}» از ${updates.length} جلسه این منزلگاه برداشته شود؟ اطلاعات استاد در بانک اساتید باقی می‌ماند.`))) return;
+  // the sessions' instructor lists as they were, for «لغو»
+  const back = [];
+  window.lmsOrderedCategories(station).forEach(c => (c.sessions || []).forEach(s => {
+    if (updates.some(u => String(u.id) === String(s.id))) back.push({ id: s.id, names: lmsSplitInstructors(s.instructor) });
+  }));
   try {
     const failed = await lmsSaveSessionInstructors(updates);
     if (failed) showToast(`برداشتن استاد از ${failed} جلسه انجام نشد.`, 'error');
-    else showToast(`«${name}» از جلسات این منزلگاه برداشته شد.`, 'success');
+    else {
+      // «لغو» within 10s writes the old instructor lists back
+      NopaUndo.after({
+        message: `«${name}» از جلسات این منزلگاه برداشته شد.`,
+        undo: async () => (await lmsSaveSessionInstructors(back)) === 0,
+      });
+    }
   } catch (err) {
     console.error('Remove instructor error:', err);
     showToast('ارتباط با سرور برقرار نشد', 'error');

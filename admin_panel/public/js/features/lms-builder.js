@@ -338,23 +338,16 @@ function editLmsStation(stationId) {
 }
 
 async function deleteLmsStation(stationId) {
-  if ((await NopaConfirm('آیا از حذف این منزلگاه و تمام پارت‌های ویدیو و آزمون‌های آن مطمئن هستید؟ این عملیات غیرقابل بازگشت است.'))) {
-    try {
-      const res = await request(`/api/v1/admin/lms/stations/${stationId}`, {
-        method: 'DELETE'
-      });
-      if (res.ok) {
-        showToast('منزلگاه با موفقیت حذف شد', 'success');
-        loadLmsData();
-        cancelLmsBuilder();
-      } else {
-        showToast('خطا در حذف منزلگاه', 'error');
-      }
-    } catch(e) {
-      console.error(e);
-      showToast('خطا در ارتباط با سرور', 'error');
-    }
-  }
+  const row = NopaUndo.lastRow();
+  if (!(await NopaConfirm('آیا از حذف این منزلگاه و تمام پارت‌های ویدیو و آزمون‌های آن مطمئن هستید؟'))) return;
+  cancelLmsBuilder();
+  // The row goes at once; deleted on the server only if not undone within 10s
+  NopaUndo.later({
+    message: 'منزلگاه حذف شد.',
+    hide: () => NopaUndo.hideEl(row),
+    commit: () => request(`/api/v1/admin/lms/stations/${stationId}`, { method: 'DELETE' }),
+    done: () => loadLmsData(),
+  });
 }
 
 // ----------------------------------------------------

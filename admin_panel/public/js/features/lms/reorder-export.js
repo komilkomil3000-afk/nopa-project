@@ -5,15 +5,20 @@
 
 window.deleteStationRecord = async function(id) {
   if (!(await NopaConfirm('آیا از حذف این منزلگاه اطمینان دارید؟'))) return;
-  try {
-    await request(`/api/v1/admin/lms/stations/${id}`, {
-      method: 'DELETE',
-      headers: { 'Content-Type': 'application/json'  }
-    });
-  } catch (err) {
-    console.error(err);
-  }
-  window.fetchLiveLmsStations();
+  // Gone from the overview at once (its open page closes); deleted on the server only if not undone within 10s.
+  // The server still has it until then, so «لغو» just loads the stations again.
+  const st = (window.lmsStationsMasterList || []).find(s => String(s.id) === String(id));
+  NopaUndo.later({
+    message: `منزلگاه «${(st && st.title) || ''}» حذف شد.`,
+    hide: () => {
+      window.lmsStationsMasterList = (window.lmsStationsMasterList || []).filter(s => String(s.id) !== String(id));
+      if (String(window.lmsActiveStationId) === String(id) && typeof window.closeLmsStationView === 'function') window.closeLmsStationView();
+      if (typeof window.renderLmsStationsBento === 'function') window.renderLmsStationsBento();
+      return () => window.fetchLiveLmsStations();
+    },
+    commit: () => request(`/api/v1/admin/lms/stations/${id}`, { method: 'DELETE' }),
+    done: () => window.fetchLiveLmsStations(),
+  });
 };
 
 window.exportLmsToExcel = function() {

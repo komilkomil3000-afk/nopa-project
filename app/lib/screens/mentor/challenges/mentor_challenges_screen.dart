@@ -2297,7 +2297,38 @@ class MentorChallengeDialogs {
                                         return;
                                       }
                                       if (ctx.mounted) Navigator.pop(ctx);
-                                      AppToast.success(context, editing ? 'چالش "$title" ویرایش شد' : 'چالش "$title" ایجاد و برای کاروان ابلاغ شد');
+                                      if (editing) {
+                                        // The server checks an edit inside the form, so it is saved now; «لغو» puts the previous values back
+                                        final oldQuestions = existing['questions'];
+                                        AppToast.undoable(
+                                          context,
+                                          'چالش "$title" ویرایش شد',
+                                          commit: () async => null,
+                                          onUndo: () async {
+                                            final restoreError = await HttpApiService().updateChallengeError(
+                                              existing['id'].toString(),
+                                              title: existing['title']?.toString() ?? title,
+                                              description: existing['desc']?.toString() ?? '',
+                                              questions: oldQuestions is List ? oldQuestions.map((q) => Map<String, dynamic>.from(q as Map)).toList() : null,
+                                              assetType: existing['rewardAsset']?.toString() ?? 'nakh',
+                                              min: (existing['rewardMin'] as num?)?.toInt() ?? rewardMin,
+                                              max: (existing['rewardMax'] as num?)?.toInt() ?? rewardMax,
+                                              startDate: existing['startDate'] is DateTime ? existing['startDate'] as DateTime : null,
+                                              dueDate: existing['dueDate'] is DateTime ? existing['dueDate'] as DateTime : null,
+                                            );
+                                            if (!context.mounted) return;
+                                            if (restoreError != null) {
+                                              AppToast.error(context, 'برگرداندن ویرایش انجام نشد: $restoreError');
+                                            } else {
+                                              AppToast.success(context, 'ویرایش چالش لغو شد');
+                                            }
+                                            await repository.refreshChallenges();
+                                            if (onSaved != null) await onSaved();
+                                          },
+                                        );
+                                      } else {
+                                        AppToast.success(context, 'چالش "$title" ایجاد و برای کاروان ابلاغ شد');
+                                      }
                                       await repository.refreshChallenges();
                                       if (onSaved != null) await onSaved();
                                     },

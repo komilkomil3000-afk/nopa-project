@@ -262,7 +262,24 @@ window.saveStationAccessSettings = async function() {
     });
 
     if (res.ok) {
-      showToast('تنظیمات وضعیت و دسترسی منزلگاه با موفقیت ذخیره شد.', 'success');
+      const old = (window.lmsStationsMasterList || []).find(s => String(s.id) === String(stationId));
+      if (old) {
+        // «لغو» within 10s puts the station's old status and access back (all five settings, as this form sends them)
+        NopaUndo.afterEdit({
+          message: 'تنظیمات وضعیت و دسترسی منزلگاه ذخیره شد.',
+          url: `/api/v1/lms/stations/${stationId}/access`,
+          revert: {
+            isLocked: !!old.isLocked,
+            status: old.status || (old.isLocked ? 'locked' : 'active'),
+            scheduledUnlockTime: old.scheduledUnlockTime || null,
+            requirePreviousComplete: !!old.requirePreviousComplete,
+            targetCaravansJson: old.targetCaravansJson ?? null,
+          },
+          done: () => (typeof window.fetchLiveLmsStations === 'function' ? window.fetchLiveLmsStations() : null),
+        });
+      } else {
+        showToast('تنظیمات وضعیت و دسترسی منزلگاه با موفقیت ذخیره شد.', 'success');
+      }
       window.closeStationAccessModal();
       if (typeof window.fetchLiveLmsStations === 'function') {
         await window.fetchLiveLmsStations();

@@ -25,7 +25,8 @@
     name: el => `<input type="text" id="${el}" class="input-ctrl" autocomplete="off" required placeholder="مثال: رضا جلالی">`,
     phone: el => `<input type="text" id="${el}" class="input-ctrl" inputmode="numeric" dir="ltr" placeholder="۰۹۱۲۰۰۰۰۰۰۰">`,
     'national-id': el => `<input type="text" id="${el}" class="input-ctrl" inputmode="numeric" dir="ltr" placeholder="۰۰۱۲۳۴۵۶۷۸">`,
-    dob: el => `<input type="text" id="${el}" class="input-ctrl" dir="ltr" placeholder="۱۳۸۰/۰۵/۱۲">`,
+    // Shamsi calendar (js/ui/jalali-datepicker.js, data-jdp="jalali"); the value stays Shamsi text "1380/05/12"
+    dob: el => `<input type="text" id="${el}" class="input-ctrl" data-jdp="jalali" placeholder="انتخاب تاریخ تولد">`,
     gender: el => `<select id="${el}" class="select-ctrl"><option value="">تعیین نشده</option><option value="male">مرد</option><option value="female">زن</option></select>`,
     city: el => `<input type="text" id="${el}" class="input-ctrl" placeholder="مثال: تهران">`,
   };
@@ -98,12 +99,12 @@
     if (nid && !/^\d{10}$/.test(nid)) errors.push(['national-id', 'کد ملی باید ۱۰ رقم باشد']);
 
     const dob = toLatinDigits(el(prefix, 'dob')?.value || '').trim();
-    if (dob && !/^1[34]\d{2}\/(0?[1-9]|1[0-2])\/(0?[1-9]|[12]\d|3[01])$/.test(dob)) errors.push(['dob', 'تاریخ را به شکل ۱۳۸۰/۰۵/۱۲ وارد کنید']);
+    if (dob && !/^1[34]\d{2}\/(0?[1-9]|1[0-2])\/(0?[1-9]|[12]\d|3[01])$/.test(dob)) errors.push(['dob', 'تاریخ تولد خوانا نیست؛ آن را از تقویم دوباره انتخاب کنید']);
 
     errors.forEach(([k, m]) => setError(prefix, k, m));
     if (errors.length) {
       const first = el(prefix, errors[0][0]);
-      if (first) first.focus();
+      if (first) (first.__jdp ? first.__jdp.display : first).focus(); // a date field's visible box is the picker's
       showToast(errors[0][1], 'error');
     }
     return errors.length === 0;

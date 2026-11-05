@@ -435,13 +435,19 @@ window.submitDynamicForm = submitDynamicForm;
 async function deleteDynForm(id) {
   const f = dfmFind(id);
   if (!(await NopaConfirm(`فرم «${f ? f.title : ''}» و همه‌ی سؤال‌ها و پاسخ‌هایش حذف شود؟`))) return;
-  try {
-    const res = await request(`/api/v1/admin/forms/${encodeURIComponent(id)}`, { method: 'DELETE' });
-    if (!res.ok) throw new Error('خطا در حذف فرم');
-    showToast('فرم حذف شد', 'success');
-    if (String(window.dfmActiveId) === String(id)) window.closeDynFormView();
-    loadDynForms();
-  } catch (e) { console.error(e); showToast(e.message, 'error'); }
+  // Gone from the list at once; deleted on the server only if not undone within 10s
+  // (the server still has it until then, so «لغو» just loads the list again)
+  NopaUndo.later({
+    message: `فرم «${f ? f.title : ''}» حذف شد.`,
+    hide: () => {
+      window.dfmForms = (window.dfmForms || []).filter(x => String(x.id) !== String(id));
+      if (String(window.dfmActiveId) === String(id)) window.closeDynFormView();
+      dfmDrawBento();
+      return () => loadDynForms();
+    },
+    commit: () => request(`/api/v1/admin/forms/${encodeURIComponent(id)}`, { method: 'DELETE' }),
+    done: () => loadDynForms(),
+  });
 }
 window.deleteDynForm = deleteDynForm;
 window.deleteActiveDynForm = function() { if (window.dfmActiveId) deleteDynForm(window.dfmActiveId); };
@@ -524,13 +530,18 @@ window.deleteDynField = async function(fieldId) {
   const f = dfmFind(window.dfmActiveId);
   const fd = f && (f.fields || []).find(x => String(x.id) === String(fieldId));
   if (!fd || !(await NopaConfirm(`سؤال «${fd.label}» حذف شود؟`))) return;
-  try {
-    const res = await request(`/api/v1/admin/forms/fields/${encodeURIComponent(fieldId)}`, { method: 'DELETE' });
-    if (!res.ok) throw new Error('خطا در حذف سؤال');
-    f.fields = (f.fields || []).filter(x => String(x.id) !== String(fieldId));
-    window.loadDynFormPage();
-    dfmDrawBento();
-  } catch (err) { showToast(err.message, 'error'); }
+  // Gone from the form at once; deleted on the server only if not undone within 10s
+  NopaUndo.later({
+    message: `سؤال «${fd.label}» حذف شد.`,
+    hide: () => {
+      const before = f.fields || [];
+      f.fields = before.filter(x => String(x.id) !== String(fieldId));
+      window.loadDynFormPage();
+      dfmDrawBento();
+      return () => { f.fields = before; window.loadDynFormPage(); dfmDrawBento(); };
+    },
+    commit: () => request(`/api/v1/admin/forms/fields/${encodeURIComponent(fieldId)}`, { method: 'DELETE' }),
+  });
 };
 
 // ==================== ONE ANSWER ====================

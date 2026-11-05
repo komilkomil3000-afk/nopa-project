@@ -906,7 +906,16 @@ window.submitEditChallenge = async function(event) {
     });
 
     if (res.ok) {
-      showToast('تغییرات چالش با موفقیت ذخیره شد.', 'success');
+      // «لغو» within 10s sends the changed fields back as they were (the server reads questions as text or a list)
+      const old = (window.cachedAdminChallenges || []).find(c => String(c.id) === String(id));
+      NopaUndo.afterEdit({
+        message: 'تغییرات چالش ذخیره شد.',
+        url: `/api/v1/admin/challenges/${id}`,
+        method: 'PATCH',
+        body: payload,
+        before: old ? { ...old, type: old.type, questions: old.questions ?? undefined } : {},
+        done: () => window.loadChallengesAndSubmissionsTab(),
+      });
       window.closeEditChallengeModal(true);
       await window.loadChallengesAndSubmissionsTab();
     } else {
@@ -924,22 +933,20 @@ window.deleteChallengeAdmin = async function(challengeId, challengeTitle) {
     return;
   }
 
-  try {
-    const res = await request(`/api/v1/admin/challenges/${challengeId}`, {
-      method: 'DELETE'
-    });
-
-    if (res.ok) {
-      showToast('چالش با موفقیت حذف گردید.', 'success');
-      await window.loadChallengesAndSubmissionsTab();
-    } else {
-      const data = await res.json();
-      showToast(data.error || 'خطایی در حذف چالش رخ داد', 'error');
-    }
-  } catch (err) {
-    console.error('deleteChallengeAdmin error:', err);
-    showToast('خطا در برقراری ارتباط با سرور', 'error');
-  }
+  // Gone from the list at once; deleted on the server only if not undone within 10s
+  // (the server still has it until then, so «لغو» just loads the tab again)
+  const reload = () => window.loadChallengesAndSubmissionsTab();
+  NopaUndo.later({
+    message: `چالش «${challengeTitle || challengeId}» حذف شد.`,
+    hide: () => {
+      window.cachedAdminChallenges = (window.cachedAdminChallenges || []).filter(c => String(c.id) !== String(challengeId));
+      if (String(window.chlActiveId) === String(challengeId)) window.closeChallengeDetail();
+      window.filterChallengesList();
+      return reload;
+    },
+    commit: () => request(`/api/v1/admin/challenges/${challengeId}`, { method: 'DELETE' }),
+    done: reload,
+  });
 };
 
 window.openChallengeStepsModal = function(challengeId) {
@@ -1821,9 +1828,15 @@ window.chlRefreshDraftChip = function() {
 document.addEventListener('nopa-drafts', () => window.chlRefreshDraftChip());
 
 window.chlDeleteDraft = async function() {
-  if (!(await NopaConfirm('پیش‌نویس این چالش حذف شود؟ این کار قابل بازگشت نیست.', { okText: 'حذف پیش‌نویس', danger: true }))) return;
+  if (!(await NopaConfirm('پیش‌نویس این چالش حذف شود؟', { okText: 'حذف پیش‌نویس', danger: true }))) return;
+  // «لغو» within 10s saves the same draft back
+  const kept = NopaDrafts.load('challenge:new');
   NopaDrafts.remove('challenge:new');
-  showToast('پیش‌نویس حذف شد.', 'success');
+  NopaUndo.after({
+    message: 'پیش‌نویس حذف شد.',
+    undo: () => (kept ? NopaDrafts.save('challenge:new', kept.data) : true),
+    undoneMessage: 'پیش‌نویس برگشت.',
+  });
 };
 
 // Closing with unsaved work offers a draft instead of losing it
@@ -2509,10 +2522,28 @@ window.chlSaveGlossary = async function(e) {
     (payload[key] = payload[key] || {})[name] = input.value.trim();
   });
   try {
+    // the glossary as it was, in the shape this form sends, for «لغو»
+    const old = {};
+    (window.chlTaxonomy || []).forEach(t => {
+      if (!payload[t.key]) return;
+      old[t.key] = {};
+      Object.keys(payload[t.key]).forEach(name => { old[t.key][name] = t[name] ?? ''; });
+    });
     const list = await NopaApi.json('/api/v1/admin/challenge-taxonomy', { method: 'PUT', body: JSON.stringify(payload) });
     if (Array.isArray(list)) window.chlTaxonomy = list;
     NopaActions.hide('chl-gls-modal');
-    showToast('فرهنگ اصطلاحات ذخیره شد؛ اپ و پنل از این نام‌ها استفاده می‌کنند.', 'success');
+    NopaUndo.afterEdit({
+      message: 'فرهنگ اصطلاحات ذخیره شد؛ اپ و پنل از این نام‌ها استفاده می‌کنند.',
+      url: '/api/v1/admin/challenge-taxonomy',
+      revert: Object.keys(old).length ? old : {},
+      done: async ok => {
+        if (!ok) return;
+        const back = await NopaApi.json('/api/v1/admin/challenge-taxonomy').catch(() => null);
+        if (Array.isArray(back)) window.chlTaxonomy = back;
+        window.chlRenderGlossary();
+        window.loadAdminChallengesData();
+      },
+    });
     window.chlRenderGlossary();
     // names inside cards, selects and tiles follow at once
     window.loadAdminChallengesData();

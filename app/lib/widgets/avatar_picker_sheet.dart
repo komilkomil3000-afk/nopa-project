@@ -49,10 +49,29 @@ class _AvatarPickerBodyState extends State<_AvatarPickerBody> {
   Future<void> _save() async {
     final key = _selected;
     if (key == null) return;
+    final previousUrl = repo.currentUser.avatarUrl;
+    final previousKey = AvatarCatalog.isBundled(previousUrl) ? previousUrl!.substring(AvatarCatalog.prefix.length) : null;
+    if (key == previousKey) {
+      Navigator.of(context).pop();
+      return;
+    }
     setState(() => _saving = true);
     final ok = await repo.updateAvatar(avatarKey: key);
     if (!mounted) return;
     if (ok) {
+      // «لغو» puts the previous bundled picture back (one from outside the set cannot be chosen again here)
+      if (previousKey != null) {
+        final rootContext = Navigator.of(context).context;
+        AppToast.undoable(
+          context,
+          'تصویر پروفایل تغییر کرد.',
+          commit: () async => null,
+          onUndo: () async {
+            final restored = await repo.updateAvatar(avatarKey: previousKey);
+            if (!restored && rootContext.mounted) AppToast.error(rootContext, 'برگرداندن تصویر قبلی انجام نشد.');
+          },
+        );
+      }
       Navigator.of(context).pop();
     } else {
       setState(() => _saving = false);

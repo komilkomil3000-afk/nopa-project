@@ -66,23 +66,28 @@ window.addNewCategoryToStation = async function(stationId, title) {
   }
 };
 
+// Hides every element of an item being deleted (and the editor pane showing it, when the delete was
+// clicked there) while it can still be undone; returns the way back (js/ui/undo.js)
+function lmsHideForUndo(selector) {
+  const els = Array.from(document.querySelectorAll(selector));
+  const pane = NopaUndo.lastRow('.lse-detail');
+  if (pane && !els.includes(pane)) els.push(pane);
+  return NopaUndo.hideEl(els);
+}
+
 window.deleteCategoryRecord = async function(categoryId, stationId) {
   const cat = window.lmsOrderedCategories(lmsFindStation(stationId)).find(c => String(c.id) === String(categoryId));
   const count = cat ? (cat.sessions || []).filter(s => !s.isDeleted).length : 0;
   const ok = await NopaConfirm(`آیا از حذف دسته «${cat?.title || ''}» اطمینان دارید؟ ${count} جلسه این دسته به همراه پارت‌ها و آزمونک‌هایشان حذف می‌شوند و تب آن از صفحه کلاس‌های اپلیکیشن برداشته می‌شود.`);
   if (!ok) return;
-  try {
-    const res = await request(`/api/v1/admin/lms/classes/${categoryId}`, { method: 'DELETE' });
-    if (!res.ok) {
-      showToast('خطا در حذف دسته: ' + (await lmsErrorText(res)), 'error');
-      return;
-    }
-    showToast('دسته کلاس حذف شد.', 'success');
-    await lmsReloadContentModal(stationId);
-  } catch (err) {
-    console.error('Delete category error:', err);
-    showToast('ارتباط با سرور برقرار نشد', 'error');
-  }
+  // Gone from the editor and the station page at once; deleted on the server only if not undone within 10s
+  const key = CSS.escape(String(categoryId));
+  NopaUndo.later({
+    message: `دسته «${cat?.title || ''}» حذف شد.`,
+    hide: () => lmsHideForUndo(`[data-cat-col="${key}"], [data-cat-id="${key}"], [data-anim-key="link:${key}"]`),
+    commit: () => request(`/api/v1/admin/lms/classes/${categoryId}`, { method: 'DELETE' }),
+    done: () => lmsReloadContentModal(stationId),
+  });
 };
 
 // ==================== SESSIONS ====================
@@ -116,18 +121,13 @@ window.addNewSessionToCategory = async function(categoryId, stationId) {
 
 window.deleteSessionRecord = async function(sessionId, stationId) {
   if (!(await NopaConfirm('آیا از حذف این جلسه به همراه همه پارت‌ها و آزمونک‌های آن اطمینان دارید؟'))) return;
-  try {
-    const res = await request(`/api/v1/admin/lms/sessions/${sessionId}`, { method: 'DELETE' });
-    if (!res.ok) {
-      showToast('خطا در حذف جلسه: ' + (await lmsErrorText(res)), 'error');
-      return;
-    }
-    showToast('جلسه حذف شد.', 'success');
-    await lmsReloadContentModal(stationId);
-  } catch (err) {
-    console.error('Delete session error:', err);
-    showToast('ارتباط با سرور برقرار نشد', 'error');
-  }
+  // Gone from the editor and the station page at once; deleted on the server only if not undone within 10s
+  NopaUndo.later({
+    message: 'جلسه حذف شد.',
+    hide: () => lmsHideForUndo(`[data-session-id="${CSS.escape(String(sessionId))}"]`),
+    commit: () => request(`/api/v1/admin/lms/sessions/${sessionId}`, { method: 'DELETE' }),
+    done: () => lmsReloadContentModal(stationId),
+  });
 };
 
 // ==================== VIDEO PARTS ====================
@@ -157,18 +157,13 @@ window.addNewClipToSession = async function(sessionId) {
 window.deleteClipRecord = async function(clipId, sessionId) {
   if (!(await NopaConfirm('آیا از حذف این پارت ویدیو و تمام آزمونک‌های متصل به آن اطمینان دارید؟'))) return;
   const found = lmsFindSession(sessionId);
-  try {
-    const res = await request(`/api/v1/admin/lms/clips/${clipId}`, { method: 'DELETE' });
-    if (!res.ok) {
-      showToast('خطا در حذف پارت: ' + (await lmsErrorText(res)), 'error');
-      return;
-    }
-    showToast('پارت حذف شد.', 'success');
-    await lmsReloadContentModal(found?.station.id, `sess:${sessionId}`);
-  } catch (err) {
-    console.error('Delete clip error:', err);
-    showToast('ارتباط با سرور برقرار نشد', 'error');
-  }
+  // Gone from the editor at once; deleted on the server only if not undone within 10s
+  NopaUndo.later({
+    message: 'پارت حذف شد.',
+    hide: () => lmsHideForUndo(`[data-clip-id="${CSS.escape(String(clipId))}"]`),
+    commit: () => request(`/api/v1/admin/lms/clips/${clipId}`, { method: 'DELETE' }),
+    done: () => lmsReloadContentModal(found?.station.id, `sess:${sessionId}`),
+  });
 };
 
 // ==================== BATCH TOOLS OF A CATEGORY ====================

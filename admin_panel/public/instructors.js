@@ -226,7 +226,13 @@ window.toggleActiveInstructor = async function() {
       const d = await res.json().catch(() => ({}));
       return showToast(d.error || 'خطا در تغییر وضعیت استاد', 'error');
     }
-    showToast(next ? 'استاد فعال شد.' : 'استاد غیرفعال شد.', 'success');
+    // «لغو» within 10s sends the instructor back as it was (the server resets what is not sent)
+    NopaUndo.afterEdit({
+      message: next ? 'استاد فعال شد.' : 'استاد غیرفعال شد.',
+      url: `/api/v1/admin/instructors/${encodeURIComponent(inst.id)}`,
+      revert: { ...inst, sessions: undefined },
+      done: () => window.fetchInstructorsList(),
+    });
     await window.fetchInstructorsList();
   } catch (e) {
     showToast('ارتباط با سرور برقرار نشد: ' + e.message, 'error');
@@ -476,7 +482,20 @@ window.saveInstructorForm = async function(event) {
     });
 
     if (res.ok) {
-      showToast('اطلاعات استاد با موفقیت در بانک اساتید ذخیره شد.', 'success');
+      const old = id ? insFind(id) : null;
+      if (old) {
+        // an edit: «لغو» within 10s sends the instructor back as it was (the server resets what is not sent)
+        NopaUndo.afterEdit({
+          message: 'اطلاعات استاد ذخیره شد.',
+          url,
+          body: payload,
+          before: old,
+          revert: Object.keys(payload).some(k => k !== 'id' && JSON.stringify(old[k] ?? '') !== JSON.stringify(payload[k] ?? '')) ? { ...old, sessions: undefined } : {},
+          done: () => window.fetchInstructorsList(),
+        });
+      } else {
+        showToast('اطلاعات استاد با موفقیت در بانک اساتید ذخیره شد.', 'success');
+      }
       document.getElementById('instructor-form-modal').style.display = 'none';
       await window.fetchInstructorsList();
 
@@ -503,26 +522,24 @@ window.deleteInstructorRecord = async function(id) {
   if (!(await NopaConfirm(`آیا از حذف «${instName}» از بانک اساتید اطمینان دارید؟`))) return;
 
 
-  try {
-    const res = await request(`/api/v1/admin/instructors/${id}`, {
-      method: 'DELETE',
-      headers: {
-        'Content-Type': 'application/json'
-        
-      }
-    });
-
-    if (res.ok) {
-      showToast('استاد با موفقیت حذف شد.', 'success');
-      await window.fetchInstructorsList();
-    } else {
-      const d = await res.json();
-      showToast('خطا در حذف استاد: ' + (d.error || 'خطای سرور'), 'error');
-    }
-  } catch (err) {
-    console.error('Delete instructor error:', err);
-    showToast('ارتباط با سرور برقرار نشد: ' + err.message, 'error');
-  }
+  // Gone from the table at once; deleted on the server only if not undone within 10s
+  NopaUndo.later({
+    message: `«${instName}» از بانک اساتید حذف شد.`,
+    hide: () => {
+      const list = window.globalInstructorsList;
+      const at = list.findIndex(i => i.id === id);
+      if (at < 0) return null;
+      const [removed] = list.splice(at, 1);
+      window.renderInstructorsTable();
+      return () => {
+        if (window.globalInstructorsList.some(i => i.id === id)) return;
+        window.globalInstructorsList.splice(Math.min(at, window.globalInstructorsList.length), 0, removed);
+        window.renderInstructorsTable();
+      };
+    },
+    commit: () => request(`/api/v1/admin/instructors/${id}`, { method: 'DELETE' }),
+    done: () => window.fetchInstructorsList(),
+  });
 };
 
 // ==================== MULTI-INSTRUCTOR SELECTOR FOR CATEGORY CARDS ====================

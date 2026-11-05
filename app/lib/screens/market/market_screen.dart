@@ -1318,14 +1318,22 @@ class _MarketScreenState extends State<MarketScreen> {
                                     requestDate: date,
                                     requestSubject: 'لغو مبادله: $title',
                                     onConfirmReject: (reason) async {
-                                      final error = await HttpApiService().cancelCaravanAssetConversion(reqId, reason: reason);
                                       if (!mounted) return;
-                                      if (error == null) {
-                                        AppToast.success(context, 'مبادله لغو و سرمایه‌ها به دانش‌آموز بازگردانده شد.');
-                                      } else {
-                                        AppToast.error(context, error);
-                                      }
-                                      _loadMarketData();
+                                      // Shown as cancelled at once; sent only if not undone within the undo time
+                                      final previousStatus = request['status'];
+                                      setState(() => request['status'] = 'cancelled');
+                                      AppToast.undoable(
+                                        context,
+                                        'مبادله لغو و سرمایه‌ها به دانش‌آموز بازگردانده شد.',
+                                        commit: () async {
+                                          final error = await HttpApiService().cancelCaravanAssetConversion(reqId, reason: reason);
+                                          if (mounted) _loadMarketData();
+                                          return error;
+                                        },
+                                        onUndo: () {
+                                          if (mounted) setState(() => request['status'] = previousStatus);
+                                        },
+                                      );
                                     },
                                   );
                                 },

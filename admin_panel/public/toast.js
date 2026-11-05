@@ -1,6 +1,8 @@
 // Non-blocking toast notifications for the admin panel (bottom-left, auto-hide after 10s).
 // Loaded before the feature modules (js/app, js/features). Replaces the blocking window.alert so no message ever locks the UI.
-//   showToast(message, 'error' | 'success' | 'info', { duration })
+//   showToast(message, 'error' | 'success' | 'info', { duration, action: { label, onClick }, noPause })
+// action: a button in the toast (e.g. «لغو» of js/ui/undo.js); clicking it closes the toast.
+// noPause: keep counting down while hovered (an undo window must not outlast its real timer).
 (function () {
   var DEFAULT_DURATION = 10000;
   var MAX_VISIBLE = 5;
@@ -45,7 +47,7 @@
 
     // Collapse identical messages fired within 2s (e.g. many parallel 401 responses)
     var now = Date.now();
-    if (recent[text] && now - recent[text] < 2000) return null;
+    if (!(opts && opts.action) && recent[text] && now - recent[text] < 2000) return null;
     recent[text] = now;
 
     if (!document.body) {
@@ -83,6 +85,17 @@
 
     el.appendChild(icon);
     el.appendChild(body);
+    if (opts && opts.action) {
+      var act = document.createElement('button');
+      act.type = 'button';
+      act.className = 'nopa-toast-action';
+      act.textContent = opts.action.label;
+      act.addEventListener('click', function () {
+        hide(el);
+        try { opts.action.onClick(); } catch (e) { console.error(e); }
+      });
+      el.appendChild(act);
+    }
     el.appendChild(close);
     el.appendChild(bar);
     container.appendChild(el);
@@ -90,8 +103,10 @@
     // Pause auto-hide while hovered
     var remaining = duration, startedAt;
     function start() { startedAt = Date.now(); el._timer = setTimeout(function () { hide(el); }, remaining); bar.style.animationPlayState = 'running'; }
-    el.addEventListener('mouseenter', function () { clearTimeout(el._timer); remaining -= Date.now() - startedAt; bar.style.animationPlayState = 'paused'; });
-    el.addEventListener('mouseleave', start);
+    if (!(opts && opts.noPause)) {
+      el.addEventListener('mouseenter', function () { clearTimeout(el._timer); remaining -= Date.now() - startedAt; bar.style.animationPlayState = 'paused'; });
+      el.addEventListener('mouseleave', start);
+    }
 
     requestAnimationFrame(function () { el.classList.add('show'); });
     start();
@@ -99,6 +114,7 @@
   }
 
   window.showToast = showToast;
+  window.hideToast = hide;
   window.showToastError = function (m, o) { return showToast(m, 'error', o); };
   window.showToastSuccess = function (m, o) { return showToast(m, 'success', o); };
   window.showToastInfo = function (m, o) { return showToast(m, 'info', o); };

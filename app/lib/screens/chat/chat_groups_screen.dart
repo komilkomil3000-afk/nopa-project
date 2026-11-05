@@ -85,7 +85,24 @@ class _ChatGroupsScreenState extends State<ChatGroupsScreen> {
         ),
       ),
     );
-    if (ok == true) await _do('DELETE', '/chat/groups/${group['id']}');
+    if (ok != true || !mounted) return;
+    // The group leaves the list at once; it is deleted only if not undone within the undo time
+    final at = _groups.indexOf(group);
+    setState(() => _groups.remove(group));
+    AppToast.undoable(
+      context,
+      'گروه «${group['title']}» حذف شد.',
+      commit: () async {
+        final res = await _chat.api('DELETE', '/chat/groups/${group['id']}');
+        if (!res.ok) return res.error.isNotEmpty ? res.error : 'حذف گروه انجام نشد.';
+        _chat.refreshSpaces();
+        return null;
+      },
+      onUndo: () {
+        if (!mounted || _groups.contains(group)) return;
+        setState(() => _groups.insert(at.clamp(0, _groups.length), group));
+      },
+    );
   }
 
   Future<void> _members(Map<String, dynamic> group) async {

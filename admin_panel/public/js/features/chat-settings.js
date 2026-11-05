@@ -24,10 +24,17 @@ window.loadChatSettings = async function() {
 async function saveChatSetting(patch, message) {
   const state = NopaChatSwitch.state();
   if (!state) return false;
-  const next = { mode: state.mode, pilotCaravanIds: state.pilotCaravanIds, permissions: state.permissions, ...patch };
+  const before = { mode: state.mode, pilotCaravanIds: state.pilotCaravanIds, permissions: state.permissions };
+  const next = { ...before, ...patch };
   try {
     await NopaApi.json('/api/v1/admin/chat-settings', { method: 'PUT', body: JSON.stringify(next) });
-    showToast(message || 'تنظیمات چت ذخیره شد و تا چند ثانیه در اپ اعمال می‌شود.', 'success');
+    // «لغو» within 10s stores the whole setting as it was
+    NopaUndo.afterEdit({
+      message: message || 'تنظیمات چت ذخیره شد و تا چند ثانیه در اپ اعمال می‌شود.',
+      url: '/api/v1/admin/chat-settings',
+      revert: before,
+      done: () => NopaChatSwitch.refresh(true),
+    });
     await NopaChatSwitch.refresh(true);
     return true;
   } catch (e) {
@@ -178,8 +185,15 @@ window.NopaChatSwitch = (function () {
         method: 'PUT',
         body: JSON.stringify({ mode, pilotCaravanIds: state.pilotCaravanIds, permissions: state.permissions }),
       });
+      const oldMode = state.mode;
       state = { ...state, mode };
-      showToast(`چت ${MODE_LABELS[mode]} شد و تا چند ثانیه در اپ اعمال می‌شود.`, 'success');
+      // «لغو» within 10s switches the chat back to its old mode
+      NopaUndo.afterEdit({
+        message: `چت ${MODE_LABELS[mode]} شد و تا چند ثانیه در اپ اعمال می‌شود.`,
+        url: '/api/v1/admin/chat-settings',
+        revert: { mode: oldMode, pilotCaravanIds: state.pilotCaravanIds, permissions: state.permissions },
+        done: () => refresh(true),
+      });
     } catch (e) {
       showToast(e.message || 'خطا در تغییر وضعیت چت', 'error');
       await refresh(true);

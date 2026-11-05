@@ -235,7 +235,11 @@
     if (!channel || st.thread) clearSchedule();
   }
 
+  // messages deleted a moment ago that can still be undone: left out of every redraw until then
+  const pendingDelete = new Set();
+
   function messageHtml(m, prev) {
+    if (pendingDelete.has(String(m.id))) return '';
     const mine = !!(m.sender && m.sender.id === me().id);
     const system = !m.sender || m.botKey;
     const sameAuthor = prev && prev.sender && m.sender && prev.sender.id === m.sender.id && !prev.deleted;
@@ -537,8 +541,17 @@
     $('chm-send').disabled = true;
     try {
       if (st.edit) {
-        await api(`${CHAT}/messages/${st.edit.id}`, { method: 'PATCH', body: JSON.stringify({ body }) });
-        showToast('پیام ویرایش شد.', 'success');
+        const edited = st.edit;
+        await api(`${CHAT}/messages/${edited.id}`, { method: 'PATCH', body: JSON.stringify({ body }) });
+        // «لغو» within 10s puts the old text back
+        NopaUndo.afterEdit({
+          message: 'پیام ویرایش شد.',
+          url: `${CHAT}/messages/${edited.id}`,
+          method: 'PATCH',
+          body: { body },
+          before: { body: edited.body },
+          done: () => refreshActive({ force: true }),
+        });
       } else if (isCase()) {
         await post(`/api/v1/admin/support-cases/${st.active.id}/reply`, { body });
         st.active.meta.status = st.active.meta.status === 'open' ? 'reviewing' : st.active.meta.status;
@@ -651,8 +664,18 @@
       else if (act === 'mute') { await post(`${CHAT}/spaces/${m.spaceId}/members/${m.sender.id}/mute`, { minutes: 60 }); showToast(`${m.sender.name} تا یک ساعت نمی‌تواند پیام بفرستد.`, 'success'); }
       else if (act === 'delete') {
         if (!(await NopaConfirm('این پیام برای همه حذف می‌شود. ادامه می‌دهید؟'))) return;
-        await api(st.manage ? `${MANAGE}/messages/${id}` : `${CHAT}/messages/${id}`, { method: 'DELETE' });
-        await refreshActive({ force: true });
+        // Hidden at once; deleted for everyone only if not undone within 10s
+        const url = st.manage ? `${MANAGE}/messages/${id}` : `${CHAT}/messages/${id}`;
+        NopaUndo.later({
+          message: 'پیام حذف شد.',
+          hide: () => {
+            pendingDelete.add(String(id));
+            const back = NopaUndo.hideEl($('chm-stream').querySelector(`[data-id="${CSS.escape(id)}"]`));
+            return () => { pendingDelete.delete(String(id)); back(); refreshActive({ force: true }); };
+          },
+          commit: () => api(url, { method: 'DELETE' }),
+          done: () => { pendingDelete.delete(String(id)); return refreshActive({ force: true }); },
+        });
       }
     } catch (e) {
       showToast(e.message || 'خطا در انجام کار', 'error');
@@ -813,12 +836,13 @@
 
   async function archiveTag(tagId, id) {
     if (!(await NopaConfirm('این برچسب بایگانی می‌شود و دیگر قابل انتخاب نیست. ادامه می‌دهید؟'))) return;
-    try {
-      await api(`${CHAT}/tags/${tagId}`, { method: 'DELETE' });
-      st.tags = null;
-      const anchor = $('chm-stream').querySelector(`[data-more="${CSS.escape(id)}"]`);
-      if (anchor) showTagPicker(id, anchor); else closeMenu();
-    } catch (e) { showToast(e.message || 'خطا در بایگانی برچسب', 'error'); }
+    closeMenu();
+    // Archived on the server only if not undone within 10s
+    NopaUndo.later({
+      message: 'برچسب بایگانی شد.',
+      commit: () => api(`${CHAT}/tags/${tagId}`, { method: 'DELETE' }),
+      done: () => { st.tags = null; },
+    });
   }
 
   // ---------- stream filter: by tag or by station ----------

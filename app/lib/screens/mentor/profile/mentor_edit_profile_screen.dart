@@ -210,10 +210,35 @@ class _EditProfileScreenState extends State<MentorEditProfileScreen> {
       }
 
       if (!mounted) return;
-      await Provider.of<AppRepository>(context, listen: false).refreshUser();
+      final repository = Provider.of<AppRepository>(context, listen: false);
+      await repository.refreshUser();
 
       if (!mounted) return;
-      AppToast.info(context, 'تغییرات با موفقیت ذخیره شد');
+      // The server checks the form, so it is saved now; «لغو» puts the previous details back.
+      // A new password is not taken back: the old one is not known on the device.
+      final before = widget.user;
+      final rootContext = Navigator.of(context).context;
+      AppToast.undoable(
+        context,
+        newPassword.isEmpty ? 'تغییرات با موفقیت ذخیره شد' : 'تغییرات ذخیره شد (لغو، رمز عبور جدید را برنمی‌گرداند)',
+        commit: () async => null,
+        onUndo: () async {
+          final restoreError = await HttpApiService().completeProfile({
+            'name': before.name,
+            'nationalId': before.nationalId ?? '',
+            'dateOfBirth': before.dateOfBirth ?? '',
+            'city': before.city ?? '',
+            'slogan': before.slogan ?? '',
+          });
+          await repository.refreshUser();
+          if (!rootContext.mounted) return;
+          if (restoreError != null) {
+            AppToast.error(rootContext, 'برگرداندن تغییرات انجام نشد: $restoreError');
+          } else {
+            AppToast.success(rootContext, 'تغییرات لغو شد و اطلاعات قبلی برگشت');
+          }
+        },
+      );
       Navigator.pop(context);
     } catch (e) {
       setState(() => _isSaving = false);

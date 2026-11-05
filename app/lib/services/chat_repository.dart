@@ -606,6 +606,18 @@ class ChatRepository extends ChangeNotifier {
 
   Future<bool> edit(ChatMessage message, String body) => _apply('PATCH', '/chat/messages/${message.id}', {'body': body});
   Future<bool> delete(ChatMessage message) => _apply('DELETE', '/chat/messages/${message.id}', null);
+
+  /// Shows a change to [message] on this device only, while it can still be undone; [putBack] restores it.
+  void showLocally(ChatMessage message, Map<String, dynamic> patch) =>
+      _replaceLocal(message, ChatMessage.fromJson({...message.raw, ...patch}));
+  void putBack(ChatMessage original) => _replaceLocal(original, original);
+  void _replaceLocal(ChatMessage target, ChatMessage next) {
+    final list = _lists[_key(target.spaceId, target.threadRootId)];
+    final at = list?.indexWhere((m) => m.id == target.id) ?? -1;
+    if (at < 0) return;
+    list![at] = next;
+    notifyListeners();
+  }
   /// One reaction per person, kept per user: choosing another replaces only one's own, never anyone else's.
   /// The server does the same; the screen shows it at once, then takes the server's answer.
   Future<bool> react(ChatMessage message, String type) async {

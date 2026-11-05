@@ -644,9 +644,26 @@ window.saveAssignMentorCaravans = async function() {
   const btn = document.getElementById('mnt-assign-save');
   if (btn) btn.disabled = true;
   try {
+    // who led each newly added caravan before (another mentor or nobody), for «لغو»
+    const ownerOf = id => {
+      const c = (mntAssignCaravans || []).find(x => String(x.id) === String(id));
+      return c ? (c.mentor?.id || c.mentorId || null) : null;
+    };
+    const oldOwners = add.map(id => [id, ownerOf(id)]);
     for (const id of add) await mntSetCaravanMentor(id, m.id);
     for (const id of remove) await mntSetCaravanMentor(id, null);
-    showToast('کاروان‌های راهبر ذخیره شد.', 'success');
+    // «لغو» within 10s gives every caravan its old mentor back
+    NopaUndo.after({
+      message: 'کاروان‌های راهبر ذخیره شد.',
+      undo: async () => {
+        for (const [id, owner] of oldOwners) await mntSetCaravanMentor(id, owner);
+        for (const id of remove) await mntSetCaravanMentor(id, m.id);
+      },
+      done: async () => {
+        await window.loadMentors();
+        if (typeof window.loadCaravansTab === 'function' && (window.caravansData || []).length) window.loadCaravansTab();
+      },
+    });
     NopaActions.hide('mentor-caravans-modal');
     if (add.length) window.mntActiveCaravanId = add[0];
     await window.loadMentors();
@@ -665,7 +682,15 @@ window.unassignMentorCaravan = async function(caravanId, caravanName) {
   if (!(await NopaConfirm(`کاروان «${caravanName}» از راهبری «${m.name || ''}» برداشته شود؟ کاروان بدون راهبر می‌ماند.`))) return;
   try {
     await mntSetCaravanMentor(caravanId, null);
-    showToast('کاروان از این راهبر برداشته شد.', 'success');
+    // «لغو» within 10s gives the caravan back to this mentor
+    NopaUndo.after({
+      message: 'کاروان از این راهبر برداشته شد.',
+      undo: () => mntSetCaravanMentor(caravanId, m.id),
+      done: async () => {
+        await window.loadMentors();
+        if (typeof window.loadCaravansTab === 'function' && (window.caravansData || []).length) window.loadCaravansTab();
+      },
+    });
     await window.loadMentors();
     if (typeof window.loadCaravansTab === 'function' && (window.caravansData || []).length) window.loadCaravansTab();
   } catch (e) {

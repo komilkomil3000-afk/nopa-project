@@ -400,9 +400,15 @@
   refreshDraftChip();
 
   window.lmsDeleteDraft = async function() {
-    if (!(await NopaConfirm('پیش‌نویس منزلگاه حذف شود؟ این کار قابل بازگشت نیست.', { okText: 'حذف پیش‌نویس', danger: true }))) return;
+    if (!(await NopaConfirm('پیش‌نویس منزلگاه حذف شود؟', { okText: 'حذف پیش‌نویس', danger: true }))) return;
+    // «لغو» within 10s saves the same draft back
+    const kept = NopaDrafts.load('station:new');
     NopaDrafts.remove('station:new');
-    showToast('پیش‌نویس حذف شد.', 'success');
+    NopaUndo.after({
+      message: 'پیش‌نویس حذف شد.',
+      undo: () => (kept ? NopaDrafts.save('station:new', kept.data) : true),
+      undoneMessage: 'پیش‌نویس برگشت.',
+    });
   };
 
   window.lmsEditorClose = async function() {
@@ -1361,8 +1367,11 @@
       return;
     }
 
-    const jobs = [];
     const json = (method, url, body) => () => request(url, { method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+
+    // The requests that write the changed keys with the values val() reads (built twice: see undoJobs below)
+    const buildJobs = () => {
+    const jobs = [];
 
     // 1. Station details / picture / gallery. The endpoint rewrites every basic field, so all of them are sent
     //    (subtitle and release time as they are, so they are not cleared).
@@ -1378,8 +1387,8 @@
         subtitle: st.subtitle || undefined,
         releaseTime: st.releaseTime || undefined
       };
-      if (has(ED.edits, 'station.iconUrl')) body.iconUrl = val('station.iconUrl').trim();
-      if (has(ED.edits, 'station.gallery')) {
+      if (keys.includes('station.iconUrl')) body.iconUrl = val('station.iconUrl').trim();
+      if (keys.includes('station.gallery')) {
         const items = galleryForSave();
         body.animations = items;
         body.animationTitle = items[0] ? items[0].title : '';
@@ -1424,6 +1433,14 @@
       sessFields[id].forEach(name => { body[name] = val(`sess.${id}.${name}`); });
       jobs.push({ label: `جلسه «${val(`sess.${id}.title`)}»`, send: json('PUT', `/api/v1/admin/lms/sessions/${id}`, body) });
     });
+    return jobs;
+    };
+    const jobs = buildJobs();
+    // The same requests with the values as they were before this save, for «لغو»: with no edits val() reads the originals
+    const keptEdits = ED.edits;
+    let undoJobs = [];
+    ED.edits = {};
+    try { undoJobs = buildJobs(); } finally { ED.edits = keptEdits; }
 
     const btn = document.getElementById('lse-save');
     if (btn) btn.setAttribute('data-label', btn.innerHTML);
@@ -1436,7 +1453,15 @@
     if (!failed.length) {
       ED.edits = {};
       NopaDrafts.remove(`station:${st.id}`);
-      showToast(`${lmsFaDigits(saved)} تغییر ذخیره شد.`, 'success');
+      // «لغو» within 10s writes the old values of every saved field back
+      NopaUndo.after({
+        message: `${lmsFaDigits(saved)} تغییر ذخیره شد.`,
+        undo: async () => (await Promise.all(undoJobs.map(j => j.send().then(r => !!(r && r.ok), () => false)))).every(Boolean),
+        done: async () => {
+          await window.fetchLiveLmsStations();
+          if (isOpen() && ED.mode === 'edit') window.lmsEditorRefresh(st.id);
+        },
+      });
     } else {
       // what was saved now equals the fresh data and drops out of the draft; the rest stays for another try
       showToast('ذخیره این موارد انجام نشد: ' + failed.join('، ') + '. دوباره تلاش کنید.', 'error');

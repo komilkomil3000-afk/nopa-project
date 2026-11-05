@@ -100,6 +100,75 @@
       <div class="sts-dur-rest">${esc(faNum(t.m))} دقیقه و ${esc(faNum(t.s))} ثانیه</div>`;
   }
 
+  // ---- sparklines in the number tiles: one /stats/series answer per metric, same period and filters as the tiles ----
+  const SPARK_REFRESH_MS = 30000;
+  const spark = { sig: '', at: 0, busy: false, series: {} }; // series: metric -> { buckets, unit, rangeLabel }
+  const sparkSig = () => [st.range, st.caravanId, st.role].join('|');
+  const sparkMetrics = () => Array.from(new Set(KPIS.map(k => k[5])));
+
+  async function loadSparks(force) {
+    const sig = sparkSig();
+    if (spark.busy) { if (force) spark.pending = true; return; } // asked again once the running round ends
+    if (!force && sig === spark.sig && Date.now() - spark.at < SPARK_REFRESH_MS) return;
+    spark.busy = true;
+    spark.pending = false;
+    if (sig !== spark.sig) { spark.series = {}; spark.sig = sig; }
+    const q = new URLSearchParams({ range: st.range });
+    if (st.caravanId) q.set('caravanId', st.caravanId);
+    if (st.role) q.set('role', st.role);
+    try {
+      const answers = await Promise.all(sparkMetrics().map(m => {
+        q.set('metric', m);
+        return NopaApi.json(`/api/v1/admin/analytics/stats/series?${q}`, { silent: true }).then(d => [m, d], () => [m, null]);
+      }));
+      if (sig !== sparkSig()) return; // the period or a filter changed meanwhile
+      answers.forEach(([m, d]) => { if (d && Array.isArray(d.buckets)) spark.series[m] = d; });
+      spark.at = Date.now();
+      kpis(st.data && st.data.totals);
+    } finally {
+      spark.busy = false;
+      if (spark.pending) loadSparks(true);
+    }
+  }
+
+  /** the points of one tile: past buckets only (today's later hours / this week's later days are left out) */
+  function sparkPoints(k) {
+    const metric = (KPIS.find(x => x[0] === k) || KPIS[0])[5];
+    const s = spark.series[metric];
+    if (!s) return null;
+    const past = s.buckets.filter(b => !b.future);
+    if (k !== 'avgSeconds') return { pts: past.map(b => ({ label: b.label, value: b.value })), unit: s.unit };
+    // average per active user = presence ÷ active people, bucket by bucket
+    const act = spark.series.active;
+    if (!act) return null;
+    const actBy = new Map(act.buckets.map(b => [b.key, b.value]));
+    return { pts: past.map(b => ({ label: b.label, value: actBy.get(b.key) ? b.value / actBy.get(b.key) : 0 })), unit: 'seconds' };
+  }
+
+  function sparkSvg(k, label) {
+    const p = sparkPoints(k);
+    if (!p) return '<div class="sts-spark is-empty" aria-hidden="true"></div>';
+    const pts = p.pts;
+    if (pts.length < 2) return '<div class="sts-spark is-empty" aria-hidden="true"></div>';
+    const W = 120, H = 32, pad = 3;
+    const max = Math.max(...pts.map(x => x.value), 0);
+    // time runs right to left, like the main chart's columns on this RTL page (the newest point is on the left)
+    const x = i => W - (i / (pts.length - 1)) * W;
+    const y = v => (max > 0 ? H - pad - (v / max) * (H - pad * 2) : H - pad);
+    const line = pts.map((pt, i) => `${x(i).toFixed(1)},${y(pt.value).toFixed(1)}`).join(' ');
+    const area = `${W},${H} ${line} 0,${H}`;
+    const last = pts[pts.length - 1];
+    const fmt = v => (p.unit === 'seconds' ? short(v) : faNum(Math.round(v)));
+    const peak = pts.reduce((b, pt) => (pt.value > b.value ? pt : b), pts[0]);
+    const desc = `روند ${label}: آخرین ${last.label} ${fmt(last.value)}، بیشترین ${peak.label} ${fmt(peak.value)}`;
+    return `<svg class="sts-spark" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" role="img" aria-label="${esc(desc)}">
+      <title>${esc(desc)}</title>
+      <polygon class="sts-spark-area" points="${area}"></polygon>
+      <polyline class="sts-spark-line" points="${line}" vector-effect="non-scaling-stroke"></polyline>
+      <polyline class="sts-spark-dot" points="${x(pts.length - 1).toFixed(1)},${y(last.value).toFixed(1)} ${x(pts.length - 1).toFixed(1)},${y(last.value).toFixed(1)}" vector-effect="non-scaling-stroke"></polyline>
+    </svg>`;
+  }
+
   function kpis(totals) {
     const d = st.data;
     set('sts-kpis', KPIS.map(([k, label, icon, unit, cls]) => {
@@ -113,6 +182,7 @@
         title="${esc(KPI_NOTE[k] ? `${label}: ${KPI_NOTE[k]}` : `نمودار ${label}`)}">
         <div class="kpi-head"><span>${label}</span><i class="fa-solid ${icon}"></i></div>
         ${totals ? kpiValue(val, unit) : '<div class="kpi-value">—</div>'}
+        ${sparkSvg(k, label)}
         <div class="kpi-sub">${sub}</div>
       </button>`;
     }).join(''));
@@ -303,6 +373,7 @@
     document.querySelectorAll('#stats-tab .sts-tile').forEach(t => t.classList.add('is-loading'));
     if (!st.data) paint();
     mainChart();
+    loadSparks(true);
     try {
       const data = await NopaApi.json(query(), { silent: true });
       if (seq !== st.seq) return;
@@ -334,6 +405,7 @@
         st.data = data;
         paint();
         NopaActivity.refresh('sts:main', { silent: true });
+        loadSparks(); // the sparklines are asked again at most every 30 seconds
         const stamp = $('sts-live-stamp');
         if (stamp) stamp.textContent = new Intl.DateTimeFormat('fa-IR', { timeZone: 'Asia/Tehran', hour: '2-digit', minute: '2-digit', second: '2-digit' }).format(new Date());
       }

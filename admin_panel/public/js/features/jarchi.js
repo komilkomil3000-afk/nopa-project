@@ -150,7 +150,17 @@ window.toggleBannerStatus = async function(id, currentActive) {
     const formData = new FormData();
     formData.append('isActive', !currentActive);
     const res = await request(`/api/v1/admin/banners/${encodeURIComponent(id)}`, { method: 'PUT', body: formData });
-    if (res.ok) { showToast(!currentActive ? 'بنر فعال شد' : 'بنر غیرفعال شد', 'success'); window.loadBannersTab(); }
+    if (res.ok) {
+      // «لغو» within 10s switches the banner back
+      NopaUndo.afterEdit({
+        message: !currentActive ? 'بنر فعال شد' : 'بنر غیرفعال شد',
+        url: `/api/v1/admin/banners/${encodeURIComponent(id)}`,
+        form: true,
+        revert: { isActive: !!currentActive },
+        done: () => window.loadBannersTab(),
+      });
+      window.loadBannersTab();
+    }
   } catch (e) {
     console.error('Error toggling banner status:', e);
   }
@@ -210,7 +220,21 @@ window.saveBannerItem = async function(e) {
   try {
     const res = await request(id ? `/api/v1/admin/banners/${encodeURIComponent(id)}` : '/api/v1/admin/banners', { method: id ? 'PUT' : 'POST', body: formData });
     if (res.ok) {
-      showToast(id ? 'بنر با موفقیت ویرایش شد' : 'بنر جدید با موفقیت بارگذاری شد', 'success');
+      const old = id ? (window.cachedBannerList || []).find(b => String(b.id) === String(id)) : null;
+      if (old) {
+        // «لغو» within 10s sends the changed fields back (a new picture is kept: the old file is not on this page)
+        const newPicture = !!(fileInput && fileInput.files[0]);
+        NopaUndo.afterEdit({
+          message: newPicture ? 'بنر ویرایش شد (لغو، عکس جدید را برنمی‌گرداند)' : 'بنر ویرایش شد',
+          url: `/api/v1/admin/banners/${encodeURIComponent(id)}`,
+          form: true,
+          body: formData,
+          before: { ...old, isActive: jchActive(old) },
+          done: () => window.loadBannersTab(),
+        });
+      } else {
+        showToast('بنر جدید با موفقیت بارگذاری شد', 'success');
+      }
       window.closeBannerModal();
       window.loadBannersTab();
     } else {
@@ -225,16 +249,19 @@ window.saveBannerItem = async function(e) {
 
 window.deleteBanner = async function(id) {
   if (!(await NopaConfirm('آیا از حذف این بنر اطمینان دارید؟'))) return false;
-  try {
-    const res = await request(`/api/v1/admin/banners/${encodeURIComponent(id)}`, { method: 'DELETE' });
-    if (!res.ok) { showToast('خطا در حذف بنر', 'error'); return false; }
-    showToast('بنر با موفقیت حذف شد', 'success');
-    window.loadBannersTab();
-    return true;
-  } catch (e) {
-    console.error('Error deleting banner:', e);
-    return false;
-  }
+  // Gone from the strip at once; deleted on the server only if not undone within 10s
+  // (the server still has it until then, so «لغو» just loads the banners again)
+  NopaUndo.later({
+    message: 'بنر حذف شد.',
+    hide: () => {
+      window.cachedBannerList = (window.cachedBannerList || []).filter(b => String(b.id) !== String(id));
+      window.jchDrawBanners();
+      return () => window.loadBannersTab();
+    },
+    commit: () => request(`/api/v1/admin/banners/${encodeURIComponent(id)}`, { method: 'DELETE' }),
+    done: () => window.loadBannersTab(),
+  });
+  return true;
 };
 window.jchDeleteOpenBanner = async function() {
   const id = document.getElementById('banner-id').value;
@@ -385,9 +412,28 @@ window.saveNewsArticle = async function(e) {
   try {
     const res = await request(id ? `/api/v1/admin/news/${encodeURIComponent(id)}` : '/api/v1/admin/news', { method: id ? 'PUT' : 'POST', body: formData });
     if (res.ok) {
+      const old = id ? (window.cachedNewsList || []).find(n => String(n.id) === String(id)) : null;
       window.closeNewsModal();
       await window.loadNewsTab();
-      showToast(published ? 'خبر ذخیره و در جارچی منتشر شد' : 'خبر به‌صورت پیش‌نویس ذخیره شد', 'success');
+      const message = published ? 'خبر ذخیره و در جارچی منتشر شد' : 'خبر به‌صورت پیش‌نویس ذخیره شد';
+      if (old) {
+        // «لغو» within 10s sends the changed fields back (a new picture is kept: the old file is not on this page)
+        const newPicture = !!(fileInput && fileInput.files[0]);
+        NopaUndo.afterEdit({
+          message: newPicture ? `${message} (لغو، عکس جدید را برنمی‌گرداند)` : message,
+          url: `/api/v1/admin/news/${encodeURIComponent(id)}`,
+          form: true,
+          body: formData,
+          before: {
+            ...old,
+            isPublished: old.isPublished !== false ? 'true' : 'false',
+            publishDate: old.publishDate ? new Date(old.publishDate).toISOString() : undefined,
+          },
+          done: () => window.loadNewsTab(),
+        });
+      } else {
+        showToast(message, 'success');
+      }
     } else {
       const err = await res.json().catch(() => ({}));
       showToast('خطا در ثبت خبر: ' + (err.error || 'خطای سرور'), 'error');
@@ -408,20 +454,18 @@ window.previewNewsImage = function(event) {
 
 window.deleteNews = async function(id) {
   if (!(await NopaConfirm('آیا از حذف این خبر از تابلوی اعلانات جارچی اطمینان دارید؟'))) return;
-  try {
-    const res = await request(`/api/v1/admin/news/${encodeURIComponent(id)}`, { method: 'DELETE' });
-    if (res.ok) {
-      showToast('خبر با موفقیت حذف شد.', 'success');
-      window.closeNewsModal();
-      await window.loadNewsTab();
-    } else {
-      const d = await res.json().catch(() => ({}));
-      showToast('خطا در حذف خبر: ' + (d.error || 'خطای سرور'), 'error');
-    }
-  } catch (err) {
-    console.error('Delete news error:', err);
-    showToast('خطا در ارتباط با سرور', 'error');
-  }
+  window.closeNewsModal();
+  // Gone from the board at once; deleted on the server only if not undone within 10s
+  NopaUndo.later({
+    message: 'خبر حذف شد.',
+    hide: () => {
+      window.cachedNewsList = (window.cachedNewsList || []).filter(n => String(n.id) !== String(id));
+      window.filterNewsTable();
+      return () => window.loadNewsTab();
+    },
+    commit: () => request(`/api/v1/admin/news/${encodeURIComponent(id)}`, { method: 'DELETE' }),
+    done: () => window.loadNewsTab(),
+  });
 };
 window.jchDeleteOpenNews = function() { const id = document.getElementById('news-id').value; if (id) window.deleteNews(id); };
 

@@ -481,29 +481,64 @@ body.lms-dragging .lst-flip-inner, .lms-drag-ghost .lst-flip-inner { transform: 
   transition: box-shadow 0.2s ease;
 }
 .lsv-circle-img img { width: 100%; height: 100%; object-fit: cover; display: block; }
-/* Hover: a frame opens around the circle and stretches (to its left) as far as the station's name */
+/* The name is not drawn next to the circle: js/ui/circle-tip.js shows it in a bubble above (.lsv-tip).
+   It stays in the markup, visually hidden, for screen readers and as the bubble's text. */
 .lsv-circle-name {
-  display: grid;
-  grid-template-columns: 0fr;
-  transition: grid-template-columns 0.25s ease;
-}
-.lsv-circle-name > span {
-  min-width: 0;
+  position: absolute;
+  width: 1px;
+  height: 1px;
   overflow: hidden;
+  clip-path: inset(50%);
   white-space: nowrap;
-  font-size: var(--text-xs, 0.78rem);
-  font-weight: 700;
-  padding-inline: 0;
-  transition: padding 0.25s ease;
 }
-.lsv-circle:hover,
-.lsv-circle:focus-visible { background: var(--surface); border-color: var(--border-strong); }
-.lsv-circle:hover .lsv-circle-name,
-.lsv-circle:focus-visible .lsv-circle-name { grid-template-columns: 1fr; }
-.lsv-circle:hover .lsv-circle-name > span,
-.lsv-circle:focus-visible .lsv-circle-name > span { padding-inline: 10px 14px; }
 .lsv-circle:hover .lsv-circle-img,
 .lsv-circle:focus-visible .lsv-circle-img { box-shadow: 0 6px 16px rgb(var(--primary-rgb) / 0.4); }
+.lsv-circle:focus-visible .lsv-circle-img { outline: 2px solid var(--primary-text); outline-offset: 2px; }
+
+/* name bubble of a notch circle (circle-tip.js); --tip-arrow = the arrow's distance from the bubble's left edge */
+.lsv-tip {
+  position: fixed;
+  z-index: calc(var(--z-toast, 9000) + 5);
+  top: 0;
+  left: 0;
+  max-width: min(260px, calc(100vw - 16px));
+  padding: 6px 12px;
+  border-radius: 10px;
+  background: var(--surface);
+  color: var(--text);
+  border: 1px solid var(--border-strong);
+  box-shadow: 0 8px 22px rgb(var(--shade-rgb) / 0.28);
+  font-size: var(--text-xs, 0.78rem);
+  font-weight: 700;
+  line-height: 1.5;
+  pointer-events: none;
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(4px);
+  transition: opacity 0.15s ease, transform 0.15s ease, visibility 0s linear 0.15s;
+}
+.lsv-tip-text { display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.lsv-tip.is-below { transform: translateY(-4px); }
+.lsv-tip.is-on { opacity: 1; visibility: visible; transform: none; transition: opacity 0.15s ease, transform 0.15s ease, visibility 0s; }
+/* the arrow: a small rotated square on the edge that faces the circle */
+.lsv-tip::after {
+  content: '';
+  position: absolute;
+  left: var(--tip-arrow, 50%);
+  top: 100%;
+  width: 9px;
+  height: 9px;
+  margin-left: -5px;
+  margin-top: -5px;
+  background: var(--surface);
+  border-right: 1px solid var(--border-strong);
+  border-bottom: 1px solid var(--border-strong);
+  transform: rotate(45deg);
+}
+.lsv-tip.is-below::after { top: 0; transform: rotate(225deg); }
+@media (prefers-reduced-motion: reduce) {
+  .lsv-tip, .lsv-tip.is-on { transition: none; transform: none; }
+}
 .lsv-circle.is-active .lsv-circle-img { box-shadow: 0 0 0 3px var(--accent); }
 .lsv-circle-badge {
   position: absolute;
@@ -2901,6 +2936,15 @@ button.nbr-rank-row:hover { background: rgb(var(--primary-rgb) / 0.08); }
 .sts-dur span { font-size: 34px; line-height: 1.15; }
 .sts-dur small { font-size: var(--text-sm); font-weight: 700; opacity: 0.85; }
 .sts-dur-rest { font-size: var(--text-sm); font-weight: 700; opacity: 0.9; margin-top: 2px; }
+/* sparkline of the tile's metric over the chosen period (stats.js sparkSvg); drawn in the tile's text colour */
+.sts-spark { display: block; width: 100%; height: 32px; margin-top: 8px; color: var(--primary-text); overflow: visible; }
+.sts-spark.is-empty { height: 32px; }
+:is(.kpi--brand, .kpi--emerald, .kpi--pink, .kpi--blue, .kpi--orange, .kpi--purple, .kpi--sky) .sts-spark { color: #fff; }
+.kpi--gold .sts-spark { color: #422006; }
+.sts-spark-line { fill: none; stroke: currentColor; stroke-width: 2; stroke-linejoin: round; stroke-linecap: round; opacity: 0.9; }
+.sts-spark-area { fill: currentColor; opacity: 0.16; stroke: none; }
+.sts-spark-dot { fill: none; stroke: currentColor; stroke-width: 6; stroke-linecap: round; } /* a zero-length round stroke stays round when the svg stretches */
+.tile.is-loading .sts-spark { opacity: 0.25; }
 .sts-scroll { max-height: 380px; overflow-y: auto; }
 
 /* online now */

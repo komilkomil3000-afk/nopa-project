@@ -244,9 +244,21 @@ window.saveEconomy = async function() {
   const note = document.getElementById('economy-note').value;
   if (!(await NopaConfirm('نسخه‌ی جدید قوانین مالی از همین لحظه اعمال شود؟'))) return;
   try {
+    const previous = ecoSaved;
     const saved = await economySend({ config: economyReadForm(), note });
     document.getElementById('economy-note').value = '';
-    showToast(`نسخه‌ی ${saved.version} ثبت شد. تراکنش‌ها و موجودی‌های قبلی تغییر نمی‌کنند.`, 'success');
+    const message = `نسخه‌ی ${saved.version} ثبت شد. تراکنش‌ها و موجودی‌های قبلی تغییر نمی‌کنند.`;
+    // «لغو» within 10s records the rules as they were, as a new version (versions are never erased)
+    if (previous) {
+      NopaUndo.after({
+        message,
+        undo: () => economySend({ config: previous, note: `لغو نسخه‌ی ${saved.version}` }),
+        undoneMessage: 'قوانین مالی قبلی دوباره اعمال شد.',
+        done: () => window.loadEconomy(),
+      });
+    } else {
+      showToast(message, 'success');
+    }
     window.loadEconomy();
   } catch (e) {
     showToast(e.message || 'خطا در ذخیره تنظیمات', 'error');

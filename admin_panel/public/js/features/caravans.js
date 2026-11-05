@@ -374,7 +374,8 @@ window.executeRenameCaravan = async function(id, newName) {
     const result = await res.json();
     if (res.ok) {
       window.closeRenameCaravanModal();
-      
+      const oldName = (window.caravansData || []).find(item => item.id === id)?.name;
+
       // Update in local memory
       if (window.caravansData) {
         const c = window.caravansData.find(item => item.id === id);
@@ -397,7 +398,15 @@ window.executeRenameCaravan = async function(id, newName) {
         if (opt) opt.textContent = newName;
       }
 
-      showToast('نام کاروان با موفقیت به «' + newName + '» تغییر یافت.', 'success');
+      // «لغو» within 10s gives the caravan its old name back
+      NopaUndo.afterEdit({
+        message: 'نام کاروان به «' + newName + '» تغییر یافت.',
+        url: `/api/v1/admin/caravans/${id}`,
+        method: 'PATCH',
+        body: { name: newName },
+        before: { name: oldName },
+        done: () => (typeof window.loadCaravansTab === 'function' ? window.loadCaravansTab() : null),
+      });
     } else {
       showToast('خطا در تغییر نام کاروان: ' + (result.error || 'خطای سرور'), 'error');
     }
@@ -420,54 +429,40 @@ window.deleteCaravanRecord = async function(caravanId, caravanName) {
   if (!(await NopaConfirm(`آیا از حذف کاروان "${caravanName || ''}" اطمینان دارید؟ اعضای این کاروان آزاد خواهند شد.`))) {
     return;
   }
-  try {
-    const res = await request(`/api/v1/admin/caravans/${caravanId}`, {
-      method: 'DELETE'
-    });
-    if (res.ok) {
-      showToast('کاروان با موفقیت حذف گردید.', 'success');
-      if (typeof window.loadCaravansTab === 'function') {
-        await window.loadCaravansTab();
-      }
-    } else {
-      const err = await res.json();
-      showToast(err.error || 'خطا در حذف کاروان', 'error');
-    }
-  } catch (e) {
-    console.error(e);
-    showToast('خطا در ارتباط با سرور', 'error');
-  }
+  // Gone from the overview at once; deleted on the server only if not undone within 10s
+  // (the server still has it until then, so «لغو» just loads the tab again)
+  const reload = () => { if (typeof window.loadCaravansTab === 'function') return window.loadCaravansTab(); };
+  NopaUndo.later({
+    message: `کاروان «${caravanName || ''}» حذف شد.`,
+    hide: () => {
+      window.caravansData = (window.caravansData || []).filter(c => String(c.id) !== String(caravanId));
+      if (String(window.crvActiveCaravanId) === String(caravanId) && typeof window.closeCaravanView === 'function') window.closeCaravanView();
+      if (typeof window.renderCaravansTable === 'function') window.renderCaravansTable();
+      return reload;
+    },
+    commit: () => request(`/api/v1/admin/caravans/${caravanId}`, { method: 'DELETE' }),
+    done: reload,
+  });
 };
 
 window.removeMemberFromCaravan = async function(caravanId, studentId, memberName) {
   const nameText = memberName ? `«${memberName}»` : 'این فرد';
+  const row = NopaUndo.lastRow();
   if (!(await NopaConfirm(`آیا می‌خواهید ${nameText} را از این کاروان حذف کنید؟`))) {
     return;
   }
-  try {
-    const res = await request(`/api/v1/admin/caravans/${caravanId}/members/${studentId}`, {
-      method: 'DELETE'
-    });
-    if (res.ok) {
-      showToast(`فرد با موفقیت از این کاروان حذف گردید.`, 'success');
-      if (typeof window.loadCaravansTab === 'function') {
-        await window.loadCaravansTab();
-      }
+  // The row goes at once; the member is removed on the server only if not undone within 10s
+  NopaUndo.later({
+    message: `${nameText} از کاروان حذف شد.`,
+    hide: () => NopaUndo.hideEl(row),
+    commit: () => request(`/api/v1/admin/caravans/${caravanId}/members/${studentId}`, { method: 'DELETE' }),
+    done: async () => {
+      if (typeof window.loadCaravansTab === 'function') await window.loadCaravansTab();
       const picker = document.getElementById('target-caravan-picker');
-      if (picker) {
-        picker.value = caravanId;
-      }
-      if (typeof window.loadSelectedCaravanDetails === 'function') {
-        window.loadSelectedCaravanDetails();
-      }
-    } else {
-      const err = await res.json();
-      showToast(err.error || 'خطا در حذف فرد از کاروان', 'error');
-    }
-  } catch (e) {
-    console.error(e);
-    showToast('خطا در ارتباط با سرور', 'error');
-  }
+      if (picker) picker.value = caravanId;
+      if (typeof window.loadSelectedCaravanDetails === 'function') window.loadSelectedCaravanDetails();
+    },
+  });
 };
 
 window.viewStudentDetails = async function(studentId) {
@@ -702,11 +697,22 @@ window.setAccountStatus = async function(userId, status) {
       body: JSON.stringify({ status })
     });
     if (res.ok) {
-      showToast('وضعیت حساب کاربر با موفقیت تغییر کرد', 'success');
-      if (activeTab === 'users-tab' && typeof loadUsers === 'function') loadUsers();
-      if (typeof window.loadSelectedCaravanDetails === 'function') {
-        window.loadSelectedCaravanDetails();
-      }
+      const refresh = () => {
+        if (activeTab === 'users-tab' && typeof loadUsers === 'function') loadUsers();
+        if (typeof window.loadSelectedCaravanDetails === 'function') window.loadSelectedCaravanDetails();
+      };
+      // «لغو» within 10s puts the account back in its old state (an active account when it is not known)
+      const known = (window.usrList || []).find(u => String(u.id) === String(userId));
+      const oldStatus = (known && known.accountStatus) || 'ACTIVE';
+      NopaUndo.afterEdit({
+        message: 'وضعیت حساب کاربر تغییر کرد.',
+        url: `/api/v1/admin/users/${userId}/status`,
+        method: 'PATCH',
+        body: { status },
+        before: { status: oldStatus },
+        done: refresh,
+      });
+      refresh();
     } else {
       const err = await res.json().catch(() => ({}));
       showToast(err.error || 'خطا در تغییر وضعیت کاربر', 'error');
@@ -786,11 +792,24 @@ window.openActiveCaravanPhoto = function() {
     current: c.coverImageUrl || '',
     hint: 'عکس کاروان در اپ (گروه کاروان، پروفایل و رتبه‌بندی) و در سایت نمایش داده می‌شود.',
     onSave: async url => {
+      const oldUrl = c.coverImageUrl || '';
+      const show = next => {
+        c.coverImageUrl = next || null;
+        if (typeof window.renderCaravansTable === 'function') window.renderCaravansTable();
+        if (String(window.crvActiveCaravanId) === String(c.id) && typeof window.openCaravanView === 'function') window.openCaravanView(c.id);
+      };
       await NopaApi.json(`/api/v1/admin/caravans/${encodeURIComponent(c.id)}`, { method: 'PATCH', body: JSON.stringify({ coverImageUrl: url || '' }) });
-      c.coverImageUrl = url || null;
       NopaPhoto.close();
-      if (typeof window.renderCaravansTable === 'function') window.renderCaravansTable();
-      if (String(window.crvActiveCaravanId) === String(c.id) && typeof window.openCaravanView === 'function') window.openCaravanView(c.id);
+      show(url);
+      // «لغو» within 10s puts the old picture back
+      NopaUndo.afterEdit({
+        message: url ? 'عکس کاروان تغییر کرد.' : 'عکس کاروان حذف شد.',
+        url: `/api/v1/admin/caravans/${encodeURIComponent(c.id)}`,
+        method: 'PATCH',
+        body: { coverImageUrl: url || '' },
+        before: { coverImageUrl: oldUrl },
+        done: ok => { if (ok) show(oldUrl); },
+      });
     },
   });
 };
@@ -1479,11 +1498,20 @@ window.editCaravanCapacity = async function(caravanId) {
       body: JSON.stringify({ capacityLimit: parseInt(val) })
     });
     if (res.ok) {
-      showToast('ظرفیت کاروان با موفقیت به‌روزرسانی شد', 'success');
-      if (currentDrawerCaravanId && typeof window.viewCaravanDetails === 'function') {
-        window.viewCaravanDetails(currentDrawerCaravanId);
-      }
-      if (typeof window.renderCaravansTable === 'function') window.renderCaravansTable();
+      const refresh = () => {
+        if (currentDrawerCaravanId && typeof window.viewCaravanDetails === 'function') window.viewCaravanDetails(currentDrawerCaravanId);
+        if (typeof window.renderCaravansTable === 'function') window.renderCaravansTable();
+      };
+      // «لغو» within 10s puts the old capacity back
+      NopaUndo.afterEdit({
+        message: 'ظرفیت کاروان به‌روزرسانی شد.',
+        url: `/api/v1/admin/caravans/${cId}`,
+        method: 'PATCH',
+        body: { capacityLimit: parseInt(val) },
+        before: { capacityLimit: parseInt(initialVal) },
+        done: refresh,
+      });
+      refresh();
     } else {
       const d = await res.json();
       showToast(d.error || 'خطا در ویرایش ظرفیت', 'error');
@@ -1543,19 +1571,18 @@ async function loadCaravanMembersRoster() {
 
 window.removeFromCaravan = async function(caravanId, studentId) {
   if(!caravanId) return;
-  if((await NopaConfirm('آیا از حذف این دانش‌آموز از کاروان مطمئن هستید؟'))) {
-     try {
-       const res = await request(`/api/v1/admin/caravans/${caravanId}/members/${studentId}`, { method: 'DELETE' });
-       if(res.ok) { 
-         showToast('با موفقیت حذف شد', 'success'); 
-         if (typeof window.loadCaravanDetails === 'function') {
-           window.loadCaravanDetails(caravanId);
-         } else {
-           loadCaravanMembersRoster();
-         }
-       }
-     } catch(e) { console.error(e); }
-  }
+  const row = NopaUndo.lastRow();
+  if (!(await NopaConfirm('آیا از حذف این دانش‌آموز از کاروان مطمئن هستید؟'))) return;
+  // The row goes at once; the member is removed on the server only if not undone within 10s
+  NopaUndo.later({
+    message: 'دانش‌آموز از کاروان حذف شد.',
+    hide: () => NopaUndo.hideEl(row),
+    commit: () => request(`/api/v1/admin/caravans/${caravanId}/members/${studentId}`, { method: 'DELETE' }),
+    done: () => {
+      if (typeof window.loadCaravanDetails === 'function') window.loadCaravanDetails(caravanId);
+      else loadCaravanMembersRoster();
+    },
+  });
 }
 
 window.loadCaravanDetails = async function(caravanId) {
@@ -2032,7 +2059,9 @@ window.updateCaravanMentor = async function() {
   }
 
   const mentorId = document.getElementById('cw-mentor-select')?.value || null;
-  
+  const oldCaravan = (window.caravansData || []).find(c => String(c.id) === String(currentCaravanId));
+  const oldMentorId = oldCaravan ? (oldCaravan.mentorId ?? oldCaravan.mentor?.id ?? null) : undefined;
+
   try {
     const res = await request(`/api/v1/admin/caravans/${currentCaravanId}`, {
       method: 'PATCH',
@@ -2045,19 +2074,22 @@ window.updateCaravanMentor = async function() {
 
     if (res.ok) {
       window.closeChangeCaravanMentorModal();
-      showToast('راهبر کاروان با موفقیت تغییر یافت', 'success');
-      
-      if (typeof window.loadCaravansTab === 'function') {
-        await window.loadCaravansTab();
-      }
-
-      const picker = document.getElementById('target-caravan-picker');
-      if (picker) {
-        picker.value = currentCaravanId;
-      }
-      if (typeof window.loadSelectedCaravanDetails === 'function') {
-        window.loadSelectedCaravanDetails();
-      }
+      const refresh = async () => {
+        if (typeof window.loadCaravansTab === 'function') await window.loadCaravansTab();
+        const picker = document.getElementById('target-caravan-picker');
+        if (picker) picker.value = currentCaravanId;
+        if (typeof window.loadSelectedCaravanDetails === 'function') window.loadSelectedCaravanDetails();
+      };
+      // «لغو» within 10s gives the caravan its old mentor back
+      NopaUndo.afterEdit({
+        message: 'راهبر کاروان تغییر یافت.',
+        url: `/api/v1/admin/caravans/${currentCaravanId}`,
+        method: 'PATCH',
+        body: { mentorId },
+        before: oldMentorId === undefined ? {} : { mentorId: oldMentorId },
+        done: refresh,
+      });
+      await refresh();
     } else {
       const err = await res.json();
       showToast(err.error || 'خطا در تغییر راهبر', 'error');
@@ -2078,12 +2110,20 @@ window.editMember = async function(userId) {
     const user = await res.json();
     const newName = prompt('نام جدید کاربر را وارد کنید:', user.name);
     if (newName && newName.trim() !== '' && newName !== user.name) {
-      await request(`/api/v1/admin/users/${userId}`, {
+      const res2 = await request(`/api/v1/admin/users/${userId}`, {
         method: 'PUT',
         body: JSON.stringify({ ...user, name: newName.trim() })
       });
-      showToast('اطلاعات کاربر به‌روزرسانی شد', 'success');
-      if (currentDrawerCaravanId) window.viewCaravanDetails(currentDrawerCaravanId);
+      if (!res2.ok) return showToast('خطا در به‌روزرسانی کاربر', 'error');
+      const refresh = () => { if (currentDrawerCaravanId) window.viewCaravanDetails(currentDrawerCaravanId); };
+      // «لغو» within 10s sends the user back as they were
+      NopaUndo.afterEdit({
+        message: 'اطلاعات کاربر به‌روزرسانی شد.',
+        url: `/api/v1/admin/users/${userId}`,
+        revert: user,
+        done: refresh,
+      });
+      refresh();
     }
   } catch (err) {
     console.error(err);

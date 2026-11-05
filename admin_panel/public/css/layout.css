@@ -346,6 +346,7 @@ body.nav-open .app-header {
 }
 .header-badge {
   position: absolute;
+  z-index: 1;
   top: -6px;
   left: -6px;
   min-width: 18px;
@@ -482,9 +483,10 @@ body.nav-open .app-header {
 
 /* Chat switch in the header: a status dot on the button, three modes in the dropdown */
 .header-menu.chat-switch[hidden] { display: none; }
+/* bottom corner: the top corner belongs to the unread count (.header-badge), which must stay readable */
 .chat-switch-dot {
   position: absolute;
-  top: -3px;
+  bottom: -3px;
   left: -3px;
   width: 11px;
   height: 11px;

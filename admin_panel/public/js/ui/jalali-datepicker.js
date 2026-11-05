@@ -8,6 +8,8 @@
 //   - setting `input.value = …` from code updates the Shamsi text (per-element value setter)
 //   - honours min / max / disabled on the native input
 //   - add class "no-jdp" to an input to keep the browser's own picker
+//   - a text input with data-jdp="jalali" gets the same picker but keeps a Shamsi text value ("1380/05/12"),
+//     for fields stored as Shamsi text (birth dates); a value it cannot read is shown as typed
 (function () {
   'use strict';
 
@@ -90,8 +92,31 @@
   function rawValue(input) { return proto.get.call(input); }
 
   function isTarget(el) {
-    return el && el.tagName === 'INPUT' && (el.type === 'date' || el.type === 'datetime-local') &&
-      !el.__jdp && !el.classList.contains('no-jdp');
+    return el && el.tagName === 'INPUT' && !el.__jdp && !el.classList.contains('no-jdp') &&
+      (el.type === 'date' || el.type === 'datetime-local' || (el.type === 'text' && el.getAttribute('data-jdp') === 'jalali'));
+  }
+  function isJalaliText(input) { return input.type === 'text' && input.getAttribute('data-jdp') === 'jalali'; }
+
+  // "1380/05/12" / "۱۳۸۰/۰۵/۱۲" / "1380-5-12" -> { gy, gm, gd } or null
+  function latin(v) {
+    return String(v || '').replace(/[۰-۹]/g, function (d) { return String(d.charCodeAt(0) - 0x06F0); })
+      .replace(/[٠-٩]/g, function (d) { return String(d.charCodeAt(0) - 0x0660); });
+  }
+  function parseJalaliText(v) {
+    var m = /^\s*(1[34]\d{2})[\/\-.](\d{1,2})[\/\-.](\d{1,2})\s*$/.exec(latin(v));
+    if (!m) return null;
+    var jy = +m[1], jm = +m[2], jd = +m[3];
+    if (jm < 1 || jm > 12 || jd < 1 || jd > monthLength(jy, jm)) return null;
+    var g = toGregorian(jy, jm, jd);
+    return { gy: g.gy, gm: g.gm, gd: g.gd, h: null, mi: null };
+  }
+  /** the input's value as a date, whatever the input's kind */
+  function parseValue(input) { return isJalaliText(input) ? parseJalaliText(rawValue(input)) : parseIso(rawValue(input)); }
+  /** a picked day (Gregorian) in the input's own value format */
+  function formatValue(input, g) {
+    if (!isJalaliText(input)) return isoDate(g);
+    var j = toJalali(g.gy, g.gm, g.gd);
+    return j.jy + '/' + pad(j.jm) + '/' + pad(j.jd);
   }
 
   function enhance(input) {
@@ -101,6 +126,7 @@
     display.type = 'text';
     display.readOnly = true;
     display.className = input.className;
+    display.classList.remove('is-invalid');
     display.classList.add('jdp-display');
     if (withTime) display.classList.add('jdp-display--time');
     display.dir = 'rtl';
@@ -137,8 +163,9 @@
     var st = input.__jdp;
     if (!st) return;
     st.display.disabled = input.disabled;
-    var p = parseIso(rawValue(input));
-    if (!p) { st.display.value = ''; return; }
+    st.display.classList.toggle('is-invalid', input.classList.contains('is-invalid'));
+    var p = parseValue(input);
+    if (!p) { st.display.value = isJalaliText(input) ? rawValue(input) : ''; return; }
     var j = toJalali(p.gy, p.gm, p.gd);
     var text = fa(j.jd) + ' ' + MONTHS[j.jm - 1] + ' ' + fa(j.jy);
     if (st.withTime && p.h != null) text += '  ساعت ' + fa(pad(p.h) + ':' + pad(p.mi));
@@ -172,7 +199,7 @@
     if (input.disabled) return;
     if (cur && cur.input === input) { close(); return; }
     close();
-    var p = parseIso(rawValue(input));
+    var p = parseValue(input);
     var base = p || todayG();
     var j = toJalali(base.gy, base.gm, base.gd);
     var now = new Date();
@@ -205,13 +232,13 @@
   }
 
   function selectedJdn() {
-    var p = parseIso(rawValue(cur.input));
+    var p = parseValue(cur.input);
     return p ? g2d(p.gy, p.gm, p.gd) : null;
   }
 
   function writeDay(jdn) {
     var g = d2g(jdn);
-    var iso = isoDate(g);
+    var iso = formatValue(cur.input, g);
     if (cur.input.__jdp.withTime) iso += 'T' + pad(cur.h) + ':' + pad(cur.mi);
     commit(cur.input, iso);
   }
@@ -371,7 +398,7 @@
   function scan(root) {
     if (!root || root.nodeType !== 1) return;
     if (root.tagName === 'INPUT') { enhance(root); return; }
-    root.querySelectorAll('input[type="date"], input[type="datetime-local"]').forEach(enhance);
+    root.querySelectorAll('input[type="date"], input[type="datetime-local"], input[data-jdp="jalali"]').forEach(enhance);
   }
   function start() {
     scan(document.body);
@@ -381,7 +408,7 @@
         if (m.type === 'attributes' && m.target.__jdp) refresh(m.target);
       });
       if (pop && cur && !cur.input.isConnected) close();
-    }).observe(document.body, { childList: true, subtree: true, attributes: true, attributeFilter: ['disabled', 'value'] });
+    }).observe(document.body, { childList: true, subtree: true, attributes: true, attributeFilter: ['disabled', 'value', 'class'] });
   }
 
   window.NopaJalali = { toJalali: toJalali, toGregorian: toGregorian, monthLength: monthLength, enhance: enhance, refresh: refresh };

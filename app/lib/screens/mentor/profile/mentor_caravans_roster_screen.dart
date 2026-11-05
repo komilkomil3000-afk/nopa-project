@@ -242,17 +242,26 @@ class _MentorMembersScreenState extends State<MentorCaravansRosterScreen> {
           NopaModalAction(
             label: 'تایید حذف',
             variant: NopaModalActionVariant.danger,
-            onPressed: () async {
+            onPressed: () {
                           Navigator.pop(ctx);
-                          try {
-                            await HttpApiService().removeMemberFromCaravan(caravan.id, member.id);
-                          } catch (_) {}
-                          if (mounted) {
-                            setState(() {
-                              caravan.members.removeWhere((m) => m.id == member.id);
-                            });
-                            AppToast.info(context, 'درخواست حذف «${member.name}» با موفقیت ثبت شد');
-                          }
+                          if (!mounted) return;
+                          // The member leaves the list at once; the request is sent only if not undone within the undo time
+                          final at = caravan.members.indexWhere((m) => m.id == member.id);
+                          setState(() => caravan.members.removeWhere((m) => m.id == member.id));
+                          AppToast.undoable(
+                            context,
+                            'درخواست حذف «${member.name}» ثبت شد.',
+                            commit: () async {
+                              try {
+                                await HttpApiService().removeMemberFromCaravan(caravan.id, member.id);
+                              } catch (_) {}
+                              return null;
+                            },
+                            onUndo: () {
+                              if (!mounted || at < 0 || caravan.members.any((m) => m.id == member.id)) return;
+                              setState(() => caravan.members.insert(at.clamp(0, caravan.members.length), member));
+                            },
+                          );
                         },
           ),
           NopaModalAction(

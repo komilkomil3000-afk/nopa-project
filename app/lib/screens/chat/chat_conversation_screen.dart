@@ -213,11 +213,18 @@ class _ChatConversationScreenState extends State<ChatConversationScreen> {
     if (text.isEmpty) return;
 
     if (_editing != null) {
-      final ok = await _chat.edit(_editing!, text);
-      if (!mounted) return;
-      if (!ok) AppToast.error(context, 'ویرایش پیام انجام نشد.');
+      final original = _editing!;
       setState(() => _editing = null);
       _input.clear();
+      if (text == original.body) return;
+      // The new text shows at once; it is sent only if not undone within the undo time
+      _chat.showLocally(original, {'body': text, 'edited': true});
+      AppToast.undoable(
+        context,
+        'پیام ویرایش شد.',
+        commit: () async => await _chat.edit(original, text) ? null : 'ویرایش پیام انجام نشد.',
+        onUndo: () => _chat.putBack(original),
+      );
       return;
     }
 
@@ -376,7 +383,14 @@ class _ChatConversationScreenState extends State<ChatConversationScreen> {
     } else if (action == 'pin') {
       await _chat.togglePin(message);
     } else if (action == 'delete') {
-      await _chat.delete(message);
+      if (!mounted) return;
+      _chat.showLocally(message, {'deleted': true});
+      AppToast.undoable(
+        context,
+        'پیام حذف شد.',
+        commit: () async => await _chat.delete(message) ? null : 'حذف پیام انجام نشد.',
+        onUndo: () => _chat.putBack(message),
+      );
     } else if (action == 'mentorMark') {
       final ok = await _chat.mark(message, 'mentor');
       if (!ok && mounted) AppToast.error(context, 'ثبت نشان انجام نشد.');
@@ -440,8 +454,19 @@ class _ChatConversationScreenState extends State<ChatConversationScreen> {
       final had = message.tags.any((t) => t['id'] == picked['id']);
       final ok = await _chat.toggleTag(message, picked['id']);
       if (mounted) {
-        if (ok) {
-          AppToast.success(context, had ? 'برچسب برداشته شد.' : 'برچسب «${picked['name']}» روی پیام گذاشته شد.');
+        if (ok && had) {
+          // Taking a label off is a removal: «لغو» puts it back on
+          AppToast.undoable(
+            context,
+            'برچسب برداشته شد.',
+            commit: () async => null,
+            onUndo: () async {
+              final back = await _chat.toggleTag(message, picked['id']);
+              if (!back && mounted) AppToast.error(context, 'برگرداندن برچسب انجام نشد.');
+            },
+          );
+        } else if (ok) {
+          AppToast.success(context, 'برچسب «${picked['name']}» روی پیام گذاشته شد.');
         } else {
           AppToast.error(context, 'ثبت برچسب انجام نشد.');
         }

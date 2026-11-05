@@ -138,11 +138,22 @@ window.saveAssetName = async function(key, nameFa) {
   });
   const data = await res.json().catch(() => ({}));
   if (!res.ok) { showToast(data.error || 'خطا در ذخیره', 'error'); return false; }
-  window.assetNamesMap = { ...(window.assetNamesMap || {}), [key]: nameFa };
-  showToast('نام دارایی ذخیره شد. اپ در اجرای بعدی نام جدید را نشان می‌دهد؛ برای اعمال کامل در این پنل صفحه را رفرش کنید.', 'success');
   const row = assetNameRows.find(r => r.key === key);
-  if (row) row.nameFa = nameFa;
-  const strong = document.querySelector(`#asset-names-list [data-anim-key="an:${CSS.escape(key)}"] strong`);
-  if (strong) strong.textContent = nameFa;
+  const oldName = row ? row.nameFa : null;
+  const show = name => {
+    window.assetNamesMap = { ...(window.assetNamesMap || {}), [key]: name };
+    if (row) row.nameFa = name;
+    const strong = document.querySelector(`#asset-names-list [data-anim-key="an:${CSS.escape(key)}"] strong`);
+    if (strong) strong.textContent = name;
+  };
+  show(nameFa);
+  // «لغو» within 10s puts the old name back
+  NopaUndo.afterEdit({
+    message: 'نام دارایی ذخیره شد. اپ در اجرای بعدی نام جدید را نشان می‌دهد؛ برای اعمال کامل در این پنل صفحه را رفرش کنید.',
+    url: `/api/v1/admin/assets/${encodeURIComponent(key)}`,
+    body: { nameFa },
+    before: oldName ? { nameFa: oldName } : {},
+    done: ok => { if (ok && oldName) show(oldName); },
+  });
   return true;
 };

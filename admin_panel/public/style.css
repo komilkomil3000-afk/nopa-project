@@ -1504,6 +1504,19 @@ button, select, input, a {
   flex-shrink: 0;
 }
 .nopa-toast-close:hover { opacity: 1; }
+.nopa-toast-action {
+  flex-shrink: 0;
+  align-self: center;
+  background: rgb(var(--fg-rgb) / 0.12);
+  border: 1px solid rgb(var(--fg-rgb) / 0.35);
+  border-radius: 8px;
+  color: inherit;
+  font: inherit;
+  font-weight: 800;
+  padding: 2px 14px;
+  cursor: pointer;
+}
+.nopa-toast-action:hover { background: rgb(var(--fg-rgb) / 0.22); }
 .nopa-toast-progress {
   position: absolute;
   left: 0;

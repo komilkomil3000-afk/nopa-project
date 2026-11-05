@@ -540,6 +540,14 @@ async function toggleBlockUser(userId, blockStatus) {
       body: JSON.stringify({ blocked: blockStatus })
     });
     if (res.ok) {
+      // «لغو» within 10s blocks / unblocks the user back
+      NopaUndo.afterEdit({
+        message: blockStatus ? 'کاربر مسدود شد.' : 'مسدودیت کاربر برداشته شد.',
+        url: `/api/v1/admin/users/${userId}/block`,
+        method: 'PATCH',
+        revert: { blocked: !blockStatus },
+        done: () => loadUsers(),
+      });
       loadUsers();
     }
   } catch (err) {
@@ -549,21 +557,21 @@ async function toggleBlockUser(userId, blockStatus) {
 
 // Delete User
 async function deleteUser(userId) {
-  if (!(await NopaConfirm('آیا از حذف دائم این کاربر اطمینان دارید؟ این عملیات غیرقابل بازگشت است.'))) return;
-  try {
-    const res = await request(`/api/v1/admin/users/${userId}`, {
-      method: 'DELETE'
-    });
-    const data = await res.json();
-    if (res.ok) {
-      showToast(data.message);
-      loadUsers();
-    } else {
-      showToast(data.error || 'خطا در حذف کاربر', 'error');
-    }
-  } catch (err) {
-    console.error(err);
-  }
+  if (!(await NopaConfirm('آیا از حذف دائم این کاربر اطمینان دارید؟ پس از ۱۰ ثانیه دیگر قابل بازگشت نیست.'))) return;
+  // Gone from the list (its open page closes) at once; deleted on the server only if not undone within 10s.
+  // The server still has the user until then, so «لغو» just loads the list again.
+  const u = (window.usrList || []).find(x => String(x.id) === String(userId));
+  NopaUndo.later({
+    message: `کاربر «${(u && u.name) || ''}» حذف شد.`,
+    hide: () => {
+      window.usrList = (window.usrList || []).filter(x => String(x.id) !== String(userId));
+      if (String(window.usrActiveId) === String(userId) && typeof window.closeUserView === 'function') window.closeUserView();
+      if (typeof window.filterUsersList === 'function') window.filterUsersList();
+      return () => loadUsers();
+    },
+    commit: () => request(`/api/v1/admin/users/${userId}`, { method: 'DELETE' }),
+    done: () => loadUsers(),
+  });
 }
 
 // Open Password Override Dialog
@@ -702,12 +710,14 @@ async function handleUserFormSubmit(e) {
   const academicCertificates = document.getElementById('modal-user-certificates')?.value;
 
   let res;
+  let editBody = null;
   if (id) {
     // Edit User
+    editBody = { name, phoneNumber, role, caravanId: caravanId || null, levelFrame, mentorLevel, nationalId, dateOfBirth, gender, academicDegree, academicCertificates };
     res = await request(`/api/v1/admin/users/${id}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name, phoneNumber, role, caravanId: caravanId || null, levelFrame, mentorLevel, nationalId, dateOfBirth, gender, academicDegree, academicCertificates })
+      body: JSON.stringify(editBody)
     });
   } else {
     // Create User
@@ -722,13 +732,28 @@ async function handleUserFormSubmit(e) {
   const data = await res.json();
   if (res.ok) {
     await saveUserPanelAccess(id || data.userId);
-    showToast(data.message || 'مشخصات کاربر با موفقیت ذخیره شد', 'success');
     document.getElementById('user-modal-overlay').style.display = 'none';
-    if (typeof loadUsers === 'function') loadUsers();
-    if (typeof window.lvlInvalidate === 'function') window.lvlInvalidate();
-    if (typeof loadAllUsersDropdown === 'function') loadAllUsersDropdown();
-    if (typeof loadCaravansTab === 'function') await loadCaravansTab();
-    if (typeof window.loadSelectedCaravanDetails === 'function') window.loadSelectedCaravanDetails();
+    const refresh = async () => {
+      if (typeof loadUsers === 'function') loadUsers();
+      if (typeof window.lvlInvalidate === 'function') window.lvlInvalidate();
+      if (typeof loadAllUsersDropdown === 'function') loadAllUsersDropdown();
+      if (typeof loadCaravansTab === 'function') await loadCaravansTab();
+      if (typeof window.loadSelectedCaravanDetails === 'function') window.loadSelectedCaravanDetails();
+    };
+    const old = id ? ((window.usrList || []).find(u => String(u.id) === String(id)) || (typeof nopaFindPerson === 'function' ? nopaFindPerson(id) : null)) : null;
+    if (old && editBody) {
+      // «لغو» within 10s sends the changed details back (panel access is kept as chosen)
+      NopaUndo.afterEdit({
+        message: data.message || 'مشخصات کاربر ذخیره شد.',
+        url: `/api/v1/admin/users/${id}`,
+        body: editBody,
+        before: old,
+        done: refresh,
+      });
+    } else {
+      showToast(data.message || 'مشخصات کاربر با موفقیت ذخیره شد', 'success');
+    }
+    await refresh();
   } else {
     showToast(data.error || 'خطا در ثبت اطلاعات', 'error');
   }
@@ -838,18 +863,30 @@ window.openPersonSitePhoto = function(userId, where) {
     app: p.appAvatarUrl !== undefined ? (p.appAvatarUrl || '') : (p.siteAvatarUrl ? '' : (p.avatarUrl || '')),
     hint: 'عکس سایت فقط در پنل دیده می‌شود؛ اپ همان عکسی را نشان می‌دهد که خود کاربر انتخاب کرده.',
     onSave: async url => {
+      const oldUrl = p.siteAvatarUrl || '';
+      const show = next => {
+        nopaWalk(nopaPersonLists(), o => {
+          if (String(o.id) !== String(userId) || !('avatarUrl' in o)) return;
+          if (o.appAvatarUrl === undefined) o.appAvatarUrl = o.siteAvatarUrl ? null : o.avatarUrl;
+          o.siteAvatarUrl = next;
+          o.avatarUrl = next || o.appAvatarUrl || null;
+        });
+        // redraw whatever shows this person
+        if (urpUserId === String(userId) && urpLastPayload) urpPaint(urpLastPayload);
+        if (String(window.usrActiveId) === String(userId) && typeof window.loadUserPage === 'function') window.loadUserPage();
+        if (String(window.mntActiveMentorId) === String(userId) && typeof window.loadMentorPage === 'function') window.loadMentorPage();
+      };
       await NopaApi.json(`/api/v1/admin/users/${encodeURIComponent(userId)}/site-avatar`, { method: 'PUT', body: JSON.stringify({ url }) });
-      nopaWalk(nopaPersonLists(), o => {
-        if (String(o.id) !== String(userId) || !('avatarUrl' in o)) return;
-        if (o.appAvatarUrl === undefined) o.appAvatarUrl = o.siteAvatarUrl ? null : o.avatarUrl;
-        o.siteAvatarUrl = url;
-        o.avatarUrl = url || o.appAvatarUrl || null;
-      });
       NopaPhoto.close();
-      // redraw whatever shows this person
-      if (urpUserId === String(userId) && urpLastPayload) urpPaint(urpLastPayload);
-      if (String(window.usrActiveId) === String(userId) && typeof window.loadUserPage === 'function') window.loadUserPage();
-      if (String(window.mntActiveMentorId) === String(userId) && typeof window.loadMentorPage === 'function') window.loadMentorPage();
+      show(url);
+      // «لغو» within 10s puts the old site picture back
+      NopaUndo.afterEdit({
+        message: url ? 'عکس سایت تغییر کرد.' : 'عکس سایت حذف شد.',
+        url: `/api/v1/admin/users/${encodeURIComponent(userId)}/site-avatar`,
+        body: { url: url || '' },
+        before: { url: oldUrl },
+        done: ok => { if (ok) show(oldUrl || null); },
+      });
     },
   });
 };

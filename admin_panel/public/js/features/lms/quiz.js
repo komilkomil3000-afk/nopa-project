@@ -216,21 +216,20 @@ window.saveQuizFromModal = async function(e) {
 };
 
 window.deleteQuizRecord = async function(quizId) {
+  const row = NopaUndo.lastRow('.lse-quiz');
   if (!(await NopaConfirm('آیا از حذف این آزمونک اطمینان دارید؟'))) return;
-  try {
-    const res = await request(`/api/v1/admin/lms/quizzes/${quizId}`, {
-      method: 'DELETE',
-      headers: { 'Content-Type': 'application/json'  }
-    });
-    if (res.ok) {
-      showToast('آزمونک با موفقیت حذف شد', 'success');
+  const modal = document.getElementById('lms-quiz-editor-modal');
+  if (modal) modal.style.display = 'none';
+  // Gone from the part at once; deleted on the server only if not undone within 10s
+  NopaUndo.later({
+    message: 'آزمونک حذف شد.',
+    hide: () => NopaUndo.hideEl(row),
+    commit: () => request(`/api/v1/admin/lms/quizzes/${quizId}`, { method: 'DELETE' }),
+    done: async () => {
       await window.fetchLiveLmsStations();
-      document.getElementById('lms-quiz-editor-modal').style.display = 'none';
       if (typeof window.lmsEditorRefresh === 'function') window.lmsEditorRefresh();
-    }
-  } catch (err) {
-    console.error('Delete quiz error:', err);
-  }
+    },
+  });
 };
 
 // Calls fn for every quiz in the loaded station list (session quizzes and part quizzes)

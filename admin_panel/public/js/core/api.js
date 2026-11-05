@@ -14,6 +14,8 @@
     if (typeof options.body === 'string' && !hasType) headers['Content-Type'] = 'application/json';
     const fetchOptions = Object.assign({}, options, { headers });
     delete fetchOptions.silent;
+    // a waiting delete sent while the page closes (js/ui/undo.js) must outlive the page
+    if (window.NopaUndo && window.NopaUndo.flushing) fetchOptions.keepalive = true;
     const res = await fetch(url, fetchOptions);
 
     if (res.status === 403) {
