@@ -9,6 +9,7 @@ import 'package:nopa_app/core/asset_names.dart';
 import 'package:nopa_app/core/challenge_taxonomy.dart';
 import 'dart:async';
 import 'package:nopa_app/widgets/app_toast.dart';
+import 'package:nopa_app/widgets/panel_banner_strip.dart';
 import 'package:flutter/material.dart' hide Text;
 import 'package:nopa_app/widgets/fa_text.dart';
 import 'package:flutter_svg/flutter_svg.dart';
@@ -32,7 +33,6 @@ class StudentChallengesScreen extends StatefulWidget {
 class _ChallengesScreenState extends State<StudentChallengesScreen> {
   // 0: فردی, 1: گروهی, 2: میان گروهی
   int _selectedCategoryIndex = 0;
-  final GlobalKey _bannerKey = GlobalKey();
   // 0: درون گروهی, 1: میان گروهی (ویژه راهبر)
   int _mentorSelectedCategoryIndex = 0;
   final Set<String> _expandedChallengeIds = {};
@@ -41,15 +41,10 @@ class _ChallengesScreenState extends State<StudentChallengesScreen> {
 
   final PageController _pageCtrl = PageController();
   final PageController _mentorPageCtrl = PageController();
-  late final PageController _bannerPageCtrl;
-  int _currentBannerIndex = 0;
-  Timer? _bannerAutoScrollTimer;
 
   @override
   void initState() {
     super.initState();
-    _bannerPageCtrl = PageController(viewportFraction: 0.92);
-    _startBannerAutoScroll();
     challengeFocusRequest.addListener(_applyFocusRequest);
     _applyFocusRequest();
     _loadStationNumbers();
@@ -61,21 +56,6 @@ class _ChallengesScreenState extends State<StudentChallengesScreen> {
     });
   }
 
-  void _startBannerAutoScroll() {
-    _bannerAutoScrollTimer?.cancel();
-    _bannerAutoScrollTimer = Timer.periodic(const Duration(seconds: 5), (timer) {
-      if (!mounted || !_bannerPageCtrl.hasClients) return;
-      try {
-        final int nextIndex = (_currentBannerIndex + 1) % 3;
-        _currentBannerIndex = nextIndex;
-        _bannerPageCtrl.animateToPage(
-          nextIndex,
-          duration: const Duration(milliseconds: 600),
-          curve: Curves.easeInOutCubic,
-        );
-      } catch (_) {}
-    });
-  }
 
   Future<void> _loadStationNumbers() async {
     try {
@@ -128,8 +108,6 @@ class _ChallengesScreenState extends State<StudentChallengesScreen> {
   @override
   void dispose() {
     challengeFocusRequest.removeListener(_applyFocusRequest);
-    _bannerAutoScrollTimer?.cancel();
-    _bannerPageCtrl.dispose();
     _pageCtrl.dispose();
     _mentorPageCtrl.dispose();
     super.dispose();
@@ -1155,72 +1133,8 @@ class _ChallengesScreenState extends State<StudentChallengesScreen> {
   }
 
 
-  /// Clean Banner Slider (No text overlay) with 3 animated indicator dots
-  Widget _buildStationBannerSlider() {
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        SizedBox(
-          key: _bannerKey,
-          height: 82,
-          child: PageView.builder(
-            controller: _bannerPageCtrl,
-            itemCount: 3,
-            onPageChanged: (index) {
-              setState(() => _currentBannerIndex = index);
-            },
-            itemBuilder: (context, index) {
-              return Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 4.0),
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(18),
-                  child: Image.asset(
-                    'assets/images/banners/banner1.jpg',
-                    fit: BoxFit.cover,
-                    errorBuilder: (context, error, stackTrace) => Container(
-                      decoration: const BoxDecoration(
-                        gradient: LinearGradient(
-                          colors: [Color(0xFF5A3825), Color(0xFF382318)],
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight,
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-              );
-            },
-          ),
-        ),
-
-        const SizedBox(height: 8),
-
-        // 3 Animated Dot Indicators
-        Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: List.generate(
-            3,
-            (index) {
-              final bool isActive = _currentBannerIndex == index;
-
-              return AnimatedContainer(
-                duration: const Duration(milliseconds: 300),
-                margin: const EdgeInsets.symmetric(horizontal: 3),
-                width: isActive ? 18 : 6,
-                height: 6,
-                decoration: BoxDecoration(
-                  color: isActive
-                      ? const Color(0xFFCD8449)
-                      : Colors.white.withValues(alpha: 0.25),
-                  borderRadius: BorderRadius.circular(3),
-                ),
-              );
-            },
-          ),
-        ),
-      ],
-    );
-  }
+  /// Banner slider fed by the panel (position challenges_top)
+  Widget _buildStationBannerSlider() => const PanelBannerStrip(position: 'challenges_top');
 
   /// Category Tabs: فردی / گروهی / میان گروهی (Strictly equal distances with گروهی dead-center)
   Widget _buildCategoryTabsBar() {

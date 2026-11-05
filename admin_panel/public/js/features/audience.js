@@ -155,7 +155,7 @@ function usrDrawBento() {
   if (grid) {
     const cards = list.map(usrCard);
     if (!filtering && usersPage === 1) {
-      cards.push(`
+      cards.unshift(`
         <button type="button" class="crv-card crv-card-add" data-anim-key="us-add" data-click="openUserModal" title="ثبت همسفر جدید">
           <span class="lsv-round lsv-round-lg"><i class="fa-solid fa-plus"></i></span>
           <span>همسفر جدید</span>
@@ -317,7 +317,7 @@ window.openUserLevelPage = function(level) {
 };
 
 function usrCircles(activeId) {
-  return (window.usrList || []).map(u => {
+  const items = (window.usrList || []).map(u => {
     const active = String(u.id) === String(activeId);
     const state = u.blocked || usrSuspended(u) ? 'lsv-state-locked' : usrProblems(u).length ? 'lsv-state-scheduled' : 'lsv-state-active';
     return `
@@ -328,14 +328,14 @@ function usrCircles(activeId) {
         </span>
         <span class="lsv-circle-name"><span>${esc(u.name || '')}</span></span>
       </button>`;
-  }).join('') + `
-      <button type="button" class="lsv-circle lsv-circle-add" data-anim-key="uc-add" data-click="openUserModal" title="همسفر جدید" aria-label="همسفر جدید">
+  }).join('');
+  return `<button type="button" class="lsv-circle lsv-circle-add" data-anim-key="uc-add" data-click="openUserModal" title="همسفر جدید" aria-label="همسفر جدید">
         <span class="lsv-circle-main">
           <span class="lsv-circle-img"><i class="fa-solid fa-plus"></i></span>
           <span class="lsv-circle-badge lsv-state-add"><i class="fa-solid fa-plus"></i></span>
         </span>
         <span class="lsv-circle-name"><span>همسفر جدید</span></span>
-      </button>`;
+      </button>` + items;
 }
 
 function usrInfoCard(u, a) {

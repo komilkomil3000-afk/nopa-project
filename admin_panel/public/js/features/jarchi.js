@@ -19,6 +19,7 @@ const JCH_AUDIENCE = { ALL: ['عمومی', 'fa-users'], STUDENTS: ['نوجوان
 const JCH_POSITION = {
   home_top: ['بالای صفحه اصلی', 'fa-house'],
   bazaar_top: ['بالای صفحه بازار', 'fa-store'],
+  challenges_top: ['بالای صفحه چالش‌ها', 'fa-trophy'],
   lms_slider: ['آموزش و منزلگاه', 'fa-graduation-cap'],
   general: ['عمومی', 'fa-globe'],
 };

@@ -143,7 +143,7 @@ export async function submitStudentAssetConversion(req: AuthRequest, res: Respon
         await prisma.notification.create({
           data: {
             userId: caravan.mentorId,
-            title: 'مبادله سرمایه',
+            title: 'صرافی سرمایه',
             message: `${user.name}: ${reqRecord.note}`,
             type: 'alert',
           },
@@ -172,21 +172,21 @@ export async function cancelAssetConversion(req: AuthRequest, res: Response) {
       include: { caravan: { select: { mentorId: true } } },
     });
     if (!conversion || conversion.status !== 'completed') {
-      return res.status(404).json({ error: 'مبادله معتبر یافت نشد' });
+      return res.status(404).json({ error: 'صرافی معتبر یافت نشد' });
     }
     if (!isAdmin) {
       if (conversion.caravan.mentorId !== req.user!.id) {
-        return res.status(403).json({ error: 'تنها راهبر همین کاروان می‌تواند مبادله را لغو کند' });
+        return res.status(403).json({ error: 'تنها راهبر همین کاروان می‌تواند صرافی را لغو کند' });
       }
       if (Date.now() - conversion.createdAt.getTime() > CONVERSION_CANCEL_WINDOW_MS) {
-        return res.status(400).json({ error: 'مهلت ۲۴ ساعته لغو این مبادله به پایان رسیده است' });
+        return res.status(400).json({ error: 'مهلت ۲۴ ساعته لغو این صرافی به پایان رسیده است' });
       }
     }
 
     const from = ASSET_FIELDS[conversion.sourceAsset || ''];
     const to = ASSET_FIELDS[conversion.targetAsset || ''];
     if (!from || !to || !conversion.sourceAmount || !conversion.targetAmount) {
-      return res.status(400).json({ error: 'اطلاعات این مبادله برای لغو کافی نیست' });
+      return res.status(400).json({ error: 'اطلاعات این صرافی برای لغو کافی نیست' });
     }
     const sourceAmount = conversion.sourceAmount;
     const targetAmount = conversion.targetAmount;
@@ -200,15 +200,15 @@ export async function cancelAssetConversion(req: AuthRequest, res: Response) {
         });
         if (claimed.count !== 1) throw new Error('ALREADY_HANDLED');
         // The student must still hold the converted capital; no negative balances allowed
-        const ledgerReason = `لغو مبادله: ${conversion.note}`;
+        const ledgerReason = `لغو صرافی: ${conversion.note}`;
         const entry = { userId: conversion.requestedBy, sourceType: 'conversion_cancel', sourceId: id, reason: ledgerReason, createdBy: req.user!.id, zarikCategory: 'Asset Exchange' };
         await changeBalance(tx, { ...entry, asset: to, amount: -targetAmount });
         await changeBalance(tx, { ...entry, asset: from, amount: sourceAmount });
       });
     } catch (e: any) {
-      if (e?.message === 'ALREADY_HANDLED') return res.status(404).json({ error: 'مبادله معتبر یافت نشد' });
+      if (e?.message === 'ALREADY_HANDLED') return res.status(404).json({ error: 'صرافی معتبر یافت نشد' });
       if (e?.message === 'INSUFFICIENT_BALANCE') {
-        return res.status(400).json({ error: 'دانش‌آموز سرمایه‌ی تبدیل‌شده را خرج کرده و بازگرداندن مبادله ممکن نیست' });
+        return res.status(400).json({ error: 'دانش‌آموز سرمایه‌ی تبدیل‌شده را خرج کرده و بازگرداندن صرافی ممکن نیست' });
       }
       throw e;
     }
@@ -216,8 +216,8 @@ export async function cancelAssetConversion(req: AuthRequest, res: Response) {
     await prisma.notification.create({
       data: {
         userId: conversion.requestedBy,
-        title: 'مبادله لغو شد',
-        message: `مبادله «${conversion.note}» توسط راهبر لغو شد و سرمایه‌های شما بازگردانده شد.${reason ? ` علت: ${reason}` : ''}`,
+        title: 'صرافی لغو شد',
+        message: `صرافی «${conversion.note}» توسط راهبر لغو شد و سرمایه‌های شما بازگردانده شد.${reason ? ` علت: ${reason}` : ''}`,
         type: 'alert',
       },
     });

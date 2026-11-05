@@ -174,7 +174,7 @@ function mntDrawBento() {
   if (grid) {
     const cards = list.map(mntMentorCard);
     if (!filtering) {
-      cards.push(`
+      cards.unshift(`
         <button type="button" class="crv-card crv-card-add" data-anim-key="mn-add" data-click="showMentorModal" title="ثبت راهبر جدید">
           <span class="lsv-round lsv-round-lg"><i class="fa-solid fa-plus"></i></span>
           <span>راهبر جدید</span>
@@ -352,7 +352,7 @@ window.openMentorCaravanPage = function(caravanId) {
 };
 
 function mntCircles(m, activeId) {
-  return mntCaravansOf(m).map(c => {
+  const items = mntCaravansOf(m).map(c => {
     const active = String(c.id) === String(activeId);
     return `
       <button type="button" class="lsv-circle${active ? ' is-active' : ''}" data-anim-key="mc:${esc(c.id)}" data-click="selectMentorCaravan" data-click-args="${crvArgs(c.id)}" title="${esc(c.name)}"${active ? ' aria-current="true"' : ''}>
@@ -362,14 +362,14 @@ function mntCircles(m, activeId) {
         </span>
         <span class="lsv-circle-name"><span>${esc(c.name)}</span></span>
       </button>`;
-  }).join('') + `
-      <button type="button" class="lsv-circle lsv-circle-add" data-anim-key="mc-add" data-click="openAssignMentorCaravans" title="تخصیص کاروان به این راهبر" aria-label="تخصیص کاروان به این راهبر">
+  }).join('');
+  return `<button type="button" class="lsv-circle lsv-circle-add" data-anim-key="mc-add" data-click="openAssignMentorCaravans" title="تخصیص کاروان به این راهبر" aria-label="تخصیص کاروان به این راهبر">
         <span class="lsv-circle-main">
           <span class="lsv-circle-img"><i class="fa-solid fa-plus"></i></span>
           <span class="lsv-circle-badge lsv-state-add"><i class="fa-solid fa-plus"></i></span>
         </span>
         <span class="lsv-circle-name"><span>تخصیص کاروان</span></span>
-      </button>`;
+      </button>` + items;
 }
 
 function mntInfoCard(m, dossier) {
@@ -510,7 +510,7 @@ function mntPaint(m, dossier) {
         <span class="lsv-row-avatar lsv-row-plus"><i class="fa-solid fa-plus"></i></span>
         <span class="lsv-row-text"><strong>تخصیص کاروان</strong><span>کاروان‌هایی که «${esc(m.name || '')}» راهبرشان است</span></span>
       </button>`;
-    el.innerHTML = (caravans.length ? caravans.map(c => mntCaravanRow(c, String(c.id) === String(activeId))).join('') : '<div class="lsv-col-empty">این راهبر هنوز کاروانی ندارد.</div>') + addRow;
+    el.innerHTML = addRow + (caravans.length ? caravans.map(c => mntCaravanRow(c, String(c.id) === String(activeId))).join('') : '<div class="lsv-col-empty">این راهبر هنوز کاروانی ندارد.</div>');
   });
   window.renderMentorStudents();
 }

@@ -70,6 +70,7 @@ function urpPaint(payload) {
   document.getElementById('urp-head-avatar').outerHTML = crvAvatar(user.avatarUrl, name, 'lse-id-icon is-accent urp-head-avatar').replace('<span class="', '<span id="urp-head-avatar" class="');
   document.querySelector('#urp-tabs [data-urp-tab="mentor"]').hidden = !mentor;
   document.getElementById('urp-foot-actions').innerHTML = `
+    <button type="button" class="lse-btn" data-click="giftUserAsset" data-click-args="${crvArgs(user.id)}"><i class="fa-solid fa-gift"></i> هدیه دارایی</button>
     <button type="button" class="lse-btn" data-click="openPersonSitePhoto" data-click-args="${crvArgs(user.id, 'urp')}"><i class="fa-solid fa-image"></i> عکس سایت</button>
     <button type="button" class="lse-btn" data-click="openPasswordOverride" data-click-args="${crvArgs(user.id)}"><i class="fa-solid fa-key"></i> تغییر رمز</button>
     <button type="button" class="lse-btn urp-danger" data-click="setAccountStatus" data-click-args="${crvArgs(user.id, 'SUSPENDED')}"><i class="fa-solid fa-user-slash"></i> تعلیق حساب</button>`;
@@ -185,6 +186,15 @@ function urpPaint(payload) {
   NopaPhoto.remount();
   if (window.NopaFlip) window.NopaFlip.enter(document.querySelectorAll('#drawer-body-info .urp-pane.is-active > .lse-card'));
 }
+
+// «هدیه دارایی»: the wallet's transaction dialog (zarik, کلاف, قالیچه, درفش) opened on this person, above the report
+window.giftUserAsset = function(userId) {
+  window.openWalletAdjust(String(userId));
+  const m = document.getElementById('wlt-adjust-modal');
+  if (m) m.style.zIndex = 'calc(var(--z-modal) + 1)';
+};
+// After a balance changed from that dialog, the open report shows the new assets
+window.urpRefresh = function() { if (urpUserId) viewUserDetails(urpUserId); };
 
 window.closeUserDetailDrawer = function() {
   urpUserId = null;

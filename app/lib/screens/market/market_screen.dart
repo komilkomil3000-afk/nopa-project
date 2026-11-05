@@ -147,7 +147,7 @@ class _MarketScreenState extends State<MarketScreen> {
   }
 
   // Mentor Market States
-  int _selectedMentorMarketTab = 0; // 0: گزارش اعضا, 1: مبادلات
+  int _selectedMentorMarketTab = 0; // 0: گزارش اعضا, 1: صرافی‌ها
   final Set<String> _expandedMemberAssetIds = {};
   final Set<String> _expandedExchangeIds = {};
 
@@ -327,7 +327,7 @@ class _MarketScreenState extends State<MarketScreen> {
     setState(() => _activeActionButton = 1);
     final double amount = double.tryParse(_amountController.text) ?? 0.0;
     if (amount <= 0) {
-      AppToast.error(context, 'لطفاً مقدار معتبری برای مبادله وارد کنید.');
+      AppToast.error(context, 'لطفاً مقدار معتبری برای صرافی وارد کنید.');
       return;
     }
 
@@ -409,7 +409,7 @@ class _MarketScreenState extends State<MarketScreen> {
 
                       // Title in center
                       const Text(
-                        'انجام مبادله',
+                        'انجام صرافی',
                         style: AppTypography.h2,
                       ),
                     ],
@@ -485,7 +485,7 @@ class _MarketScreenState extends State<MarketScreen> {
 
                   // Description text
                   Text(
-                    'مبادله‌ی شما بلافاصله پس از تایید انجام می‌شود و اطلاعات آن برای راهبر شما ارسال خواهد شد. نیازی به تایید راهبر نیست.',
+                    'صرافی شما بلافاصله پس از تایید انجام می‌شود و اطلاعات آن برای راهبر شما ارسال خواهد شد. نیازی به تایید راهبر نیست.',
                     textAlign: TextAlign.justify,
                     style: AppTypography.caption.copyWith(color: Color(0xFFB3AFD0)),
                   ),
@@ -509,7 +509,7 @@ class _MarketScreenState extends State<MarketScreen> {
                           );
                           if (mounted) {
                             if (error == null) {
-                              AppToast.success(context, 'مبادله انجام شد و راهبر از آن مطلع شد');
+                              AppToast.success(context, 'صرافی انجام شد و راهبر از آن مطلع شد');
                               repository.refreshUser();
                               _loadLeaderboards();
                             } else {
@@ -518,7 +518,7 @@ class _MarketScreenState extends State<MarketScreen> {
                           }
                         },
                         child: Text(
-                          'انجام مبادله',
+                          'انجام صرافی',
                           style: AppTypography.h3Strong.copyWith(color: AppColors.buttonCamel),
                         ),
                       ),
@@ -676,7 +676,7 @@ class _MarketScreenState extends State<MarketScreen> {
                 const SizedBox(height: 24),
               ],
 
-              // 4. Section 3: مبادله (for students) or گزارش اعضا و مبادلات (for mentor)
+              // 4. Section 3: صرافی (for students) or گزارش اعضا و صرافی‌ها (for mentor)
               if (isMentor)
                 _buildMentorMarketSection()
               else
@@ -948,7 +948,7 @@ class _MarketScreenState extends State<MarketScreen> {
     );
   }
 
-  /// Mentor Market Section: [گزارش اعضا] & [مبادلات]
+  /// Mentor Market Section: [گزارش اعضا] & [صرافی‌ها]
   Widget _buildMentorMarketSection() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -958,7 +958,7 @@ class _MarketScreenState extends State<MarketScreen> {
             selected: _selectedMentorMarketTab,
             tabs: const [
               NopaPillTab<int>(0, 'گزارش اعضا'),
-              NopaPillTab<int>(1, 'مبادلات'),
+              NopaPillTab<int>(1, 'صرافی‌ها'),
             ],
             onChanged: (v) => setState(() => _selectedMentorMarketTab = v),
           ),
@@ -1296,7 +1296,7 @@ class _MarketScreenState extends State<MarketScreen> {
   /// List of Student Exchange Requests for Mentor
   Widget _buildMentorExchangesList() {
     if (_mentorExchangeRequests.isEmpty) {
-      return _marketStatusPlaceholder(isEmpty: true, emptyText: 'هیچ مبادله‌ای ثبت نشده است')!;
+      return _marketStatusPlaceholder(isEmpty: true, emptyText: 'هیچ صرافی‌ای ثبت نشده است')!;
     }
 
     return ListView.separated(
@@ -1352,7 +1352,7 @@ class _MarketScreenState extends State<MarketScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            // Header Row (مبادله سمت راست، نام فرد سمت چپ)
+            // Header Row (صرافی سمت راست، نام فرد سمت چپ)
             TapExpander(child: InkWell(
               onTap: () {
                 setState(() {
@@ -1392,7 +1392,7 @@ class _MarketScreenState extends State<MarketScreen> {
                   textDirection: TextDirection.rtl,
                   child: Row(
                     children: [
-                      // 1. Right side in RTL: مبادله (آیکون مبادله + عنوان مبادله)
+                      // 1. Right side in RTL: صرافی (آیکون صرافی + عنوان صرافی)
                       Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
@@ -1483,7 +1483,7 @@ class _MarketScreenState extends State<MarketScreen> {
 
                       const Spacer(),
 
-                      // 2. Left side in RTL: وضعیت مبادله و دکمه لغو (فقط مشاهده؛ تایید لازم نیست)
+                      // 2. Left side in RTL: وضعیت صرافی و دکمه لغو (فقط مشاهده؛ تایید لازم نیست)
                       Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
@@ -1504,7 +1504,7 @@ class _MarketScreenState extends State<MarketScreen> {
                                   _showRejectExplanationDialog(
                                     memberName: studentName,
                                     requestDate: date,
-                                    requestSubject: 'لغو مبادله: $title',
+                                    requestSubject: 'لغو صرافی: $title',
                                     onConfirmReject: (reason) async {
                                       if (!mounted) return;
                                       // Shown as cancelled at once; sent only if not undone within the undo time
@@ -1512,7 +1512,7 @@ class _MarketScreenState extends State<MarketScreen> {
                                       setState(() => request['status'] = 'cancelled');
                                       AppToast.undoable(
                                         context,
-                                        'مبادله لغو و سرمایه‌ها به دانش‌آموز بازگردانده شد.',
+                                        'صرافی لغو و سرمایه‌ها به دانش‌آموز بازگردانده شد.',
                                         commit: () async {
                                           final error = await HttpApiService().cancelCaravanAssetConversion(reqId, reason: reason);
                                           if (mounted) _loadMarketData();
@@ -1536,7 +1536,7 @@ class _MarketScreenState extends State<MarketScreen> {
                                     ),
                                   ),
                                   child: Text(
-                                    'لغو مبادله',
+                                    'لغو صرافی',
                                     style: AppTypography.caption.copyWith(color: Color(0xFFDCD7F5)),
                                   ),
                                 ),
@@ -1778,7 +1778,7 @@ class _MarketScreenState extends State<MarketScreen> {
     ));
   }
 
-  /// Section 3: مبادله - Purple Box based on Station Card with black selector boxes and responsive layout
+  /// Section 3: صرافی - Purple Box based on Station Card with black selector boxes and responsive layout
   Widget _buildExchangePanel() {
     _normalizeExchangePair();
     final String resultDisplay = _calculatedResult % 1 == 0
@@ -1793,7 +1793,7 @@ class _MarketScreenState extends State<MarketScreen> {
           child: Align(
             alignment: Alignment.centerRight,
             child: Text(
-              'مبادله',
+              'صرافی',
               style: AppTypography.h2,
             ),
           ),
@@ -1857,7 +1857,7 @@ class _MarketScreenState extends State<MarketScreen> {
 
                           // 2. Description text
                           Text(
-                            'پس از تعیین مقدار مبادله، دکمه‌ی انجام مبادله را بزنید. مبادله بلافاصله انجام می‌شود و اطلاعات آن برای راهبر ارسال می‌شود؛ نیازی به تایید راهبر نیست.',
+                            'پس از تعیین مقدار صرافی، دکمه‌ی انجام صرافی را بزنید. صرافی بلافاصله انجام می‌شود و اطلاعات آن برای راهبر ارسال می‌شود؛ نیازی به تایید راهبر نیست.',
                             textAlign: TextAlign.justify,
                             style: AppTypography.caption.copyWith(color: Color(0xFFC7C5DD)),
                           ),
@@ -1877,7 +1877,7 @@ class _MarketScreenState extends State<MarketScreen> {
                               const SizedBox(width: 10),
                               Expanded(
                                 child: _buildInteractiveActionButton(
-                                  text: 'انجام مبادله',
+                                  text: 'انجام صرافی',
                                   isActive: _activeActionButton == 1,
                                   strokeBorderColor: AppColors.buttonCamel,
                                   onTap: _submitExchangeRequest,
@@ -1903,7 +1903,7 @@ class _MarketScreenState extends State<MarketScreen> {
                               Padding(
                                 padding: EdgeInsets.only(left: 6.0, top: 2.0),
                                 child: Text(
-                                  'پس از تعیین مقدار مبادله، دکمه‌ی انجام مبادله را بزنید. مبادله بلافاصله انجام می‌شود و اطلاعات آن برای راهبر ارسال می‌شود؛ نیازی به تایید راهبر نیست.',
+                                  'پس از تعیین مقدار صرافی، دکمه‌ی انجام صرافی را بزنید. صرافی بلافاصله انجام می‌شود و اطلاعات آن برای راهبر ارسال می‌شود؛ نیازی به تایید راهبر نیست.',
                                   textAlign: TextAlign.justify,
                                   style: AppTypography.caption.copyWith(color: Color(0xFFC7C5DD)),
                                 ),
@@ -1922,7 +1922,7 @@ class _MarketScreenState extends State<MarketScreen> {
                                   const SizedBox(width: 8),
                                   Expanded(
                                     child: _buildInteractiveActionButton(
-                                      text: 'انجام مبادله',
+                                      text: 'انجام صرافی',
                                       isActive: _activeActionButton == 1,
                                       strokeBorderColor: AppColors.buttonCamel,
                                       onTap: _submitExchangeRequest,

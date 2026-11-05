@@ -213,7 +213,7 @@ window.lmsSaveInBackground = async function(requests, okMessage, errMessage, onF
       match: e => pickItem(e, '#lms-station-view .lsv-row[data-session-id]', '.lsv-row-grip'),
       containers: item => Array.from(item.closest('.lsv-flow').querySelectorAll('.lsv-col-card[data-cat-id]')),
       items: card => Array.from(card.querySelectorAll(':scope > .lsv-row[data-session-id]')),
-      anchor: card => card.querySelector(':scope > .lsv-row-add'),
+      anchor: () => null, // the «جدید» row is first, so a dropped row goes to the end
       scroller: item => item.closest('.lsv-flow'),
       highlightTarget: true,
       beforeInsert: card => card.querySelector(':scope > .lsv-col-empty')?.remove(),
@@ -248,7 +248,7 @@ window.lmsSaveInBackground = async function(requests, okMessage, errMessage, onF
       },
       containers: item => [item.parentElement],
       items: grid => Array.from(grid.querySelectorAll(':scope > .lst-station-card[data-station-id]')),
-      anchor: grid => grid.querySelector(':scope > .lst-station-card-add'),
+      anchor: () => null, // the «جدید» card is first
       scroller: () => null,
       commit: (item, grid, _to, sortable) => saveStationOrder(sortable.items(grid).map(c => c.getAttribute('data-station-id')))
     },
@@ -258,7 +258,7 @@ window.lmsSaveInBackground = async function(requests, okMessage, errMessage, onF
       match: e => pickItem(e, '#lms-station-view .lsv-circle[data-station-id]', null),
       containers: item => [item.parentElement],
       items: notch => Array.from(notch.querySelectorAll(':scope > .lsv-circle[data-station-id]')),
-      anchor: notch => notch.querySelector(':scope > .lsv-circle-add'),
+      anchor: () => null, // the «جدید» circle is first
       scroller: item => item.parentElement,
       commit: (item, notch, _to, sortable) => saveStationOrder(sortable.items(notch).map(c => c.getAttribute('data-station-id')))
     },

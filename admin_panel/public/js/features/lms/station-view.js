@@ -234,7 +234,7 @@ function lmsDrawBento(list) {
         </button>`;
     });
     if (!list || list === all) {
-      cards.push(`
+      cards.unshift(`
         <button type="button" class="lst-station-card lst-station-card-add" data-anim-key="st-add" data-click="openCreateStationModal" title="ایجاد منزلگاه جدید">
           <span class="app-station-card">
             <span class="app-station-inner app-station-add">
@@ -426,7 +426,7 @@ window.renderLmsStationView = function() {
   const sid = lmsArgs(st.id);
 
   // ---- station circles (notch at the top of the board); the last one, on the left, adds a station ----
-  const circles = all.map((s, i) => {
+  const stationCircles = all.map((s, i) => {
     const sImg = lmsStationImage(s);
     const sNum = lmsStationNumber(s, i);
     const sName = s.title || `منزلگاه ${sNum}`;
@@ -439,14 +439,14 @@ window.renderLmsStationView = function() {
         </span>
         <span class="lsv-circle-name"><span>${esc(sName)}</span></span>
       </button>`;
-  }).join('') + `
-      <button type="button" class="lsv-circle lsv-circle-add" data-anim-key="c-add" data-click="openCreateStationModal" title="افزودن منزلگاه جدید" aria-label="افزودن منزلگاه جدید">
+  }).join('');
+  return `<button type="button" class="lsv-circle lsv-circle-add" data-anim-key="c-add" data-click="openCreateStationModal" title="افزودن منزلگاه جدید" aria-label="افزودن منزلگاه جدید">
         <span class="lsv-circle-main">
           <span class="lsv-circle-img"><i class="fa-solid fa-plus"></i></span>
           <span class="lsv-circle-badge lsv-state-add"><i class="fa-solid fa-plus"></i></span>
         </span>
         <span class="lsv-circle-name"><span>افزودن منزلگاه جدید</span></span>
-      </button>`;
+      </button>` + stationCircles;
 
   // ---- one column per category: its sessions as rows, then a "+" row ----
   const columns = cats.map((c, ci) => {
@@ -482,11 +482,11 @@ window.renderLmsStationView = function() {
             <span class="lsv-col-grip" title="برای جابجایی دسته بکشید" aria-hidden="true"><i class="fa-solid fa-grip-lines"></i></span>
             ${lmsRoundBtn('fa-solid fa-trash', 'حذف دسته', 'lmsDeleteCategoryFromView', lmsArgs(c.id, st.id), 'lsv-round-danger')}
           </div>
-          ${rows || `<div class="lsv-col-empty">هنوز جلسه‌ای ندارد</div>`}
           <button type="button" class="lsv-row lsv-row-add" data-click="lmsAddSessionFromView" data-click-args="${lmsArgs(c.id, st.id)}">
             <span class="lsv-row-avatar lsv-row-plus"><i class="fa-solid fa-plus"></i></span>
             <span class="lsv-row-text"><strong>جلسه / پارت جدید</strong><span>افزودن به «${esc(c.title || '')}»</span></span>
           </button>
+          ${rows || `<div class="lsv-col-empty">هنوز جلسه‌ای ندارد</div>`}
         </div>
         <div class="lsv-col-label"><span class="lsv-col-dot" data-style="background:${color}"></span> دسته ${ci + 1}: ${esc(c.title || '')} <span class="lsv-col-count">${sessions.length}</span></div>
       </div>`;
@@ -509,7 +509,7 @@ window.renderLmsStationView = function() {
           <h4>بخش‌ها و پارت‌های منزلگاه</h4>
           <span>${sum.categories} دسته · ${sum.sessions} جلسه · ${sum.parts} پارت</span>
         </div>
-        <div class="lsv-notch-wrap"><nav class="lsv-notch" aria-label="منزلگاه‌ها">${circles}</nav></div>
+        <div class="lsv-notch-wrap"><nav class="lsv-notch" aria-label="منزلگاه‌ها">${stationCircles}</nav></div>
         <div class="lsv-round-group">
           ${lmsRoundBtn('fa-solid fa-pen', 'ویرایش مشخصات', 'editStationModal', sid)}
           ${lmsRoundBtn('fa-solid fa-key', 'دسترسی و بازگشایی', 'openStationAccessModal', sid)}

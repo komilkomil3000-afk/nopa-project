@@ -170,7 +170,7 @@ function crvDrawBento() {
         </button>`;
     });
     if (!searchQuery && mentorFilter === 'all') {
-      cards.push(`
+      cards.unshift(`
         <button type="button" class="crv-card crv-card-add" data-anim-key="cv-add" data-click="openCaravanWizard" title="ساخت کاروان جدید">
           <span class="lsv-round lsv-round-lg"><i class="fa-solid fa-plus"></i></span>
           <span>کاروان جدید</span>
@@ -824,7 +824,7 @@ function crvCaravanCircles(selectedId) {
   // the picture editor belongs to one caravan: switching caravans closes it
   const photo = document.getElementById('crv-photo-slot');
   if (photo && photo.dataset.nphSlot && photo.dataset.nphSlot !== `crv:${selectedId}` && !photo.hidden) NopaPhoto.close();
-  return (window.caravansData || []).map(c => {
+  const items = (window.caravansData || []).map(c => {
     const active = String(c.id) === String(selectedId);
     return `
       <button type="button" class="lsv-circle${active ? ' is-active' : ''}" data-anim-key="c:${esc(c.id)}" data-click="selectCaravanCircle" data-click-args="${crvArgs(c.id)}" title="${esc(c.name)}"${active ? ' aria-current="true"' : ''}>
@@ -834,14 +834,14 @@ function crvCaravanCircles(selectedId) {
         </span>
         <span class="lsv-circle-name"><span>${esc(c.name)}</span></span>
       </button>`;
-  }).join('') + `
-      <button type="button" class="lsv-circle lsv-circle-add" data-anim-key="c-add" data-click="openCaravanWizard" title="ساخت کاروان جدید" aria-label="ساخت کاروان جدید">
+  }).join('');
+  return `<button type="button" class="lsv-circle lsv-circle-add" data-anim-key="c-add" data-click="openCaravanWizard" title="ساخت کاروان جدید" aria-label="ساخت کاروان جدید">
         <span class="lsv-circle-main">
           <span class="lsv-circle-img"><i class="fa-solid fa-plus"></i></span>
           <span class="lsv-circle-badge lsv-state-add"><i class="fa-solid fa-plus"></i></span>
         </span>
         <span class="lsv-circle-name"><span>ساخت کاروان جدید</span></span>
-      </button>`;
+      </button>` + items;
 }
 
 // The leader's card; until the details arrive only the name is known and the rest shimmers
@@ -920,7 +920,7 @@ function crvPaint(caravan, detail) {
         <span class="lsv-row-avatar lsv-row-plus"><i class="fa-solid fa-plus"></i></span>
         <span class="lsv-row-text"><strong>عضو جدید</strong><span>افزودن دانش‌آموز به «${esc(caravan.name || '')}»</span></span>
       </button>`;
-    el.innerHTML = (members.length ? members.map(m => crvMemberRow(m, cId)).join('') : '<div class="lsv-col-empty">این کاروان هنوز عضوی ندارد.</div>') + addRow;
+    el.innerHTML = addRow + (members.length ? members.map(m => crvMemberRow(m, cId)).join('') : '<div class="lsv-col-empty">این کاروان هنوز عضوی ندارد.</div>');
   });
 
   // The assets column: the server's totals, the same ones «برترین کاروان‌ها» in the app counts (students only;

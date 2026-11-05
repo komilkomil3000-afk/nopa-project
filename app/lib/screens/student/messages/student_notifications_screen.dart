@@ -150,7 +150,7 @@ class _NotificationsScreenState extends State<StudentNotificationsScreen> {
     if (title.contains('تکلیف') || title.contains('پاسخ جدید') || title.contains('آزمون')) {
       return const _NotifAction('مشاهده', _NotifTarget.challenges);
     }
-    if (title.contains('مبادله')) {
+    if (title.contains('مبادله') || title.contains('صرافی')) {
       return const _NotifAction('مشاهده', _NotifTarget.market);
     }
     if (title.contains('ارزیابی')) {

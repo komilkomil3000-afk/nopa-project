@@ -654,6 +654,7 @@ function wltAfterBalanceChange() {
   loadZarikAnalytics();
   loadAssetLeaderboard();
   loadAllUsersDropdown();
+  if (typeof window.urpRefresh === 'function') window.urpRefresh();
 }
 window.wltAfterBalanceChange = wltAfterBalanceChange;
 
