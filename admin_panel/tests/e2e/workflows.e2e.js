@@ -109,7 +109,7 @@ run(async () => {
   await wait(400);
   const chSpace = await spaceOf(a1, 'challenges');
   const card = (await call(a1, 'GET', `/chat/spaces/${chSpace.id}/messages`)).body.messages.at(-1);
-  assert.equal(card.kind, 'challenge'); assert.equal(card.meta.tag, 'درون‌گروهی'); assert.equal(card.meta.stationTitle, 'منزلگاه یک');
+  assert.equal(card.kind, 'challenge'); assert.equal(card.meta.tag, 'گروهی'); // «چالش گروهی» in «فرهنگ اصطلاحات» assert.equal(card.meta.stationTitle, 'منزلگاه یک');
   assert.ok(card.meta.creatorName); assert.ok(card.topic.id);
   const topicId = card.topic.id;
   assert.equal((await call(b1, 'GET', `/chat/spaces/${chSpace.id}/messages`)).status, 404);

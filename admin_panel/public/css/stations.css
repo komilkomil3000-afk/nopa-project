@@ -3012,3 +3012,7 @@ button.nbr-rank-row:hover { background: rgb(var(--primary-rgb) / 0.08); }
 @media (max-width: 900px) {
   .chl-gls-grid { grid-template-columns: 1fr; }
 }
+/* the shared input style flattens a colour picker into a line: give the swatch its room */
+#chl-gls-modal input[type="color"].input-ctrl { height: 42px; padding: 4px 6px; cursor: pointer; }
+#chl-gls-modal input[type="color"].input-ctrl::-webkit-color-swatch-wrapper { padding: 0; }
+#chl-gls-modal input[type="color"].input-ctrl::-webkit-color-swatch { border: none; border-radius: 8px; }
