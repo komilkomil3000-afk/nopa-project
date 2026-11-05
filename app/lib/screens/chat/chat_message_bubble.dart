@@ -59,6 +59,9 @@ class ChatMessageBubble extends StatefulWidget {
   /// The box into the conversation under this message; null where there is none.
   final VoidCallback? onOpenThread;
   final VoidCallback? onOpenSender;
+
+  /// A tap on the quoted reply: goes to the message it answers. Null keeps the quote a plain part of the bubble.
+  final VoidCallback? onOpenReply;
   final VoidCallback onRetry;
   final void Function(String type) onReact;
 
@@ -77,6 +80,7 @@ class ChatMessageBubble extends StatefulWidget {
     required this.onTap,
     required this.onOpenThread,
     this.onOpenSender,
+    this.onOpenReply,
     required this.onRetry,
     required this.onReact,
   });
@@ -325,7 +329,7 @@ class _ChatMessageBubbleState extends State<ChatMessageBubble> {
 
   Widget _quote() {
     final edge = _mineLook ? ChatTheme.lavender : ChatTheme.goldTitle;
-    return Container(
+    final quote = Container(
       margin: const EdgeInsets.only(bottom: 5),
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
@@ -341,6 +345,9 @@ class _ChatMessageBubbleState extends State<ChatMessageBubble> {
         ],
       ),
     );
+    if (widget.onOpenReply == null) return quote;
+    // Its own tap wins over the bubble's menu
+    return GestureDetector(behavior: HitTestBehavior.opaque, onTap: widget.onOpenReply, child: quote);
   }
 
   Widget _reactions() {

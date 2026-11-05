@@ -980,11 +980,13 @@ class _ChatConversationScreenState extends State<ChatConversationScreen> {
     }
     Widget item(int g) {
       final m = messages[g];
+      final k = _itemKey(m);
       return _ChatAppear(
-        key: ValueKey(_itemKey(m)),
+        key: ValueKey(k),
         // Only what arrives while the conversation is open slides in; the history is simply there
         animate: _arrived.contains(m.id) || _arrived.contains(m.clientMessageId),
-        child: _item(messages, g, space, myId, style),
+        // Keyed, so a jump to a reply's message can find its row once it is laid out
+        child: _ChatFlash(key: _rowKey(k), tick: _flashKey == k ? _flashTick : 0, child: _item(messages, g, space, myId, style)),
       );
     }
 
@@ -1131,6 +1133,8 @@ class _ChatConversationScreenState extends State<ChatConversationScreen> {
     if (!_scroll.hasClients) return;
     final position = _scroll.position;
     final atBottom = position.pixels >= position.maxScrollExtent - 80;
+    // Reaching the end by hand: the way back through the replies is no longer needed
+    if (atBottom && !_jumping) _returnTo.clear();
     if (atBottom != _atBottom || (atBottom && _newBelow > 0)) {
       setState(() {
         _atBottom = atBottom;
@@ -1151,6 +1155,124 @@ class _ChatConversationScreenState extends State<ChatConversationScreen> {
       if (!mounted || !_scroll.hasClients) return;
     }
     _updateAtBottom();
+  }
+
+  // ---- going to the message a reply answers, and back, step by step ----
+
+  /// Each row's key (by [_itemKey]), so a row that is laid out can be scrolled into view.
+  final Map<String, GlobalKey> _rowKeys = {};
+  /// The replies the user jumped from, latest last: the «down» button goes back through them, one per tap,
+  /// before it goes to the end.
+  final List<String> _returnTo = [];
+  /// The row lit for a moment after a jump; [_flashTick] restarts its light.
+  String? _flashKey;
+  int _flashTick = 0;
+  bool _jumping = false;
+
+  GlobalKey _rowKey(String itemKey) => _rowKeys.putIfAbsent(itemKey, () => GlobalKey());
+
+  List<ChatMessage> get _shownMessages => _chat.messagesOf(widget.spaceId, threadRootId: _threadId).where((m) => !m.deleted).toList();
+
+  ChatMessage? _shownById(String id) {
+    for (final m in _shownMessages) {
+      if (m.id == id) return m;
+    }
+    return null;
+  }
+
+  /// A tap on a reply's quote: to the message it answers (loading older history if it is not here yet).
+  Future<void> _openReplied(ChatMessage reply) async {
+    final targetId = reply.replyToId;
+    if (targetId == null || _jumping) return;
+    _jumping = true;
+    try {
+      var target = _shownById(targetId);
+      while (target == null && !_reachedStart && mounted) {
+        while (_loadingOlder && mounted) {
+          await Future<void>.delayed(const Duration(milliseconds: 100));
+        }
+        _loadingOlder = true;
+        final more = await _chat.loadOlder(widget.spaceId, threadRootId: _threadId);
+        _loadingOlder = false;
+        if (!more) _reachedStart = true;
+        target = _shownById(targetId);
+      }
+      if (!mounted) return;
+      if (target == null) {
+        AppToast.info(context, 'پیام اصلی دیگر در این گفتگو نیست.');
+        return;
+      }
+      final from = _itemKey(reply);
+      if (_returnTo.isEmpty || _returnTo.last != from) _returnTo.add(from);
+      await _goToRow(_itemKey(target));
+    } finally {
+      _jumping = false;
+    }
+  }
+
+  /// The «down» button: back to the last reply jumped from, or to the end when there is none.
+  Future<void> _onDownPressed() async {
+    if (_jumping) return;
+    while (_returnTo.isNotEmpty) {
+      final key = _returnTo.removeLast();
+      if (!_shownMessages.any((m) => _itemKey(m) == key)) continue; // deleted meanwhile
+      _jumping = true;
+      try {
+        await _goToRow(key);
+      } finally {
+        _jumping = false;
+      }
+      return;
+    }
+    await _scrollToBottom();
+  }
+
+  /// Whether a row that is not laid out lies above the rows that are; null when that cannot be told.
+  bool? _rowIsAbove(String key) {
+    final messages = _shownMessages;
+    final target = messages.indexWhere((m) => _itemKey(m) == key);
+    if (target < 0) return null;
+    for (var g = 0; g < messages.length; g++) {
+      if (_rowKeys[_itemKey(messages[g])]?.currentContext != null) return target < g;
+    }
+    return null;
+  }
+
+  /// Brings a row to the middle of the screen and lights it. The list is built lazily, so a row far away is
+  /// approached a screen at a time until it is laid out.
+  Future<void> _goToRow(String key) async {
+    var stuck = 0;
+    for (var i = 0; i < 120 && stuck < 4; i++) {
+      await WidgetsBinding.instance.endOfFrame;
+      if (!mounted || !_scroll.hasClients) return;
+      final rowContext = _rowKeys[key]?.currentContext;
+      if (rowContext != null && rowContext.mounted) {
+        await Scrollable.ensureVisible(rowContext, alignment: 0.4, duration: const Duration(milliseconds: 350), curve: Curves.easeOutCubic);
+        if (!mounted) return;
+        final tick = _flashTick + 1;
+        setState(() {
+          _flashKey = key;
+          _flashTick = tick;
+        });
+        // Once the light has faded, a row built again later does not light up again
+        Future<void>.delayed(_ChatFlash.duration, () {
+          if (mounted && _flashTick == tick) setState(() => _flashKey = null);
+        });
+        _updateAtBottom();
+        return;
+      }
+      final up = _rowIsAbove(key);
+      if (up == null) return;
+      final position = _scroll.position;
+      final step = position.viewportDimension * 0.9;
+      final next = (position.pixels + (up ? -step : step)).clamp(position.minScrollExtent, position.maxScrollExtent).toDouble();
+      if ((next - position.pixels).abs() < 1) {
+        stuck++; // at an edge: wait for the list to grow (older history coming in)
+        continue;
+      }
+      stuck = 0;
+      _scroll.jumpTo(next);
+    }
   }
 
   /// One row of the conversation: a card, or a bubble with its place in the sender's run.
@@ -1182,6 +1304,7 @@ class _ChatConversationScreenState extends State<ChatConversationScreen> {
           onTap: (rect) => _showActions(message, space, mine, rect, card: style == ChatBubbleStyle.channel),
           onOpenThread: _threadId == null && _threadAllowed(message, space) ? () => _openThread(message) : null,
           onOpenSender: message.senderId == null ? null : () => _openMember(message.senderId),
+          onOpenReply: message.replyToId == null ? null : () => _openReplied(message),
           onRetry: () => _chat.retry(message),
           onReact: (type) {
             if (message.deleted) return;
@@ -1211,7 +1334,7 @@ class _ChatConversationScreenState extends State<ChatConversationScreen> {
           child: IgnorePointer(
             ignoring: _atBottom,
             child: GestureDetector(
-              onTap: _scrollToBottom,
+              onTap: _onDownPressed,
               child: Stack(
                 clipBehavior: Clip.none,
                 children: [
@@ -1601,6 +1724,70 @@ class _ChatAppearState extends State<_ChatAppear> with SingleTickerProviderState
       child: SizeTransition(
         sizeFactor: _curve,
         child: SlideTransition(position: Tween(begin: const Offset(0, 0.25), end: Offset.zero).animate(_curve), child: widget.child),
+      ),
+    );
+  }
+}
+
+/// A row reached from a reply's quote (or on the way back): it lights up a little, then returns to its colour.
+/// A new [tick] (other than 0) starts the light again.
+class _ChatFlash extends StatefulWidget {
+  static const Duration duration = Duration(milliseconds: 1600);
+  final int tick;
+  final Widget child;
+  const _ChatFlash({super.key, required this.tick, required this.child});
+
+  @override
+  State<_ChatFlash> createState() => _ChatFlashState();
+}
+
+class _ChatFlashState extends State<_ChatFlash> with SingleTickerProviderStateMixin {
+  late final AnimationController _controller = AnimationController(vsync: this, duration: _ChatFlash.duration);
+  // In quickly, held a moment, then fading back
+  late final Animation<double> _light = TweenSequence<double>([
+    TweenSequenceItem(tween: Tween(begin: 0.0, end: 1.0).chain(CurveTween(curve: Curves.easeOut)), weight: 15),
+    TweenSequenceItem(tween: ConstantTween(1.0), weight: 35),
+    TweenSequenceItem(tween: Tween(begin: 1.0, end: 0.0).chain(CurveTween(curve: Curves.easeInOut)), weight: 50),
+  ]).animate(_controller);
+  int _played = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    _play();
+  }
+
+  @override
+  void didUpdateWidget(covariant _ChatFlash oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    _play();
+  }
+
+  void _play() {
+    if (widget.tick == 0 || widget.tick == _played) return;
+    _played = widget.tick;
+    _controller.forward(from: 0);
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: _light,
+      child: widget.child,
+      // The same widgets lit or not, so the bubble (a voice playing in it) keeps its state
+      builder: (context, child) => DecoratedBox(
+        decoration: BoxDecoration(
+          color: ChatTheme.accent.withValues(alpha: 0.22 * _light.value),
+          borderRadius: BorderRadius.circular(14),
+          boxShadow: _light.value <= 0 ? null : [BoxShadow(color: ChatTheme.accent.withValues(alpha: 0.18 * _light.value), blurRadius: 14)],
+        ),
+        child: child,
       ),
     );
   }
