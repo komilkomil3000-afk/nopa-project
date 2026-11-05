@@ -343,8 +343,8 @@ class _ChatConversationScreenState extends State<ChatConversationScreen> {
       anchor: anchor,
       alignRight: mine || card,
       items: items,
-      showReactions: !message.deleted,
-      showStar: !message.deleted && moderator,
+      showReactions: !message.deleted && !_reactionsClosed(message),
+      showStar: !message.deleted && moderator && !_reactionsClosed(message),
       myReactions: {for (final r in message.reactions) if (r['userId'] == myId) r['type'] as String},
     );
     if (!mounted) return;
@@ -411,7 +411,7 @@ class _ChatConversationScreenState extends State<ChatConversationScreen> {
           shrinkWrap: true,
           padding: const EdgeInsets.all(12),
           children: [
-            if (tags.isEmpty) Padding(padding: const EdgeInsets.all(16), child: Text('هنوز تگی ساخته نشده است.', style: ChatTheme.caption, textAlign: TextAlign.center)),
+            if (tags.isEmpty) Padding(padding: const EdgeInsets.all(16), child: Text('هنوز برچسبی ساخته نشده است؛ با «برچسب جدید» یکی بسازید.', style: ChatTheme.caption, textAlign: TextAlign.center)),
             for (final tag in tags)
               ListTile(
                 leading: CircleAvatar(radius: 7, backgroundColor: ChatChip.parse(tag['color'] ?? '#9292E2')),
@@ -421,7 +421,7 @@ class _ChatConversationScreenState extends State<ChatConversationScreen> {
             if (_chat.spaceById(widget.spaceId)?.canTag == true)
               ListTile(
                 leading: const Icon(Icons.add_rounded, color: ChatTheme.accent),
-                title: Text('تگ جدید', style: ChatTheme.body.copyWith(color: ChatTheme.accent)),
+                title: Text('برچسب جدید', style: ChatTheme.body.copyWith(color: ChatTheme.accent)),
                 onTap: () => Navigator.pop(ctx, const {'new': true}),
               ),
           ],
@@ -430,9 +430,22 @@ class _ChatConversationScreenState extends State<ChatConversationScreen> {
     );
     if (picked == null || !mounted) return;
     if (picked['new'] == true) {
-      await _createTag();
+      // A new label made on a message is put on that message at once
+      final created = await _createTag();
+      if (created != null && message != null && mounted) {
+        final ok = await _chat.toggleTag(message, created['id']);
+        if (mounted) ok ? AppToast.success(context, 'برچسب «${created['name']}» روی پیام گذاشته شد.') : AppToast.error(context, 'گذاشتن برچسب روی پیام انجام نشد.');
+      }
     } else if (message != null) {
-      await _chat.toggleTag(message, picked['id']);
+      final had = message.tags.any((t) => t['id'] == picked['id']);
+      final ok = await _chat.toggleTag(message, picked['id']);
+      if (mounted) {
+        if (ok) {
+          AppToast.success(context, had ? 'برچسب برداشته شد.' : 'برچسب «${picked['name']}» روی پیام گذاشته شد.');
+        } else {
+          AppToast.error(context, 'ثبت برچسب انجام نشد.');
+        }
+      }
     } else {
       await _showList('پیام‌های «${picked['name']}»', () => _chat.taggedMessages(widget.spaceId, picked['id'], threadRootId: _threadId));
     }
@@ -440,7 +453,7 @@ class _ChatConversationScreenState extends State<ChatConversationScreen> {
 
   static const List<String> _tagColors = ['#DFB690', '#9292E2', '#EC4899', '#10B981', '#F97316', '#3B82F6', '#EAB308', '#8B5CF6', '#EF4444', '#14B8A6', '#F472B6', '#A3E635'];
 
-  Future<void> _createTag() async {
+  Future<Map<String, dynamic>?> _createTag() async {
     final name = TextEditingController();
     String color = _tagColors.first;
     bool staffOnly = false;
@@ -452,11 +465,11 @@ class _ChatConversationScreenState extends State<ChatConversationScreen> {
           builder: (ctx, setDialog) => AlertDialog(
             backgroundColor: ChatTheme.surfaceBottom,
             shape: ChatTheme.dialogShape,
-            title: Text('تگ جدید', style: ChatTheme.title),
+            title: Text('برچسب جدید', style: ChatTheme.title),
             content: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                TextField(controller: name, maxLength: 30, style: ChatTheme.body, decoration: chatField('نام تگ')),
+                TextField(controller: name, maxLength: 30, style: ChatTheme.body, decoration: chatField('نام برچسب')),
                 Wrap(spacing: 8, runSpacing: 8, children: [
                   for (final c in _tagColors)
                     GestureDetector(
@@ -480,8 +493,13 @@ class _ChatConversationScreenState extends State<ChatConversationScreen> {
     );
     if (ok == true) {
       final res = await _chat.api('POST', '/chat/spaces/${widget.spaceId}/tags', body: {'name': name.text, 'color': color, 'visibility': staffOnly ? 'staff' : 'public'});
-      if (mounted) res.ok ? AppToast.success(context, 'تگ ساخته شد.') : AppToast.error(context, res.error);
+      if (res.ok && res.data is Map) {
+        if (mounted) AppToast.success(context, 'برچسب ساخته شد.');
+        return Map<String, dynamic>.from(res.data as Map);
+      }
+      if (mounted) AppToast.error(context, res.error);
     }
+    return null;
   }
 
   /// What was said in one station of this conversation.
@@ -626,6 +644,9 @@ class _ChatConversationScreenState extends State<ChatConversationScreen> {
       ),
     );
   }
+
+  /// After a challenge is closed its conversation is a record: nobody adds or takes back a reaction.
+  bool _reactionsClosed(ChatMessage m) => _threadIsClosed || (m.topicId != null && m.topicStatus != null && m.topicStatus != 'open');
 
   bool get _threadIsClosed => widget.threadRoot?.topicId != null && _rootStatus() != 'open';
 
@@ -868,6 +889,10 @@ class _ChatConversationScreenState extends State<ChatConversationScreen> {
           onRetry: () => _chat.retry(message),
           onReact: (type) {
             if (message.deleted) return;
+            if (_reactionsClosed(message)) {
+              AppToast.info(context, 'این چالش بسته شده است و واکنش‌ها دیگر قابل تغییر نیستند.');
+              return;
+            }
             // Only mentors can take the star back; for everyone else its chip is just a count
             if (type == ChatTheme.starReaction && space?.canModerate != true) return;
             _chat.react(message, type);

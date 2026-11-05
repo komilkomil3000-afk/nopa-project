@@ -170,7 +170,11 @@ class _ChatTopicInfoScreenState extends State<ChatTopicInfoScreen> {
         textDirection: TextDirection.rtl,
         child: _loading
             ? const Center(child: CircularProgressIndicator(color: ChatTheme.accent))
-            : ListView(
+            : RefreshIndicator(
+                color: ChatTheme.accent,
+                onRefresh: _load,
+                child: ListView(
+                physics: const AlwaysScrollableScrollPhysics(),
                 padding: const EdgeInsets.all(16),
                 children: [
                   Text(meta['title']?.toString() ?? '', style: ChatTheme.title.copyWith(fontSize: 16)),
@@ -187,6 +191,7 @@ class _ChatTopicInfoScreenState extends State<ChatTopicInfoScreen> {
                   if (!_interGroup && widget.moderator) ..._mentorPanel(),
                   if (_insight != null) _insightCard(),
                 ],
+              ),
               ),
       ),
     );

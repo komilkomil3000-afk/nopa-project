@@ -146,10 +146,21 @@ export const setFinalAnswer = handler(async (req, res, actor) => {
   if (!moderator) throw new ChatError(403, 'اجازه‌ی این کار را ندارید');
   const message = await prisma.chatMessage.findFirst({ where: { id: String(req.body?.messageId || ''), threadRootId: topic.messageId, deletedAt: null } });
   if (!message) throw new ChatError(400, 'پیام انتخاب‌شده در این گفتگو نیست');
+  const previousFinal = topic.finalMessageId && topic.finalMessageId !== message.id ? topic.finalMessageId : null;
   await prisma.chatTopic.update({ where: { id: topic.id }, data: { finalMessageId: message.id } });
+  // The «final» mark follows the choice: only the chosen message wears it
+  if (!message.marks.includes('final')) await prisma.chatMessage.update({ where: { id: message.id }, data: { marks: [...message.marks, 'final'] } });
+  if (previousFinal) {
+    const old = await prisma.chatMessage.findUnique({ where: { id: previousFinal }, select: { marks: true } });
+    if (old) {
+      await prisma.chatMessage.update({ where: { id: previousFinal }, data: { marks: old.marks.filter(x => x !== 'final') } });
+      await publishUpdate(previousFinal);
+    }
+  }
   const meta = { ...((topic.message.meta as any) ?? {}), finalAnswer: message.body.slice(0, 500) };
   await prisma.chatMessage.update({ where: { id: topic.messageId }, data: { meta } });
   await publishUpdate(topic.messageId);
+  await publishUpdate(message.id);
   res.json({ success: true });
 });
 

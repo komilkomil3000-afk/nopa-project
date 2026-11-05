@@ -267,6 +267,9 @@ export const toggleReaction = handler(async (req, res, actor) => {
   const { message, space } = await requireMessage(actor, req.params.id);
   const type = String(req.body?.type || '');
   if (!REACTION_TYPES.includes(type)) throw new ChatError(400, 'واکنش نامعتبر است');
+  // Once a challenge is closed its conversation is the record of the evaluation: reactions can no longer change
+  const closedTopic = await prisma.chatTopic.findFirst({ where: { messageId: message.threadRootId ?? message.id, status: 'closed' }, select: { id: true } });
+  if (closedTopic) throw new ChatError(400, 'این چالش بسته شده است و واکنش‌ها دیگر قابل تغییر نیستند');
   if (type === STAR_REACTION) {
     // The star is separate from the ordinary reaction: it neither replaces it nor is replaced by it
     if (!canModerate(actor, space)) throw new ChatError(403, 'فقط راهبران می‌توانند پیام را برتر کنند');

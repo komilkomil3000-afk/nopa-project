@@ -148,6 +148,9 @@ export function serializeMessage(m: MessageRow) {
     meta: m.meta,
     stationId: m.stationId,
     best: m.marks.includes('best'),
+    // «شاهد امتیاز» and «پاسخ نهایی گروه»: shown on the message itself, to everyone
+    evidence: m.marks.includes('evidence'),
+    final: m.marks.includes('final'),
     // The mentor chose to wear the mentor's badge on this message
     mentorMark: m.marks.includes('mentor'),
     // Replies under a message: a challenge always has them; elsewhere a moderator opens them

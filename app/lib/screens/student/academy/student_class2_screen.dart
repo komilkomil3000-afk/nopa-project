@@ -92,6 +92,24 @@ class _Class2ScreenState extends State<StudentClass2Screen> {
     return Map<String, dynamic>.from(found);
   }
 
+  static const _ordinals = ['اول', 'دوم', 'سوم', 'چهارم', 'پنجم', 'ششم', 'هفتم', 'هشتم', 'نهم', 'دهم', 'یازدهم', 'دوازدهم', 'سیزدهم', 'چهاردهم', 'پانزدهم', 'شانزدهم', 'هفدهم', 'هجدهم', 'نوزدهم', 'بیستم'];
+  String _ordinal(int n) => (n >= 1 && n <= _ordinals.length) ? _ordinals[n - 1] : '${_toFarsiDigit(n)}ام';
+
+  /// Title of a part's quiz box: «آزمون اول از پارت دوم» (the quiz's place among the part's quizzes, and the part's number).
+  String _quizTitle(Map<String, dynamic>? session, int partIndex, String? quizId) {
+    int m = 1;
+    if (session != null && quizId != null) {
+      final clips = session['videoClips'] as List? ?? [];
+      final clipId = (partIndex >= 0 && partIndex < clips.length && clips[partIndex] is Map) ? clips[partIndex]['id']?.toString() : null;
+      final ofPart = (session['quizzes'] as List? ?? []).whereType<Map>().where((q) =>
+          (clipId != null && q['clipId']?.toString() == clipId) || (q['clipId'] == null && q['orderIndex'] == partIndex + 1)).toList()
+        ..sort((a, b) => ((a['orderIndex'] as num?) ?? 0).compareTo((b['orderIndex'] as num?) ?? 0));
+      final i = ofPart.indexWhere((q) => q['id']?.toString() == quizId);
+      if (i >= 0) m = i + 1;
+    }
+    return 'آزمون ${_ordinal(m)} از پارت ${_ordinal(partIndex + 1)}';
+  }
+
   /// A part without a quiz never blocks the next one (no made-up quiz is shown instead).
   bool _isAnswered(Map<String, dynamic> session, int clipIndex) {
     if (_quizOfPart(session, clipIndex) == null) return true;
@@ -714,7 +732,14 @@ class _Class2ScreenState extends State<StudentClass2Screen> {
           : Column(
               children: [
               Expanded(
+              child: RefreshIndicator(
+              color: AppColors.buttonCamel,
+              onRefresh: () async {
+                await _fetchData(force: true);
+                await _loadPassedQuizzes();
+              },
               child: SingleChildScrollView(
+              physics: const AlwaysScrollableScrollPhysics(),
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -759,6 +784,7 @@ class _Class2ScreenState extends State<StudentClass2Screen> {
                   const SizedBox(height: 14),
                 ],
               ),
+            ),
             ),
               ),
               // Fixed at the bottom: does not move when the number of lessons changes
@@ -1474,7 +1500,7 @@ class _Class2ScreenState extends State<StudentClass2Screen> {
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
                           Text(
-                            'آزمون ${_toFarsiDigit(partIndex + 1)}ام از پارت ${_toFarsiDigit(partIndex + 1)}ام',
+                            _quizTitle(session, partIndex, currentQuizId),
                             style: AppTypography.h3Strong.copyWith(color: Color(0xFFFBE4C8)),
                           ),
                           Text(
@@ -1483,6 +1509,13 @@ class _Class2ScreenState extends State<StudentClass2Screen> {
                           ),
                         ],
                       ),
+                      if (!reviewMode && !submitted && ((int.tryParse(quiz['rewardZarik']?.toString() ?? '') ?? 0) > 0)) ...[
+                        const SizedBox(height: 4),
+                        Text(
+                          'پاداش پاسخ درست: ${_toFarsiDigit(int.parse(quiz['rewardZarik'].toString()))} زریک',
+                          style: AppTypography.caption.copyWith(color: const Color(0xFFE5B888)),
+                        ),
+                      ],
                       const SizedBox(height: 10),
                       Container(height: 1, color: const Color(0xFF473E67)),
                       const SizedBox(height: 12),

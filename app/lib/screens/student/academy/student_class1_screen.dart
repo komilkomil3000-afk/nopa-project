@@ -342,7 +342,15 @@ class _Class1ScreenState extends State<StudentClass1Screen> {
               'انیمیشن منزلگاه')
         : (_station?.animationTitle ?? 'انیمیشن معرفی منزلگاه');
 
-    final Widget scrollableContent = SingleChildScrollView(
+    final Widget scrollableContent = RefreshIndicator(
+      color: AppColors.buttonCamel,
+      onRefresh: () async {
+        await HttpApiService().getStations(forceRefresh: true);
+        await AppRepository().refreshUser();
+        await _loadClassCategories();
+      },
+      child: SingleChildScrollView(
+      physics: const AlwaysScrollableScrollPhysics(),
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 2),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -390,6 +398,7 @@ class _Class1ScreenState extends State<StudentClass1Screen> {
             const SizedBox(height: 8),
           ],
         ],
+      ),
       ),
     );
 

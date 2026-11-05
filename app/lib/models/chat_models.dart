@@ -145,6 +145,9 @@ class ChatMessage {
   final String? topicId;
   final String? topicStatus;
   final bool best;
+  /// «شاهد امتیاز» and «پاسخ نهایی گروه»: marks a mentor puts on a message, shown on it to everyone.
+  final bool evidence;
+  final bool finalMark;
   /// The mentor chose to wear the mentor's badge on this message.
   final bool mentorMark;
   final List<Map<String, dynamic>> tags;
@@ -182,6 +185,8 @@ class ChatMessage {
     required this.topicId,
     required this.topicStatus,
     required this.best,
+    this.evidence = false,
+    this.finalMark = false,
     this.mentorMark = false,
     required this.tags,
     required this.pollVotes,
@@ -226,6 +231,8 @@ class ChatMessage {
       topicId: topic?['id'],
       topicStatus: topic?['status'],
       best: json['best'] == true,
+      evidence: json['evidence'] == true,
+      finalMark: json['final'] == true,
       mentorMark: json['mentorMark'] == true,
       tags: maps('tags'),
       pollVotes: maps('pollVotes'),

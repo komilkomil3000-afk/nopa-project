@@ -199,12 +199,15 @@ class _ChatMessageBubbleState extends State<ChatMessageBubble> {
           for (final attachment in m.attachments) ChatAttachmentView(attachment: attachment, onGold: !_mineLook, own: widget.mine),
           if (m.body.isNotEmpty) _bodyText(),
         ],
-        if (m.tags.isNotEmpty || m.best || widget.staffTags.isNotEmpty)
+        if (m.tags.isNotEmpty || m.best || m.evidence || m.finalMark || widget.staffTags.isNotEmpty)
           Padding(
             padding: const EdgeInsets.only(top: 5),
             child: Wrap(spacing: 4, runSpacing: 4, children: [
               // The best-answer mark is a mentor's: it wears the mentor's colour and badge
               if (m.best) const ChatChip.mentor(label: 'بهترین پاسخ'),
+              // Each mark has its own colour so it reads at once: green evidence, orange final answer
+              if (m.finalMark) const ChatChip(label: 'پاسخ نهایی گروه', color: Color(0xFFE8710A), icon: Icons.task_alt_rounded, filled: true),
+              if (m.evidence) const ChatChip(label: 'شاهد امتیاز', color: Color(0xFF12945F), icon: Icons.verified_rounded, filled: true),
               for (final tag in m.tags) ChatChip(label: tag['name'] ?? '', color: ChatChip.parse(tag['color'] ?? '#9292E2')),
               for (final tag in widget.staffTags) ChatChip(label: '${tag['name']} (راهبران)', color: ChatChip.parse(tag['color'] ?? '#9292E2')),
             ]),

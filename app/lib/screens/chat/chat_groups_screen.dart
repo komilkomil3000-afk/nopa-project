@@ -140,7 +140,11 @@ class _ChatGroupsScreenState extends State<ChatGroupsScreen> {
         textDirection: TextDirection.rtl,
         child: _loading
             ? const Center(child: CircularProgressIndicator(color: ChatTheme.accent))
-            : ListView(
+            : RefreshIndicator(
+                color: ChatTheme.accent,
+                onRefresh: _load,
+                child: ListView(
+                physics: const AlwaysScrollableScrollPhysics(),
                 padding: const EdgeInsets.all(16),
                 children: [
                   Row(children: [
@@ -176,6 +180,7 @@ class _ChatGroupsScreenState extends State<ChatGroupsScreen> {
                       ),
                     ),
                 ],
+              ),
               ),
       ),
     );

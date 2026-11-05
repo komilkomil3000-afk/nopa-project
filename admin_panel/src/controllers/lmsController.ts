@@ -1219,7 +1219,7 @@ export const submitSessionQuiz = async (req: any, res: Response) => {
     if (isMentorRole(req.user?.role)) {
       if (passed) {
         const clip = await prisma.videoClip.findFirst({
-          where: { sessionId: session.id, clipOrder: validQuiz.orderIndex }
+          where: validQuiz.clipId ? { id: validQuiz.clipId } : { sessionId: session.id, clipOrder: validQuiz.orderIndex }
         });
         if (clip) {
           await prisma.userProgress.upsert({
@@ -1280,7 +1280,7 @@ export const submitSessionQuiz = async (req: any, res: Response) => {
         await changeBalance(tx, { ...reward, asset: 'farsh', amount: rewardFarsh });
 
         const clip = await tx.videoClip.findFirst({
-          where: { sessionId: session.id, clipOrder: validQuiz.orderIndex }
+          where: validQuiz.clipId ? { id: validQuiz.clipId } : { sessionId: session.id, clipOrder: validQuiz.orderIndex }
         });
         if (clip) {
           const trackType = await trackTypeForCategory(tx, session.category?.id, session.category?.stationId);
