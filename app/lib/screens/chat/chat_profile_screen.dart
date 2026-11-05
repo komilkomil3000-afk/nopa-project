@@ -21,6 +21,7 @@ import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 import 'package:nopa_app/screens/chat/chat_message_bubble.dart';
 import 'package:nopa_app/screens/chat/chat_theme.dart';
+import 'package:nopa_app/screens/chat/chat_muted.dart';
 import 'package:nopa_app/screens/chat/chat_widgets.dart';
 import 'package:nopa_app/screens/mentor/challenges/mentor_challenges_screen.dart' show MentorChallengeDialogs;
 import 'package:nopa_app/screens/mentor/profile/mentor_caravans_roster_screen.dart';
@@ -58,6 +59,18 @@ class _ChatSpaceProfileScreenState extends State<ChatSpaceProfileScreen> {
   void initState() {
     super.initState();
     _load();
+    // Someone was silenced or let speak again: the «بی‌صدا» marks of the members follow
+    _chat.memberMutes.addListener(_reloadQuietly);
+  }
+
+  void _reloadQuietly() {
+    if (mounted) _load();
+  }
+
+  @override
+  void dispose() {
+    _chat.memberMutes.removeListener(_reloadQuietly);
+    super.dispose();
   }
 
   /// The mentor picks a picture for the caravan (or removes it); it then shows in the chat, the profile and the rankings.
@@ -363,6 +376,17 @@ class _ChatMemberProfileScreenState extends State<ChatMemberProfileScreen> {
     });
   }
 
+  Future<void> _setMuted(bool mute) async {
+    final res = await _chat.api('POST', '/chat/spaces/${widget.spaceId}/members/${widget.userId}/mute', body: {'minutes': mute ? 60 : 0});
+    if (!mounted) return;
+    if (res.ok) {
+      AppToast.success(context, mute ? 'این عضو تا یک ساعت نمی‌تواند پیام بفرستد.' : 'بی‌صدا برداشته شد؛ این عضو دوباره می‌تواند پیام بفرستد.');
+      _load();
+    } else {
+      AppToast.error(context, res.error);
+    }
+  }
+
   Future<void> _message() async {
     final navigator = Navigator.of(context);
     final space = await _chat.openDirect(widget.userId);
@@ -454,6 +478,15 @@ class _ChatMemberProfileScreenState extends State<ChatMemberProfileScreen> {
               if (!self && space?.isDirect != true) ...[
                 const SizedBox(height: 16),
                 _PanelButton(icon: Icons.chat_bubble_outline_rounded, label: 'پیام خصوصی', onTap: _message),
+              ],
+              // A moderator silences this member here for an hour, or lets them speak again
+              if (!self && !isMentor && space?.canModerate == true && p.containsKey('mutedUntil')) ...[
+                const SizedBox(height: 10),
+                if (chatPersonMuted(p)) const Center(child: ChatMutedBadge()),
+                if (chatPersonMuted(p)) const SizedBox(height: 8),
+                chatPersonMuted(p)
+                    ? _PanelButton(icon: Icons.record_voice_over_rounded, label: 'برداشتن بی‌صدا', onTap: () => _setMuted(false))
+                    : _PanelButton(icon: Icons.voice_over_off_rounded, label: 'بی‌صدا تا یک ساعت', danger: true, onTap: () => _setMuted(true)),
               ],
             ],
           ),
@@ -625,12 +658,14 @@ class _PanelButton extends StatelessWidget {
   final IconData icon;
   final String label;
   final VoidCallback onTap;
-  const _PanelButton({required this.icon, required this.label, required this.onTap});
+  final bool danger;
+  const _PanelButton({required this.icon, required this.label, required this.onTap, this.danger = false});
 
   @override
   Widget build(BuildContext context) {
+    final fg = danger ? Colors.white : ChatTheme.ink;
     return Material(
-      color: ChatTheme.accent,
+      color: danger ? ChatTheme.danger : ChatTheme.accent,
       borderRadius: BorderRadius.circular(10),
       child: InkWell(
         borderRadius: BorderRadius.circular(10),
@@ -638,9 +673,9 @@ class _PanelButton extends StatelessWidget {
         child: Padding(
           padding: const EdgeInsets.symmetric(vertical: 10),
           child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
-            Icon(icon, size: 18, color: ChatTheme.ink),
+            Icon(icon, size: 18, color: fg),
             const SizedBox(width: 8),
-            Text(label, style: AppTypography.h3.copyWith(color: ChatTheme.ink)),
+            Text(label, style: AppTypography.h3.copyWith(color: fg)),
           ]),
         ),
       ),
@@ -672,6 +707,8 @@ class _MemberRow extends StatelessWidget {
               style: ChatTheme.title.copyWith(fontSize: 13),
             ),
           ),
+          // Moderators see who is silenced here
+          if (chatPersonMuted(person)) const Padding(padding: EdgeInsetsDirectional.only(end: 6), child: ChatMutedBadge()),
           Text(online ? 'آنلاین' : '', style: ChatTheme.caption.copyWith(color: ChatTheme.lavender, fontSize: 10)),
         ]),
       ),

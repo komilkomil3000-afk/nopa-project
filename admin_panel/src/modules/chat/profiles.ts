@@ -19,6 +19,20 @@ const STATS_DAYS = 30;
 type SpaceRow = { id: string; type: string; caravanId: string | null };
 
 /** Everyone who belongs to a space, with whether they are connected right now. */
+/** Members a moderator silenced in this space and until when; only mutes still running. */
+export async function activeMutes(spaceId: string): Promise<Map<string, Date>> {
+  const rows = await prisma.chatMember.findMany({ where: { spaceId, mutedUntil: { gt: new Date() } }, select: { userId: true, mutedUntil: true } });
+  return new Map(rows.map(r => [r.userId, r.mutedUntil!]));
+}
+
+/** The people of a space; with [withMutes] (moderators only) each carries `mutedUntil` while silenced. */
+export async function peopleWithMutes(space: SpaceRow, withMutes: boolean) {
+  const people = await peopleOf(space);
+  if (!withMutes) return people;
+  const mutes = await activeMutes(space.id);
+  return people.map(p => ({ ...p, mutedUntil: mutes.get(p.id) ?? null }));
+}
+
 export async function peopleOf(space: SpaceRow) {
   let people: { id: string; name: string; avatarUrl: string | null; role: string; gender: string | null }[];
   if (space.caravanId) {
@@ -44,7 +58,7 @@ async function mayAnalyze(actor: ChatActor, space: SpaceRow, userId: string): Pr
 export const spaceProfile = handler(async (req, res, actor) => {
   const { space } = await requireSpace(actor, req.params.id);
   const isPublic = PUBLIC_TYPES.has(space.type);
-  const members = isPublic ? [] : await peopleOf(space);
+  const members = isPublic ? [] : await peopleWithMutes(space, canModerate(actor, space));
   const memberCount = isPublic ? await prisma.user.count({ where: { role: { in: ['student', 'mentor'] } } }) : members.length;
   const onlineCount = isPublic ? onlineUserIds().size : members.filter(m => m.online).length;
 
@@ -180,6 +194,8 @@ export const memberProfile = handler(async (req, res, actor) => {
     caravanId: user.caravanId, caravanName: user.caravan?.name ?? null,
     zarik: user.zarikBalance, nakh: user.nakh, farsh: user.farsh, derafsh: user.beyragh, levelFrame: user.levelFrame,
     rank, online: isOnline(user.id), stats,
+    // Moderators see whether this member is silenced here, to lift it
+    mutedUntil: canModerate(actor, space) ? ((await activeMutes(space.id)).get(user.id) ?? null) : undefined,
   });
 });
 

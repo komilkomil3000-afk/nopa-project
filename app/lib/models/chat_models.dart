@@ -16,6 +16,9 @@ class ChatSpace {
   int lastReadSeq;
   int unread;
   bool muted;
+  /// A moderator silenced this user here until then: no composer, «شما بی‌صدا هستید» and a countdown.
+  DateTime? mutedUntil;
+  bool get silenced => mutedUntil != null && mutedUntil!.isAfter(DateTime.now());
   final bool canPost;
   final bool canReply;
   final bool canModerate;
@@ -41,6 +44,7 @@ class ChatSpace {
     this.lastReadSeq = 0,
     this.unread = 0,
     this.muted = false,
+    this.mutedUntil,
     this.canPost = true,
     this.canReply = true,
     this.canModerate = false,
@@ -81,6 +85,9 @@ class ChatSpace {
       lastReadSeq: json['lastReadSeq'] ?? 0,
       unread: json['unread'] ?? 0,
       muted: json['muted'] == true,
+      mutedUntil: (json['mutedSeconds'] is num && (json['mutedSeconds'] as num) > 0)
+          ? DateTime.now().add(Duration(seconds: (json['mutedSeconds'] as num).toInt()))
+          : DateTime.tryParse(json['mutedUntil']?.toString() ?? '')?.toLocal(),
       canPost: json['canPost'] == true,
       canReply: json['canReply'] != false,
       canModerate: json['canModerate'] == true,

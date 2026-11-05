@@ -111,7 +111,10 @@ class ChatRepository extends ChangeNotifier {
       await refreshSpaces();
       for (final key in _watching.keys.toList()) {
         final parts = key.split('|');
-        await loadNewer(parts[0], threadRootId: parts[1].isEmpty ? null : parts[1]);
+        final thread = parts[1].isEmpty ? null : parts[1];
+        await loadNewer(parts[0], threadRootId: thread);
+        // Marks, tags and reactions on messages already shown: no socket brings them here
+        await refreshRecent(parts[0], threadRootId: thread);
       }
       await flushOutbox();
     } finally {
@@ -187,6 +190,10 @@ class ChatRepository extends ChangeNotifier {
     socket.on('read', (data) => _onRead(Map<String, dynamic>.from(data as Map)));
     socket.on('typing', (data) => _onTyping(Map<String, dynamic>.from(data as Map)));
     socket.on('space:update', (_) => refreshSpaces());
+    socket.on('member:mute', (data) {
+      if (data is Map && data['userId'] == _userId) refreshSpaces();
+      memberMutes.value++;
+    });
     socket.on('presence', (data) => _onPresence(Map<String, dynamic>.from(data as Map)));
     socket.connect();
   }
@@ -197,6 +204,11 @@ class ChatRepository extends ChangeNotifier {
     for (final key in _lists.keys.toList()) {
       final parts = key.split('|');
       await loadNewer(parts[0], threadRootId: parts[1].isEmpty ? null : parts[1]);
+    }
+    // Changes made to shown messages while the socket was away
+    for (final key in _watching.keys.toList()) {
+      final parts = key.split('|');
+      await refreshRecent(parts[0], threadRootId: parts[1].isEmpty ? null : parts[1]);
     }
     await flushOutbox();
   }
@@ -540,8 +552,61 @@ class ChatRepository extends ChangeNotifier {
 
   Future<bool> vote(ChatMessage message, int option) => _simple('POST', '/chat/messages/${message.id}/vote', {'option': option});
   Future<bool> report(ChatMessage message, String reason) => _simple('POST', '/chat/messages/${message.id}/report', {'reason': reason});
-  Future<bool> mark(ChatMessage message, String mark) => _simple('POST', '/chat/messages/${message.id}/mark', {'mark': mark});
-  Future<bool> toggleTag(ChatMessage message, String tagId) => _simple('POST', '/chat/messages/${message.id}/tags', {'tagId': tagId});
+  /// The server answers with the whole message, so the mark shows here at once, socket or not.
+  Future<bool> mark(ChatMessage message, String mark) => _apply('POST', '/chat/messages/${message.id}/mark', {'mark': mark});
+
+  Future<bool> toggleTag(ChatMessage message, String tagId) async {
+    final res = await _api.chatCall('POST', '/chat/messages/${message.id}/tags', body: {'tagId': tagId});
+    if (res == null || res.statusCode >= 300) return false;
+    try {
+      final data = jsonDecode(res.body);
+      if (data is Map) {
+        final staff = data['staffTags'];
+        if (staff is List) _staffTags[message.id] = staff.map((t) => Map<String, dynamic>.from(t as Map)).toList();
+        if (data['id'] is String && data['spaceId'] is String) {
+          _onUpdate(Map<String, dynamic>.from(data)..remove('staffTags'));
+        } else {
+          notifyListeners();
+        }
+      }
+    } catch (_) {}
+    return true;
+  }
+
+  /// Someone was silenced or let speak again in a space; screens showing its people reload them.
+  final ValueNotifier<int> memberMutes = ValueNotifier(0);
+
+  /// What a message shows, leaving out the signed file links (new on every fetch) and the thread faces.
+  static String _signature(Map<String, dynamic> raw) => jsonEncode({
+        ...raw,
+        'attachments': ((raw['attachments'] as List?) ?? const []).map((a) => (a as Map)['id']).toList(),
+        'threadPeople': null,
+      });
+
+  /// Re-reads the latest page of a conversation and takes in what changed on messages already shown:
+  /// marks, tags, reactions, edits. A live socket brings these as they happen; without it this is how they arrive.
+  Future<void> refreshRecent(String spaceId, {String? threadRootId}) async {
+    final key = _key(spaceId, threadRootId);
+    if (!_lists.containsKey(key)) return;
+    final page = await _fetch(spaceId, threadRootId: threadRootId);
+    final list = _lists[key];
+    if (page == null || list == null) return;
+    var changed = false;
+    for (final fresh in page) {
+      final at = list.indexWhere((m) => m.id == fresh.id);
+      if (at < 0) {
+        _insert(fresh);
+        changed = true;
+      } else if (_signature(list[at].raw) != _signature(fresh.raw)) {
+        list[at] = fresh;
+        changed = true;
+      }
+    }
+    if (changed) {
+      notifyListeners();
+      _save(page);
+    }
+  }
 
   Future<List<Map<String, dynamic>>> tags(String spaceId) => _people('/chat/spaces/$spaceId/tags');
 

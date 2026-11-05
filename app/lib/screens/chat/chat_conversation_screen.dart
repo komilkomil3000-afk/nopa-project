@@ -27,6 +27,7 @@ import 'package:nopa_app/widgets/app_toast.dart';
 import 'package:nopa_app/widgets/fa_text.dart';
 import 'package:image/image.dart' as img;
 import 'package:nopa_app/screens/chat/chat_quiz_panel.dart';
+import 'package:nopa_app/screens/chat/chat_muted.dart';
 import 'package:nopa_app/services/chat_thread_seen.dart';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
@@ -90,9 +91,8 @@ class _ChatConversationScreenState extends State<ChatConversationScreen> {
       _chat.markRead(widget.spaceId);
     });
     if (_threadId != null) WidgetsBinding.instance.addPostFrameCallback((_) => _markThreadSeen());
-    _chat.people(widget.spaceId).then((people) {
-      if (mounted) setState(() => _people = people);
-    });
+    _loadPeople();
+    _chat.memberMutes.addListener(_loadPeople);
     final space = _chat.spaceById(widget.spaceId);
     if (space != null && !space.isPrivate) {
       _chat.spaceProfile(widget.spaceId).then((profile) {
@@ -117,6 +117,7 @@ class _ChatConversationScreenState extends State<ChatConversationScreen> {
     if (_threadId != null) _markThreadSeen();
     _chat.removeListener(_markReadWhileOpen);
     _chat.commandResult.removeListener(_showCommandResult);
+    _chat.memberMutes.removeListener(_loadPeople);
     _scroll.dispose();
     _input.dispose();
     _focus.dispose();
@@ -335,7 +336,24 @@ class _ChatConversationScreenState extends State<ChatConversationScreen> {
     Navigator.of(context).push(MaterialPageRoute(builder: (_) => ChatConversationScreen(spaceId: widget.spaceId, threadRoot: message)));
   }
 
-  bool _canWrite(ChatSpace? space) => !_threadIsClosed && (_threadId != null ? space?.canReply != false : space?.canPost != false);
+  /// The people of this space; for moderators each also says until when they are silenced.
+  void _loadPeople() {
+    _chat.people(widget.spaceId).then((people) {
+      if (mounted) setState(() => _people = people);
+    });
+  }
+
+  /// Until when [userId] is silenced here, as the moderator's list of people says; null when they may write.
+  DateTime? _mutedUntilOf(String? userId) {
+    for (final p in _people) {
+      if (p['id'] != userId) continue;
+      final until = DateTime.tryParse(p['mutedUntil']?.toString() ?? '')?.toLocal();
+      return until != null && until.isAfter(DateTime.now()) ? until : null;
+    }
+    return null;
+  }
+
+  bool _canWrite(ChatSpace? space) => space?.silenced != true && !_threadIsClosed && (_threadId != null ? space?.canReply != false : space?.canPost != false);
 
   /// A tap on a message opens its reactions and choices next to it.
   Future<void> _showActions(ChatMessage message, ChatSpace? space, bool mine, Rect anchor, {bool card = false}) async {
@@ -355,7 +373,10 @@ class _ChatConversationScreenState extends State<ChatConversationScreen> {
       if (mine && !message.deleted && Provider.of<AppRepository>(context, listen: false).currentUser.role.isMentorLike)
         ChatMenuItem('mentorMark', Icons.verified_rounded, message.mentorMark ? 'برداشتن نشان راهبر' : 'نشان راهبر'),
       if (moderator) ChatMenuItem('pin', Icons.push_pin_rounded, message.pinned ? 'برداشتن سنجاق' : 'سنجاق کردن'),
-      if (moderator && !mine && message.senderId != null) const ChatMenuItem('mute', Icons.voice_over_off_rounded, 'بی‌صدا تا یک ساعت'),
+      if (moderator && !mine && message.senderId != null && !message.senderIsMentor)
+        _mutedUntilOf(message.senderId) != null
+            ? const ChatMenuItem('unmute', Icons.record_voice_over_rounded, 'برداشتن بی‌صدا')
+            : const ChatMenuItem('mute', Icons.voice_over_off_rounded, 'بی‌صدا تا یک ساعت', danger: true),
       if (space?.canTag == true) ...[
         const ChatMenuItem('tag', Icons.label_rounded, 'برچسب'),
         if (_threadId != null) ...[
@@ -426,9 +447,16 @@ class _ChatConversationScreenState extends State<ChatConversationScreen> {
       if (mounted) AppToast.success(context, 'گزارش شما ثبت شد.');
     } else if (action == 'tag') {
       await _chooseTag(message);
-    } else if (action == 'mute') {
-      final res = await _chat.api('POST', '/chat/spaces/${widget.spaceId}/members/${message.senderId}/mute', body: {'minutes': 60});
-      if (mounted) res.ok ? AppToast.success(context, 'این عضو تا یک ساعت پیام نمی‌فرستد.') : AppToast.error(context, res.error);
+    } else if (action == 'mute' || action == 'unmute') {
+      final mute = action == 'mute';
+      final res = await _chat.api('POST', '/chat/spaces/${widget.spaceId}/members/${message.senderId}/mute', body: {'minutes': mute ? 60 : 0});
+      if (!mounted) return;
+      if (res.ok) {
+        AppToast.success(context, mute ? 'این عضو تا یک ساعت نمی‌تواند پیام بفرستد.' : 'بی‌صدا برداشته شد؛ این عضو دوباره می‌تواند پیام بفرستد.');
+        _loadPeople();
+      } else {
+        AppToast.error(context, res.error);
+      }
     } else if (action == 'final') {
       final res = await _chat.api('POST', '/chat/topics/${widget.threadRoot!.topicId}/final-answer', body: {'messageId': message.id});
       if (mounted) res.ok ? AppToast.success(context, 'پاسخ نهایی ثبت شد.') : AppToast.error(context, res.error);
@@ -693,7 +721,16 @@ class _ChatConversationScreenState extends State<ChatConversationScreen> {
                       ),
                     ),
                     // A quiz challenge's page is the quiz itself: nothing to type
-                    if (!_quizThread) _canWrite(space) ? _composer() : _readOnlyBar(threadClosed),
+                    if (!_quizThread)
+                      space?.silenced == true
+                          ? ChatMutedBar(
+                              until: space!.mutedUntil!,
+                              onEnd: () {
+                                _chat.refreshSpaces();
+                                if (mounted) setState(() {});
+                              },
+                            )
+                          : (_canWrite(space) ? _composer() : _readOnlyBar(threadClosed)),
                     if (_emojiOpen) _emojiPanel(),
                   ],
                 );

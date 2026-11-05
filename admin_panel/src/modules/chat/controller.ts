@@ -7,12 +7,12 @@ import { AuthRequest } from '../../middleware/auth';
 import { ALLOWED_UPLOADS } from '../../controllers/mediaController';
 import { getAppImages } from '../../controllers/appImagesController';
 import { getChatSettings } from '../../services/chatSettings';
-import { canModerate, canPostTopLevel, canReply, canReplyInArena, canStartDirect, canTag, ChatActor } from './access';
+import { canModerate, canPostTopLevel, canReply, canReplyInArena, canStartDirect, canTag, ChatActor, loadActor } from './access';
 import { blockedWord, runCommand } from './bots';
 import { handler, requireMessage, requireSpace } from './http';
 import { notifyAbsent, publishMessage, publishUpdate } from './publish';
-import { emitToSpace, isOnline, refreshUserRooms } from './realtime';
-import { peopleOf } from './profiles';
+import { emitToSpace, emitToUsers, isOnline, refreshUserRooms } from './realtime';
+import { peopleOf, peopleWithMutes } from './profiles';
 import { ensureOpenCase } from './support';
 import { recordArenaSubmission, resolveActorCaravan } from './intergroup';
 import { sealedMessageIds } from './arenaPrivacy';
@@ -78,6 +78,10 @@ export const listSpaces = handler(async (req, res, actor) => {
       lastReadSeq: me?.lastReadSeq ?? 0,
       unread: Math.max(0, s.lastSeq - (me?.lastReadSeq ?? 0)),
       muted: !!me?.muted,
+      // A moderator silenced this user here: the app shows «شما بی‌صدا هستید» and a countdown instead of the composer
+      mutedUntil: me?.mutedUntil && me.mutedUntil > new Date() ? me.mutedUntil : null,
+      // Seconds left, so the countdown does not depend on the phone's clock
+      mutedSeconds: me?.mutedUntil && me.mutedUntil > new Date() ? Math.ceil((me.mutedUntil.getTime() - Date.now()) / 1000) : 0,
       canPost: canPostTopLevel(actor, s),
       canReply: canReply(actor, s),
       canModerate: canModerate(actor, s),
@@ -194,7 +198,7 @@ export const sendMessage = handler(async (req, res, actor) => {
 
   if (!body && attachmentIds.length === 0) throw new ChatError(400, 'پیام خالی است');
   if (body.length > MAX_BODY) throw new ChatError(400, `پیام نباید بیشتر از ${MAX_BODY} نویسه باشد`);
-  if (member?.mutedUntil && member.mutedUntil > new Date()) throw new ChatError(403, 'ارسال پیام برای شما موقتاً بسته است');
+  if (member?.mutedUntil && member.mutedUntil > new Date()) throw new ChatError(403, 'شما در این گفتگو بی‌صدا هستید و فعلاً نمی‌توانید پیام بفرستید');
   const command = await runCommand(actor, space, body, threadRootId);
   if (command !== null) return res.json({ command: true, result: command, clientMessageId: req.body?.clientMessageId });
 
@@ -378,7 +382,7 @@ export const searchMessages = handler(async (req, res, actor) => {
 /** People a member can mention in a space. */
 export const listPeople = handler(async (req, res, actor) => {
   const { space } = await requireSpace(actor, req.params.id);
-  res.json(await peopleOf(space));
+  res.json(await peopleWithMutes(space, canModerate(actor, space)));
 });
 
 /** Moderators silence a member for a while; 0 lifts it. */
@@ -387,12 +391,23 @@ export const muteMember = handler(async (req, res, actor) => {
   if (!canModerate(actor, space)) throw new ChatError(403, 'اجازه‌ی این کار را ندارید');
   const minutes = Number(req.body?.minutes);
   if (!Number.isInteger(minutes) || minutes < 0 || minutes > 7 * 24 * 60) throw new ChatError(400, 'مدت معتبر نیست');
+  const userId = req.params.userId;
+  if (userId === actor.id) throw new ChatError(400, 'نمی‌توانید خودتان را بی‌صدا کنید');
   const mutedUntil = minutes ? new Date(Date.now() + minutes * 60000) : null;
-  await prisma.chatMember.upsert({
-    where: { spaceId_userId: { spaceId: space.id, userId: req.params.userId } },
-    update: { mutedUntil },
-    create: { spaceId: space.id, userId: req.params.userId, mutedUntil },
-  });
+  if (mutedUntil) {
+    const target = await loadActor(userId);
+    if (target && canModerate(target, space)) throw new ChatError(400, 'راهبر یا مدیر این گفتگو را نمی‌توان بی‌صدا کرد');
+  }
+  const existing = await prisma.chatMember.findUnique({ where: { spaceId_userId: { spaceId: space.id, userId } } });
+  if (existing) {
+    await prisma.chatMember.update({ where: { id: existing.id }, data: { mutedUntil } });
+  } else if (mutedUntil) {
+    // Caravan spaces take their members from the caravan: this row only holds the mute
+    await prisma.chatMember.create({ data: { spaceId: space.id, userId, mutedUntil } });
+  }
+  // The member's app swaps its composer for «شما بی‌صدا هستید» (or back) at once; moderators' lists follow
+  emitToUsers([userId], 'space:update', { spaceId: space.id });
+  emitToSpace(space.id, 'member:mute', { spaceId: space.id, userId, mutedUntil });
   res.json({ mutedUntil });
 });
 

@@ -247,8 +247,8 @@ export const toggleMessageTag = handler(async (req, res, actor) => {
   const key = { messageId_tagId: { messageId: message.id, tagId } };
   if (await prisma.chatMessageTag.findUnique({ where: key })) await prisma.chatMessageTag.delete({ where: key });
   else await prisma.chatMessageTag.create({ data: { messageId: message.id, tagId, createdBy: actor.id } });
-  await publishUpdate(message.id);
-  res.json({ success: true });
+  const row = await publishUpdate(message.id);
+  res.json({ ...serializeMessage(row), success: true, staffTags: row.tags.map(t => t.tag).filter(t => t.visibility === 'staff') });
 });
 
 /** "best" is shown to everyone; "evidence" is the moderator's note for the evaluation. */
@@ -264,6 +264,7 @@ export const toggleMark = handler(async (req, res, actor) => {
   if (mark === 'thread' ? (!canModerate(actor, space) || message.threadRootId) : !canTag(actor, space)) throw new ChatError(403, 'اجازه‌ی این کار را ندارید');
   const marks = message.marks.includes(mark) ? message.marks.filter(m => m !== mark) : [...message.marks, mark];
   await prisma.chatMessage.update({ where: { id: message.id }, data: { marks } });
-  await publishUpdate(message.id);
-  res.json({ marks });
+  const row = await publishUpdate(message.id);
+  // The whole message comes back, so the mark shows at once even without a live connection
+  res.json({ ...serializeMessage(row), marks });
 });
