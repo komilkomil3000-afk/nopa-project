@@ -1,7 +1,7 @@
 import 'package:nopa_app/main.dart' show navigatorKey;
 import 'package:nopa_app/services/app_update_service.dart';
 import 'package:nopa_app/widgets/app_toast.dart';
-import 'package:url_launcher/url_launcher.dart';
+import 'package:nopa_app/widgets/app_update_dialog.dart';
 import 'package:nopa_app/core/theme/app_colors.dart';
 import 'package:nopa_app/widgets/bottom_nav_bar.dart';
 import 'nopa_modal_shell.dart';
@@ -86,41 +86,8 @@ class CustomDrawer extends StatelessWidget {
       );
       return;
     }
-    final found = update;
-    showNopaModal<void>(
-      ctx,
-      builder: (d) => NopaModalShell(
-        maxWidth: 400,
-        headerIcon: Icons.cloud_download_rounded,
-        title: 'نسخه‌ی جدید ${found.version}',
-        padding: const EdgeInsets.all(22),
-        actions: [
-          NopaModalAction(label: 'بعداً', variant: NopaModalActionVariant.secondary, onPressed: () => Navigator.pop(d)),
-          NopaModalAction(
-            label: 'دانلود و به‌روزرسانی',
-            onPressed: () async {
-              // the file for this phone's processor (AppUpdateService.pickDownload)
-              if (found.downloadUrl.isEmpty) {
-                if (d.mounted) AppToast.error(d, 'فایل این نسخه برای پردازنده‌ی گوشی شما (${found.abi}) هنوز منتشر نشده است. کمی بعد دوباره امتحان کنید.');
-                return;
-              }
-              final uri = Uri.tryParse(found.downloadUrl);
-              if (uri == null || !await launchUrl(uri, mode: LaunchMode.externalApplication)) {
-                if (d.mounted) AppToast.error(d, 'لینک دانلود در دسترس نیست.');
-                return;
-              }
-              if (d.mounted) Navigator.pop(d);
-            },
-          ),
-        ],
-        child: Text(
-          found.notes.isEmpty
-              ? 'یک نسخه‌ی جدید از نپا منتشر شده است. برای ادامه، برنامه را به‌روزرسانی کنید.'
-              : 'تغییرات این نسخه:\n${found.notes.map((n) => '• $n').join('\n')}',
-          style: AppTypography.bodyMedium.copyWith(color: const Color(0xFFD3D0E3)),
-        ),
-      ),
-    );
+    // download inside the app with progress, then «نصب» (app_update_dialog.dart)
+    showAppUpdateDialog(ctx, update);
   }
 
   @override

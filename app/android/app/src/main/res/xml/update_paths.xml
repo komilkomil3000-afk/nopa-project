@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- The only folder handed to Android's installer: the app's own cache/updates (lib/services/app_update_service.dart) -->
+<paths>
+    <cache-path name="updates" path="updates/" />
+</paths>

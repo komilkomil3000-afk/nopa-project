@@ -1,9 +1,13 @@
 import 'dart:convert';
-import 'dart:io' show Platform;
+import 'dart:io' show File, Directory, IOSink, Platform;
 
+import 'package:flutter/foundation.dart' show ValueNotifier;
+import 'package:flutter/services.dart';
 import 'package:http/http.dart' as http;
 import 'package:nopa_app/core/constants/api_constants.dart';
 import 'package:package_info_plus/package_info_plus.dart';
+import 'package:path/path.dart' as p;
+import 'package:path_provider/path_provider.dart';
 
 /// The newest release the server announces, if it is newer than the installed app.
 class AppUpdateInfo {
@@ -80,5 +84,116 @@ class AppUpdateService {
       if (d != 0) return d;
     }
     return 0;
+  }
+}
+
+/// Downloads the update APK inside the app, with progress, into the app's cache (cache/updates), the one
+/// folder the installer is given (android/app/src/main/res/xml/update_paths.xml).
+class AppUpdateDownload {
+  AppUpdateDownload(this.info);
+
+  final AppUpdateInfo info;
+  http.Client? _client;
+  bool _cancelled = false;
+
+  /// Bytes received / total (total is 0 when the server does not say).
+  final ValueNotifier<({int received, int total})> progress = ValueNotifier((received: 0, total: 0));
+
+  static Future<Directory> _dir() async {
+    final dir = Directory(p.join((await getTemporaryDirectory()).path, 'updates'));
+    if (!dir.existsSync()) dir.createSync(recursive: true);
+    return dir;
+  }
+
+  String get _name => 'nopa-${info.version}-${info.abi}.apk';
+
+  /// The file of this version when it was already downloaded completely (a ".part" file is never one).
+  Future<File?> existing() async {
+    final f = File(p.join((await _dir()).path, _name));
+    return f.existsSync() && f.lengthSync() > 0 ? f : null;
+  }
+
+  /// Downloads the file; resolves to it, or throws (StateError('cancelled') after [cancel]).
+  Future<File> start() async {
+    final done = await existing();
+    if (done != null) {
+      final size = done.lengthSync();
+      progress.value = (received: size, total: size);
+      return done;
+    }
+    final dir = await _dir();
+    // older versions' files are not needed any more
+    for (final e in dir.listSync()) {
+      if (e is File && !p.basename(e.path).startsWith('nopa-${info.version}-')) {
+        try { e.deleteSync(); } catch (_) {}
+      }
+    }
+    final part = File(p.join(dir.path, '$_name.part'));
+    final client = _client = http.Client();
+    IOSink? sink;
+    try {
+      final res = await client.send(http.Request('GET', Uri.parse(info.downloadUrl)));
+      if (res.statusCode != 200) throw Exception('HTTP ${res.statusCode}');
+      final total = res.contentLength ?? 0;
+      var received = 0;
+      progress.value = (received: 0, total: total);
+      sink = part.openWrite();
+      await for (final chunk in res.stream) {
+        if (_cancelled) throw StateError('cancelled');
+        sink.add(chunk);
+        received += chunk.length;
+        progress.value = (received: received, total: total);
+      }
+      await sink.flush();
+      await sink.close();
+      sink = null;
+      if (total > 0 && received != total) throw Exception('incomplete');
+      return part.renameSync(p.join(dir.path, _name));
+    } catch (e) {
+      try { await sink?.close(); } catch (_) {}
+      try { if (part.existsSync()) part.deleteSync(); } catch (_) {}
+      if (_cancelled) throw StateError('cancelled');
+      rethrow;
+    } finally {
+      client.close();
+      _client = null;
+    }
+  }
+
+  void cancel() {
+    _cancelled = true;
+    _client?.close();
+  }
+}
+
+/// Android's installer (MainActivity, channel "nopa/installer").
+class AppInstaller {
+  static const _channel = MethodChannel('nopa/installer');
+
+  static bool get supported => Platform.isAndroid;
+
+  /// Whether this app may open the installer (Android 8+ asks once: "install unknown apps").
+  static Future<bool> canInstall() async {
+    try {
+      return await _channel.invokeMethod<bool>('canInstall') ?? false;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  /// Opens the system page where the user allows this app to install updates.
+  static Future<void> openInstallSettings() async {
+    try {
+      await _channel.invokeMethod('openInstallSettings');
+    } catch (_) {}
+  }
+
+  /// Opens Android's installer for [file]; false when it could not be opened.
+  static Future<bool> install(File file) async {
+    try {
+      return await _channel.invokeMethod<bool>('install', {'path': file.path}) ?? false;
+    } catch (_) {
+      return false;
+    }
   }
 }
