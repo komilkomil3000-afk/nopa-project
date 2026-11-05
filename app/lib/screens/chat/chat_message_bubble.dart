@@ -9,6 +9,7 @@ import 'package:nopa_app/screens/chat/chat_cards.dart';
 import 'package:nopa_app/screens/chat/chat_format.dart';
 import 'package:nopa_app/screens/chat/chat_reaction_emoji.dart';
 import 'package:nopa_app/screens/chat/chat_theme.dart';
+import 'package:nopa_app/screens/chat/chat_video_page.dart';
 import 'package:nopa_app/screens/chat/chat_waveform.dart';
 import 'package:nopa_app/screens/chat/chat_widgets.dart';
 import 'package:nopa_app/services/audio_exclusivity_service.dart';
@@ -673,6 +674,30 @@ class _ChatAttachmentViewState extends State<ChatAttachmentView> {
           );
         }
         return ChatAudioPlayer(url: _url, onGold: onGold, peaks: ChatWaveform.decodePeaks(attachment.name), seed: attachment.id, attachmentId: attachment.id);
+      case 'video':
+        return GestureDetector(
+          onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => ChatVideoPage(url: _url, title: attachment.name))),
+          child: Padding(
+            padding: const EdgeInsets.only(bottom: 4),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(ChatTheme.radius),
+              child: Container(
+                height: 150,
+                width: 190,
+                color: color.withValues(alpha: 0.12),
+                alignment: Alignment.center,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.play_circle_fill_rounded, color: color, size: 52),
+                    const SizedBox(height: 6),
+                    Text(_size(attachment.size), style: ChatTheme.caption.copyWith(color: color)),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        );
       default:
         final fileColor = onGold ? ChatTheme.goldTitle : ChatTheme.accent;
         return GestureDetector(

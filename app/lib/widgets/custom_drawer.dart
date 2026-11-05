@@ -123,7 +123,17 @@ class CustomDrawer extends StatelessWidget {
               // 1. Profile Header with Avatar on the Right and Name/Role on the Left
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 22.0, vertical: 10.0),
-                child: Directionality(
+                child: GestureDetector(
+                  behavior: HitTestBehavior.opaque,
+                  onTap: () {
+                    Navigator.pop(context);
+                    if (isChannelManager) {
+                      navigatorKey.currentState?.push(MaterialPageRoute(builder: (_) => const ChannelManagerProfileScreen()));
+                    } else {
+                      onTabSelected(AppTabs.profile);
+                    }
+                  },
+                  child: Directionality(
                   textDirection: TextDirection.rtl,
                   child: Row(
                     children: [
@@ -223,6 +233,7 @@ class CustomDrawer extends StatelessWidget {
                         ),
                       ),
                     ],
+                  ),
                   ),
                 ),
               ),

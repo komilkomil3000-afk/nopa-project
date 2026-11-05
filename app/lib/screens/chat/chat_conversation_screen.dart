@@ -289,7 +289,70 @@ class _ChatConversationScreenState extends State<ChatConversationScreen> {
   /// The most a file (photo, video or any other) may weigh to be sent in chat.
   static const int _maxFileBytes = 30 * 1024 * 1024;
 
-  Future<void> _sendFile(io.File original) async {
+  static const _imageExts = {'.jpg', '.jpeg', '.png', '.gif', '.webp'};
+  static const _videoExts = {'.mp4', '.webm', '.mov', '.3gp'};
+
+  /// A photo or video is shown first, with a box for a caption; returns null when the user cancels.
+  Future<String?> _askCaption(io.File file) {
+    final ext = p.extension(file.path).toLowerCase();
+    final isImage = _imageExts.contains(ext);
+    final controller = TextEditingController();
+    return showDialog<String>(
+      context: context,
+      builder: (ctx) => Directionality(
+        textDirection: TextDirection.rtl,
+        child: AlertDialog(
+          backgroundColor: ChatTheme.surfaceBottom,
+          contentPadding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(12),
+                  child: isImage
+                      ? Image.file(file, height: 240, fit: BoxFit.contain)
+                      : Container(
+                          height: 140,
+                          width: double.infinity,
+                          color: ChatTheme.ink.withValues(alpha: 0.08),
+                          alignment: Alignment.center,
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(Icons.movie_rounded, size: 44, color: ChatTheme.ink.withValues(alpha: 0.7)),
+                              const SizedBox(height: 6),
+                              Text(p.basename(file.path), maxLines: 1, overflow: TextOverflow.ellipsis, style: ChatTheme.caption.copyWith(color: ChatTheme.ink)),
+                            ],
+                          ),
+                        ),
+                ),
+                const SizedBox(height: 10),
+                TextField(
+                  controller: controller,
+                  maxLines: 4,
+                  minLines: 1,
+                  maxLength: 1000,
+                  style: AppTypography.bodyLarge.copyWith(color: ChatTheme.ink),
+                  decoration: InputDecoration(
+                    counterText: '',
+                    hintText: 'افزودن کپشن...',
+                    hintStyle: ChatTheme.caption.copyWith(color: ChatTheme.ink.withValues(alpha: 0.45)),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(ctx), child: Text('انصراف', style: ChatTheme.caption.copyWith(color: ChatTheme.ink))),
+            TextButton(onPressed: () => Navigator.pop(ctx, controller.text.trim()), child: Text('ارسال', style: ChatTheme.caption.copyWith(color: ChatTheme.accent, fontWeight: FontWeight.bold))),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> _sendFile(io.File original, {String caption = ''}) async {
     // Too big: say so at once instead of uploading for minutes and failing
     final size = await original.length();
     if (!mounted) return;
@@ -307,13 +370,22 @@ class _ChatConversationScreenState extends State<ChatConversationScreen> {
       AppToast.error(context, 'ارسال فایل انجام نشد. نوع و حجم فایل (حداکثر ۳۰ مگابایت) را بررسی کنید.');
       return;
     }
-    await _chat.send(spaceId: widget.spaceId, sender: _me(), threadRootId: _threadId, attachments: [attachment]);
+    await _chat.send(spaceId: widget.spaceId, sender: _me(), body: caption, threadRootId: _threadId, attachments: [attachment]);
   }
 
   Future<void> _pickFile() async {
     final picked = await FilePicker.platform.pickFiles();
     final path = picked?.files.single.path;
-    if (path != null) await _sendFile(io.File(path));
+    if (path == null || !mounted) return;
+    final file = io.File(path);
+    final ext = p.extension(path).toLowerCase();
+    if (_imageExts.contains(ext) || _videoExts.contains(ext)) {
+      final caption = await _askCaption(file);
+      if (caption == null) return; // cancelled
+      await _sendFile(file, caption: caption);
+    } else {
+      await _sendFile(file);
+    }
   }
 
   /// Sends a voice message the user has reviewed: the clip, with the caption they typed (if any).
