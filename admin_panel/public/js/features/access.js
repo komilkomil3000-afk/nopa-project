@@ -80,10 +80,12 @@ function secChip(r) {
 async function loadRolePermissions() {
   window.secSetLoading(true);
   try {
-    const [res, bl] = await Promise.all([
+    const [res, bl, rel] = await Promise.all([
       request('/api/v1/admin/roles'),
       request('/api/v1/admin/security/blacklist').catch(() => null),
+      request('/api/v1/admin/app-release', { silent: true }).catch(() => null),
     ]);
+    window.secRelease = rel && rel.ok ? await rel.json().catch(() => null) : (window.secRelease || null);
     if (!res.ok) throw new Error('خطا در دریافت نقش‌ها');
     const roles = await res.json();
     const list = Array.isArray(roles) ? roles : [];
@@ -178,6 +180,8 @@ function secDrawBento() {
       <button type="button" class="lst-quick-btn sec-grants-open" data-click="openSecRoleView" data-click-args="${crvArgs(sub.roleName || 'sub_admin')}"><i class="fa-solid fa-sliders"></i> تنظیم بخش‌ها</button>`;
   }
 
+  secDrawRelease();
+
   const blBox = document.getElementById('sec-bento-blacklist');
   if (blBox) {
     const rows = bl.slice(0, 12).map(b => `
@@ -211,7 +215,7 @@ window.secSetLoading = function(on) {
       <span class="lst-skel-line lst-skel-short"></span><span class="lst-skel-line"></span><span class="lst-skel-line lst-skel-short"></span>
     </div>`).join('');
   const lines = '<div class="lst-skel-lines" aria-hidden="true">' + '<span class="lst-skel-row"></span>'.repeat(3) + '</div>';
-  ['sec-bento-grants', 'sec-bento-blacklist'].forEach(id => { const el = document.getElementById(id); if (el) el.innerHTML = lines; });
+  ['sec-bento-grants', 'sec-bento-blacklist', 'sec-bento-release'].forEach(id => { const el = document.getElementById(id); if (el) el.innerHTML = lines; });
 };
 
 // ==================== ONE ROLE'S PAGE ====================
@@ -357,6 +361,75 @@ window.secTogglePerm = async function(roleName, field, value, input) {
 };
 
 // ==================== BLACKLIST & SESSIONS ====================
+// ==================== APP RELEASE (the app's «بررسی نسخه جدید») ====================
+window.secRelease = window.secRelease || null;
+
+function secDrawRelease() {
+  const tile = document.getElementById('sec-release-tile');
+  if (tile) tile.style.display = isSuperAdminUser() ? '' : 'none';
+  const box = document.getElementById('sec-bento-release');
+  if (!box) return;
+  const r = window.secRelease || {};
+  const set = !!r.version;
+  const notes = Array.isArray(r.notes) ? r.notes : [];
+  const when = r.updatedAt ? new Date(r.updatedAt).toLocaleDateString('fa-IR') : '';
+  box.innerHTML = `
+    <div class="lst-mini-stats">
+      <div class="lst-mini-stat"><span class="stat-label">آخرین نسخه</span><span class="stat-value keep-latin ${set ? 'u-c-success-text' : 'u-c-text-soft'}" dir="ltr">${set ? esc(r.version) : '—'}</span></div>
+      <div class="lst-mini-stat"><span class="stat-label">تغییرات</span><span class="stat-value u-c-info-text">${crvFa(notes.length)}</span></div>
+    </div>
+    <p class="lse-hint">${set
+      ? `لینک: <a href="${esc(r.downloadUrl)}" target="_blank" rel="noopener noreferrer" dir="ltr">${esc(r.downloadUrl.length > 48 ? r.downloadUrl.slice(0, 45) + '…' : r.downloadUrl)}</a>${when ? ' · ' + when : ''}${r.source === 'env' ? ' · از تنظیمات سرور (nopa.env)' : ''}`
+      : 'هنوز نسخه‌ای اعلام نشده؛ اپ همیشه پیام «آخرین نسخه را دارید» نشان می‌دهد.'}</p>
+    <div class="lst-quick">
+      <button type="button" class="lst-quick-btn" data-click="secOpenRelease"><i class="fa-solid fa-cloud-arrow-up"></i> ${set ? 'ثبت نسخه جدید' : 'اعلام نسخه'}</button>
+    </div>`;
+}
+
+window.secOpenRelease = function() {
+  const modal = document.getElementById('sec-release-modal');
+  if (!modal) return;
+  const r = window.secRelease || {};
+  document.getElementById('rel-version').value = r.version || '';
+  document.getElementById('rel-url').value = r.downloadUrl || '';
+  document.getElementById('rel-notes').value = (Array.isArray(r.notes) ? r.notes : []).join('\n');
+  modal.style.display = 'flex';
+  modal.style.zIndex = 'var(--z-modal)';
+  setTimeout(() => document.getElementById('rel-version')?.focus(), 50);
+};
+
+async function secPutRelease(body, okMsg) {
+  try {
+    const res = await request('/api/v1/admin/app-release', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    });
+    const data = await res.json().catch(() => ({}));
+    showToast(res.ok ? okMsg : (data.error || 'خطا در ذخیره نسخه'), res.ok ? 'success' : 'error');
+    if (!res.ok) return;
+    window.secRelease = data;
+    NopaActions.hide('sec-release-modal');
+    secDrawRelease();
+  } catch (err) { console.error('secPutRelease error:', err); }
+}
+
+window.secSaveRelease = function(e) {
+  if (e) e.preventDefault();
+  // Persian/Arabic digits typed on a Persian keyboard → ASCII
+  const version = document.getElementById('rel-version').value.trim()
+    .replace(/[۰-۹]/g, d => String(d.charCodeAt(0) - 0x06F0)).replace(/[٠-٩]/g, d => String(d.charCodeAt(0) - 0x0660));
+  const downloadUrl = document.getElementById('rel-url').value.trim();
+  const notes = document.getElementById('rel-notes').value.split('\n').map(s => s.trim()).filter(Boolean);
+  if (!version || !downloadUrl) return;
+  secPutRelease({ version, downloadUrl, notes }, `نسخه ${version} منتشر شد`);
+};
+
+window.secClearRelease = async function() {
+  if (!(await NopaConfirm('اعلان نسخه جدید متوقف شود؟ اپ دیگر پیام به‌روزرسانی نشان نمی‌دهد.'))) return;
+  secPutRelease({ version: '', downloadUrl: '', notes: [] }, 'اعلان نسخه جدید متوقف شد');
+};
+
 window.secOpenBlacklist = function() {
   const modal = document.getElementById('sec-blacklist-modal');
   if (!modal) return;

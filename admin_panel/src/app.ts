@@ -10,6 +10,7 @@ import { apiLimiter } from './middleware/rateLimit';
 import { scrubResponses } from './middleware/responseScrubber';
 import { cspDirectives } from './config/csp';
 import apiRouter from './routes/api';
+import { getPublicAppVersion } from './controllers/appReleaseController';
 
 // Load Environment Config
 dotenv.config();
@@ -101,14 +102,9 @@ app.get(['/health', '/api/v1/health'], (req, res) => {
   res.json({ status: 'ok', timestamp: new Date() });
 });
 
-// Public: the newest app release, for the in-app "check for updates" (set APP_LATEST_VERSION etc. in ~/nopa.env)
-app.get('/api/v1/app/version', (req, res) => {
-  res.json({
-    version: process.env.APP_LATEST_VERSION || '',
-    downloadUrl: process.env.APP_DOWNLOAD_URL || '',
-    notes: (process.env.APP_RELEASE_NOTES || '').split('|').map(s => s.trim()).filter(Boolean),
-  });
-});
+// Public: the newest app release, for the in-app "check for updates".
+// Set from the panel (roles & security tab → «نسخه اپلیکیشن»); the APP_LATEST_VERSION env vars are only a fallback.
+app.get('/api/v1/app/version', getPublicAppVersion);
 
 // API Routes prefix
 app.use('/api/admin/lms/stations', (req, res) => {

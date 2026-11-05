@@ -125,9 +125,12 @@ test('four-level roles: super admin always passes, sub admin routes map to secti
   assert.equal(sectionForPath('/news/1'), 'content');
   assert.equal(sectionForPath('/levels-and-certificates'), 'users');
   for (const p of ['/roles', '/security/revoke', '/settings/x', '/audit/logs', '/export', '/users/export',
-                   '/users/u1/role', '/users/u1/panel-access', '/users/u1/override-password', '/unknown-new-route']) {
+                   '/users/u1/role', '/users/u1/panel-access', '/users/u1/override-password', '/app-release', '/unknown-new-route']) {
     assert.equal(sectionForPath(p), undefined, `${p} must be super-admin only`);
   }
+  // the app-release announcement is never reachable by mentors
+  assert.equal(runMiddleware(restrictNonAdmins, 'mentor', 'PUT', '/app-release').passed, false);
+  assert.ok(runMiddleware(restrictNonAdmins, 'admin', 'PUT', '/app-release').passed);
 });
 
 test('section grants parser drops unknown sections and levels', () => {

@@ -1480,6 +1480,12 @@
               </div>
             </div>
 
+            <!-- Newest app release, shown by the app's «بررسی نسخه جدید» menu item (js/features/access.js → secDrawRelease) -->
+            <div class="lst-tile glass" id="sec-release-tile">
+              <h4 class="lst-tile-title"><i class="fa-solid fa-mobile-screen-button"></i> نسخه اپلیکیشن <span class="lst-tile-sub">آخرین نسخه و لینک دانلود برای به‌روزرسانی</span></h4>
+              <div id="sec-bento-release"></div>
+            </div>
+
             <div class="lst-tile lst-tile-wide glass">
               <h4 class="lst-tile-title"><i class="fa-solid fa-ban"></i> لیست سیاه <span class="lst-tile-sub" id="sec-blacklist-sub">آی‌پی‌ها و شماره‌هایی که اجازه ورود ندارند</span></h4>
               <div id="sec-bento-blacklist"></div>
@@ -1563,6 +1569,40 @@
                 <div class="lse-foot-actions">
                   <button type="button" class="lse-btn" data-click="NopaActions.hide" data-click-args="[&quot;sec-blacklist-modal&quot;]">انصراف</button>
                   <button type="submit" class="lsv-pill"><i class="fa-solid fa-ban"></i> مسدود کن</button>
+                </div>
+              </footer>
+            </form>
+          </div>
+        </div>
+
+        <!-- Newest app release (version + download link + notes) -->
+        <div id="sec-release-modal" class="modal-overlay lse-overlay u-z-z-modal" data-style="display:none">
+          <div class="lse lse-sm">
+            <header class="lse-head lse-head-plain">
+              <div class="lse-id">
+                <span class="lse-id-icon"><i class="fa-solid fa-mobile-screen-button"></i></span>
+                <div class="lse-id-text"><h3>انتشار نسخه جدید اپلیکیشن</h3><span>کاربرانی که نسخه قدیمی‌تر دارند از منوی «بررسی نسخه جدید» به این لینک هدایت می‌شوند</span></div>
+              </div>
+              <button type="button" class="lsv-round" data-click="NopaActions.hide" data-click-args="[&quot;sec-release-modal&quot;]" title="بستن" aria-label="بستن"><i class="fa-solid fa-xmark"></i></button>
+            </header>
+            <form class="lse-form" id="sec-release-form" data-submit="secSaveRelease" data-submit-args="[&quot;$event&quot;]">
+              <div class="lse-body">
+                <section class="lse-card">
+                  <h4 class="lse-card-title"><i class="fa-solid fa-code-branch"></i> نسخه و لینک</h4>
+                  <label class="lse-field"><span>شماره نسخه <b class="lse-req">*</b></span><input type="text" id="rel-version" class="input-ctrl" dir="ltr" placeholder="1.2.0" maxlength="30" required></label>
+                  <label class="lse-field"><span>لینک دانلود <b class="lse-req">*</b></span><input type="url" id="rel-url" class="input-ctrl" dir="ltr" placeholder="https://nopa-app.ir/downloads/nopa-1.2.0.apk" maxlength="1000" required></label>
+                  <p class="lse-hint">شماره نسخه باید همان <code>version</code> فایل pubspec.yaml نسخه جدید باشد (بدون +build هم قابل قبول است). هر کاربری که نسخه‌اش پایین‌تر باشد پیام به‌روزرسانی می‌بیند.</p>
+                </section>
+                <section class="lse-card">
+                  <h4 class="lse-card-title"><i class="fa-solid fa-list-ul"></i> تغییرات این نسخه <small>اختیاری</small></h4>
+                  <label class="lse-field"><span>هر تغییر در یک خط</span><textarea id="rel-notes" class="input-ctrl" rows="5" placeholder="رفع مشکل پخش ویدیو&#10;بخش جدید چالش‌ها"></textarea></label>
+                </section>
+              </div>
+              <footer class="lse-foot">
+                <button type="button" class="lse-btn" data-click="secClearRelease"><i class="fa-solid fa-eraser"></i> توقف اعلان</button>
+                <div class="lse-foot-actions">
+                  <button type="button" class="lse-btn" data-click="NopaActions.hide" data-click-args="[&quot;sec-release-modal&quot;]">انصراف</button>
+                  <button type="submit" class="lsv-pill"><i class="fa-solid fa-check"></i> انتشار</button>
                 </div>
               </footer>
             </form>

@@ -79,6 +79,7 @@ import { createOrUpdateStudent, adjustBalance, adjustLevelFrame } from '../contr
 import { getInstructors, getInstructorById, createOrUpdateInstructor, deleteInstructor } from '../controllers/instructorController';
 
 import { getSystemSetting, setSystemSetting } from '../controllers/settingController';
+import { getAppRelease, setAppRelease } from '../controllers/appReleaseController';
 import { createCaravan, addMemberToCaravan, removeMemberFromCaravan, transferMember, broadcastToCaravan, getCaravanDetails, updateCaravan, bulkAddMembersToCaravan, deleteCaravan, blockCaravanMembers } from '../controllers/caravanController';
 import { getCaravanLeague, getIndividualsLeaderboard, getCaravansLeaderboardDetailed } from '../controllers/leagueController';
 
@@ -133,6 +134,9 @@ router.get('/security/blacklist', getBlacklist as any);
 // System Settings
 router.get('/settings/:key', getSystemSetting as any);
 router.post('/settings/:key', setSystemSetting as any);
+// Newest app release announced to the app's update check (super admin only, see adminAccess SUPER_ONLY)
+router.get('/app-release', getAppRelease as any);
+router.put('/app-release', setAppRelease as any);
 
 // 4. Caravans & Mentors Operations Center
 router.get('/caravans', getCaravansAdmin as any);
