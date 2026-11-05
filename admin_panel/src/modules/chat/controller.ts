@@ -5,6 +5,7 @@ import multer from 'multer';
 import prisma from '../../config/db';
 import { AuthRequest } from '../../middleware/auth';
 import { ALLOWED_UPLOADS } from '../../controllers/mediaController';
+import { getAppImages } from '../../controllers/appImagesController';
 import { getChatSettings } from '../../services/chatSettings';
 import { canModerate, canPostTopLevel, canReply, canReplyInArena, canStartDirect, canTag, ChatActor } from './access';
 import { blockedWord, runCommand } from './bots';
@@ -17,7 +18,7 @@ import { recordArenaSubmission, resolveActorCaravan } from './intergroup';
 import { sealedMessageIds } from './arenaPrivacy';
 import { isMentorRole, isSupportRole } from '../../utils/roles';
 import {
-  attachmentKind, CHAT_FILES_DIR, caravanIdsOf, ChatError, directKey, findVisibleSpace, MAX_BODY, MESSAGE_INCLUDE, PAGE_SIZE,
+  attachmentKind, CHAT_FILES_DIR, caravanGroupTitle, caravanIdsOf, ChatError, directKey, findVisibleSpace, MAX_BODY, MESSAGE_INCLUDE, PAGE_SIZE,
   randomStorageName, REACTION_TYPES, serializeMessage, STAR_REACTION, signFileUrl, verifyFileToken, visibleSpaces,
 } from './service';
 
@@ -59,6 +60,7 @@ export const listSpaces = handler(async (req, res, actor) => {
       select: { spaceId: true, lastReadSeq: true, user: { select: { id: true, name: true, avatarUrl: true, role: true, gender: true } } },
     }),
   ]);
+  const defaults = (await getAppImages()).chat;
 
   res.json(spaces.map(s => {
     const peer = directMembers.find(m => m.spaceId === s.id);
@@ -67,8 +69,9 @@ export const listSpaces = handler(async (req, res, actor) => {
     return {
       id: s.id,
       type: s.type,
-      title: peer?.user.name || (s.caravan && s.type === 'caravan' ? s.caravan.name : s.title),
-      coverImageUrl: s.type === 'caravan' ? s.caravan?.coverImageUrl || null : null,
+      title: peer?.user.name || (s.caravan && s.type === 'caravan' ? caravanGroupTitle(s.caravan.name) : s.title),
+      // the caravan's own picture first, then the default the admin set for this kind of space («تصاویر اپلیکیشن»)
+      coverImageUrl: (s.type === 'caravan' ? s.caravan?.coverImageUrl : null) || (s.type === 'direct' ? null : defaults[s.type] || null),
       peer: peer ? { ...peer.user, online: isOnline(peer.user.id) } : null,
       peerReadSeq: peer?.lastReadSeq ?? 0,
       lastSeq: s.lastSeq,

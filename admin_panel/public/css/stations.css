@@ -3060,3 +3060,20 @@ button.nbr-rank-row:hover { background: rgb(var(--primary-rgb) / 0.08); }
 #chl-gls-modal input[type="color"].input-ctrl { height: 42px; padding: 4px 6px; cursor: pointer; }
 #chl-gls-modal input[type="color"].input-ctrl::-webkit-color-swatch-wrapper { padding: 0; }
 #chl-gls-modal input[type="color"].input-ctrl::-webkit-color-swatch { border: none; border-radius: 8px; }
+
+/* ---------- App images tab (js/features/app-images.js): picture slots inside the bento's big tile ---------- */
+.aim-sub-head { margin-top: 22px; }
+.aim-grid { grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); }
+.aim-slot { cursor: default; gap: 10px; }
+.aim-slot.is-busy { opacity: 0.7; }
+.aim-thumb {
+  display: flex; align-items: center; justify-content: center; width: 100%; aspect-ratio: 16 / 9; overflow: hidden;
+  border-radius: 12px; background: rgb(var(--primary-rgb) / 0.08); border: 1px dashed rgb(var(--primary-rgb) / 0.25);
+  color: var(--text-muted); font-size: 28px;
+}
+.aim-thumb img { width: 100%; height: 100%; object-fit: contain; }
+#aim-banners .aim-thumb img { object-fit: cover; }
+.aim-slot .crv-card-name { flex-direction: column; align-items: flex-start; gap: 2px; }
+.aim-tools { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.aim-upload { cursor: pointer; font-size: var(--text-xs); }
+.aim-add { cursor: pointer; min-height: 150px; }

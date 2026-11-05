@@ -6,6 +6,7 @@ import '../../../widgets/nopa_modal_shell.dart';
 import 'package:nopa_app/widgets/tap_expander.dart';
 import 'package:nopa_app/core/station_numbering.dart';
 import 'package:nopa_app/core/asset_names.dart';
+import 'package:nopa_app/core/app_images.dart';
 import 'package:nopa_app/widgets/caravan_banners_dialog.dart';
 import 'dart:async';
 import 'package:flutter/material.dart' hide Text;
@@ -412,7 +413,7 @@ class _MentorHomeScreenState extends State<MentorHomeScreen> {
 
   int _selectedAssetIndex = 0;
 
-  /// Assets Strip: Horizontal scrollable pills with badge numbers (1, 2, 3, 4).
+  /// Assets Strip: horizontal scrollable pills, each with its asset icon (AssetIcon).
   /// Shows the caravan's total capital; the mentor earns no personal capital.
   Widget _buildAssetsSection(CaravanModel? caravan) {
     return Column(
@@ -438,7 +439,7 @@ class _MentorHomeScreenState extends State<MentorHomeScreen> {
               padding: const EdgeInsets.symmetric(horizontal: 18),
               children: [
                 _buildAssetPill(
-                  badgeNumber: '۱',
+                  assetKey: 'zarik',
                   label: AssetNames.labelFor('زریک'),
                   value: (caravan?.totalZarik ?? 0).toPersian(),
                   isGold: _selectedAssetIndex == 0,
@@ -446,7 +447,7 @@ class _MentorHomeScreenState extends State<MentorHomeScreen> {
                 ),
                 const SizedBox(width: 10),
                 _buildAssetPill(
-                  badgeNumber: '۲',
+                  assetKey: 'derafsh',
                   label: AssetNames.labelFor('درفش'),
                   value: Provider.of<AppRepository>(context).caravanBannerTotal.toPersian(),
                   isGold: _selectedAssetIndex == 1,
@@ -457,7 +458,7 @@ class _MentorHomeScreenState extends State<MentorHomeScreen> {
                 ),
                 const SizedBox(width: 10),
                 _buildAssetPill(
-                  badgeNumber: '۳',
+                  assetKey: 'nakh',
                   label: AssetNames.labelFor('کلاف'),
                   value: (caravan?.totalNakh ?? 0).toPersian(),
                   isGold: _selectedAssetIndex == 2,
@@ -465,7 +466,7 @@ class _MentorHomeScreenState extends State<MentorHomeScreen> {
                 ),
                 const SizedBox(width: 10),
                 _buildAssetPill(
-                  badgeNumber: '۴',
+                  assetKey: 'farsh',
                   label: AssetNames.labelFor('قالیچه'),
                   value: (caravan?.totalFarsh ?? 0).toPersian(),
                   isGold: _selectedAssetIndex == 3,
@@ -480,7 +481,7 @@ class _MentorHomeScreenState extends State<MentorHomeScreen> {
   }
 
   Widget _buildAssetPill({
-    required String badgeNumber,
+    required String assetKey,
     required String label,
     required String value,
     required bool isGold,
@@ -540,21 +541,8 @@ class _MentorHomeScreenState extends State<MentorHomeScreen> {
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                // Right: Circular Badge
-                Container(
-                  width: 26,
-                  height: 26,
-                  decoration: BoxDecoration(
-                    color: isGold ? const Color(0xFF653A18) : const Color(0xFF8B88E8),
-                    shape: BoxShape.circle,
-                  ),
-                  child: Center(
-                    child: Text(
-                      badgeNumber,
-                      style: AppTypography.h3Strong,
-                    ),
-                  ),
-                ),
+                // Right: the asset's icon (bottom bar style, or the picture set in the panel)
+                AssetIcon(assetKey, size: 24, color: isGold ? const Color(0xFF653A18) : const Color(0xFFDFB690)),
                 const SizedBox(width: 8),
                 // Middle: Label
                 Text(

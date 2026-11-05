@@ -106,6 +106,11 @@
       title: 'اخبار جارچی', desc: 'مدیریت تابلوی اعلانات جارچی و رویدادها',
       load: () => (typeof window.loadNewsAndBanners === 'function' ? call('loadNewsAndBanners') : call('loadNewsTab')),
     },
+    'app-images-tab': {
+      hashes: ['app-images'], group: 'outreach', label: 'تصاویر اپلیکیشن', icon: 'fa-solid fa-images', section: 'content',
+      title: 'تصاویر اپلیکیشن', desc: 'بنرهای سربرگ صفحه‌ی اول، تصاویر سرمایه‌ها و عکس پیش‌فرض کانال‌ها و گروه‌ها',
+      load: () => call('loadAppImagesTab'),
+    },
     'notifications-tab': {
       // also the former content-tab (global announcement): #content opens the announcement composer
       hashes: ['notifications', 'messaging', 'content'], group: 'outreach', label: 'پیام‌رسانی و اطلاعیه‌ها', icon: 'fa-solid fa-paper-plane', section: 'notifications',

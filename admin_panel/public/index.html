@@ -3395,6 +3395,52 @@
         </div>
       </section>
 
+      <!-- APP IMAGES («تصاویر اپلیکیشن»): home header banners, asset images and the default chat pictures, each a slot
+           with upload / replace / remove. Drawn by js/features/app-images.js; styles in css/stations.css (.lst-*, .aim-*). -->
+      <section id="app-images-tab" class="tab-panel" data-style="display: none;">
+        <div class="lst-bento aim-bento">
+          <div class="lst-tile lst-tile-stations glass">
+            <div class="lst-tile-head">
+              <h4 class="lst-tile-title"><i class="fa-solid fa-images"></i> بنرهای سربرگ صفحه‌ی اول <span class="lst-tile-sub">اسلایدر بالای صفحه‌ی اول اپ (نوجوانان و راهبران)؛ نسبت پیشنهادی ۱۶ به ۷</span></h4>
+            </div>
+            <div id="aim-banners" class="crv-card-grid aim-grid"></div>
+
+            <div class="lst-tile-head aim-sub-head">
+              <h4 class="lst-tile-title"><i class="fa-solid fa-coins"></i> تصاویر سرمایه‌ها <span class="lst-tile-sub">در صفحه‌ی اول، بازارچه و برترین‌ها به جای نماد پیش‌فرض نشان داده می‌شود؛ تصویر مربع و پس‌زمینه‌ی شفاف (PNG) بهتر است</span></h4>
+            </div>
+            <div id="aim-assets" class="crv-card-grid aim-grid"></div>
+
+            <div class="lst-tile-head aim-sub-head">
+              <h4 class="lst-tile-title"><i class="fa-solid fa-comments"></i> عکس پروفایل پیش‌فرض کانال‌ها و گروه‌ها <span class="lst-tile-sub">برای کانال یا گروهی که عکس خودش را ندارد؛ عکسی که راهبر برای کاروانش گذاشته مقدم است</span></h4>
+            </div>
+            <div id="aim-chat" class="crv-card-grid aim-grid"></div>
+          </div>
+
+          <div class="lst-tile glass">
+            <h4 class="lst-tile-title"><i class="fa-solid fa-chart-simple"></i> آمار کلی</h4>
+            <div class="lst-mini-stats">
+              <div class="lst-mini-stat"><span class="stat-label">بنرهای سربرگ</span><span class="stat-value u-c-primary-text" id="aim-stat-banners">-</span></div>
+              <div class="lst-mini-stat"><span class="stat-label">تصویر تعیین‌شده</span><span class="stat-value u-c-success-text" id="aim-stat-set">-</span></div>
+              <div class="lst-mini-stat"><span class="stat-label">با نماد پیش‌فرض</span><span class="stat-value u-c-text-muted" id="aim-stat-empty">-</span></div>
+            </div>
+          </div>
+
+          <div class="lst-tile glass">
+            <h4 class="lst-tile-title"><i class="fa-solid fa-circle-info"></i> راهنما</h4>
+            <ul class="lst-list">
+              <li class="lst-list-item"><i class="fa-solid fa-upload u-c-primary-text"></i><span class="lst-grow">قالب‌های مجاز: JPG، PNG، WEBP و GIF تا ۵ مگابایت.</span></li>
+              <li class="lst-list-item"><i class="fa-solid fa-rotate u-c-info-text"></i><span class="lst-grow">اپ تصاویر را هنگام باز شدن می‌خواند؛ تغییر پس از اجرای دوباره‌ی اپ دیده می‌شود.</span></li>
+              <li class="lst-list-item"><i class="fa-solid fa-trash u-c-danger-text"></i><span class="lst-grow">با حذف تصویر، اپ به نماد پیش‌فرض خودش برمی‌گردد.</span></li>
+            </ul>
+          </div>
+
+          <div class="lst-tile glass">
+            <h4 class="lst-tile-title"><i class="fa-solid fa-bolt"></i> دسترسی سریع</h4>
+            <button type="button" class="lst-quick-btn" data-click="NopaRouter.switchTab" data-click-args="[&quot;news-tab&quot;, true]"><i class="fa-solid fa-newspaper"></i> بنرهای بازار و جزئیات بنرها (جارچی)</button>
+          </div>
+        </div>
+      </section>
+
       <!-- JARCHI: the app's news board and banners in one bento like the other tabs: news cards (filters, stats,
            categories) and a full-width strip of the banners; a card opens its lse dialog (#news-modal / #banner-modal,
            same field ids). Drawn by js/features/jarchi.js; styles in css/stations.css (.jch-*). -->
@@ -4889,6 +4935,7 @@
     <script src="js/features/forms.js"></script>
     <script src="js/features/audit.js"></script>
     <script src="js/features/jarchi.js"></script>
+    <script src="js/features/app-images.js"></script>
     <script src="js/features/lms-builder.js"></script>
     <script src="support.js"></script>
     <script src="instructors.js"></script>

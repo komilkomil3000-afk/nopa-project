@@ -254,7 +254,8 @@ class _ChatSpaceProfileScreenState extends State<ChatSpaceProfileScreen> {
                       ]),
                     ),
                   ),
-                  if ((profile['coverImageUrl']?.toString() ?? '').isNotEmpty) ...[
+                  // a default picture from the panel is not the caravan's own: nothing to remove
+                  if ((profile['coverImageUrl']?.toString() ?? '').isNotEmpty && profile['hasOwnCover'] != false) ...[
                     const Spacer(),
                     TextButton(
                       onPressed: _savingCover ? null : () => _changeCover(remove: true),

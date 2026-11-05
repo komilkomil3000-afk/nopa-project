@@ -1,4 +1,5 @@
 import 'package:nopa_app/core/asset_names.dart';
+import 'package:nopa_app/core/app_images.dart';
 import '../core/challenge_taxonomy.dart';
 import '../core/economy_rates.dart';
 import 'chat_repository.dart';
@@ -334,6 +335,9 @@ class AppRepository extends ChangeNotifier with WidgetsBindingObserver {
     final rates = await _apiService.getEconomyRates();
     if (rates != null) EconomyRates.apply(rates);
     if (_assetNamesLoaded) return;
+    // The pictures set in the panel (asset images) come with the names
+    final images = await _apiService.getAppImages();
+    if (images != null) AppImages.apply(images);
     // The challenge categories' names come with the asset names: both are admin-editable labels
     final taxonomy = await _apiService.getChallengeTaxonomy();
     if (taxonomy.isNotEmpty) ChallengeTaxonomy.apply(taxonomy);

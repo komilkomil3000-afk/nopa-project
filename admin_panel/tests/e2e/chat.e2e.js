@@ -22,7 +22,7 @@ run(async () => {
 
   const space = async (who, type) => (await call(who, 'GET', '/chat/spaces')).body.find(s => s.type === type);
   const list1 = (await call(s1, 'GET', '/chat/spaces')).body;
-  assert.deepEqual(list1.map(s => s.type).sort(), ['announcements', 'arena', 'caravan', 'challenges', 'public', 'support']);
+  assert.deepEqual(list1.map(s => s.type).sort(), ['announcements', 'arena', 'caravan', 'challenges', 'support']);
   assert.equal(list1.find(s => s.type === 'caravan').title, 'الف'); console.log('student spaces OK');
   const caravan1 = list1.find(s => s.type === 'caravan');
   const announce = list1.find(s => s.type === 'announcements');

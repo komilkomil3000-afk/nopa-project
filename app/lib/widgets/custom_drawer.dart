@@ -4,6 +4,7 @@ import 'package:nopa_app/widgets/app_toast.dart';
 import 'package:nopa_app/widgets/app_update_dialog.dart';
 import 'package:nopa_app/core/theme/app_colors.dart';
 import 'package:nopa_app/widgets/bottom_nav_bar.dart';
+import 'package:nopa_app/screens/market/market_screen.dart' show MarketScreen;
 import 'nopa_modal_shell.dart';
 import 'package:nopa_app/screens/chat/channel_manager_profile_screen.dart';
 import 'package:nopa_app/widgets/support_message_dialog.dart';
@@ -293,8 +294,9 @@ class CustomDrawer extends StatelessWidget {
                       iconSize: 23,
                       onTap: () {
                         Navigator.pop(context);
-                        // The rankings (برترین ها) are a section of the market tab
+                        // The rankings (برترین ها) are the last section of the market tab: open it scrolled there
                         onTabSelected(AppTabs.market);
+                        MarketScreen.showLeaderboard();
                       },
                     ),
 

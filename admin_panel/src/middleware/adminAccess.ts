@@ -92,7 +92,7 @@ const SECTION_RULES: Array<[RegExp, string]> = [
   [/^\/drafts\/station(\/|$)/i, 'lms'],
   [/^\/(tickets|messages|support-cases)(\/|$)/i, 'support'],
   [/^\/chat-manage(\/|$)/i, 'chat'],
-  [/^\/(news|banners|announcements|media|forms)(\/|$)/i, 'content'],
+  [/^\/(news|banners|app-images|announcements|media|forms)(\/|$)/i, 'content'],
   [/^\/notifications(\/|$)/i, 'notifications'],
   [/^\/(analytics|leaderboard)(\/|$)/i, 'analytics'],
 ];

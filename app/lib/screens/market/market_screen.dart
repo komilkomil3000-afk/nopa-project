@@ -6,6 +6,7 @@ import 'package:nopa_app/widgets/nopa_modal_shell.dart';
 import 'package:nopa_app/widgets/nopa_pill_tabs.dart';
 import 'package:nopa_app/widgets/tap_expander.dart';
 import 'package:nopa_app/core/asset_names.dart';
+import 'package:nopa_app/core/app_images.dart';
 import 'package:flutter/material.dart' hide Text;
 import 'package:nopa_app/widgets/fa_text.dart';
 import 'package:nopa_app/widgets/app_toast.dart';
@@ -30,6 +31,10 @@ enum MarketMode { student, mentor }
 class MarketScreen extends StatefulWidget {
   final MarketMode mode;
   const MarketScreen({super.key, required this.mode});
+
+  /// Each bump asks the market to scroll to «برترین‌ها» (the drawer's «برترین‌ها» item switches to this tab first).
+  static final ValueNotifier<int> leaderboardRequests = ValueNotifier<int>(0);
+  static void showLeaderboard() => leaderboardRequests.value++;
 
   @override
   State<MarketScreen> createState() => _MarketScreenState();
@@ -80,8 +85,12 @@ class _MarketScreenState extends State<MarketScreen> {
   int _selectedLeaderboardTab = 0;
 
   // Leaderboard data (from /leagues/*)
-  List<Map<String, String>> _topMembers = [];
-  List<Map<String, String>> _topCaravans = [];
+  List<Map<String, dynamic>> _topMembers = [];
+  List<Map<String, dynamic>> _topCaravans = [];
+
+  // «برترین‌ها» in the drawer opens this tab scrolled to the rankings (see [MarketScreen.showLeaderboard])
+  final GlobalKey _leaderboardKey = GlobalKey();
+  int _handledLeaderboardRequest = 0;
   List<String> _memberIds = [];
   List<String> _caravanIds = [];
 
@@ -212,12 +221,32 @@ class _MarketScreenState extends State<MarketScreen> {
     _recalculateExchange();
     if (_isMentor) _loadMarketData();
     _loadLeaderboards();
+    MarketScreen.leaderboardRequests.addListener(_scrollToLeaderboard);
+    // asked before this tab was first built
+    if (MarketScreen.leaderboardRequests.value > 0) _scrollToLeaderboard();
   }
 
   @override
   void dispose() {
+    MarketScreen.leaderboardRequests.removeListener(_scrollToLeaderboard);
     _amountController.dispose();
     super.dispose();
+  }
+
+  /// Brings «برترین‌ها» (the last section) into view. Retries for a moment while the tab and its data appear.
+  void _scrollToLeaderboard([int attempt = 0]) {
+    final request = MarketScreen.leaderboardRequests.value;
+    if (request == _handledLeaderboardRequest) return;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      final target = _leaderboardKey.currentContext;
+      if (target == null) {
+        if (attempt < 20) Future.delayed(const Duration(milliseconds: 100), () => _scrollToLeaderboard(attempt + 1));
+        return;
+      }
+      _handledLeaderboardRequest = request;
+      Scrollable.ensureVisible(target, duration: const Duration(milliseconds: 550), curve: Curves.easeInOutCubic, alignment: 0.0);
+    });
   }
 
   void _recalculateExchange() {
@@ -461,17 +490,32 @@ class _MarketScreenState extends State<MarketScreen> {
       if (!mounted) return;
       setState(() {
         _memberIds = members.map((m) => m['id']?.toString() ?? '').toList();
-        _topMembers = members.take(3).map((m) => {
+        // each asset on its own, then the whole value in zarik (the server's capitalValue)
+        _topMembers = members.take(3).map((m) => <String, dynamic>{
               'name': m['name']?.toString() ?? '-',
               'avatarUrl': m['avatarUrl']?.toString() ?? '',
-              'zarik': '${_formatScore(m['capital'] ?? m['zarikBalance'])} زریک',
+              'assets': <String, int>{
+                'zarik': _asInt(m['zarikBalance']),
+                'nakh': _asInt(m['nakh']),
+                'farsh': _asInt(m['farsh']),
+              },
+              'total': _asInt(m['capital'] ?? m['zarikBalance']),
             }).toList();
         _caravanIds = caravans.map((c) => c['id']?.toString() ?? '').toList();
-        _topCaravans = caravans.take(3).map((c) => {
-              'name': c['name']?.toString() ?? '-',
-              'avatarUrl': c['coverImageUrl']?.toString() ?? '',
-              'zarik': '${_formatScore(c['averageWealth'] ?? c['totalWealth'])} زریک',
-            }).toList();
+        _topCaravans = caravans.take(3).map((c) {
+          final assets = c['assets'] is Map ? c['assets'] as Map : const {};
+          return <String, dynamic>{
+            'name': c['name']?.toString() ?? '-',
+            'avatarUrl': c['coverImageUrl']?.toString() ?? '',
+            'assets': <String, int>{
+              'zarik': _asInt(assets['zarik']),
+              'nakh': _asInt(assets['nakh']),
+              'farsh': _asInt(assets['farsh']),
+              'derafsh': _asInt(assets['beyragh']),
+            },
+            'total': _asInt(c['totalWealth'] ?? c['averageWealth']),
+          };
+        }).toList();
       });
     } catch (e) {
       debugPrint('Error loading leaderboards: $e');
@@ -545,7 +589,10 @@ class _MarketScreenState extends State<MarketScreen> {
               const SizedBox(height: 26),
 
               // 5. Section 4: برترین ها (لیگ / لیدربورد)
-              _buildLeaderboardSection(user, myCaravanId: isMentor ? repository.selectedCaravanId : user.caravanId),
+              KeyedSubtree(
+                key: _leaderboardKey,
+                child: _buildLeaderboardSection(user, myCaravanId: isMentor ? repository.selectedCaravanId : user.caravanId),
+              ),
               const SizedBox(height: 40),
             ],
           ),
@@ -641,12 +688,8 @@ class _MarketScreenState extends State<MarketScreen> {
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    SvgPicture.asset(
-                      'assets/svg_icons/imagenot01.svg',
-                      width: 32,
-                      height: 32,
-                      fit: BoxFit.contain,
-                    ),
+                    // the asset's picture set in the panel («تصاویر اپلیکیشن»), otherwise its built-in icon
+                    AssetIcon(AssetIcon.keyOfLabel(item['assetKey'] as String), size: 34),
                     const SizedBox(height: 8),
                     Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 4),
@@ -2000,7 +2043,8 @@ class _MarketScreenState extends State<MarketScreen> {
       return {
         'rank': i + 1,
         'name': hasItem ? source[i]['name'] : '-',
-        'zarik': hasItem ? source[i]['zarik'] : '',
+        'assets': hasItem ? source[i]['assets'] : null,
+        'total': hasItem ? source[i]['total'] : null,
         // Members show their own picture, caravans the one their mentor chose; otherwise the placeholder
         'avatarUrl': hasItem ? (source[i]['avatarUrl'] ?? '') : '',
         'color': podiumColors[i],
@@ -2221,12 +2265,48 @@ class _MarketScreenState extends State<MarketScreen> {
 
         const SizedBox(height: 4),
 
-        // Zarik Wealth (flat text, no glowing shadows)
-        Text(
-          (item['zarik'] as String).toPersianDigits(),
-          style: AppTypography.caption.copyWith(color: Color(0xFFFFD580)),
-        ),
+        // Each asset on its own line, then the total value in zarik
+        if (item['assets'] is Map) ...[
+          const SizedBox(height: 4),
+          for (final e in (item['assets'] as Map<String, int>).entries) _podiumAssetLine(e.key, e.value),
+          const SizedBox(height: 6),
+          Text(
+            'ارزش کل دارایی (به ${AssetNames.of('zarik')})',
+            textAlign: TextAlign.center,
+            style: AppTypography.caption.copyWith(color: const Color(0xFF9E9AC0), fontSize: 10.5),
+          ),
+          const SizedBox(height: 2),
+          Text(
+            _formatScore(item['total']).toPersianDigits(),
+            style: AppTypography.caption.copyWith(color: const Color(0xFFFFD580), fontWeight: FontWeight.w800),
+          ),
+        ],
       ],
+    );
+  }
+
+  /// One asset of a podium entry: its icon, name and amount.
+  Widget _podiumAssetLine(String key, int amount) {
+    return Padding(
+      padding: const EdgeInsets.only(top: 2),
+      child: Directionality(
+        textDirection: TextDirection.rtl,
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            AssetIcon(key, size: 13),
+            const SizedBox(width: 4),
+            Flexible(
+              child: Text(
+                '${AssetNames.of(key)}: ${_formatScore(amount).toPersianDigits()}',
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: AppTypography.caption.copyWith(color: const Color(0xFFD6D3E6), fontSize: 11),
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

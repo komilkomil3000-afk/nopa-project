@@ -1954,6 +1954,20 @@ class HttpApiService {
     return [];
   }
 
+  /// Pictures set in the panel («تصاویر اپلیکیشن»): {assets: {key: url}, chat: {type: url}}. Null on failure.
+  Future<Map<String, dynamic>?> getAppImages() async {
+    try {
+      final response = await _get(Uri.parse('$baseUrl/app-images'), headers: _getHeaders());
+      if (response.statusCode == 200) {
+        final dynamic data = await parseJsonAsync(response.body);
+        if (data is Map) return Map<String, dynamic>.from(data);
+      }
+    } catch (e) {
+      debugPrint('getAppImages error: $e');
+    }
+    return null;
+  }
+
   /// A chat call, relative to the API root. Null when the network failed.
   Future<http.Response?> chatCall(String method, String path, {Map<String, dynamic>? body}) async {
     try {

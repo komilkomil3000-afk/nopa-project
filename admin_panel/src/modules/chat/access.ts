@@ -56,10 +56,12 @@ export function canDeleteGroup(a: ChatActor): boolean {
 export function canSee(a: ChatActor, s: SpaceRef, isMember: boolean): boolean {
   switch (s.type as SpaceType) {
     case 'announcements':
-    case 'public':
     case 'arena':
-    case 'mediaqa':
       return true;
+    case 'public':
+    case 'mediaqa':
+      // retired: the caravan's own group took their place (service.ts GLOBAL_SPACES)
+      return false;
     case 'support':
       return isMember || isAdmin(a) || isSupport(a) || (isManager(a) && a.permissions.privateChats);
     case 'mentors':

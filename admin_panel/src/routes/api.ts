@@ -40,6 +40,7 @@ import {
   sendMentorMessage
 } from '../controllers/mentorWorkspaceController';
 import adminRouter from './admin';
+import { listAppImages } from '../controllers/appImagesController';
 
 const router = Router();
 // the person's activity log of the mobile app (picture / profile changes, answers ...), middleware/activityLog.ts
@@ -100,6 +101,7 @@ router.patch('/notifications/:id/read', authenticateJWT as any, markNotification
 // G. Public/Misc Routes
 router.get('/news', authenticateJWT as any, getNews as any);
 router.get('/banners', authenticateJWT as any, getBanners as any);
+router.get('/app-images', authenticateJWT as any, listAppImages as any);
 
 // H. Admin CRM Routes
 router.use('/admin', adminRouter);

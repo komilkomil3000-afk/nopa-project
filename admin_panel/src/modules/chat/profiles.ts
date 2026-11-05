@@ -7,11 +7,12 @@ import { uploadsDir } from '../../controllers/mediaController';
 import { canModerate, canTag, ChatActor } from './access';
 import { handler, requireSpace } from './http';
 import { isOnline, onlineUserIds } from './realtime';
-import { ChatError, signFileUrl } from './service';
+import { caravanGroupTitle, ChatError, signFileUrl } from './service';
+import { defaultChatImage } from '../../controllers/appImagesController';
 import { sealedMessageIds } from './arenaPrivacy';
 
 const PERSON_SELECT = { id: true, name: true, avatarUrl: true, role: true, gender: true };
-const PUBLIC_TYPES = new Set(['announcements', 'public', 'arena', 'mediaqa']);
+const PUBLIC_TYPES = new Set(['announcements', 'arena']);
 const MEDIA_LIMIT = 60;
 const STATS_DAYS = 30;
 
@@ -59,9 +60,12 @@ export const spaceProfile = handler(async (req, res, actor) => {
     const at = caravans.findIndex(c => c.id === space.caravanId);
     if (at >= 0) { rank = at + 1; caravanName = caravans[at].name; }
   }
-  const title = space.type === 'caravan' && caravanName ? caravanName : space.title;
+  const title = space.type === 'caravan' && caravanName ? caravanGroupTitle(caravanName) : space.title;
+  const hasOwnCover = !!coverImageUrl;
+  // no picture of its own: the default the admin set for this kind of space («تصاویر اپلیکیشن»)
+  if (!coverImageUrl && space.type !== 'direct') coverImageUrl = await defaultChatImage(space.type);
   res.json({
-    id: space.id, type: space.type, title, caravanName, coverImageUrl, slogan, memberCount, onlineCount, rank, members,
+    id: space.id, type: space.type, title, caravanName, coverImageUrl, hasOwnCover, slogan, memberCount, onlineCount, rank, members,
     canModerate: canModerate(actor, space),
     canEditCover: canEditCover(actor, space),
   });

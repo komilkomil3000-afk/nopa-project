@@ -199,6 +199,7 @@ router.get('/users/:id/presence', getUserPresence as any);
 import { getAdminNews, createNews, updateNews, deleteNews } from '../controllers/newsController';
 import { getAdminBanners, createBanner, updateBanner, deleteBanner } from '../controllers/bannerController';
 import { upload, uploadMedia, listStoredFiles, deleteStoredFiles } from '../controllers/mediaController';
+import { clearAppImage, listAppImages, setAppImage } from '../controllers/appImagesController';
 
 // 5. Educational Content, Banners, News & Announcements
 router.post('/media/upload', upload.single('file') as any, uploadMedia as any);
@@ -215,6 +216,10 @@ router.get('/banners', getAdminBanners as any);
 router.post('/banners', upload.single('image') as any, createBanner as any);
 router.put('/banners/:id', upload.single('image') as any, updateBanner as any);
 router.delete('/banners/:id', deleteBanner as any);
+// «تصاویر اپلیکیشن»: asset images and the default chat pictures (SystemSetting APP_IMAGES)
+router.get('/app-images', listAppImages as any);
+router.post('/app-images/:group/:key', upload.single('image') as any, setAppImage as any);
+router.delete('/app-images/:group/:key', clearAppImage as any);
 router.post('/notifications/broadcast', broadcastNotification as any);
 router.get('/notifications/templates', getTemplates as any);
 router.post('/notifications/templates', createTemplate as any);

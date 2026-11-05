@@ -15,13 +15,17 @@ export const MAX_BODY = 4000;
 export const PAGE_SIZE = 40;
 const FILE_LINK_SECONDS = 60 * 60;
 
+// «کانال همگانی» (public) and «گروه رسانه» (mediaqa) were retired: people talk and work in their own caravan's group
+// (`کاروان <name>`: its members, its mentor and support). Their old rows stay in the database but nobody sees them
+// (access.ts canSee) and they are no longer created.
 const GLOBAL_SPACES = [
   { key: 'announcements', type: 'announcements', title: 'کانال اعلانات' },
-  { key: 'public', type: 'public', title: 'کانال همگانی' },
   { key: 'arena', type: 'arena', title: 'میدان آثار' },
   { key: 'mentors', type: 'mentors', title: 'اتاق راهبران' },
-  { key: 'mediaqa', type: 'mediaqa', title: 'گروه رسانه' },
 ];
+
+/** The name a caravan's group is shown with. */
+export const caravanGroupTitle = (caravanName: string) => `کاروان ${caravanName}`;
 
 const ensured = new Set<string>();
 
@@ -52,11 +56,11 @@ export async function caravanIdsOf(actor: ChatActor): Promise<string[]> {
 
 export async function ensureCaravanSpaces(caravanId: string) {
   const caravan = `caravan:${caravanId}`, challenges = `challenges:${caravanId}`;
-  if (!ensured.has(caravan)) await ensureSpace(caravan, { type: 'caravan', title: 'گروه کاروان', caravanId });
+  if (!ensured.has(caravan)) await ensureSpace(caravan, { type: 'caravan', title: 'گروه کاروان', caravanId }) // shown as caravanGroupTitle(name);
   if (!ensured.has(challenges)) await ensureSpace(challenges, { type: 'challenges', title: 'گروه چالش‌ها', caravanId });
 }
 
-export const globalSpace = (key: 'announcements' | 'public' | 'arena' | 'mentors' | 'mediaqa') => {
+export const globalSpace = (key: 'announcements' | 'arena' | 'mentors') => {
   const s = GLOBAL_SPACES.find(g => g.key === key)!;
   return ensureSpace(s.key, { type: s.type, title: s.title });
 };
@@ -84,7 +88,7 @@ export async function visibleSpaces(actor: ChatActor) {
   const candidates = await prisma.chatSpace.findMany({
     where: {
       OR: [
-        { type: { in: ['announcements', 'public', 'arena', 'mentors', 'mediaqa'] } },
+        { type: { in: ['announcements', 'arena', 'mentors'] } },
         { caravanId: { in: caravanIds } },
         { id: { in: Array.from(members.keys()) } },
         // Support staff answer from the app: every user's support conversation with an unresolved case
