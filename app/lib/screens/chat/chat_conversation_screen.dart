@@ -66,12 +66,29 @@ class _ChatConversationScreenState extends State<ChatConversationScreen> {
 
   String? get _threadId => widget.threadRoot?.id;
 
+  /// The space's read position when the screen opened, and the new replies of the thread then.
+  int? _readSeqAtOpen;
+  int? _lastSeqAtOpen;
+  int _unreadAtOpen = 0;
+  int _threadUnreadAtOpen = 0;
+  /// The server's page arrived: the saved copy shown first is no longer what the screen places itself by.
+  bool _serverLoaded = false;
+
   @override
   void initState() {
     super.initState();
     AppRepository().chatScreenOpened();
     _chat.watch(widget.spaceId, threadRootId: _threadId);
-    _chat.open(widget.spaceId, threadRootId: _threadId).then((_) => _chat.markRead(widget.spaceId));
+    // Where the user stopped reading, taken before this visit marks everything read
+    final openSpace = _chat.spaceById(widget.spaceId);
+    _readSeqAtOpen = openSpace?.lastReadSeq;
+    _lastSeqAtOpen = openSpace?.lastSeq;
+    _unreadAtOpen = openSpace?.unread ?? 0;
+    if (widget.threadRoot != null) _threadUnreadAtOpen = ChatThreadSeen.instance.unread(widget.threadRoot!);
+    _chat.open(widget.spaceId, threadRootId: _threadId).then((_) {
+      if (mounted) setState(() => _serverLoaded = true);
+      _chat.markRead(widget.spaceId);
+    });
     if (_threadId != null) WidgetsBinding.instance.addPostFrameCallback((_) => _markThreadSeen());
     _chat.people(widget.spaceId).then((people) {
       if (mounted) setState(() => _people = people);
@@ -163,7 +180,9 @@ class _ChatConversationScreenState extends State<ChatConversationScreen> {
 
   // The list is reversed, so its far end is the oldest message
   Future<void> _onScroll() async {
-    if (_loadingOlder || _reachedStart || _scroll.position.extentAfter > 200) return;
+    _updateAtBottom();
+    // History is above the meeting point: load more when the top is near
+    if (_loadingOlder || _reachedStart || _scroll.position.extentBefore > 300) return;
     _loadingOlder = true;
     final more = await _chat.loadOlder(widget.spaceId, threadRootId: _threadId);
     _loadingOlder = false;
@@ -669,6 +688,7 @@ class _ChatConversationScreenState extends State<ChatConversationScreen> {
                               ),
                             ],
                           ),
+                          if (!_quizThread && messages.isNotEmpty) _toBottomButton(),
                         ],
                       ),
                     ),
@@ -910,16 +930,197 @@ class _ChatConversationScreenState extends State<ChatConversationScreen> {
     // A deleted message leaves no trace in the conversation
     messages = messages.where((m) => !m.deleted).toList();
     final style = _styleOf(space);
-    return ListView.builder(
+    _fixSplit(messages, myId);
+    // Two lists meet at a fixed point (the first unread message, or the end of what was there on opening):
+    // history grows upward from it and new messages downward, so nothing already on screen ever moves.
+    final split = _splitIndex(messages);
+    final showDivider = _unreadDivider && split < messages.length;
+    _afterBuild(messages, myId);
+
+    final keyIndex = <String, int>{};
+    for (var g = 0; g < messages.length; g++) {
+      keyIndex[_itemKey(messages[g])] = g;
+    }
+    Widget item(int g) {
+      final m = messages[g];
+      return _ChatAppear(
+        key: ValueKey(_itemKey(m)),
+        // Only what arrives while the conversation is open slides in; the history is simply there
+        animate: _arrived.contains(m.id) || _arrived.contains(m.clientMessageId),
+        child: _item(messages, g, space, myId, style),
+      );
+    }
+
+    return CustomScrollView(
       controller: _scroll,
-      reverse: true,
+      center: _centerKey,
+      // The meeting point sits at the bottom edge: with nothing unread the latest message rests there
+      anchor: 1.0,
       keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
-      padding: const EdgeInsets.fromLTRB(ChatTheme.gutter, 12, ChatTheme.gutter, 12),
-      itemCount: messages.length,
-      itemBuilder: (context, index) {
-        final message = messages[messages.length - 1 - index];
-        final older = index + 1 < messages.length ? messages[messages.length - 2 - index] : null;
-        final newer = index > 0 ? messages[messages.length - index] : null;
+      slivers: [
+        SliverPadding(
+          padding: const EdgeInsets.fromLTRB(ChatTheme.gutter, 12, ChatTheme.gutter, 0),
+          sliver: SliverList(
+            delegate: SliverChildBuilderDelegate(
+              // Laid out upward from the meeting point: index 0 is the message just above it
+              (context, i) => item(split - 1 - i),
+              childCount: split,
+              findChildIndexCallback: (key) {
+                final g = key is ValueKey<String> ? keyIndex[key.value] : null;
+                return g == null || g >= split ? null : split - 1 - g;
+              },
+            ),
+          ),
+        ),
+        SliverPadding(
+          key: _centerKey,
+          padding: const EdgeInsets.fromLTRB(ChatTheme.gutter, 0, ChatTheme.gutter, 12),
+          sliver: SliverList(
+            delegate: SliverChildBuilderDelegate(
+              (context, i) {
+                if (showDivider && i == 0) return const _UnreadDivider(key: ValueKey('unread-divider'));
+                return item(split + i - (showDivider ? 1 : 0));
+              },
+              childCount: messages.length - split + (showDivider ? 1 : 0),
+              findChildIndexCallback: (key) {
+                if (key == const ValueKey('unread-divider')) return showDivider ? 0 : null;
+                final g = key is ValueKey<String> ? keyIndex[key.value] : null;
+                return g == null || g < split ? null : g - split + (showDivider ? 1 : 0);
+              },
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  // ---- where the conversation opens, and following it ----
+
+  final GlobalKey _centerKey = GlobalKey();
+
+  /// The seq the two lists meet at: messages before it are history, from it on they are new. Fixed once.
+  int? _splitSeq;
+  /// The meeting point is the first unread message: a «پیام‌های خوانده نشده» line is drawn there.
+  bool _unreadDivider = false;
+  bool _positioned = false;
+  bool _atBottom = true;
+  /// Messages that arrived below while the user was reading further up.
+  int _newBelow = 0;
+  String? _lastNewestKey;
+  int _lastCount = 0;
+  /// Messages (ids or client ids) that arrived while the screen is open: they appear with a short animation.
+  final Set<String?> _arrived = {};
+
+  String _itemKey(ChatMessage m) => m.clientMessageId ?? m.id;
+
+  int _splitIndex(List<ChatMessage> messages) {
+    final at = _splitSeq;
+    if (at == null) return messages.length;
+    final i = messages.indexWhere((m) => m.seq == 0 || m.seq >= at);
+    return i < 0 ? messages.length : i;
+  }
+
+  /// Chooses the meeting point once. A group or channel knows it on opening, from where the user stopped
+  /// reading, so the saved copy and the server's page land in the same place; a thread waits for the server.
+  void _fixSplit(List<ChatMessage> messages, String myId) {
+    if (_splitSeq != null) return;
+    if (_threadId == null && _lastSeqAtOpen != null) {
+      final readSeq = _readSeqAtOpen ?? 0;
+      if (_unreadAtOpen > 0 && readSeq < _lastSeqAtOpen!) {
+        _splitSeq = readSeq + 1;
+        _unreadDivider = true;
+      } else {
+        _splitSeq = _lastSeqAtOpen! + 1;
+      }
+      return;
+    }
+    if (messages.isEmpty || !_serverLoaded) return;
+    ChatMessage? firstUnread;
+    if (_threadId != null) {
+      // Under a message: the replies counted as new on its «ورود به گفتگو»
+      final unread = _threadUnreadAtOpen;
+      final sent = messages.where((m) => m.seq > 0).toList();
+      if (unread > 0 && unread <= sent.length) firstUnread = sent[sent.length - unread];
+    }
+    if (firstUnread != null) {
+      _splitSeq = firstUnread.seq;
+      _unreadDivider = true;
+    } else {
+      final newest = messages.where((m) => m.seq > 0).fold<int>(0, (a, m) => m.seq > a ? m.seq : a);
+      _splitSeq = newest + 1;
+    }
+  }
+
+  /// After each build: the first placement, then following new messages only when the user is at the end.
+  void _afterBuild(List<ChatMessage> messages, String myId) {
+    final newest = messages.isEmpty ? null : messages.last;
+    final newestKey = newest == null ? null : _itemKey(newest);
+    final grew = messages.length > _lastCount && newestKey != _lastNewestKey && _lastNewestKey != null;
+    _lastCount = messages.length;
+    _lastNewestKey = newestKey;
+    // The saved copy shown while the server answers: nothing is animated, followed or placed yet
+    if (!_serverLoaded) return;
+    if (grew && newest != null && _positioned) {
+      _arrived.add(newest.id);
+      _arrived.add(newest.clientMessageId);
+    }
+
+    if (!_positioned && _splitSeq != null && messages.isNotEmpty) {
+      _positioned = true;
+      if (_unreadDivider) {
+        // The «unread» line goes near the top, unless everything new fits on the screen
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (!mounted || !_scroll.hasClients) return;
+          final position = _scroll.position;
+          final target = (position.viewportDimension - 90).clamp(0.0, position.maxScrollExtent);
+          _scroll.jumpTo(target);
+          _updateAtBottom();
+        });
+      }
+      return;
+    }
+    if (!grew || newest == null) return;
+    // One's own message always brings the end into view; someone else's only if the user is already there
+    if (newest.senderId == myId || _atBottom) {
+      WidgetsBinding.instance.addPostFrameCallback((_) => _scrollToBottom());
+    } else {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) setState(() => _newBelow += 1);
+      });
+    }
+  }
+
+  void _updateAtBottom() {
+    if (!_scroll.hasClients) return;
+    final position = _scroll.position;
+    final atBottom = position.pixels >= position.maxScrollExtent - 80;
+    if (atBottom != _atBottom || (atBottom && _newBelow > 0)) {
+      setState(() {
+        _atBottom = atBottom;
+        if (atBottom) _newBelow = 0;
+      });
+    }
+  }
+
+  /// Glides to the latest message. The list is built lazily, so the end may move while getting there.
+  Future<void> _scrollToBottom() async {
+    if (!mounted || !_scroll.hasClients) return;
+    for (var i = 0; i < 4; i++) {
+      final position = _scroll.position;
+      final distance = (position.maxScrollExtent - position.pixels).abs();
+      if (distance < 2) break;
+      final ms = (180 + distance / 6).clamp(200, 450).toInt();
+      await _scroll.animateTo(position.maxScrollExtent, duration: Duration(milliseconds: ms), curve: Curves.easeOutCubic);
+      if (!mounted || !_scroll.hasClients) return;
+    }
+    _updateAtBottom();
+  }
+
+  /// One row of the conversation: a card, or a bubble with its place in the sender's run.
+  Widget _item(List<ChatMessage> messages, int g, ChatSpace? space, String myId, ChatBubbleStyle style) {
+        final message = messages[g];
+        final older = g > 0 ? messages[g - 1] : null;
+        final newer = g + 1 < messages.length ? messages[g + 1] : null;
         final mine = message.senderId == myId;
         if (message.kind == 'station' && !message.deleted) return StationCard(key: ValueKey(message.id), message: message);
         if (message.kind == 'result' && !message.deleted) return ResultCard(key: ValueKey(message.id), message: message);
@@ -956,7 +1157,59 @@ class _ChatConversationScreenState extends State<ChatConversationScreen> {
             _chat.react(message, type);
           },
         );
-      },
+  }
+
+  /// Down to the latest message, at the side of the conversation; shows how many arrived below.
+  Widget _toBottomButton() {
+    return PositionedDirectional(
+      end: 12,
+      bottom: 12,
+      child: AnimatedSlide(
+        offset: _atBottom ? const Offset(0, 0.6) : Offset.zero,
+        duration: const Duration(milliseconds: 200),
+        curve: Curves.easeOut,
+        child: AnimatedOpacity(
+          opacity: _atBottom ? 0 : 1,
+          duration: const Duration(milliseconds: 200),
+          child: IgnorePointer(
+            ignoring: _atBottom,
+            child: GestureDetector(
+              onTap: _scrollToBottom,
+              child: Stack(
+                clipBehavior: Clip.none,
+                children: [
+                  Container(
+                    width: 42,
+                    height: 42,
+                    decoration: BoxDecoration(
+                      color: ChatTheme.surfaceTop,
+                      shape: BoxShape.circle,
+                      border: Border.all(color: ChatTheme.accent.withValues(alpha: 0.7), width: 1.2),
+                      boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.35), blurRadius: 10, offset: const Offset(0, 3))],
+                    ),
+                    child: const Icon(Icons.keyboard_double_arrow_down_rounded, color: ChatTheme.accent, size: 24),
+                  ),
+                  if (_newBelow > 0)
+                    Positioned(
+                      top: -6,
+                      left: -4,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
+                        constraints: const BoxConstraints(minWidth: 20),
+                        decoration: BoxDecoration(color: ChatTheme.accent, borderRadius: BorderRadius.circular(10)),
+                        child: Text(
+                          _newBelow > 99 ? '+۹۹' : '$_newBelow',
+                          textAlign: TextAlign.center,
+                          style: ChatTheme.caption.copyWith(color: ChatTheme.ink, fontWeight: FontWeight.bold),
+                        ),
+                      ),
+                    ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
     );
   }
 
@@ -1248,6 +1501,69 @@ class _ChatConversationScreenState extends State<ChatConversationScreen> {
               child: Center(child: Text(e, style: const TextStyle(fontSize: 24))),
             ),
         ],
+      ),
+    );
+  }
+}
+
+/// «پیام‌های خوانده نشده»: plain text on the chat's background, where the user stopped reading.
+class _UnreadDivider extends StatelessWidget {
+  const _UnreadDivider({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final line = Expanded(child: Container(height: 1, color: ChatTheme.feedbackText.withValues(alpha: 0.25)));
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 10),
+      child: Row(children: [
+        line,
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 10),
+          child: Text('پیام‌های خوانده نشده', style: ChatTheme.caption.copyWith(color: ChatTheme.feedbackText, fontWeight: FontWeight.bold, fontSize: 12)),
+        ),
+        line,
+      ]),
+    );
+  }
+}
+
+/// A message that arrives while the conversation is open fades and rises into place, once.
+class _ChatAppear extends StatefulWidget {
+  final bool animate;
+  final Widget child;
+  const _ChatAppear({super.key, required this.animate, required this.child});
+
+  @override
+  State<_ChatAppear> createState() => _ChatAppearState();
+}
+
+class _ChatAppearState extends State<_ChatAppear> with SingleTickerProviderStateMixin {
+  late final AnimationController _controller = AnimationController(
+    vsync: this,
+    duration: const Duration(milliseconds: 260),
+    value: widget.animate ? 0 : 1,
+  );
+  late final Animation<double> _curve = CurvedAnimation(parent: _controller, curve: Curves.easeOutCubic);
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.animate) _controller.forward();
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return FadeTransition(
+      opacity: _curve,
+      child: SizeTransition(
+        sizeFactor: _curve,
+        child: SlideTransition(position: Tween(begin: const Offset(0, 0.25), end: Offset.zero).animate(_curve), child: widget.child),
       ),
     );
   }

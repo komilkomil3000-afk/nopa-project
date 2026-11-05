@@ -197,7 +197,8 @@ class _ChatMessageBubbleState extends State<ChatMessageBubble> {
         if (m.replyToId != null) _quote(),
         if (_isSubmission) _submissionBadge(),
         if (_challenge) ..._challengeContent() else ...[
-          for (final attachment in m.attachments) ChatAttachmentView(attachment: attachment, onGold: !_mineLook, own: widget.mine),
+          // Keyed, so a voice keeps playing when the name or reply above it comes and goes
+          for (final attachment in m.attachments) ChatAttachmentView(key: ValueKey('att-${attachment.id}'), attachment: attachment, onGold: !_mineLook, own: widget.mine),
           if (m.body.isNotEmpty) _bodyText(),
         ],
         if (m.tags.isNotEmpty || m.best || m.evidence || m.finalMark || widget.staffTags.isNotEmpty)
@@ -653,11 +654,12 @@ class _ChatAttachmentViewState extends State<ChatAttachmentView> {
             padding: const EdgeInsets.only(bottom: 4),
             child: SizedBox(
               width: 230,
+              // The download button on the left of the message, where the play button will be
               child: Row(
                 children: [
-                  _downloadButton(color),
-                  const SizedBox(width: 8),
                   Expanded(child: Text('پیام صوتی', style: ChatTheme.caption.copyWith(color: color))),
+                  const SizedBox(width: 8),
+                  Directionality(textDirection: TextDirection.ltr, child: _downloadButton(color)),
                 ],
               ),
             ),
