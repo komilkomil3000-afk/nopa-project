@@ -65,9 +65,13 @@ export function nakhValue(c: EconomyConfig): number {
   return c.farshSalePrice / c.nakhPerFarsh;
 }
 
-/** Ranking capital: holdings counted at their zarik worth. Converting or selling leaves it unchanged. */
+/**
+ * Ranking capital: holdings counted at their zarik worth. کلاف (nakh) has no worth of its own: it counts only
+ * once turned into قالیچه (farsh), so converting it raises the capital. Selling a farsh leaves it unchanged.
+ * Every ranking (app, chat profiles, panel, station report cards) uses this one formula.
+ */
 export function capitalValue(b: { zarikBalance?: number | null; nakh?: number | null; farsh?: number | null }, c: EconomyConfig): number {
-  return Math.round((b.zarikBalance || 0) + (b.nakh || 0) * nakhValue(c) + (b.farsh || 0) * c.farshSalePrice);
+  return Math.round((b.zarikBalance || 0) + (b.farsh || 0) * c.farshSalePrice);
 }
 
 export type CapitalAsset = 'zarik' | 'nakh' | 'farsh';
@@ -149,6 +153,6 @@ export function parseEconomyConfig(raw: any): { error: string } | { config: Econ
 /** The richest students by the official formula, with the fields the panel shows. */
 export async function topByCapital(take: number) {
   const { config } = await getEconomyPolicy();
-  const students = await prisma.user.findMany({ where: { role: 'student' }, select: { name: true, zarikBalance: true, nakh: true, beyragh: true, farsh: true } });
+  const students = await prisma.user.findMany({ where: { role: 'student', isDeleted: false }, select: { name: true, zarikBalance: true, nakh: true, beyragh: true, farsh: true } });
   return students.map(s => ({ ...s, capital: capitalValue(s, config) })).sort((a, b) => b.capital - a.capital).slice(0, take);
 }

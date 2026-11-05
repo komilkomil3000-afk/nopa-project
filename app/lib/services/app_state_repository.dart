@@ -28,6 +28,7 @@ class AppRepository extends ChangeNotifier with WidgetsBindingObserver {
     _initializeMockData();
     WidgetsBinding.instance.addObserver(this);
     
+    ChatRepository.instance.assetChanges.addListener(_onServerAssetsChanged);
     // Defer network operations, user refresh and timers until after the initial UI frame renders
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _startPeriodicNotificationSync();
@@ -273,11 +274,54 @@ class AppRepository extends ChangeNotifier with WidgetsBindingObserver {
       _apiService.getStations().then((_) => notifyListeners()).catchError((e) => debugPrint('getStations error: $e'));
       fetchCaravanBanners().catchError((e) => debugPrint('fetchCaravanBanners error: $e'));
       fetchCaravans().catchError((e) => debugPrint('fetchCaravans error: $e'));
+      // No socket (chat off or unreachable): no «assets» events arrive, so the rankings follow the poll (~30 s)
+      if (!ChatRepository.instance.connected) noteScoresChanged();
     }
   }
 
+  // ---- scores in step: one signal for every screen showing balances or rankings ----
+
+  /// Bumped whenever someone's holdings may have changed: the server's «assets» event (socket), the user's own
+  /// balances moving, the app coming back to the foreground, or (without the socket) the slow poll.
+  /// «برترین‌ها», the mentor's members report and the chat profiles reload on it, so a reward shows
+  /// everywhere — for the person, their mentor and the others — within a moment instead of on the next visit.
+  final ValueNotifier<int> scoresVersion = ValueNotifier(0);
+  Timer? _scoresDebounce;
+
+  void noteScoresChanged() {
+    _scoresDebounce?.cancel();
+    _scoresDebounce = Timer(const Duration(milliseconds: 400), () {
+      scoresVersion.value++;
+      // the mentor's home shows the caravan's summed holdings (from the caravan list)
+      if (currentUser.role.isMentorLike && _apiService.isAuthenticated) {
+        fetchCaravans().catchError((e) => debugPrint('fetchCaravans error: $e'));
+      }
+    });
+  }
+
+  /// The server says holdings moved: the user's own come first (when among them), then every list follows.
+  Future<void> _onServerAssetsChanged() async {
+    if (!_apiService.isAuthenticated) return;
+    if (ChatRepository.instance.lastAssetUserIds.contains(currentUser.id)) {
+      final user = await _apiService.getMe();
+      if (user != null) {
+        _applyUser(user);
+        notifyListeners();
+      }
+    }
+    noteScoresChanged();
+  }
+
+  static String _assetsSignature(UserModel u) => '${u.id}|${u.zarik}|${u.nakh}|${u.farsh}|${u.beyragh}';
+
   /// Keeps the role the user switched to when the account has both roles.
   void _applyUser(UserModel user) {
+    final assetsBefore = _assetsSignature(currentUser);
+    _applyUserFields(user);
+    if (_assetsSignature(currentUser) != assetsBefore) noteScoresChanged();
+  }
+
+  void _applyUserFields(UserModel user) {
     final existingRole = currentUser.role;
     if (user.isDualRole && (existingRole == UserRole.mentor || existingRole == UserRole.member)) {
       currentUser = user.copyWith(role: existingRole);
@@ -313,6 +357,8 @@ class AppRepository extends ChangeNotifier with WidgetsBindingObserver {
           refreshUser().catchError((e) {
             debugPrint('Resumed refreshUser error: $e');
           });
+          // events sent while the app slept were missed: the rankings and profiles reload
+          noteScoresChanged();
         }
       } else if (state == AppLifecycleState.paused || state == AppLifecycleState.inactive || state == AppLifecycleState.detached) {
         if (state != AppLifecycleState.inactive) _backgroundSince ??= DateTime.now();
@@ -602,16 +648,26 @@ class AppRepository extends ChangeNotifier with WidgetsBindingObserver {
                 }
                 return sum;
               });
+          // The server's standing is what «برترین کاروان‌ها» counts; the member sums are only a fallback for an older server
+          final standing = item['standing'] is Map ? item['standing'] as Map : null;
+          final assets = standing?['assets'] is Map ? standing!['assets'] as Map : null;
+          int fromStanding(Map? m, String key, int fallback) => m?[key] is num ? (m![key] as num).toInt() : fallback;
           loaded.add(CaravanModel(
             id: item['id']?.toString() ?? '',
             name: item['name']?.toString() ?? 'کاروان',
             memberCount: memberCount,
             overallProgress: overallProgress,
             activeStation: activeStation,
-            totalZarik: sumOf(['zarikBalance', 'zarik']),
-            totalBeyragh: sumOf(['beyragh']),
-            totalNakh: sumOf(['nakh']),
-            totalFarsh: sumOf(['farsh']),
+            totalZarik: fromStanding(assets, 'zarik', sumOf(['zarikBalance', 'zarik'])),
+            // the caravan's banners only (a member's personal درفش is theirs)
+            totalBeyragh: fromStanding(assets, 'beyragh', 0),
+            totalNakh: fromStanding(assets, 'nakh', sumOf(['nakh'])),
+            totalFarsh: fromStanding(assets, 'farsh', sumOf(['farsh'])),
+            totalWealth: fromStanding(standing, 'totalWealth', sumOf(['zarikBalance', 'zarik']) + sumOf(['farsh']) * EconomyRates.farshSalePrice),
+            averageWealth: fromStanding(standing, 'averageWealth', 0),
+            bannerPoints: fromStanding(standing, 'bannerPoints', 0),
+            rank: standing?['rank'] is num ? (standing!['rank'] as num).toInt() : null,
+            rankOf: fromStanding(standing, 'of', 0),
           ));
         }
         if (loaded.isNotEmpty) {
@@ -831,34 +887,6 @@ class AppRepository extends ChangeNotifier with WidgetsBindingObserver {
     notifyListeners();
   }
 
-  void reviewSubmission(String submissionId, bool approved, double reward) {
-    final subIndex = submissions.indexWhere((element) => element.id == submissionId);
-    if (subIndex != -1) {
-      final sub = submissions[subIndex];
-      sub.status = approved ? 'approved' : 'rejected';
-      sub.scoreFeedback = approved ? 'با موفقیت تایید شد' : 'رد شد. لطفا اصلاح و مجدد ارسال کنید.';
-
-      if (approved) {
-        if (sub.studentId == currentUser.id) {
-          currentUser = UserModel(
-            id: currentUser.id,
-            name: currentUser.name,
-            phoneNumber: currentUser.phoneNumber,
-            role: currentUser.role,
-            zarik: currentUser.zarik + reward.toInt(),
-            nakh: currentUser.nakh + 1,
-            beyragh: currentUser.beyragh,
-            farsh: currentUser.farsh,
-            hasEvaluatedMentorThisSeason: currentUser.hasEvaluatedMentorThisSeason,
-            userCode: currentUser.userCode,
-          );
-        }
-      }
-
-
-      notifyListeners();
-    }
-  }
 
   void switchCaravan(String caravanId) {
     _selectedCaravanId = caravanId;

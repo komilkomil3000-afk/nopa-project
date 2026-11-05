@@ -1,5 +1,6 @@
 import { Prisma } from '@prisma/client';
 import { getEconomyPolicy } from './economy';
+import { noteBalanceChanged } from './balanceEvents';
 
 export type LedgerAsset = 'zarik' | 'nakh' | 'farsh' | 'beyragh';
 
@@ -35,6 +36,8 @@ export async function changeBalance(tx: Prisma.TransactionClient, change: Balanc
     data: { [field]: { increment: amount } },
   });
   if (updated.count !== 1) throw new Error('INSUFFICIENT_BALANCE');
+  // rankings and the open apps follow (sent after a short delay, once this transaction has committed)
+  noteBalanceChanged(userId);
 
   const { version } = await getEconomyPolicy();
   await tx.assetTransaction.create({

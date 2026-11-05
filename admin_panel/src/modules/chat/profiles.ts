@@ -10,6 +10,7 @@ import { isOnline, onlineUserIds } from './realtime';
 import { caravanGroupTitle, ChatError, customCaravanGroupTitle, setCaravanGroupTitle, signFileUrl } from './service';
 import { defaultChatImage } from '../../controllers/appImagesController';
 import { sealedMessageIds } from './arenaPrivacy';
+import { rankedCaravans, studentRank } from '../../services/ranking';
 
 const PERSON_SELECT = { id: true, name: true, avatarUrl: true, role: true, gender: true };
 const PUBLIC_TYPES = new Set(['announcements', 'arena']);
@@ -70,7 +71,8 @@ export const spaceProfile = handler(async (req, res, actor) => {
     const own = await prisma.caravan.findUnique({ where: { id: space.caravanId }, select: { coverImageUrl: true, slogan: true } });
     coverImageUrl = own?.coverImageUrl || null;
     slogan = own?.slogan || null;
-    const caravans = await prisma.caravan.findMany({ where: { isDeleted: false }, select: { id: true, name: true, groupPoints: true }, orderBy: { groupPoints: 'desc' } });
+    // The caravan's place in «برترین کاروان‌ها» (the same ranking the market shows)
+    const caravans = await rankedCaravans();
     const at = caravans.findIndex(c => c.id === space.caravanId);
     if (at >= 0) { rank = at + 1; caravanName = caravans[at].name; }
   }
@@ -169,11 +171,8 @@ export const memberProfile = handler(async (req, res, actor) => {
   });
   if (!user) throw new ChatError(404, 'کاربر یافت نشد');
 
-  // Rank among the members of their caravan, by زریک
-  let rank: number | null = null;
-  if (user.caravanId) {
-    rank = (await prisma.user.count({ where: { caravanId: user.caravanId, role: 'student', zarikBalance: { gt: user.zarikBalance } } })) + 1;
-  }
+  // The place in «برترین شرکت‌کننده‌ها» (the market's ranking, by capital); null for a mentor
+  const rank = await studentRank(user.id);
 
   let stats: Record<string, unknown> | null = null;
   if (await mayAnalyze(actor, space, userId)) {

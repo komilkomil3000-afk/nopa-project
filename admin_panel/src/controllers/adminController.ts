@@ -6,6 +6,7 @@ import prisma from '../config/db';
 import { orderCategories } from '../utils/stationCategories';
 import { changeBalance } from '../services/ledger';
 import { capitalValue, getEconomyPolicy, topByCapital } from '../services/economy';
+import { caravanStandings } from '../services/ranking';
 import { createQuizMock } from './quizController';
 import { sendSystemNotification } from './notificationController';
 import bcrypt from 'bcryptjs';
@@ -1196,7 +1197,10 @@ export async function getCaravansAdmin(req: AuthRequest, res: Response) {
       },
     });
 
+    // Totals and value exactly as «برترین کاروان‌ها» counts them (students only; درفش = the caravan's own banners)
+    const standings = await caravanStandings();
     const enrichedCaravans = caravans.map(c => {
+      const standing = standings.get(c.id) ?? null;
       const activeMembers = c.members || [];
       const realMemberCount = c._count?.members || activeMembers.length;
       
@@ -1222,13 +1226,14 @@ export async function getCaravansAdmin(req: AuthRequest, res: Response) {
         memberCount: activeMembers.length || 0,
         _count: c._count,
         membersList: activeMembers || [],
-        totalWealth: totalZarik,
-        wealth: {
+        totalWealth: standing?.totalWealth ?? totalZarik,
+        wealth: standing?.assets ?? {
           zarik: totalZarik,
           nakh: totalNakh,
           beyragh: totalBeyragh,
           farsh: totalFarsh
         },
+        standing,
         overallProgress
       };
     });

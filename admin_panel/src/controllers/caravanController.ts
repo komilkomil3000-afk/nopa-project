@@ -2,6 +2,7 @@ import { Response } from 'express';
 import prisma from '../config/db';
 import { changeBalance } from '../services/ledger';
 import { CapitalAsset, conversionRule, getEconomyPolicy } from '../services/economy';
+import { caravanStandings } from '../services/ranking';
 import { AuthRequest } from '../middleware/auth';
 import { refreshUserRooms } from '../modules/chat/realtime';
 import { caravanGroupTitle, customCaravanGroupTitle, setCaravanGroupTitle } from '../modules/chat/service';
@@ -397,7 +398,9 @@ export async function getCaravans(req: AuthRequest, res: Response) {
       });
     }
 
-    res.json(caravans);
+    // Each caravan's totals, value and place as «برترین کاروان‌ها» counts them (the mentor's home, market and profile)
+    const standings = await caravanStandings();
+    res.json(caravans.map(c => ({ ...c, standing: standings.get(c.id) ?? null })));
   } catch (error: any) {
     res.status(500).json({ error: error.message });
   }
@@ -420,14 +423,16 @@ export async function getCaravanDetails(req: AuthRequest, res: Response) {
 
     const membersList = caravan.members || [];
     // Caravan capital is the students' total; a mentor who is also linked as a member adds nothing
+    // Totals and value as «برترین کاروان‌ها» counts them (درفش includes the caravan's own banners; کلاف has no value)
+    const standing = (await caravanStandings()).get(caravan.id) ?? null;
     const students = membersList.filter(u => u.role === 'student');
-    const wealth = {
+    const wealth = standing?.assets ?? {
       zarik: students.reduce((acc, u) => acc + (u.zarikBalance || 0), 0),
       nakh: students.reduce((acc, u) => acc + (u.nakh || 0), 0),
       farsh: students.reduce((acc, u) => acc + (u.farsh || 0), 0),
       beyragh: students.reduce((acc, u) => acc + (u.beyragh || 0), 0),
     };
-    const totalWealth = wealth.zarik;
+    const totalWealth = standing?.totalWealth ?? 0;
 
     // Calculate progress based on station session watch records
     let overallProgress = caravan.overallProgress || 0;
@@ -457,6 +462,7 @@ export async function getCaravanDetails(req: AuthRequest, res: Response) {
       memberCount: membersList.length,
       wealth,
       totalWealth,
+      standing,
       overallProgress
     });
   } catch (err) {

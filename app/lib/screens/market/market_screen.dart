@@ -20,6 +20,8 @@ import 'package:nopa_app/services/app_state_repository.dart';
 import 'package:nopa_app/services/api_service.dart';
 import 'package:nopa_app/widgets/nopa_dialog_container.dart';
 import 'package:nopa_app/widgets/caravan_banners_dialog.dart';
+import 'package:nopa_app/widgets/caravan_standing_summary.dart';
+import 'package:nopa_app/widgets/info_reveal.dart';
 import 'package:nopa_app/utils/constants.dart';
 import 'package:nopa_app/utils/mentor_contact.dart';
 
@@ -96,6 +98,9 @@ class _MarketScreenState extends State<MarketScreen> {
 
   List<String> _memberIds = [];
   List<String> _caravanIds = [];
+  // every ranked row by id, so «شما» / «کاروان شما» can show their own figures under the podium
+  Map<String, Map<String, dynamic>> _memberRows = {};
+  Map<String, Map<String, dynamic>> _caravanRows = {};
 
   // Exchange calculator states
   String _sourceAsset = 'کلاف';
@@ -186,11 +191,13 @@ class _MarketScreenState extends State<MarketScreen> {
 
   /// Loads the members report and the exchanges of the caravan picked in the app.
   /// A newer call wins: a slow answer for a caravan the mentor already left is dropped.
-  Future<void> _loadMarketData() async {
+  /// [quiet] (a balance changed somewhere) refreshes in place: no loading state, and a failure keeps the lists.
+  Future<void> _loadMarketData({bool quiet = false}) async {
     final caravanId = Provider.of<AppRepository>(context, listen: false).selectedCaravanId;
+    if (quiet && (_marketLoading || caravanId != _loadedCaravanId)) return;
     final token = ++_marketLoadToken;
     _loadedCaravanId = caravanId;
-    if (mounted) {
+    if (mounted && !quiet) {
       setState(() {
         _marketLoading = true;
         _marketLoadFailed = false;
@@ -209,8 +216,9 @@ class _MarketScreenState extends State<MarketScreen> {
       setState(() {
         _marketLoading = false;
         if (progressData == null) {
-          _marketLoadFailed = true;
+          if (!quiet) _marketLoadFailed = true;
         } else {
+          _marketLoadFailed = false;
           final members = (progressData['members'] as List?) ?? const [];
           _mentorMembersAssets = members.whereType<Map<String, dynamic>>().map((m) => {
                 ...m,
@@ -239,7 +247,7 @@ class _MarketScreenState extends State<MarketScreen> {
       });
     } catch (e) {
       debugPrint('Error loading market data: $e');
-      if (mounted && token == _marketLoadToken) {
+      if (mounted && token == _marketLoadToken && !quiet) {
         setState(() {
           _marketLoading = false;
           _marketLoadFailed = true;
@@ -266,6 +274,7 @@ class _MarketScreenState extends State<MarketScreen> {
     _recalculateExchange();
     if (_isMentor) _loadMarketData();
     _loadLeaderboards();
+    AppRepository().scoresVersion.addListener(_onScoresChanged);
     MarketScreen.leaderboardRequests.addListener(_scrollToLeaderboard);
     // asked before this tab was first built
     if (MarketScreen.leaderboardRequests.value > 0) _scrollToLeaderboard();
@@ -274,6 +283,7 @@ class _MarketScreenState extends State<MarketScreen> {
   @override
   void dispose() {
     MarketScreen.leaderboardRequests.removeListener(_scrollToLeaderboard);
+    AppRepository().scoresVersion.removeListener(_onScoresChanged);
     _amountController.dispose();
     super.dispose();
   }
@@ -537,46 +547,73 @@ class _MarketScreenState extends State<MarketScreen> {
     return n.toString().replaceAllMapped(RegExp(r'\B(?=(\d{3})+(?!\d))'), (_) => ',');
   }
 
+  int _leaderboardToken = 0;
+
+  /// «برترین‌ها» from the server's shared ranking (the same order as the «رتبه» on chat profiles). Both lists
+  /// load together; a slower, older answer never overwrites a newer one. A failed load keeps what is shown.
   Future<void> _loadLeaderboards() async {
+    final token = ++_leaderboardToken;
     try {
       final api = HttpApiService();
-      final members = await api.getWealthiestLeague();
-      final caravans = await api.getCaravanLeague(sortBy: 'wealth');
-      if (!mounted) return;
+      final results = await Future.wait([api.getWealthiestLeague(), api.getCaravanLeague(sortBy: 'wealth')]);
+      final members = results[0];
+      final caravans = results[1];
+      if (!mounted || token != _leaderboardToken) return;
       setState(() {
-        _memberIds = members.map((m) => m['id']?.toString() ?? '').toList();
-        // each asset on its own, then the whole value in zarik (the server's capitalValue)
-        _topMembers = members.take(3).map((m) => <String, dynamic>{
-              'name': m['name']?.toString() ?? '-',
-              'avatarUrl': m['avatarUrl']?.toString() ?? '',
+        if (members.isNotEmpty || _memberIds.isEmpty) {
+          _memberIds = members.map((m) => m['id']?.toString() ?? '').toList();
+          // each asset held (the real capital), then its value in zarik (the server's capitalValue: کلاف counts only
+          // once turned into قالیچه; درفش is not money)
+          final rows = members.map((m) => <String, dynamic>{
+                'name': m['name']?.toString() ?? '-',
+                'avatarUrl': m['avatarUrl']?.toString() ?? '',
+                'assets': <String, int>{
+                  'zarik': _asInt(m['zarikBalance']),
+                  'nakh': _asInt(m['nakh']),
+                  'farsh': _asInt(m['farsh']),
+                  'derafsh': _asInt(m['beyragh']),
+                },
+                'total': _asInt(m['capital'] ?? m['zarikBalance']),
+              }).toList();
+          _topMembers = rows.take(3).toList();
+          _memberRows = {for (var i = 0; i < rows.length; i++) _memberIds[i]: rows[i]};
+        }
+        if (caravans.isNotEmpty || _caravanIds.isEmpty) {
+          _caravanIds = caravans.map((c) => c['id']?.toString() ?? '').toList();
+          // the sum of each asset over the members, the caravan's banners and their points, the total value, and the
+          // value per member (what ranks them; equal values: the banner points)
+          final rows = caravans.map((c) {
+            final assets = c['assets'] is Map ? c['assets'] as Map : const {};
+            return <String, dynamic>{
+              'name': c['name']?.toString() ?? '-',
+              'avatarUrl': c['coverImageUrl']?.toString() ?? '',
               'assets': <String, int>{
-                'zarik': _asInt(m['zarikBalance']),
-                'nakh': _asInt(m['nakh']),
-                'farsh': _asInt(m['farsh']),
+                'zarik': _asInt(assets['zarik']),
+                'nakh': _asInt(assets['nakh']),
+                'farsh': _asInt(assets['farsh']),
+                'derafsh': _asInt(assets['beyragh']),
               },
-              'total': _asInt(m['capital'] ?? m['zarikBalance']),
-            }).toList();
-        _caravanIds = caravans.map((c) => c['id']?.toString() ?? '').toList();
-        _topCaravans = caravans.take(3).map((c) {
-          final assets = c['assets'] is Map ? c['assets'] as Map : const {};
-          return <String, dynamic>{
-            'name': c['name']?.toString() ?? '-',
-            'avatarUrl': c['coverImageUrl']?.toString() ?? '',
-            'assets': <String, int>{
-              'zarik': _asInt(assets['zarik']),
-              'nakh': _asInt(assets['nakh']),
-              'farsh': _asInt(assets['farsh']),
-              'derafsh': _asInt(assets['beyragh']),
-            },
-            'total': _asInt(c['totalWealth'] ?? c['averageWealth']),
-          };
-        }).toList();
+              'bannerPoints': _asInt(c['bannerPoints']),
+              'total': _asInt(c['totalWealth']),
+              'average': _asInt(c['averageWealth']),
+            };
+          }).toList();
+          _topCaravans = rows.take(3).toList();
+          _caravanRows = {for (var i = 0; i < rows.length; i++) _caravanIds[i]: rows[i]};
+        }
       });
     } catch (e) {
       debugPrint('Error loading leaderboards: $e');
     } finally {
-      _leaderboardsLoaded = true;
+      if (token == _leaderboardToken) _leaderboardsLoaded = true;
     }
+  }
+
+  /// Someone's holdings changed (AppRepository.scoresVersion): the rankings and the mentor's members report follow.
+  void _onScoresChanged() {
+    if (!mounted) return;
+    _loadLeaderboards();
+    if (_isMentor) _loadMarketData(quiet: true);
   }
 
   void _contactMentor() {
@@ -845,7 +882,8 @@ class _MarketScreenState extends State<MarketScreen> {
                 const SizedBox(width: 10),
                 _buildAssetPill(
                   assetKey: 'derafsh',
-                  label: AssetNames.labelFor('درفش'),
+                  // the banners the caravan won (the dialog lists them), not the member's own
+                  label: '${AssetNames.labelFor('درفش')} کاروان',
                   value: beyrahVal,
                   isGold: _selectedAssetIndex == 1,
                   onTap: () {
@@ -870,6 +908,28 @@ class _MarketScreenState extends State<MarketScreen> {
                   onTap: () => setState(() => _selectedAssetIndex = 3),
                 ),
               ],
+            ),
+          ),
+        ),
+        // What these holdings are worth for the ranking (the server's formula: zarik + farsh × its price)
+        const SizedBox(height: 10),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 20.0),
+          child: Directionality(
+            textDirection: TextDirection.rtl,
+            child: Text.rich(
+              TextSpan(children: [
+                TextSpan(text: 'ارزش سرمایه‌ی شما: ', style: AppTypography.caption.copyWith(color: const Color(0xFFC5BEEB))),
+                TextSpan(
+                  text: '${_formatScore(totalZarik + totalFarsh * EconomyRates.farshSalePrice).toPersianDigits()} ${AssetNames.of('zarik')}',
+                  style: AppTypography.caption.copyWith(color: const Color(0xFFFFD580), fontWeight: FontWeight.w800),
+                ),
+                if (user != null && _memberIds.contains(user.id))
+                  TextSpan(
+                    text: '   رتبه‌ی شما: ${(_memberIds.indexOf(user.id) + 1).toString().toPersianDigits()}',
+                    style: AppTypography.caption.copyWith(color: const Color(0xFFC5BEEB)),
+                  ),
+              ]),
             ),
           ),
         ),
@@ -954,7 +1014,16 @@ class _MarketScreenState extends State<MarketScreen> {
       totalZarik += (m['zarik'] as int? ?? 0);
       totalNakh += (m['nakh'] as int? ?? 0);
       totalFarsh += (m['farsh'] as int? ?? 0);
-      totalBeyragh += (m['beyragh'] as int? ?? 0);
+    }
+    // درفش here is the caravan's (the banners it won), never the sum of the members' personal ones
+    totalBeyragh = Provider.of<AppRepository>(context).caravanBannerTotal;
+    // The caravan's totals as «برترین کاروان‌ها» counts them (درفش also counts the banners the caravan itself won)
+    final caravan = Provider.of<AppRepository>(context).selectedCaravan;
+    if (caravan != null && caravan.id == _loadedCaravanId) {
+      totalZarik = caravan.totalZarik;
+      totalNakh = caravan.totalNakh;
+      totalFarsh = caravan.totalFarsh;
+      totalBeyragh = caravan.totalBeyragh;
     }
 
     return Column(
@@ -1010,13 +1079,17 @@ class _MarketScreenState extends State<MarketScreen> {
                   style: AppTypography.caption.copyWith(color: const Color(0xFFA5D6A7)),
                 ),
                 Text(
-                  '${AssetNames.labelFor('درفش')}: ${totalBeyragh.toString().toPersian()}',
+                  '${AssetNames.labelFor('درفش')} کاروان: ${totalBeyragh.toString().toPersian()}',
                   style: AppTypography.caption.copyWith(color: const Color(0xFFFFAB91)),
                 ),
               ],
             ),
           ),
         ),
+        if (caravan != null && caravan.id == _loadedCaravanId) ...[
+          const SizedBox(height: 8),
+          CaravanStandingSummary(caravan: caravan),
+        ],
       ],
     );
   }
@@ -2024,6 +2097,7 @@ class _MarketScreenState extends State<MarketScreen> {
     final text = 'اینجا جایی است که شما می‌توانید ارزش اموالتان را با تبدیل آن‌ها ارزشمندتر کنید. '
         'شما می‌توانید پس از شرکت در چالش‌های گروهی‌تان $nakh دریافت کنید و آن‌ها را به $farsh تبدیل کنید. '
         'هر $farsh $price $zarik ارزش دارد. '
+        '$nakh تا وقتی به $farsh تبدیل نشود در ارزش سرمایه و رتبه‌ی شما حساب نمی‌شود. '
         'همچنین شما با شرکت در چالش‌های فراگروهی و دریافت $derafsh‌ها می‌توانید $zarik‌های فراوانی دریافت کنید '
         'که رتبه‌ی شما و کاروانتان را افزایش می‌دهد. '
         'در مسیر سفر می‌توانید سوغاتی‌ها و قابلیت‌های مختلفی را که کم‌کم به بازار خواهند آمد بخرید. '
@@ -2193,6 +2267,8 @@ class _MarketScreenState extends State<MarketScreen> {
         'name': hasItem ? source[i]['name'] : '-',
         'assets': hasItem ? source[i]['assets'] : null,
         'total': hasItem ? source[i]['total'] : null,
+        'average': hasItem ? source[i]['average'] : null,
+        'bannerPoints': hasItem ? source[i]['bannerPoints'] : null,
         // Members show their own picture, caravans the one their mentor chose; otherwise the placeholder
         'avatarUrl': hasItem ? (source[i]['avatarUrl'] ?? '') : '',
         'color': podiumColors[i],
@@ -2288,7 +2364,34 @@ class _MarketScreenState extends State<MarketScreen> {
           ),
         ),
 
-        const SizedBox(height: 24),
+        const SizedBox(height: 16),
+
+        // The viewer's own row (or their caravan's): the same figures the ranking used, wherever they stand
+        if (myIndex >= 3) ...[
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 20.0),
+            child: _buildMineRow(
+              (isMembersTab ? _memberRows : _caravanRows)[myId],
+              title: isMembersTab ? 'شما' : 'کاروان شما',
+              rank: myIndex + 1,
+            ),
+          ),
+          const SizedBox(height: 12),
+        ],
+
+        // Real capital vs its value, and what orders the list (hidden until tapped)
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 24.0),
+          child: InfoReveal(
+            text: 'سرمایه‌ی واقعی همان مقدار هر دارایی است. ارزش سرمایه = ${AssetNames.of('zarik')} + هر ${AssetNames.of('farsh')} '
+            '${EconomyRates.farshSalePrice.toString().toPersianDigits()} ${AssetNames.of('zarik')}؛ '
+            '${AssetNames.of('nakh')} تا به ${AssetNames.of('farsh')} تبدیل نشود و ${AssetNames.of('derafsh')} در آن حساب نمی‌شوند. '
+            '${isMembersTab ? 'رتبه بر اساس ارزش سرمایه است.' : 'رتبه‌ی کاروان‌ها بر اساس سرانه (ارزش سرمایه تقسیم بر تعداد اعضا) است و در تساوی، '
+                'امتیاز ${AssetNames.of('derafsh')} تعیین می‌کند (طلایی ۲۰، نقره‌ای ۱۰، برنزی ۵، پارچه‌ای ۱).'}',
+          ),
+        ),
+
+        const SizedBox(height: 16),
 
         // 4. Bottom Footer Stats: "تعداد کل: 150" | "رتبه شما: 10"
         Padding(
@@ -2418,8 +2521,18 @@ class _MarketScreenState extends State<MarketScreen> {
           const SizedBox(height: 4),
           for (final e in (item['assets'] as Map<String, int>).entries) _podiumAssetLine(e.key, e.value),
           const SizedBox(height: 6),
+          // caravans: the banners' points (what breaks a tie of value)
+          if (item['bannerPoints'] != null) ...[
+            Text(
+              'امتیاز ${AssetNames.of('derafsh')}: ${_formatScore(item['bannerPoints']).toPersianDigits()}',
+              textAlign: TextAlign.center,
+              style: AppTypography.caption.copyWith(color: const Color(0xFFD6D3E6), fontSize: 11),
+            ),
+            const SizedBox(height: 4),
+          ],
+          // the lines above are what is held (the real capital); this is its worth in zarik
           Text(
-            'ارزش کل دارایی (به ${AssetNames.of('zarik')})',
+            'ارزش سرمایه (معادل ${AssetNames.of('zarik')})',
             textAlign: TextAlign.center,
             style: AppTypography.caption.copyWith(color: const Color(0xFF9E9AC0), fontSize: 10.5),
           ),
@@ -2428,8 +2541,70 @@ class _MarketScreenState extends State<MarketScreen> {
             _formatScore(item['total']).toPersianDigits(),
             style: AppTypography.caption.copyWith(color: const Color(0xFFFFD580), fontWeight: FontWeight.w800),
           ),
+          // caravans: the value per member, which is what orders them
+          if (item['average'] != null) ...[
+            const SizedBox(height: 4),
+            Text(
+              'سرانه‌ی هر نفر',
+              textAlign: TextAlign.center,
+              style: AppTypography.caption.copyWith(color: const Color(0xFF9E9AC0), fontSize: 10.5),
+            ),
+            const SizedBox(height: 2),
+            Text(
+              _formatScore(item['average']).toPersianDigits(),
+              style: AppTypography.caption.copyWith(color: const Color(0xFFFFD580), fontWeight: FontWeight.w700),
+            ),
+          ],
         ],
       ],
+    );
+  }
+
+  /// «شما» / «کاروان شما» under the podium when outside the top three: the place, each asset held, the banner points
+  /// (caravans) and the value in zarik, exactly as the ranking counted them.
+  Widget _buildMineRow(Map<String, dynamic>? row, {required String title, required int rank}) {
+    if (row == null) return const SizedBox.shrink();
+    final assets = row['assets'] is Map ? row['assets'] as Map<String, int> : const <String, int>{};
+    final label = AppTypography.caption.copyWith(color: const Color(0xFFC5BEEB), fontSize: 11.5);
+    final value = AppTypography.caption.copyWith(color: const Color(0xFFFFD580), fontWeight: FontWeight.w800, fontSize: 11.5);
+    Widget item(String name, Object amount, {TextStyle? style}) => Text.rich(TextSpan(children: [
+          TextSpan(text: '$name: ', style: label),
+          TextSpan(text: _formatScore(amount).toPersianDigits(), style: style ?? label.copyWith(color: const Color(0xFFE2E0F0))),
+        ]));
+    return Directionality(
+      textDirection: TextDirection.rtl,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+        decoration: BoxDecoration(
+          color: const Color(0xFF282548).withValues(alpha: 0.5),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: const Color(0xFFFFD580).withValues(alpha: 0.35), width: 0.9),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Text('$title — رتبه‌ی ${rank.toString().toPersianDigits()}', style: AppTypography.h3.copyWith(color: const Color(0xFFFFD580))),
+            const SizedBox(height: 6),
+            Wrap(
+              spacing: 12,
+              runSpacing: 4,
+              children: [
+                for (final e in assets.entries) item(AssetNames.of(e.key), e.value),
+                if (row['bannerPoints'] != null) item('امتیاز ${AssetNames.of('derafsh')}', row['bannerPoints']),
+              ],
+            ),
+            const SizedBox(height: 6),
+            Wrap(
+              spacing: 12,
+              runSpacing: 4,
+              children: [
+                item('ارزش سرمایه (معادل ${AssetNames.of('zarik')})', row['total'] ?? 0, style: value),
+                if (row['average'] != null) item('سرانه‌ی هر نفر', row['average'], style: value),
+              ],
+            ),
+          ],
+        ),
+      ),
     );
   }
 

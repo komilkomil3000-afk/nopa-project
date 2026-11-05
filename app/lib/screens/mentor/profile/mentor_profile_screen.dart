@@ -17,6 +17,7 @@ import 'package:nopa_app/services/app_state_repository.dart';
 import 'package:nopa_app/widgets/contact_us_dialog.dart';
 import 'package:nopa_app/widgets/logout_dialog.dart';
 import 'package:nopa_app/widgets/safe_avatar.dart';
+import 'package:nopa_app/widgets/caravan_standing_summary.dart';
 import 'package:nopa_app/screens/student/profile/student_certificates_screen.dart';
 import 'package:nopa_app/screens/mentor/profile/mentor_edit_profile_screen.dart';
 import 'package:nopa_app/screens/mentor/profile/mentor_caravans_roster_screen.dart';
@@ -517,20 +518,33 @@ class _ReportCardAndAchievementsScreenState extends State<_ReportCardAndAchievem
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      'دارایی‌ها و پاداش‌ها',
-                      style: AppTypography.h3.copyWith(color: Color(0xFFFFD580)),
-                    ),
-                    const SizedBox(height: 14),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        _buildAssetBox(AssetNames.labelFor('زریک'), user.zarik.toPersian(), const Color(0xFFE5A66B)),
-                        _buildAssetBox(AssetNames.labelFor('درفش'), user.beyragh.toPersian(), const Color(0xFF9292E2)),
-                        _buildAssetBox(AssetNames.labelFor('کلاف'), user.nakh.toPersian(), const Color(0xFF9292E2)),
-                        _buildAssetBox(AssetNames.labelFor('قالیچه'), user.farsh.toPersian(), const Color(0xFF9292E2)),
-                      ],
-                    ),
+                    // A mentor holds no capital of their own: the box shows their caravan's, as «برترین کاروان‌ها» counts it
+                    Builder(builder: (context) {
+                      final caravan = user.role.isMentorLike ? Provider.of<AppRepository>(context).selectedCaravan : null;
+                      return Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            caravan == null ? 'دارایی‌ها و پاداش‌ها' : 'دارایی‌های کاروان ${caravan.name}',
+                            style: AppTypography.h3.copyWith(color: Color(0xFFFFD580)),
+                          ),
+                          const SizedBox(height: 14),
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              _buildAssetBox(AssetNames.labelFor('زریک'), (caravan?.totalZarik ?? user.zarik).toPersian(), const Color(0xFFE5A66B)),
+                              _buildAssetBox(AssetNames.labelFor('درفش'), (caravan?.totalBeyragh ?? user.beyragh).toPersian(), const Color(0xFF9292E2)),
+                              _buildAssetBox(AssetNames.labelFor('کلاف'), (caravan?.totalNakh ?? user.nakh).toPersian(), const Color(0xFF9292E2)),
+                              _buildAssetBox(AssetNames.labelFor('قالیچه'), (caravan?.totalFarsh ?? user.farsh).toPersian(), const Color(0xFF9292E2)),
+                            ],
+                          ),
+                          if (caravan != null) ...[
+                            const SizedBox(height: 12),
+                            CaravanStandingSummary(caravan: caravan),
+                          ],
+                        ],
+                      );
+                    }),
                   ],
                 ),
               ),

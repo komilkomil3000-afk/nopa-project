@@ -77,7 +77,8 @@ function crvCapacity(c) {
 function crvZarikOf(c) {
   const members = crvMembersOf(c);
   if (members.length) return members.reduce((n, m) => n + Number(m.zarikBalance ?? m.zarik ?? 0), 0);
-  return Number(c.assets?.zarik ?? c.totalWealth ?? c.wealth?.zarik ?? 0);
+  // totalWealth is the value in zarik (zarik + farsh), not the zarik held: read it last
+  return Number(c.assets?.zarik ?? c.wealth?.zarik ?? c.totalWealth ?? 0);
 }
 function crvProgressOf(c) {
   return Math.round(Number(c.overallProgress ?? c.progress ?? 0)) || 0;

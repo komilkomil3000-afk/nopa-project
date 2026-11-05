@@ -61,6 +61,8 @@ class _ChatSpaceProfileScreenState extends State<ChatSpaceProfileScreen> {
     _load();
     // Someone was silenced or let speak again: the «بی‌صدا» marks of the members follow
     _chat.memberMutes.addListener(_reloadQuietly);
+    // Holdings moved somewhere: the caravan's «رتبه» follows
+    AppRepository().scoresVersion.addListener(_reloadQuietly);
   }
 
   void _reloadQuietly() {
@@ -70,6 +72,7 @@ class _ChatSpaceProfileScreenState extends State<ChatSpaceProfileScreen> {
   @override
   void dispose() {
     _chat.memberMutes.removeListener(_reloadQuietly);
+    AppRepository().scoresVersion.removeListener(_reloadQuietly);
     super.dispose();
   }
 
@@ -241,7 +244,8 @@ class _ChatSpaceProfileScreenState extends State<ChatSpaceProfileScreen> {
     }
     if (!mounted) return;
     setState(() {
-      _profile = profile;
+      // a failed reload keeps what is shown
+      _profile = profile ?? _profile;
       _loading = false;
     });
   }
@@ -405,6 +409,18 @@ class _ChatMemberProfileScreenState extends State<ChatMemberProfileScreen> {
   void initState() {
     super.initState();
     _load();
+    // This person's (or anyone's) holdings moved: their balances and «رتبه» follow while the page is open
+    AppRepository().scoresVersion.addListener(_reloadQuietly);
+  }
+
+  void _reloadQuietly() {
+    if (mounted) _load();
+  }
+
+  @override
+  void dispose() {
+    AppRepository().scoresVersion.removeListener(_reloadQuietly);
+    super.dispose();
   }
 
   Future<void> _load() async {
@@ -422,7 +438,8 @@ class _ChatMemberProfileScreenState extends State<ChatMemberProfileScreen> {
     }
     if (!mounted) return;
     setState(() {
-      _profile = profile;
+      // a failed reload keeps what is shown
+      _profile = profile ?? _profile;
       _loading = false;
     });
   }

@@ -39,6 +39,11 @@ export function emitToUsers(userIds: string[], event: string, payload: unknown):
   io.to(userIds.map(id => `user:${id}`)).emit(event, payload);
 }
 
+/** To every connected app: for news everyone may know, such as «the rankings changed». */
+export function emitToAll(event: string, payload: unknown): void {
+  io?.emit(event, payload);
+}
+
 export function isOnline(userId: string): boolean {
   return (io?.sockets.adapter.rooms.get(`user:${userId}`)?.size ?? 0) > 0;
 }

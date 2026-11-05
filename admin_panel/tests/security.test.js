@@ -179,10 +179,19 @@ test('access tokens: expired and forged tokens are a 401, so clients refresh the
 test('economy: ranking capital, exchanges and policy validation', () => {
   const { DEFAULT_ECONOMY: c, capitalValue, conversionRule, nakhValue, parseEconomyConfig } = load('services/economy.js');
   assert.equal(nakhValue(c), 5000);
-  assert.equal(capitalValue({ zarikBalance: 100, nakh: 3, farsh: 2 }, c), 100 + 15000 + 100000);
+  // کلاف (nakh) is worth nothing until it is turned into قالیچه
+  assert.equal(capitalValue({ zarikBalance: 100, nakh: 3, farsh: 2 }, c), 100 + 100000);
+  assert.equal(capitalValue({ nakh: 10 }, c), 0);
+  assert.ok(capitalValue({ farsh: 1 }, c) > capitalValue({ nakh: 10 }, c), 'converting nakh raises the capital');
 
-  // converting or selling must not move anyone in the ranking
-  assert.equal(capitalValue({ nakh: 10 }, c), capitalValue({ farsh: 1 }, c));
+  // banner points: 2 silver = 1 gold, 2 bronze = 1 silver, 5 cloth = 1 bronze
+  const { bannerPoints } = load('services/ranking.js');
+  const none = { gold: 0, silver: 0, bronze: 0, cloth: 0 };
+  assert.equal(bannerPoints({ ...none, silver: 2 }), bannerPoints({ ...none, gold: 1 }));
+  assert.equal(bannerPoints({ ...none, bronze: 2 }), bannerPoints({ ...none, silver: 1 }));
+  assert.equal(bannerPoints({ ...none, cloth: 5 }), bannerPoints({ ...none, bronze: 1 }));
+
+  // selling a farsh must not move anyone in the ranking
   assert.equal(capitalValue({ farsh: 1 }, c), capitalValue({ zarikBalance: 50000 }, c));
 
   assert.deepEqual(conversionRule('nakh', 'farsh', c), { step: 10, pays: 1 });

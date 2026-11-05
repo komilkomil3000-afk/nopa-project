@@ -228,7 +228,8 @@ class _HomeScreenState extends State<StudentHomeScreen> {
                 const SizedBox(width: 10),
                 _buildAssetPill(
                   assetKey: 'derafsh',
-                  label: AssetNames.labelFor('درفش'),
+                  // the banners the caravan won (as in «برترین کاروان‌ها»), not the member's own
+                  label: '${AssetNames.labelFor('درفش')} کاروان',
                   value: Provider.of<AppRepository>(context).caravanBannerTotal.toPersian(),
                   isGold: _selectedAssetIndex == 1,
                   onTap: () {

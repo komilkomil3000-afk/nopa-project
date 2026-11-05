@@ -102,9 +102,27 @@ class _MentorMembersScreenState extends State<MentorCaravansRosterScreen> {
   void initState() {
     super.initState();
     _loadCaravansAndMembers();
+    // the members' balances follow while the roster is open
+    AppRepository().scoresVersion.addListener(_onScoresChanged);
   }
 
-  Future<void> _loadCaravansAndMembers() async {
+  void _onScoresChanged() {
+    if (mounted && !_isLoading) _loadCaravansAndMembers(quiet: true);
+  }
+
+  @override
+  void dispose() {
+    AppRepository().scoresVersion.removeListener(_onScoresChanged);
+    super.dispose();
+  }
+
+  /// [quiet]: refresh in place (no loading state); an empty answer then keeps the roster shown.
+  Future<void> _loadCaravansAndMembers({bool quiet = false}) async {
+    if (quiet) {
+      final data = await HttpApiService().getCaravans();
+      if (data.isNotEmpty && mounted) setState(() => _caravans = data.map((c) => CaravanModel.fromJson(c)).toList());
+      return;
+    }
     setState(() => _isLoading = true);
     try {
       final repository = Provider.of<AppRepository>(context, listen: false);
@@ -806,6 +824,18 @@ class _StudentReportCardAndEvaluationScreenState extends State<StudentReportCard
   void initState() {
     super.initState();
     _loadProgress();
+    // the member's balances follow while the report card is open
+    AppRepository().scoresVersion.addListener(_onScoresChanged);
+  }
+
+  void _onScoresChanged() {
+    if (mounted && _loaded) _loadProgress();
+  }
+
+  @override
+  void dispose() {
+    AppRepository().scoresVersion.removeListener(_onScoresChanged);
+    super.dispose();
   }
 
   /// The member's real progress (watched parts with dates, quiz results, challenges) from the server.

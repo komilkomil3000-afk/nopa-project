@@ -2,6 +2,9 @@ import { Request, Response } from 'express';
 import { csvRow } from '../utils/csv';
 import prisma from '../config/db';
 import { capitalValue, getEconomyPolicy } from '../services/economy';
+import { BannerCounts, bannerPoints, caravanBannerCounts, rankedCaravans as sharedCaravanRanking, rankedStudents } from '../services/ranking';
+
+const NO_BANNERS: BannerCounts = { gold: 0, silver: 0, bronze: 0, cloth: 0 };
 
 export async function getCaravansLeaderboardDetailed(req: Request, res: Response) {
   try {
@@ -9,8 +12,9 @@ export async function getCaravansLeaderboardDetailed(req: Request, res: Response
     const sortBy = (req.query.sortBy as string) || 'totalScore';
     const search = ((req.query.search as string) || '').trim().toLowerCase();
     const exportAs = req.query.exportAs as string;
-    
-    const bannerCounts = new Map<string, number>((await prisma.caravanBanner.groupBy({ by: ['caravanId'], _count: { _all: true } })).map(b => [b.caravanId, b._count._all]));
+
+    // درفش of a caravan: the banners it won (by tier, with their points); a member's personal درفش is not the caravan's
+    const bannersOf = await caravanBannerCounts();
     const caravans = await prisma.caravan.findMany({
       where: { isDeleted: false },
       include: {
@@ -18,7 +22,8 @@ export async function getCaravansLeaderboardDetailed(req: Request, res: Response
           select: { id: true, name: true, phoneNumber: true }
         },
         members: {
-          where: { isDeleted: false },
+          // students only, as in the app's ranking (a mentor holds no capital and would lower the average)
+          where: { isDeleted: false, role: 'student' },
           select: {
             id: true,
             name: true,
@@ -50,7 +55,8 @@ export async function getCaravansLeaderboardDetailed(req: Request, res: Response
       let totalZarik = 0;
       let totalNakh = 0;
       let totalFarsh = 0;
-      let totalBeyragh = bannerCounts.get(c.id) || 0; // banners owned by the caravan itself
+      const banners = bannersOf.get(c.id) ?? NO_BANNERS;
+      const totalBeyragh = banners.gold + banners.silver + banners.bronze + banners.cloth;
       let totalQuizScore = 0;
       let totalPassedQuizzes = 0;
       let totalChallengeScore = 0;
@@ -61,7 +67,6 @@ export async function getCaravansLeaderboardDetailed(req: Request, res: Response
         totalZarik += m.zarikBalance || 0;
         totalNakh += m.nakh || 0;
         totalFarsh += m.farsh || 0;
-        totalBeyragh += m.beyragh || 0;
 
         m.quizSubmissions.forEach(qs => {
           totalQuizScore += qs.score || 0;
@@ -102,6 +107,8 @@ export async function getCaravansLeaderboardDetailed(req: Request, res: Response
         nakh: totalNakh,
         farsh: totalFarsh,
         beyragh: totalBeyragh,
+        banners,
+        bannerPoints: bannerPoints(banners),
         stars: totalPassedQuizzes,
         passedQuizzes: totalPassedQuizzes,
         quizScore: totalQuizScore,
@@ -134,14 +141,16 @@ export async function getCaravansLeaderboardDetailed(req: Request, res: Response
         case 'challengeScore': return b.challengeScore - a.challengeScore;
         case 'progress': return b.overallProgress - a.overallProgress;
         case 'members': return b.memberCount - a.memberCount;
-        case 'wealth': return b.totalWealth - a.totalWealth;
+        case 'bannerPoints': return b.bannerPoints - a.bannerPoints || b.totalScore - a.totalScore;
+        case 'wealth':
         case 'totalScore':
-        default: return b.totalScore - a.totalScore;
+        // the app's order: capital per member, then banner points
+        default: return b.totalScore - a.totalScore || b.bannerPoints - a.bannerPoints;
       }
     });
 
     if (exportAs === 'csv') {
-      let csv = 'رتبه,نام کاروان,راهبر,تعداد اعضا,زریک,کلاف,قالیچه,درفش,ستاره و آزمون,نمره آزمون,نمره چالش,درصد پیشرفت,امتیاز کل\n';
+      let csv = 'رتبه,نام کاروان,راهبر,تعداد اعضا,زریک,کلاف,قالیچه,درفش,امتیاز درفش,ستاره و آزمون,نمره آزمون,نمره چالش,درصد پیشرفت,امتیاز کل\n';
       let currentR = 0;
       let prevSc: number | null = null;
       filtered.forEach((c) => {
@@ -152,7 +161,7 @@ export async function getCaravansLeaderboardDetailed(req: Request, res: Response
           rStr = String(currentR);
           prevSc = c.totalScore;
         }
-        csv += csvRow([rStr, c.name, c.mentorName, c.memberCount, c.zarik, c.nakh, c.farsh, c.beyragh, c.stars, c.quizScore, c.challengeScore, `${c.overallProgress}%`, c.totalScore]) + '\n';
+        csv += csvRow([rStr, c.name, c.mentorName, c.memberCount, c.zarik, c.nakh, c.farsh, c.beyragh, c.bannerPoints, c.stars, c.quizScore, c.challengeScore, `${c.overallProgress}%`, c.totalScore]) + '\n';
       });
       res.setHeader('Content-Type', 'text/csv; charset=utf-8');
       res.setHeader('Content-Disposition', 'attachment; filename="caravans_leaderboard.csv"');
@@ -330,12 +339,19 @@ export async function getIndividualsLeaderboard(req: Request, res: Response) {
 
 export async function getCaravanLeague(req: Request, res: Response) {
   try {
-    const { config } = await getEconomyPolicy();
     const sortBy = (req.query.sortBy as string) || 'progress';
     const exportAs = req.query.exportAs as string;
-    
-    const bannerCounts = new Map<string, number>((await prisma.caravanBanner.groupBy({ by: ['caravanId'], _count: { _all: true } })).map(b => [b.caravanId, b._count._all]));
+
+    // The app's «برترین کاروان‌ها»: the shared ranking, so the order matches the caravan's «رتبه» in the chat
+    if (sortBy === 'wealth' && exportAs !== 'csv') {
+      return res.json((await sharedCaravanRanking()).map(c => ({ ...c, overallProgress: 0 })));
+    }
+
+    const { config } = await getEconomyPolicy();
+
+    const bannersOf = await caravanBannerCounts();
     const caravans = await prisma.caravan.findMany({
+      where: { isDeleted: false },
       include: {
         mentor: {
           select: { name: true }
@@ -358,7 +374,8 @@ export async function getCaravanLeague(req: Request, res: Response) {
       const totalZarik = c.members.reduce((sum, m) => sum + m.zarikBalance, 0);
       const totalNakh = c.members.reduce((sum, m) => sum + m.nakh, 0);
       const totalFarsh = c.members.reduce((sum, m) => sum + m.farsh, 0);
-      const totalBeyragh = c.members.reduce((sum, m) => sum + m.beyragh, 0) + (bannerCounts.get(c.id) || 0);
+      const banners = bannersOf.get(c.id) ?? NO_BANNERS;
+      const totalBeyragh = banners.gold + banners.silver + banners.bronze + banners.cloth;
 
       let caravanProgress = 0;
       const totalMembers = c.members.length;
@@ -401,7 +418,9 @@ export async function getCaravanLeague(req: Request, res: Response) {
         overallProgress: caravanProgress,
         totalWealth,
         averageWealth,
-        assets: { zarik: totalZarik, nakh: totalNakh, farsh: totalFarsh, beyragh: totalBeyragh }
+        assets: { zarik: totalZarik, nakh: totalNakh, farsh: totalFarsh, beyragh: totalBeyragh },
+        banners,
+        bannerPoints: bannerPoints(banners),
       };
     }));
 
@@ -428,27 +447,14 @@ export async function getCaravanLeague(req: Request, res: Response) {
   }
 }
 
+/** The app's «برترین شرکت‌کننده‌ها»: the shared ranking (same order as the «رتبه» on chat profiles). */
 export async function getWealthiestLeague(req: Request, res: Response) {
   try {
-    const { config } = await getEconomyPolicy();
-    const students = await prisma.user.findMany({
-      where: { role: 'student', isDeleted: false },
-      select: {
-        id: true,
-        name: true,
-        zarikBalance: true,
-        nakh: true,
-        farsh: true,
-        avatarUrl: true,
-        levelFrame: true
-      }
-    });
-
-    const wealthiest = students
-      .map(s => ({ ...s, capital: capitalValue(s, config) }))
-      .sort((a, b) => b.capital - a.capital);
-
-    res.json(wealthiest);
+    const students = await rankedStudents();
+    res.json(students.map(s => ({
+      id: s.id, name: s.name, avatarUrl: s.avatarUrl, levelFrame: s.levelFrame, caravanId: s.caravanId,
+      zarikBalance: s.zarikBalance, nakh: s.nakh, farsh: s.farsh, beyragh: s.beyragh, capital: s.capital,
+    })));
   } catch (error) {
     console.error('getWealthiestLeague error:', error);
     res.status(500).json({ error: 'خطایی در دریافت جدول ثروتمندترین‌ها رخ داد' });

@@ -195,6 +195,12 @@ class ChatRepository extends ChangeNotifier {
       memberMutes.value++;
     });
     socket.on('presence', (data) => _onPresence(Map<String, dynamic>.from(data as Map)));
+    // Someone's holdings changed on the server: balances, «برترین‌ها» and profile ranks reload (AppRepository.scoresVersion)
+    socket.on('assets', (data) {
+      final ids = data is Map && data['userIds'] is List ? (data['userIds'] as List).map((e) => e.toString()).toSet() : <String>{};
+      lastAssetUserIds = ids;
+      assetChanges.value++;
+    });
     socket.connect();
   }
 
@@ -575,6 +581,11 @@ class ChatRepository extends ChangeNotifier {
 
   /// Someone was silenced or let speak again in a space; screens showing its people reload them.
   final ValueNotifier<int> memberMutes = ValueNotifier(0);
+
+  /// Bumped by the server's «assets» event (someone's زریک / کلاف / قالیچه / درفش moved); [lastAssetUserIds]
+  /// names whose. AppRepository turns it into [AppRepository.scoresVersion].
+  final ValueNotifier<int> assetChanges = ValueNotifier(0);
+  Set<String> lastAssetUserIds = const {};
 
   /// What a message shows, leaving out the signed file links (new on every fetch) and the thread faces.
   static String _signature(Map<String, dynamic> raw) => jsonEncode({

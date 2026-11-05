@@ -1,5 +1,5 @@
 import prisma from '../../config/db';
-import { capitalValue, getEconomyPolicy } from '../../services/economy';
+import { invalidateRankings, rankedStudents } from '../../services/ranking';
 import fs from 'fs';
 import path from 'path';
 import { ChatActor, canModerate, managerMayEnter, SpaceRef } from './access';
@@ -153,9 +153,9 @@ async function firstTime(key: string): Promise<boolean> {
 }
 
 async function closeStationBooks(stationId: string) {
-  const { config } = await getEconomyPolicy();
-  const students = await prisma.user.findMany({ where: { role: 'student' }, select: { id: true, zarikBalance: true, nakh: true, farsh: true } });
-  const ranked = students.map(s => ({ id: s.id, capital: capitalValue(s, config) })).sort((a, b) => b.capital - a.capital);
+  // the market's «برترین‌ها» order, freshly computed (not a few-seconds-old cached copy)
+  invalidateRankings();
+  const ranked = await rankedStudents();
   await prisma.stationReport.createMany({ data: ranked.map((r, i) => ({ stationId, userId: r.id, capital: r.capital, rank: i + 1 })), skipDuplicates: true });
   const station = await prisma.station.findUnique({ where: { id: stationId }, select: { title: true } });
   await prisma.notification.createMany({

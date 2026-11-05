@@ -135,11 +135,21 @@ class CaravanModel {
   double overallProgress;
   String activeStation;
 
-  /// Capital totals across the caravan's students (a mentor holds none of their own).
+  /// Capital totals across the caravan's students (a mentor holds none of their own), as «برترین کاروان‌ها»
+  /// counts them. [totalBeyragh] is the banners the caravan itself won; [bannerPoints] their «امتیاز درفش»
+  /// (gold 20, silver 10, bronze 5, cloth 1), which breaks a tie of value per member.
   int totalZarik;
   int totalBeyragh;
   int totalNakh;
   int totalFarsh;
+
+  /// Total value in زریک (زریک + قالیچه × its price; کلاف counts only once turned into قالیچه), the value per
+  /// member that orders the caravans, and the caravan's place among [rankOf] caravans. Null rank: not ranked yet.
+  int totalWealth;
+  int averageWealth;
+  int bannerPoints;
+  int? rank;
+  int rankOf;
 
   CaravanModel({
     required this.id,
@@ -151,6 +161,11 @@ class CaravanModel {
     this.totalBeyragh = 0,
     this.totalNakh = 0,
     this.totalFarsh = 0,
+    this.totalWealth = 0,
+    this.averageWealth = 0,
+    this.bannerPoints = 0,
+    this.rank,
+    this.rankOf = 0,
   });
 }
 

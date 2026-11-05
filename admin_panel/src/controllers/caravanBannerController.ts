@@ -6,6 +6,7 @@ import { applyRankBadges, closeCompetitionTopics, payPrizes, prizePlan, unconfir
 import { parseRewardPlan, postSettlement, RANK_ORDER, RANKING_CLOSED_MESSAGE, rankingWindow, RewardPlan, rewardPlanOf, TIER_LABEL } from '../modules/chat/settlement';
 import { getEconomyPolicy } from '../services/economy';
 import { changeBalance } from '../services/ledger';
+import { noteBalanceChanged } from '../services/balanceEvents';
 
 const MEDALS = ['gold', 'silver', 'bronze'] as const;
 const TIER_KEYS: Record<string, string> = {
@@ -185,6 +186,7 @@ export async function finalizeChallengeRanking(req: AuthRequest, res: Response) 
       });
       await payPrizes(tx, challenge, plan, req.user!.id);
     });
+    noteBalanceChanged(); // the caravans' درفش changed
 
     // Tell every member and the mentor of each caravan
     const names = await getAssetNames();
@@ -287,6 +289,7 @@ export async function editChallengeRanking(req: AuthRequest, res: Response) {
         await tx.caravanBanner.createMany({ data: rows.map(r => ({ ...r, challengeId: id, awardedBy: req.user!.id })) });
         await tx.challenge.update({ where: { id }, data: { rewardPlan: chosen.plan as any } });
       });
+      noteBalanceChanged(); // the caravans' درفش changed
     } catch (e: any) {
       if (e?.message === 'INSUFFICIENT_BALANCE') {
         return res.status(409).json({ error: 'اصلاح ممکن نیست: بعضی اعضا جایزه قبلی را خرج کرده‌اند و موجودی کافی برای کسر تفاوت ندارند' });
