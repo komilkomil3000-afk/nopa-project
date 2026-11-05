@@ -25,6 +25,7 @@
   <link rel="stylesheet" href="/admin/css/components.css">
   <link rel="stylesheet" href="/admin/css/chat.css">
   <link rel="stylesheet" href="/admin/css/stations.css">
+  <link rel="stylesheet" href="/admin/css/user-import.css">
   <link rel="stylesheet" href="/admin/css/datepicker.css">
   <link rel="stylesheet" href="/admin/css/utilities.css">
   <!-- Chart.js (Local) -->
@@ -501,6 +502,7 @@
         <div id="usr-overview-view">
           <div class="lms-head-actions u-flex u-justify-end u-items-center u-mb-20">
             <div class="u-flex u-gap-10">
+              <button type="button" id="btn-import-users" class="lse-btn" data-click="openUserImport" title="افزودن چند نفر با فایل Excel / CSV یا متن کپی‌شده"><i class="fa-solid fa-file-import"></i> افزودن گروهی</button>
               <button type="button" id="btn-add-user-modal" class="btn-primary u-bgc-primary"><i class="fa-solid fa-plus"></i> همسفر جدید</button>
             </div>
           </div>
@@ -3667,6 +3669,132 @@
     </div>
   </div>
 
+  <!-- BULK ADD (Excel / CSV / clipboard): the station editor's look (css/user-import.css .uim-*; js/features/user-import.js).
+       Steps: source -> review (column mapping, per-row role, select all) -> result. -->
+  <div class="modal-overlay lse-overlay u-z-z-modal" id="user-import-overlay" data-style="display: none" data-modal-static>
+    <div class="lse lse-editor uim">
+      <header class="lse-head">
+        <div class="lse-id">
+          <span class="lse-id-icon is-accent"><i class="fa-solid fa-file-import"></i></span>
+          <div class="lse-id-text">
+            <h3>افزودن گروهی همسفران</h3>
+            <span>از فایل Excel یا CSV، یا متن کپی‌شده؛ حداقل نام و شماره همراه</span>
+          </div>
+        </div>
+        <nav class="lse-tabs" aria-label="گام‌های افزودن گروهی">
+          <button type="button" class="lse-tab lse-step is-active" data-uim-step="source" data-click="uimGo" data-click-args="[&quot;source&quot;]"><span class="lse-step-num">۱</span>منبع اطلاعات</button>
+          <button type="button" class="lse-tab lse-step" data-uim-step="review" data-click="uimGo" data-click-args="[&quot;review&quot;]" disabled><span class="lse-step-num">۲</span>بررسی و نقش‌ها</button>
+          <button type="button" class="lse-tab lse-step" data-uim-step="result" data-click="uimGo" data-click-args="[&quot;result&quot;]" disabled><span class="lse-step-num">۳</span>نتیجه</button>
+        </nav>
+        <button type="button" class="lsv-round" data-modal-close data-click="closeUserImport" title="بستن" aria-label="بستن"><i class="fa-solid fa-xmark"></i></button>
+      </header>
+
+      <div class="lse-body" id="uim-body">
+        <!-- step 1: source -->
+        <div class="uim-pane is-active" data-uim-pane="source">
+          <div class="uim-sources">
+            <section class="lse-card">
+              <h4 class="lse-card-title"><i class="fa-solid fa-file-excel"></i> از فایل Excel یا CSV</h4>
+              <label class="uim-drop" id="uim-drop" tabindex="0">
+                <input type="file" id="uim-file" accept=".xlsx,.xls,.csv,.tsv,.txt,.ods" hidden data-change="uimPickFile" data-change-args="[&quot;$this&quot;]">
+                <i class="fa-solid fa-cloud-arrow-up"></i>
+                <strong>فایل را اینجا رها کنید یا بزنید</strong>
+                <span>xlsx · xls · csv — تا ۵ مگابایت و ۲۰۰۰ ردیف؛ فقط برگه اول خوانده می‌شود</span>
+              </label>
+              <p class="lse-hint">ستون‌ها از روی عنوان‌شان شناخته می‌شوند (نام، شماره همراه، نقش، کاروان، سطح، کد ملی، تاریخ تولد، جنسیت، گذرواژه، ایمیل، شهر، مدرک تحصیلی، ...). در گام بعد می‌توانید هر ستون را دستی هم تعیین کنید.</p>
+              <button type="button" class="lse-btn lse-btn-dashed" data-click="uimDownloadTemplate"><i class="fa-solid fa-download"></i> دریافت فایل نمونه (همه ستون‌ها)</button>
+            </section>
+
+            <section class="lse-card">
+              <h4 class="lse-card-title"><i class="fa-solid fa-paste"></i> از کلیپ‌بورد</h4>
+              <textarea id="uim-paste" class="input-ctrl uim-paste" rows="9" dir="auto" data-modal-nodirty placeholder="ردیف‌ها را از Excel کپی و اینجا جای‌گذاری کنید، یا هر نفر را در یک خط بنویسید:&#10;علی رضایی	09121234567&#10;سارا محمدی، 09351234567&#10;مریم احمدی 09191234567"></textarea>
+              <div class="lse-inline">
+                <button type="button" class="lse-btn" data-click="uimPasteFromClipboard"><i class="fa-solid fa-clipboard"></i> خواندن از کلیپ‌بورد</button>
+                <button type="button" class="lsv-pill" data-click="uimUsePaste"><i class="fa-solid fa-arrow-left"></i> بررسی متن</button>
+              </div>
+              <p class="lse-hint">ستون‌های کپی‌شده از Excel (با Tab)، متن CSV (با کاما یا ؛) یا یک خط برای هر نفر — شماره همراه در هر جای خط پیدا می‌شود و بقیه خط نام است.</p>
+            </section>
+          </div>
+        </div>
+
+        <!-- step 2: review -->
+        <div class="uim-pane" data-uim-pane="review">
+          <section class="lse-card">
+            <div class="lse-card-row">
+              <h4 class="lse-card-title"><i class="fa-solid fa-table-columns"></i> ستون‌ها <small class="uim-sub" id="uim-source-label"></small></h4>
+              <label class="uim-check"><input type="checkbox" id="uim-has-header" data-change="uimToggleHeader" data-change-args="[&quot;$checked&quot;]"> ردیف اول عنوان ستون‌هاست</label>
+            </div>
+            <div class="uim-map" id="uim-map"></div>
+          </section>
+
+          <section class="lse-card">
+            <div class="uim-toolbar">
+              <div class="chm-chips uim-filter" id="uim-filter"></div>
+              <div class="uim-bulk">
+                <span class="uim-sel-count" id="uim-sel-count"></span>
+                <select id="uim-bulk-role" class="select-ctrl" aria-label="نقش برای انتخاب‌شده‌ها" data-change="uimBulkRole" data-change-args="[&quot;$value&quot;]"></select>
+                <select id="uim-bulk-caravan" class="select-ctrl" aria-label="کاروان برای انتخاب‌شده‌ها" data-change="uimBulkCaravan" data-change-args="[&quot;$value&quot;]"></select>
+              </div>
+            </div>
+            <div class="uim-table-wrap">
+              <table class="uim-table">
+                <thead>
+                  <tr>
+                    <th class="uim-c-check"><input type="checkbox" id="uim-check-all" aria-label="انتخاب همه" title="انتخاب همه" data-change="uimCheckAll" data-change-args="[&quot;$checked&quot;]"></th>
+                    <th class="uim-c-num">#</th>
+                    <th>نام <b class="lse-req">*</b></th>
+                    <th>شماره همراه <b class="lse-req">*</b></th>
+                    <th>نقش</th>
+                    <th>کاروان</th>
+                    <th>سایر اطلاعات</th>
+                    <th>وضعیت</th>
+                  </tr>
+                </thead>
+                <tbody id="uim-rows"></tbody>
+              </table>
+            </div>
+          </section>
+
+          <section class="lse-card">
+            <h4 class="lse-card-title"><i class="fa-solid fa-sliders"></i> تنظیمات افزودن</h4>
+            <div class="lse-grid lse-grid-2">
+              <label class="lse-field">
+                <span>گذرواژه پیش‌فرض <small>برای ردیف‌هایی که ستون گذرواژه ندارند</small></span>
+                <input type="text" id="uim-password" class="input-ctrl" value="123456" autocomplete="off" dir="ltr" data-modal-nodirty>
+              </label>
+              <label class="lse-field">
+                <span>اگر شماره از قبل ثبت شده باشد</span>
+                <select id="uim-existing" class="select-ctrl" data-modal-nodirty>
+                  <option value="skip">رد شود (بدون تغییر)</option>
+                  <option value="update">مشخصاتش با اطلاعات فایل به‌روز شود</option>
+                </select>
+              </label>
+            </div>
+          </section>
+        </div>
+
+        <!-- step 3: result -->
+        <div class="uim-pane" data-uim-pane="result">
+          <div class="uim-summary" id="uim-summary"></div>
+          <section class="lse-card">
+            <h4 class="lse-card-title"><i class="fa-solid fa-list-check"></i> نتیجه هر ردیف</h4>
+            <div class="uim-table-wrap">
+              <table class="uim-table">
+                <thead><tr><th class="uim-c-num">#</th><th>نام</th><th>شماره همراه</th><th>نقش</th><th>نتیجه</th></tr></thead>
+                <tbody id="uim-result-rows"></tbody>
+              </table>
+            </div>
+          </section>
+        </div>
+      </div>
+
+      <footer class="lse-foot">
+        <span class="lse-foot-note" id="uim-foot-note"><i class="fa-solid fa-circle-info"></i> شماره همراه، نام کاربری ورود به اپ است</span>
+        <div class="lse-foot-actions" id="uim-foot-actions"></div>
+      </footer>
+    </div>
+  </div>
+
   <!-- COMPREHENSIVE MENTOR EDIT MODAL -->
   <!-- MENTOR MODAL (REGISTER / EDIT) -->
   <!-- Mentor form (new / edit): the station editor's look (css/stations.css .lse-*; js/features/mentors.js) -->
@@ -4926,6 +5054,7 @@
     <script src="js/features/mentors.js"></script>
     <script src="js/features/mentor-docs.js"></script>
     <script src="js/features/audience.js"></script>
+    <script src="js/features/user-import.js"></script>
     <script src="js/features/levels.js"></script>
     <script src="js/features/challenges.js"></script>
     <script src="js/features/tickets-chat.js"></script>

@@ -41,6 +41,8 @@ app.use(
 // (comma-separated) to restrict browsers to specific origins; unset keeps the previous open behaviour.
 const corsOrigins = (process.env.CORS_ORIGINS || '').split(',').map(o => o.trim()).filter(Boolean);
 app.use(cors({ origin: corsOrigins.length ? corsOrigins : '*' }));
+// The bulk user import sends a whole spreadsheet (controllers/userImportController.ts); everything else keeps the 100kb default
+app.use('/api/v1/admin/users/import', express.json({ limit: '8mb' }));
 app.use(express.json());
 
 // Any write outside chat may change LMS content: drop the short-lived station tree cache.

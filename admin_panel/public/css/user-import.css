@@ -1,0 +1,122 @@
+/* Bulk add of people (index.html #user-import-overlay, js/features/user-import.js). Builds on the station
+   editor's dialog (css/stations.css .lse-*). */
+.uim { width: min(1180px, 100%); height: min(860px, 100%); }
+.uim-pane { display: none; flex-direction: column; gap: 16px; }
+.uim-pane.is-active { display: flex; }
+
+/* step 1 */
+.uim-sources { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; align-items: start; }
+.uim-drop {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 190px;
+  padding: 22px;
+  text-align: center;
+  border: 2px dashed var(--border-strong);
+  border-radius: 20px;
+  background: rgb(var(--fg-rgb) / 0.02);
+  color: var(--text-soft);
+  cursor: pointer;
+  transition: border-color 0.15s ease, background 0.15s ease;
+}
+.uim-drop > i { font-size: 2rem; color: var(--primary-text); }
+.uim-drop strong { font-size: var(--text-sm, 0.9rem); color: var(--text); }
+.uim-drop span { font-size: var(--text-2xs, 0.7rem); color: var(--text-muted); }
+.uim-drop:hover, .uim-drop:focus-visible, .uim-drop.is-over { border-color: var(--primary); background: rgb(var(--primary-rgb) / 0.08); outline: none; }
+.uim-drop.is-busy { pointer-events: none; opacity: 0.6; }
+.uim-paste { font-family: inherit; min-height: 190px; white-space: pre; overflow-x: auto; }
+
+/* step 2: column mapping */
+.uim-sub { font-weight: 500; color: var(--text-muted); font-size: var(--text-2xs, 0.7rem); }
+.uim-check { display: inline-flex; align-items: center; gap: 6px; font-size: var(--text-xs, 0.78rem); color: var(--text-soft); cursor: pointer; white-space: nowrap; }
+.uim-check input, .uim-table input[type="checkbox"] { width: 16px; height: 16px; accent-color: var(--primary); cursor: pointer; }
+.uim-map { display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: 10px; }
+.uim-col {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 10px;
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  background: rgb(var(--fg-rgb) / 0.02);
+  min-width: 0;
+}
+.uim-col.is-mapped { border-color: rgb(var(--primary-rgb) / 0.55); background: rgb(var(--primary-rgb) / 0.06); }
+.uim-col-head { font-size: var(--text-2xs, 0.7rem); font-weight: 700; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.uim-col-sample { font-size: var(--text-2xs, 0.7rem); color: var(--text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.lse .uim-col .select-ctrl { padding: 6px 10px; font-size: var(--text-xs, 0.78rem); border-radius: 10px; }
+
+/* step 2: rows */
+.uim-toolbar { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
+.uim-bulk { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.lse .uim-bulk .select-ctrl { width: auto; min-width: 170px; padding: 7px 12px; font-size: var(--text-xs, 0.78rem); }
+.uim-sel-count { font-size: var(--text-xs, 0.78rem); font-weight: 700; color: var(--text-soft); }
+.uim-table-wrap { overflow: auto; max-height: 440px; border: 1px solid var(--border); border-radius: 16px; }
+.uim-table { width: 100%; border-collapse: collapse; font-size: var(--text-xs, 0.78rem); }
+.uim-table th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  padding: 9px 8px;
+  text-align: start;
+  font-weight: 700;
+  color: var(--text-soft);
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  white-space: nowrap;
+}
+.uim-table td { padding: 6px 8px; border-bottom: 1px solid var(--border); vertical-align: middle; color: var(--text); }
+.uim-table tbody tr:last-child td { border-bottom: none; }
+.uim-table tbody tr.is-off td:not(.uim-c-check) { opacity: 0.5; }
+.uim-table tbody tr.is-bad { background: rgb(var(--danger-rgb) / 0.06); }
+.uim-table tbody tr.is-done { background: rgb(var(--success-rgb) / 0.06); }
+.uim-c-check { width: 34px; text-align: center !important; }
+.uim-c-num { width: 40px; color: var(--text-muted); }
+.lse .uim-table .input-ctrl, .lse .uim-table .select-ctrl { padding: 6px 10px; font-size: var(--text-xs, 0.78rem); border-radius: 10px; min-width: 120px; }
+.lse .uim-table .uim-phone { direction: ltr; text-align: end; min-width: 130px; }
+.uim-extra { display: inline-block; max-width: 220px; color: var(--text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; vertical-align: middle; }
+.uim-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 9px;
+  border-radius: 999px;
+  font-size: var(--text-2xs, 0.7rem);
+  font-weight: 700;
+  white-space: nowrap;
+  background: rgb(var(--fg-rgb) / 0.07);
+  color: var(--text-soft);
+}
+.uim-badge.is-ok { background: rgb(var(--success-rgb) / 0.14); color: var(--success-text); }
+.uim-badge.is-bad { background: rgb(var(--danger-rgb) / 0.14); color: var(--danger-text); }
+.uim-badge.is-warn { background: rgb(var(--accent-rgb) / 0.16); color: var(--accent-text); }
+.uim-badge.is-info { background: rgb(var(--info-rgb) / 0.14); color: var(--info-text); }
+.uim-empty { padding: 30px 12px; text-align: center; color: var(--text-muted); }
+
+/* step 3 */
+.uim-summary { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }
+.uim-stat {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 16px;
+  border-radius: 20px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+}
+.uim-stat b { font-size: 1.6rem; font-weight: 800; line-height: 1.1; }
+.uim-stat span { font-size: var(--text-xs, 0.78rem); color: var(--text-muted); }
+.uim-stat.is-ok b { color: var(--success-text); }
+.uim-stat.is-info b { color: var(--info-text); }
+.uim-stat.is-warn b { color: var(--accent-text); }
+.uim-stat.is-bad b { color: var(--danger-text); }
+.uim-progress { height: 6px; border-radius: 999px; background: rgb(var(--fg-rgb) / 0.08); overflow: hidden; min-width: 140px; }
+.uim-progress > i { display: block; height: 100%; width: 0; background: var(--primary); transition: width 0.2s ease; }
+
+@media (max-width: 860px) {
+  .uim-sources { grid-template-columns: 1fr; }
+  .uim-summary { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}

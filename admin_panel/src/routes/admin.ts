@@ -84,6 +84,7 @@ import { createCaravan, addMemberToCaravan, removeMemberFromCaravan, transferMem
 import { getCaravanLeague, getIndividualsLeaderboard, getCaravansLeaderboardDetailed } from '../controllers/leagueController';
 
 import { restrictNonAdmins, getPanelMe } from '../middleware/adminAccess';
+import { importUsers, parseUserImportFile } from '../controllers/userImportController';
 
 const router = Router();
 
@@ -100,6 +101,9 @@ router.put('/users/:id/panel-access', setUserPanelAccess as any);
 
 router.get('/users', getUsers as any);
 router.post('/users', createUser as any);
+// Bulk add from Excel / CSV / clipboard (larger JSON body limit in app.ts)
+router.post('/users/import/parse', parseUserImportFile as any);
+router.post('/users/import', importUsers as any);
 router.put('/users/:id', updateUser as any);
 router.patch('/users/:id/block', toggleBlockUser as any);
 router.patch('/users/:id/status', setAccountStatus as any);
