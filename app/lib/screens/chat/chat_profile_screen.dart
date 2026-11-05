@@ -1,4 +1,5 @@
 import 'package:nopa_app/core/avatar_catalog.dart';
+import 'dart:async';
 import 'dart:io' as io;
 import 'dart:typed_data';
 import 'dart:math' as math;
@@ -34,6 +35,32 @@ import 'package:nopa_app/widgets/zoomable_image.dart';
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+/// Keeps an open info page current: it reloads quietly every [_every], and as soon as the app returns
+/// to the foreground, so members, counts, ranks and balances never wait for the page to be reopened.
+mixin _LiveProfile<T extends StatefulWidget> on State<T>, WidgetsBindingObserver {
+  static const Duration _every = Duration(seconds: 15);
+  Timer? _liveTimer;
+
+  void reloadQuietly();
+
+  void startLive() {
+    WidgetsBinding.instance.addObserver(this);
+    _liveTimer = Timer.periodic(_every, (_) {
+      if (mounted) reloadQuietly();
+    });
+  }
+
+  void stopLive() {
+    _liveTimer?.cancel();
+    WidgetsBinding.instance.removeObserver(this);
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed && mounted) reloadQuietly();
+  }
+}
+
 /// A group or channel: its numbers, its members (each opens their profile) and what was shared in it.
 class ChatSpaceProfileScreen extends StatefulWidget {
   final String spaceId;
@@ -43,7 +70,7 @@ class ChatSpaceProfileScreen extends StatefulWidget {
   State<ChatSpaceProfileScreen> createState() => _ChatSpaceProfileScreenState();
 }
 
-class _ChatSpaceProfileScreenState extends State<ChatSpaceProfileScreen> {
+class _ChatSpaceProfileScreenState extends State<ChatSpaceProfileScreen> with WidgetsBindingObserver, _LiveProfile {
   final ChatRepository _chat = ChatRepository.instance;
   Map<String, dynamic>? _profile;
   bool _loading = true;
@@ -60,19 +87,22 @@ class _ChatSpaceProfileScreenState extends State<ChatSpaceProfileScreen> {
     super.initState();
     _load();
     // Someone was silenced or let speak again: the «بی‌صدا» marks of the members follow
-    _chat.memberMutes.addListener(_reloadQuietly);
+    _chat.memberMutes.addListener(reloadQuietly);
     // Holdings moved somewhere: the caravan's «رتبه» follows
-    AppRepository().scoresVersion.addListener(_reloadQuietly);
+    AppRepository().scoresVersion.addListener(reloadQuietly);
+    startLive();
   }
 
-  void _reloadQuietly() {
+  @override
+  void reloadQuietly() {
     if (mounted) _load();
   }
 
   @override
   void dispose() {
-    _chat.memberMutes.removeListener(_reloadQuietly);
-    AppRepository().scoresVersion.removeListener(_reloadQuietly);
+    _chat.memberMutes.removeListener(reloadQuietly);
+    AppRepository().scoresVersion.removeListener(reloadQuietly);
+    stopLive();
     super.dispose();
   }
 
@@ -265,8 +295,10 @@ class _ChatSpaceProfileScreenState extends State<ChatSpaceProfileScreen> {
       builder: () {
         final members = ((profile!['members'] as List?) ?? []).map((m) => Map<String, dynamic>.from(m as Map)).toList();
         final memberCount = (profile['memberCount'] as num?)?.toInt() ?? members.length;
-        final online = members.isNotEmpty ? members.where((m) => _chat.isOnline(m['id'] ?? '')).length : (profile['onlineCount'] as num?)?.toInt() ?? 0;
         final isChannel = space?.isChannel ?? false;
+        // «همسفر» are the students: the mentor and staff are listed but not counted (as the server counts them)
+        final counted = isChannel ? members : members.where((m) => m['role'] == 'student').toList();
+        final online = members.isNotEmpty ? counted.where((m) => _chat.isOnline(m['id'] ?? '')).length : (profile['onlineCount'] as num?)?.toInt() ?? 0;
         final shown = _allMembers ? members : members.take(_shownMembers).toList();
         return [
           _ProfilePanel(
@@ -400,7 +432,7 @@ class ChatMemberProfileScreen extends StatefulWidget {
   State<ChatMemberProfileScreen> createState() => _ChatMemberProfileScreenState();
 }
 
-class _ChatMemberProfileScreenState extends State<ChatMemberProfileScreen> {
+class _ChatMemberProfileScreenState extends State<ChatMemberProfileScreen> with WidgetsBindingObserver, _LiveProfile {
   final ChatRepository _chat = ChatRepository.instance;
   Map<String, dynamic>? _profile;
   bool _loading = true;
@@ -410,16 +442,19 @@ class _ChatMemberProfileScreenState extends State<ChatMemberProfileScreen> {
     super.initState();
     _load();
     // This person's (or anyone's) holdings moved: their balances and «رتبه» follow while the page is open
-    AppRepository().scoresVersion.addListener(_reloadQuietly);
+    AppRepository().scoresVersion.addListener(reloadQuietly);
+    startLive();
   }
 
-  void _reloadQuietly() {
+  @override
+  void reloadQuietly() {
     if (mounted) _load();
   }
 
   @override
   void dispose() {
-    AppRepository().scoresVersion.removeListener(_reloadQuietly);
+    AppRepository().scoresVersion.removeListener(reloadQuietly);
+    stopLive();
     super.dispose();
   }
 

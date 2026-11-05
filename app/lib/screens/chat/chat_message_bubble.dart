@@ -162,7 +162,7 @@ class _ChatMessageBubbleState extends State<ChatMessageBubble> {
           ? GestureDetector(
               onTap: widget.onOpenSender,
               child: m.senderId == null && m.botKey != null
-                  ? const ChatRing(child: ChatIconAvatar(icon: Icons.smart_toy_rounded, radius: _avatarRadius))
+                  ? ChatRing(child: ChatIconAvatar(icon: m.botKey == 'support' ? Icons.support_agent_rounded : Icons.smart_toy_rounded, radius: _avatarRadius))
                   : ChatRing(child: SafeAvatar(imageUrl: m.senderAvatarUrl, name: m.senderName, radius: _avatarRadius, gender: m.senderGender, isMentor: m.senderIsMentor)),
             )
           : const SizedBox(width: _avatarRadius * 2 + 5);

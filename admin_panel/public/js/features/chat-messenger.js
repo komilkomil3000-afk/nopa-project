@@ -278,12 +278,13 @@
     const body = m.deleted
       ? '<p class="chm-text is-deleted">این پیام حذف شده است</p>'
       : (m.body ? `<p class="chm-text">${esc(m.body)}</p>` : '');
-    const showName = !mine && !sameAuthor && m.sender && !m.botKey;
+    // A challenge's messages carry the mentor as their sender: shown under the mentor's name, not the bot's
+    const showName = !mine && !sameAuthor && m.sender;
     return `<div class="${cls}" data-id="${esc(m.id)}">
       ${!mine && !system && m.sender ? (sameAuthor ? '<span class="chm-avatar is-sm chm-ghost" aria-hidden="true"></span>' : avatar(m.sender, null, ' is-sm')) : ''}
       <div class="chm-bubble">
         ${showName ? `<div class="chm-sender">${esc(m.sender.name)}${role ? `<span class="chm-role">${esc(role)}</span>` : ''}</div>` : ''}
-        ${m.botKey ? '<div class="chm-sender"><i class="fa-solid fa-robot"></i>ربات نپا</div>' : ''}
+        ${m.botKey && !m.sender ? `<div class="chm-sender"><i class="fa-solid ${m.botKey === 'support' ? 'fa-headset' : 'fa-robot'}"></i>${esc(m.botName || 'ربات نپا')}</div>` : ''}
         ${reply}${att ? `<div class="chm-att">${att}</div>` : ''}${body}${poll}${tags}
         ${reactions ? `<div class="chm-react">${reactions}</div>` : ''}
         <div class="chm-meta">${m.best ? '<span class="chm-best"><i class="fa-solid fa-award"></i>بهترین پاسخ</span>' : ''}${m.pinned ? '<i class="fa-solid fa-thumbtack"></i>' : ''}${m.edited ? '<span>ویرایش‌شده</span>' : ''}<span>${esc(clock(m.createdAt))}</span></div>

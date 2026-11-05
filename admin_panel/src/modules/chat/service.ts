@@ -180,6 +180,8 @@ export function serializeMessage(m: MessageRow) {
     seq: m.seq,
     kind: m.kind,
     botKey: m.botKey,
+    // The name a message with no person behind it is shown under
+    botName: m.sender || !m.botKey ? null : m.botKey === 'support' ? 'پشتیبانی نپا' : 'ربات نپا',
     meta: m.meta,
     stationId: m.stationId,
     best: m.marks.includes('best'),

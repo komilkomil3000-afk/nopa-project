@@ -225,7 +225,7 @@ class ChatMessage {
       clientMessageId: json['clientMessageId'],
       createdAt: DateTime.tryParse(json['createdAt'] ?? '')?.toLocal() ?? DateTime.now(),
       senderId: sender?['id'],
-      senderName: sender?['name'] ?? (json['botKey'] != null ? 'ربات نپا' : 'نپا'),
+      senderName: sender?['name'] ?? json['botName'] ?? (json['botKey'] == 'support' ? 'پشتیبانی نپا' : json['botKey'] != null ? 'ربات نپا' : 'نپا'),
       senderAvatarUrl: sender?['avatarUrl'],
       senderGender: sender?['gender'],
       senderIsMentor: AvatarCatalog.isMentorRole(sender?['role']),

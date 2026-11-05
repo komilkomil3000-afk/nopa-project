@@ -37,11 +37,13 @@ export async function peopleWithMutes(space: SpaceRow, withMutes: boolean) {
 export async function peopleOf(space: SpaceRow) {
   let people: { id: string; name: string; avatarUrl: string | null; role: string; gender: string | null }[];
   if (space.caravanId) {
-    const caravan = await prisma.caravan.findUnique({ where: { id: space.caravanId }, select: { mentor: { select: PERSON_SELECT } } });
-    const members = await prisma.user.findMany({ where: { caravanId: space.caravanId, role: 'student' }, select: PERSON_SELECT, take: 200 });
-    people = [...(caravan?.mentor ? [caravan.mentor] : []), ...members];
+    const caravan = await prisma.caravan.findUnique({ where: { id: space.caravanId }, select: { mentor: { select: { ...PERSON_SELECT, isDeleted: true } } } });
+    // Deleted accounts are no longer anyone's fellow traveller: they are neither listed nor counted
+    const members = await prisma.user.findMany({ where: { caravanId: space.caravanId, role: 'student', isDeleted: false }, select: PERSON_SELECT, orderBy: { name: 'asc' } });
+    const mentor = caravan?.mentor && !caravan.mentor.isDeleted ? { id: caravan.mentor.id, name: caravan.mentor.name, avatarUrl: caravan.mentor.avatarUrl, role: caravan.mentor.role, gender: caravan.mentor.gender } : null;
+    people = [...(mentor ? [mentor] : []), ...members];
   } else {
-    const members = await prisma.chatMember.findMany({ where: { spaceId: space.id }, select: { user: { select: PERSON_SELECT } }, take: 200 });
+    const members = await prisma.chatMember.findMany({ where: { spaceId: space.id, user: { isDeleted: false } }, select: { user: { select: PERSON_SELECT } } });
     people = members.map(m => m.user);
   }
   return people.map(p => ({ ...p, online: isOnline(p.id) }));
@@ -60,8 +62,10 @@ export const spaceProfile = handler(async (req, res, actor) => {
   const { space } = await requireSpace(actor, req.params.id);
   const isPublic = PUBLIC_TYPES.has(space.type);
   const members = isPublic ? [] : await peopleWithMutes(space, canModerate(actor, space));
-  const memberCount = isPublic ? await prisma.user.count({ where: { role: { in: ['student', 'mentor'] } } }) : members.length;
-  const onlineCount = isPublic ? onlineUserIds().size : members.filter(m => m.online).length;
+  // «تعداد همسفر» of a group counts its students, not its mentor or staff; the «public» channel counts everyone in it
+  const counted = space.type === 'public' ? members : members.filter(m => m.role === 'student');
+  const memberCount = isPublic ? await prisma.user.count({ where: { role: { in: ['student', 'mentor'] }, isDeleted: false } }) : counted.length;
+  const onlineCount = isPublic ? onlineUserIds().size : counted.filter(m => m.online).length;
 
   let rank: number | null = null;
   let caravanName: string | null = null;
@@ -167,9 +171,15 @@ export const memberProfile = handler(async (req, res, actor) => {
   }
   const user = await prisma.user.findUnique({
     where: { id: userId },
-    select: { ...PERSON_SELECT, slogan: true, caravanId: true, zarikBalance: true, nakh: true, farsh: true, beyragh: true, levelFrame: true, caravan: { select: { name: true } } },
+    select: {
+      ...PERSON_SELECT, slogan: true, caravanId: true, zarikBalance: true, nakh: true, farsh: true, beyragh: true, levelFrame: true,
+      caravan: { select: { name: true } }, mentoredCaravans: { where: { deletedAt: null }, select: { id: true, name: true } },
+    },
   });
   if (!user) throw new ChatError(404, 'کاربر یافت نشد');
+  // A mentor belongs to no caravan as a member: their caravan is the one they lead (this space's, when it is one of theirs)
+  const led = user.mentoredCaravans.find(c => c.id === space.caravanId) ?? user.mentoredCaravans[0];
+  const caravanName = user.caravan?.name ?? led?.name ?? null;
 
   // The place in «برترین شرکت‌کننده‌ها» (the market's ranking, by capital); null for a mentor
   const rank = await studentRank(user.id);
@@ -204,7 +214,7 @@ export const memberProfile = handler(async (req, res, actor) => {
 
   res.json({
     id: user.id, name: user.name, avatarUrl: user.avatarUrl, role: user.role, gender: user.gender, slogan: user.slogan,
-    caravanId: user.caravanId, caravanName: user.caravan?.name ?? null,
+    caravanId: user.caravanId, caravanName,
     zarik: user.zarikBalance, nakh: user.nakh, farsh: user.farsh, derafsh: user.beyragh, levelFrame: user.levelFrame,
     rank, online: isOnline(user.id), stats,
     // Moderators see whether this member is silenced here, to lift it

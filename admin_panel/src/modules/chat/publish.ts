@@ -21,9 +21,24 @@ export async function publishMessage(input: NewMessage) {
   return { message, created: result.created };
 }
 
+/**
+ * Who a challenge's own messages speak as: a personal or caravan challenge as the mentor who posted its card,
+ * an inter-group one (and anything in the arena) as «پشتیبانی نپا». Null: leave the message as it is.
+ */
+export async function challengeVoice(spaceId: string, threadRootId?: string): Promise<{ senderId?: string; botKey: string } | null> {
+  const root = threadRootId
+    ? await prisma.chatMessage.findUnique({ where: { id: threadRootId }, select: { senderId: true, topic: { select: { challenge: { select: { category: true } } } } } })
+    : null;
+  const space = await prisma.chatSpace.findUnique({ where: { id: spaceId }, select: { type: true } });
+  if (space?.type === 'arena' || root?.topic?.challenge?.category === 'inter_group') return { botKey: 'support' };
+  if (root?.senderId) return { senderId: root.senderId, botKey: 'challenge' };
+  return null;
+}
+
 /** A message written by the system: a card, a reminder, a bot's answer. */
-export function publishBotMessage(input: { spaceId: string; botKey: string; body: string; kind?: string; meta?: any; stationId?: string; threadRootId?: string }) {
-  return publishMessage({ ...input, attachmentIds: [], mentions: [] });
+export async function publishBotMessage(input: { spaceId: string; botKey: string; body: string; kind?: string; meta?: any; stationId?: string; threadRootId?: string }) {
+  const voice = input.botKey === 'challenge' ? await challengeVoice(input.spaceId, input.threadRootId) : null;
+  return publishMessage({ ...input, ...(voice ?? {}), stayOutside: !!voice?.senderId, attachmentIds: [], mentions: [] });
 }
 
 export async function publishUpdate(messageId: string) {
