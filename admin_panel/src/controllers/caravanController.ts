@@ -289,7 +289,7 @@ export async function createCaravan(req: AuthRequest, res: Response) {
     // Check if mentor exists
     if (mentorId) {
       const mentor = await prisma.user.findUnique({ where: { id: mentorId } });
-      if (!mentor || (mentor.role !== 'mentor' && !mentor.isDualRole)) {
+      if (!mentor || (!isMentorRole(mentor.role) && !mentor.isDualRole)) {
         return res.status(400).json({ error: 'راهبر نامعتبر است' });
       }
     }

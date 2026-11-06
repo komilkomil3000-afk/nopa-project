@@ -177,7 +177,7 @@ export async function importUsers(req: AuthRequest, res: Response) {
             nationalId: extra.nationalId || null,
             dateOfBirth: extra.dateOfBirth || null,
             gender,
-            avatarUrl: avatarFor(role, gender, null) ?? null,
+            avatarUrl: (await avatarFor(role, gender, null)) ?? null,
             identityVerified: true,
             userCode: nextUserCode++,
           },

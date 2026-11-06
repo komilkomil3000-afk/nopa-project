@@ -3,7 +3,8 @@ import { AuthRequest } from '../middleware/auth';
 import prisma from '../config/db';
 import { canUseChat, getChatSettings } from '../services/chatSettings';
 import { changeBalance } from '../services/ledger';
-import { STUDENT_AVATARS, isMentorRole } from '../utils/avatar';
+import { isMentorRole } from '../utils/avatar';
+import { activeAvatarOptions, avatarGroupOf } from '../services/avatarCatalog';
 
 /**
  * Number of leading stations (in station order) the user has completed: every video clip of the station is
@@ -321,27 +322,24 @@ export async function getMentorById(req: AuthRequest, res: Response) {
 
 
 /**
- * PATCH /users/me/avatar { avatarKey } – a student picks one of the bundled pictures of the gender that the admin
- * panel set for them. Mentors cannot choose: they always have the mentor picture of their gender.
+ * PATCH /users/me/avatar { avatarUrl } (or the older { avatarKey: "boy_2" }) – a user picks one of the pictures the
+ * panel offers for their group (gender, and mentor or not). The picture they had stays theirs until they pick another,
+ * even after the panel stops offering it.
  */
 export async function updateMyAvatar(req: AuthRequest, res: Response) {
   try {
     if (!req.user) return res.status(401).json({ error: 'کاربر احراز هویت نشده است' });
     const me = await prisma.user.findUnique({ where: { id: req.user.id }, select: { role: true, gender: true } });
     if (!me) return res.status(404).json({ error: 'کاربر یافت نشد' });
-    if (me.gender !== 'male' && me.gender !== 'female') {
-      return res.status(400).json({ error: 'جنسیت شما هنوز توسط مدیریت ثبت نشده است' });
+    const group = avatarGroupOf(me.role, me.gender);
+    if (!group) return res.status(400).json({ error: 'جنسیت شما هنوز توسط مدیریت ثبت نشده است' });
+    const wanted = req.body?.avatarUrl ? String(req.body.avatarUrl) : req.body?.avatarKey ? `asset:${String(req.body.avatarKey)}` : '';
+    const options = (await activeAvatarOptions())[group];
+    if (!wanted || !options.includes(wanted)) {
+      return res.status(400).json({ error: isMentorRole(me.role) && options.length < 2 ? 'تصویر راهبر بر اساس جنسیت تعیین می‌شود' : 'این تصویر دیگر قابل انتخاب نیست' });
     }
-    if (isMentorRole(me.role)) {
-      return res.status(403).json({ error: 'تصویر راهبر بر اساس جنسیت تعیین می‌شود' });
-    }
-    const key = String(req.body?.avatarKey || '');
-    if (!STUDENT_AVATARS[me.gender].includes(key)) {
-      return res.status(400).json({ error: 'آواتار نامعتبر است' });
-    }
-    const avatarUrl = `asset:${key}`;
-    await prisma.user.update({ where: { id: req.user.id }, data: { avatarUrl } });
-    res.json({ gender: me.gender, avatarUrl });
+    await prisma.user.update({ where: { id: req.user.id }, data: { avatarUrl: wanted } });
+    res.json({ gender: me.gender, avatarUrl: wanted });
   } catch (error) {
     console.error('updateMyAvatar error:', error);
     res.status(500).json({ error: 'خطا در ذخیره آواتار' });

@@ -15,7 +15,7 @@ import { ASSIGNABLE_ROLES, ROLE_ADMIN, ROLE_STUDENT, SUPER_ADMIN_ONLY_ROLES, par
 import { avatarFor, normalizeGender } from '../utils/avatar';
 import { presenceOf, usageSummary } from '../services/presence';
 import { setCachedSiteAvatar } from '../services/siteAvatars';
-import { isOnline } from '../modules/chat/realtime';
+import { isOnline, refreshUserRooms } from '../modules/chat/realtime';
 
 
 // Memory Cache for Zarik Analytics (invalidated upon adjustments)
@@ -565,7 +565,7 @@ export async function createUser(req: AuthRequest, res: Response) {
         nationalId: nationalId || null,
         dateOfBirth: dateOfBirth || null,
         gender,
-        avatarUrl: avatarFor(role, gender, null) ?? null,
+        avatarUrl: (await avatarFor(role, gender, null)) ?? null,
         identityVerified: true,
         isDualRole: role === 'dual' ? true : false,
         userCode: nextUserCode
@@ -605,9 +605,14 @@ export async function updateUser(req: AuthRequest, res: Response) {
       roleToSet = requestedRole;
     }
 
+    // A member who becomes a mentor leaves their own caravan: a mentor leads caravans (Caravan.mentorId) and
+    // must not stay listed, counted and chatting as a member of the old one. Dual-role users keep it.
+    const leavesCaravan = !!(roleToSet && isMentorRole(roleToSet) && prevUser && !isMentorRole(prevUser.role) && !prevUser.isDualRole);
+    const caravanIdIn = leavesCaravan ? null : req.body.caravanId;
+
     // Gender is set here (admin panel); the matching profile picture follows from role + gender.
     const finalGender = genderInput !== undefined ? genderInput : prevUser?.gender as any;
-    const newAvatar = avatarFor(roleToSet || prevUser?.role, finalGender, prevUser?.avatarUrl);
+    const newAvatar = await avatarFor(roleToSet || prevUser?.role, finalGender, prevUser?.avatarUrl);
 
     const user = await prisma.user.update({
       where: { id },
@@ -617,7 +622,7 @@ export async function updateUser(req: AuthRequest, res: Response) {
         ...(newAvatar !== undefined ? { avatarUrl: newAvatar } : {}),
         ...(roleToSet ? { role: roleToSet, tokenVersion: { increment: 1 } } : {}),
         phoneNumber: phoneNumber || undefined,
-        caravanId: caravanId !== undefined ? (caravanId || null) : undefined,
+        caravanId: caravanIdIn !== undefined ? (caravanIdIn || null) : undefined,
         levelFrame: levelFrame ? parseInt(levelFrame) : undefined,
         mentorLevel: mentorLevel ? parseInt(mentorLevel) : undefined,
         nationalId: nationalId !== undefined ? (nationalId || null) : undefined,
@@ -635,6 +640,9 @@ export async function updateUser(req: AuthRequest, res: Response) {
         `تغییر نقش کاربر ${user.name || id} از ${prevUser?.role} به ${roleToSet}`, req.ip || '127.0.0.1'
       );
     }
+
+    // chat rooms follow User.caravanId and the role: move the live sockets now
+    if (roleToSet || (prevUser && prevUser.caravanId !== user.caravanId)) await refreshUserRooms([id]).catch(() => {});
 
     // Update caravan member counts if caravan changed
     if (prevUser && prevUser.caravanId && prevUser.caravanId !== user.caravanId) {
@@ -1665,7 +1673,7 @@ export async function updateMentor(req: AuthRequest, res: Response) {
       mentorLevel: parseInt(mentorLevel) || 1
     };
 
-    const mentorAvatar = avatarFor(mentor.role, mentorGender !== undefined ? mentorGender : (mentor.gender as any), mentor.avatarUrl);
+    const mentorAvatar = await avatarFor(mentor.role, mentorGender !== undefined ? mentorGender : (mentor.gender as any), mentor.avatarUrl);
     if (mentorAvatar !== undefined) data.avatarUrl = mentorAvatar;
 
     if (Array.isArray(caravanIds)) {

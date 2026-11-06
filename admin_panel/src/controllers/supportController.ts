@@ -40,7 +40,7 @@ export async function createTicket(req: AuthRequest, res: Response) {
           userId: a.id,
           title: 'پیام جدید به پشتیبانی',
           message: String(subject).slice(0, 140),
-          type: 'alert'
+          type: 'ticket' // the panel's bell opens this ticket
         }))
       });
     }

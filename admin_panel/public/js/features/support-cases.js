@@ -297,7 +297,10 @@
       const data = await res.json();
       st.cases = Array.isArray(data) ? data : [];
       renderList();
-      if (st.activeId && current()) { st.messages.delete(String(st.activeId)); renderConv({ bottom: false }); loadMessages(st.activeId); }
+      const wanted = pendingOpen;
+      pendingOpen = null;
+      if (wanted && st.cases.some(c => String(c.id) === String(wanted))) openCase(wanted);
+      else if (st.activeId && current()) { st.messages.delete(String(st.activeId)); renderConv({ bottom: false }); loadMessages(st.activeId); }
       else { st.activeId = null; renderConv(); setState('list'); }
     } catch (e) {
       console.error('Error loading support cases', e);
@@ -308,4 +311,11 @@
   }
 
   window.loadSupportCases = loadSupportCases;
+
+  // Opens one case (the header bell's support messages): the tab loads, then the case opens
+  let pendingOpen = null;
+  window.openSupportCaseById = function (id) {
+    pendingOpen = String(id);
+    NopaRouter.switchTab('support-cases-tab', true);
+  };
 })();

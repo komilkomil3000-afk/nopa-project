@@ -336,12 +336,22 @@ class AppRepository extends ChangeNotifier with WidgetsBindingObserver {
   }
 
   /// Saves gender / avatar on the server; the app updates immediately on success.
-  Future<bool> updateAvatar({required String avatarKey}) async {
-    final res = await _apiService.updateMyAvatar(avatarKey: avatarKey);
-    if (res == null) return false;
+  /// Re-reads the panel's pictures (profile pictures included) – the picker calls it so its list is current.
+  Future<bool> refreshAppImages() async {
+    final images = await _apiService.getAppImages();
+    if (images == null) return false;
+    AppImages.apply(images);
+    return true;
+  }
+
+  /// Saves the chosen profile picture. Returns null when saved, otherwise the message to show.
+  Future<String?> updateAvatar({required String avatarUrl}) async {
+    final res = await _apiService.updateMyAvatar(avatarUrl: avatarUrl);
+    if (res == null) return 'ذخیره تصویر انجام نشد. اتصال اینترنت را بررسی کنید. اگر فیلترشکن شما روشن است، لطفاً آن را خاموش کنید.';
+    if (res['error'] != null) return res['error'].toString();
     currentUser = currentUser.copyWith(avatarUrl: res['avatarUrl']?.toString() ?? '');
     notifyListeners();
-    return true;
+    return null;
   }
 
   @override

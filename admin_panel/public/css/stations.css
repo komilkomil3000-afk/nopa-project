@@ -2500,7 +2500,13 @@ button.crv-asset.usr-asset-link:hover { background: rgb(var(--tone) / 0.14); bor
 .sec-board .lsv-circle-img i { font-size: 1.2rem; }
 #sec-state:empty { display: none; }
 .sec-flow .chs-checks { gap: 6px; }
-.sec-caps { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.sec-caps { grid-template-columns: minmax(0, 1fr); }
+/* what a role can do (read-only rows; the sub admin's come from its section grants) */
+.sec-ability { cursor: default; justify-content: space-between; }
+.sec-ability > span strong { font-size: var(--text-xs, 0.78rem); color: var(--text); font-weight: 500; }
+.sec-ability .lst-chip { flex-shrink: 0; }
+.sec-ability-edit { justify-self: start; margin-top: 4px; }
+.sec-grant-name small { display: block; margin-top: 2px; color: var(--text-muted); font-size: 0.68rem; line-height: 1.5; }
 .sec-switch { cursor: pointer; }
 .sec-switch:has(input:disabled) { cursor: not-allowed; opacity: 0.75; }
 .sec-switch > span strong { font-size: var(--text-xs, 0.78rem); color: var(--text); }
@@ -3077,3 +3083,15 @@ button.nbr-rank-row:hover { background: rgb(var(--primary-rgb) / 0.08); }
 .aim-tools { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
 .aim-upload { cursor: pointer; font-size: var(--text-xs); }
 .aim-add { cursor: pointer; min-height: 150px; }
+/* profile pictures: one row of round pictures per group */
+.aim-av-group + .aim-av-group { margin-top: 16px; }
+.aim-av-group-title { display: flex; align-items: center; gap: 8px; margin: 0 0 10px; font-size: var(--text-sm); font-weight: 700; color: var(--text-main); }
+.aim-av-group-title small { font-weight: 400; color: var(--text-muted); }
+.aim-av-grid { grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); }
+.aim-av-grid .aim-thumb { aspect-ratio: 1; width: 96px; margin-inline: auto; border-radius: 50%; }
+.aim-av-grid .aim-thumb img { object-fit: cover; }
+.aim-av-grid .aim-add { min-height: 190px; }
+.aim-slot.is-retired { opacity: 0.6; }
+.aim-slot.is-retired .aim-thumb { filter: grayscale(0.8); }
+.aim-av-badge { display: inline-flex; align-items: center; gap: 4px; font-size: var(--text-xs); color: var(--accent, #dfb690); }
+.aim-tools-end { display: inline-flex; gap: 6px; }

@@ -50,7 +50,7 @@ export async function ensureOpenCase(spaceId: string, userId: string, body: stri
   await refreshUserRooms(staff.filter(s => s.role === 'support').map(s => s.id));
   if (targets.length) {
     await prisma.notification.createMany({
-      data: targets.map(a => ({ userId: a.id, title: 'پرونده‌ی جدید پشتیبانی', message: found.subject, type: 'alert' })),
+      data: targets.map(a => ({ userId: a.id, title: 'پرونده‌ی جدید پشتیبانی', message: found.subject, type: 'support' })),
     });
   }
   return found;

@@ -279,15 +279,39 @@
   // Chat and support messages also get a button to the conversation (chat tab), when the person may open it.
   const INBOX_KINDS = {
     chat: { icon: 'fa-solid fa-comments', label: 'پیام گفتگو', tab: 'chat-tab' },
-    support: { icon: 'fa-solid fa-headset', label: 'پشتیبانی', tab: 'chat-tab' },
+    support: { icon: 'fa-solid fa-headset', label: 'پشتیبانی', tab: 'support-cases-tab' },
+    ticket: { icon: 'fa-solid fa-inbox', label: 'تیکت پشتیبانی', tab: 'mentors-tickets-tab' },
     reward: { icon: 'fa-solid fa-gift', label: 'جایزه' },
     challenge: { icon: 'fa-solid fa-fire', label: 'چالش' },
   };
+  // Older notifications of a new support case / ticket were saved as plain alerts: known by their title
+  function inboxKind(n) {
+    if (INBOX_KINDS[n.type]) return n.type;
+    const title = String(n.title || '');
+    if (title === 'پرونده‌ی جدید پشتیبانی') return 'support';
+    if (title === 'پیام جدید به پشتیبانی') return 'ticket';
+    return n.type;
+  }
+  // A support notification opens its own case / ticket when it can be found (the case's subject is the message)
+  async function openInboxTarget(n, tab) {
+    const kind = inboxKind(n);
+    if (kind === 'support' || kind === 'ticket') {
+      const source = window.NopaAttention && NopaAttention.SOURCES.find(s => s.tab === tab);
+      try {
+        const res = source && await request(source.url, { silent: true });
+        const data = res && res.ok ? await res.json() : null;
+        const hit = data && source.recent ? source.recent(data).find(r => String(r.text || '').slice(0, 140) === String(n.message || '')) : null;
+        if (hit && typeof window[source.open] === 'function') { closeMenus(); setPanel(false); window[source.open](hit.id); return; }
+      } catch (_) { /* fall back to the queue */ }
+    }
+    go(tab);
+  }
+
   function openInboxMessage(id) {
     const n = window.NopaInbox && NopaInbox.state.items.find(x => x.id === id);
     const modal = $('inbox-msg-modal');
     if (!n || !modal) return;
-    const kind = INBOX_KINDS[n.type] || { icon: 'fa-solid fa-bell', label: 'اعلان' };
+    const kind = INBOX_KINDS[inboxKind(n)] || { icon: 'fa-solid fa-bell', label: 'اعلان' };
     $('inbox-msg-title').textContent = n.title || 'پیام';
     $('inbox-msg-time').textContent = when(n.createdAt);
     $('inbox-msg-text').textContent = n.message || '';
@@ -296,7 +320,7 @@
     const goBtn = $('inbox-msg-go');
     const tab = kind.tab && NopaRouter.TABS[kind.tab] && isAllowed(kind.tab) ? kind.tab : null;
     goBtn.hidden = !tab;
-    goBtn.onclick = tab ? () => { NopaModal.close(modal); go(tab); } : null;
+    goBtn.onclick = tab ? () => { NopaModal.close(modal); openInboxTarget(n, tab); } : null;
     closeMenus();
     NopaModal.open(modal);
     NopaInbox.markRead(id);
@@ -305,14 +329,14 @@
   function renderSupport(items) {
     const recent = items
       .filter(i => i.recent && i.recent.length)
-      .reduce((all, i) => all.concat(i.recent.map(r => Object.assign({ tab: i.tab, icon: i.icon }, r))), [])
+      .reduce((all, i) => all.concat(i.recent.map(r => Object.assign({ tab: i.tab, icon: i.icon, open: i.open }, r))), [])
       .sort((a, b) => new Date(b.at || 0) - new Date(a.at || 0))
       .slice(0, SUPPORT_SHOWN);
     const block = $('support-recent-block');
     if (block) block.hidden = !recent.length;
     const list = $('support-recent-list');
     if (list) {
-      list.innerHTML = recent.map(r => `<li><a href="${hrefOf(r.tab)}" data-tab="${esc(r.tab)}" class="inbox-item is-unread">
+      list.innerHTML = recent.map(r => `<li><a href="${hrefOf(r.tab)}" data-tab="${esc(r.tab)}"${r.open && r.id ? ` data-open="${esc(r.open)}" data-open-id="${esc(r.id)}"` : ''} class="inbox-item is-unread">
           <span class="inbox-item-head"><strong><i class="${esc(r.icon)}"></i> ${esc(r.who || 'ناشناس')}</strong><time>${esc(when(r.at))}</time></span>
           <span class="inbox-item-text">${esc(String(r.text || '').slice(0, 140))}</span></a></li>`).join('');
     }
@@ -475,6 +499,8 @@
       const link = e.target.closest('a[data-tab]');
       if (!link || e.ctrlKey || e.metaKey) return;
       e.preventDefault();
+      const opener = link.dataset.open && window[link.dataset.open];
+      if (typeof opener === 'function') { closeMenus(); setPanel(false); opener(link.dataset.openId); return; }
       go(link.dataset.tab);
     });
     $('inbox-read-all').addEventListener('click', e => { e.stopPropagation(); NopaInbox.markAllRead(); });

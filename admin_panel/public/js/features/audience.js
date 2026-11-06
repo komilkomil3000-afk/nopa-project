@@ -23,7 +23,9 @@ const USR_ROLES = {
 const USR_MENTOR_LEVELS = { 1: 'راهبر مقدماتی', 2: 'راهبر پیشرفته', 3: 'راهبر ارشد' };
 
 function usrFind(id) { return (window.usrList || []).find(u => String(u.id) === String(id)) || null; }
-function usrRole(u) { return USR_ROLES[u?.role] || { label: u?.role || 'کاربر', icon: 'fa-user' }; }
+// legacy spellings (SUPER_MENTOR, Sub-Admin...) are shown as the role they are
+function usrRoleKey(role) { const k = String(role || '').toLowerCase().replace(/[\s-]/g, '_'); return k === 'super_mentor' || k === 'supermentor' ? 'mentor' : k; }
+function usrRole(u) { return USR_ROLES[usrRoleKey(u?.role)] || { label: u?.role || 'کاربر', icon: 'fa-user' }; }
 function usrCode(u) { return u?.userCode ? `NP-${u.userCode}` : ''; }
 function usrHasCaravan(u) { return !!u?.caravanId; }
 function usrDate(d) { const t = d ? new Date(d) : null; return t && !isNaN(t) ? t.toLocaleDateString('fa-IR') : ''; }
