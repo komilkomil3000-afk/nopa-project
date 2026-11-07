@@ -23,6 +23,8 @@ class ChatSpace {
   final bool canReply;
   final bool canModerate;
   final bool canTag;
+  /// Why this user may no longer write here (e.g. «شما راهبر این کاروان نیستید»); shown instead of the composer.
+  final String? blockedReason;
   String preview;
   String previewSender;
   /// Sender of the last message, to tell one's own message (with read ticks) from others'.
@@ -49,6 +51,7 @@ class ChatSpace {
     this.canReply = true,
     this.canModerate = false,
     this.canTag = false,
+    this.blockedReason,
     this.preview = '',
     this.previewSender = '',
     this.previewSenderId,
@@ -92,6 +95,7 @@ class ChatSpace {
       canReply: json['canReply'] != false,
       canModerate: json['canModerate'] == true,
       canTag: json['canTag'] == true,
+      blockedReason: (json['blockedReason']?.toString().trim().isNotEmpty ?? false) ? json['blockedReason'].toString().trim() : null,
       preview: last?['preview'] ?? '',
       previewSender: last?['senderName'] ?? '',
       previewSenderId: last?['senderId'],

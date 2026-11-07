@@ -80,6 +80,8 @@ export async function caravanIdsOf(actor: ChatActor): Promise<string[]> {
   if (role === 'admin' || role === 'sub_admin' || role === 'channel_manager' || isSupportRole(role)) {
     return (await prisma.caravan.findMany({ select: { id: true } })).map(c => c.id);
   }
+  // A mentor works only across the caravans he leads now; a leftover caravanId of his is not one of them
+  if (isMentorRole(role)) return actor.mentoredCaravanIds;
   return Array.from(new Set([...actor.mentoredCaravanIds, ...(actor.caravanId ? [actor.caravanId] : [])]));
 }
 

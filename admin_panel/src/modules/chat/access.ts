@@ -30,7 +30,10 @@ export async function loadActor(userId: string): Promise<ChatActor | null> {
     const row = await prisma.rolePermission.findUnique({ where: { roleName: ROLE_CHANNEL_MANAGER } });
     permissions = parseChatPermissions(row?.permissionsJson);
   }
-  return { ...user, mentoredCaravanIds: mentored.map(c => c.id), permissions };
+  // A mentor belongs to the caravans he leads (Caravan.mentorId), never through a leftover User.caravanId:
+  // after another mentor takes his caravan he must leave its groups, challenges and arena work at once
+  const caravanId = isMentorRole(user.role) ? null : user.caravanId;
+  return { ...user, caravanId, mentoredCaravanIds: mentored.map(c => c.id), permissions };
 }
 
 const isAdmin = (a: ChatActor) => String(a.role).toLowerCase() === 'admin' || isSubAdminRole(a.role);
@@ -68,7 +71,8 @@ export function canSee(a: ChatActor, s: SpaceRef, isMember: boolean): boolean {
       return isAdmin(a) || isManager(a) || isSupport(a) || isMentorRole(a.role);
     case 'caravan':
     case 'challenges':
-      return isAdmin(a) || isSupport(a) || leadsCaravan(a, s) || a.caravanId === s.caravanId || (isManager(a) && a.permissions.enterGroups);
+      // A mentor is in a caravan's groups only while he leads it (Caravan.mentorId); a leftover caravanId of his never counts
+      return isAdmin(a) || isSupport(a) || leadsCaravan(a, s) || (!isMentorRole(a.role) && a.caravanId === s.caravanId) || (isManager(a) && a.permissions.enterGroups);
     case 'media':
       return isMember || isAdmin(a) || isSupport(a) || leadsCaravan(a, s) || (isManager(a) && a.permissions.enterGroups);
     default:
@@ -123,6 +127,35 @@ export function canTag(a: ChatActor, s: SpaceRef): boolean {
 export function managerMayEnter(a: ChatActor, s: { type: string }): boolean {
   if (!isManager(a) || a.permissions.enterGroups) return true;
   return !['caravan', 'challenges', 'media'].includes(s.type);
+}
+
+export const NOT_YOUR_CARAVAN = 'شما راهبر این کاروان نیستید';
+export const NOT_YOUR_MENTOR = 'شما دیگر عضو این کاروان نیستید';
+
+const isMemberRole = (role: string) => ['student', 'dual'].includes(String(role).toLowerCase());
+
+/**
+ * Why the actor may not write in a private conversation with this peer any more, or null. A mentor talks privately
+ * only with members of a caravan he leads now; when a caravan gets another mentor, the old conversations stay
+ * readable but closed on both sides.
+ */
+export async function directBlockReason(a: ChatActor, peer: { id: string; role: string; caravanId: string | null } | null | undefined): Promise<string | null> {
+  if (!peer) return null;
+  if (isMentorRole(a.role) && isMemberRole(peer.role)) {
+    return peer.caravanId && a.mentoredCaravanIds.includes(peer.caravanId) ? null : NOT_YOUR_CARAVAN;
+  }
+  if (isMemberRole(a.role) && isMentorRole(peer.role)) {
+    if (!a.caravanId) return NOT_YOUR_MENTOR;
+    const led = await prisma.caravan.findFirst({ where: { id: a.caravanId, mentorId: peer.id }, select: { id: true } });
+    return led ? null : NOT_YOUR_MENTOR;
+  }
+  return null;
+}
+
+/** The other person of a private conversation (with the fields directBlockReason reads). */
+export async function directPeer(a: ChatActor, spaceId: string) {
+  const row = await prisma.chatMember.findFirst({ where: { spaceId, userId: { not: a.id } }, select: { user: { select: { id: true, role: true, caravanId: true } } } });
+  return row?.user ?? null;
 }
 
 /** Students talk privately with their own mentor only; staff talk to whoever they work with. */

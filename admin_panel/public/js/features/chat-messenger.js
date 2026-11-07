@@ -258,7 +258,10 @@
       if (a.kind === 'audio') return voiceHtml(a);
       if (a.kind === 'video') return `<video controls preload="none" src="${esc(a.url)}"></video>`;
       return `<a class="chm-file" href="${esc(a.url)}" target="_blank" rel="noopener"><i class="fa-solid fa-file-arrow-down"></i>${esc(a.name)}</a>`;
-    }).join('');
+    }).join('') + (m.kind === 'sticker' && m.meta && m.meta.sticker && m.meta.sticker.url
+      // a sticker / GIF from a pack bought in the market (فروشگاه بازارچه)
+      ? `<img class="chm-sticker" src="${esc(m.meta.sticker.url)}" alt="استیکر" loading="lazy" data-style="width:120px;height:120px;object-fit:contain">`
+      : '');
     let poll = '';
     if (m.kind === 'poll' && m.meta && Array.isArray(m.meta.options)) {
       const votes = m.pollVotes || [];

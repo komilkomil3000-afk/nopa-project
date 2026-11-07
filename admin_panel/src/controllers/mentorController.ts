@@ -4,6 +4,7 @@ import bcrypt from 'bcryptjs';
 import prisma from '../config/db';
 import { sendSystemNotification } from './notificationController';
 import { avatarFor, normalizeGender } from '../utils/avatar';
+import { applyMentorCaravanChoice, setCaravanMentor, setMentorCaravans } from '../services/caravanMentor';
 
 export async function getMentors(req: AuthRequest, res: Response) {
   try {
@@ -60,7 +61,8 @@ export async function createOrUpdateMentor(req: AuthRequest, res: Response) {
         nationalId,
         academicDegree,
         academicCertificates: certificates,
-        caravanId: caravanId || null
+        // a mentor is never a caravan member: the caravans he leads are set below (Caravan.mentorId)
+        caravanId: null
       };
       if (typeof isSuperMentor === 'boolean') {
         data.role = isSuperMentor ? 'SUPER_MENTOR' : 'mentor';
@@ -85,18 +87,11 @@ export async function createOrUpdateMentor(req: AuthRequest, res: Response) {
         data
       });
 
-      // Handle multi-caravan assignments
+      // Handle multi-caravan assignments: each caravan's previous mentor leaves it (chat, app and panels follow)
       if (Array.isArray(assignedCaravanIds)) {
-        await prisma.caravan.updateMany({
-          where: { mentorId: user.id },
-          data: { mentorId: null }
-        });
-        if (assignedCaravanIds.length > 0) {
-          await prisma.caravan.updateMany({
-            where: { id: { in: assignedCaravanIds } },
-            data: { mentorId: user.id }
-          });
-        }
+        await setMentorCaravans(user.id, assignedCaravanIds.map(String));
+      } else if (caravanId) {
+        await applyMentorCaravanChoice(user.id, user.role, null, String(caravanId));
       }
     } else {
       const maxUser = await prisma.user.findFirst({
@@ -114,7 +109,7 @@ export async function createOrUpdateMentor(req: AuthRequest, res: Response) {
           passwordHash: bcrypt.hashSync('123456', 10),
           academicDegree,
           academicCertificates: certificates,
-          caravanId: caravanId || null,
+          caravanId: null,
           userCode: nextUserCode,
           mentorLevel: Number(mentorLevel) || 1,
           dateOfBirth: dateOfBirth || null,
@@ -128,10 +123,9 @@ export async function createOrUpdateMentor(req: AuthRequest, res: Response) {
       });
 
       if (Array.isArray(assignedCaravanIds) && assignedCaravanIds.length > 0) {
-        await prisma.caravan.updateMany({
-          where: { id: { in: assignedCaravanIds } },
-          data: { mentorId: user.id }
-        });
+        await setMentorCaravans(user.id, assignedCaravanIds.map(String));
+      } else if (caravanId) {
+        await applyMentorCaravanChoice(user.id, user.role, null, String(caravanId));
       }
     }
 
@@ -224,12 +218,8 @@ export async function assignCaravans(req: AuthRequest, res: Response) {
       return res.status(400).json({ error: 'caravanIds must be an array' });
     }
 
-    await prisma.$transaction(async (tx) => {
-      // Clear previous mentor assignment for these caravans if any
-      for (const caravanId of caravanIds) {
-        await tx.caravan.updateMany({ where: { id: caravanId }, data: { mentorId: id } });
-      }
-    });
+    // Each caravan's previous mentor leaves it (chat groups, challenges, panel)
+    for (const caravanId of caravanIds) await setCaravanMentor(String(caravanId), id);
 
     res.json({ success: true, assigned: caravanIds.length });
   } catch (error: any) {

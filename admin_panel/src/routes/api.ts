@@ -13,6 +13,7 @@ import { getEconomyRates } from '../controllers/economyController';
 import { getChallengeTaxonomy } from '../controllers/taxonomyController';
 import chatRouter from '../modules/chat/routes';
 import { getMyCaravanBanners } from '../controllers/caravanBannerController';
+import { buyShopItem, getMyShop, getShop } from '../controllers/shopController';
 import { submitTask, getPendingSubmissions, reviewSubmission, getSubmissionHistory } from '../controllers/submissionController';
 import { getStations, getBookmarks, addBookmark, heartbeatSessionWatch, getSessionWatchProgress, submitSessionQuiz, getUserProgress, markClipWatched, updateStationAccess, reportClipDuration, getMyQuizAnswers } from '../controllers/lmsController';
 import { getInstructors } from '../controllers/instructorController';
@@ -72,6 +73,10 @@ router.get('/assets', authenticateJWT as any, listAssetTypes as any);
 router.get('/economy', authenticateJWT as any, getEconomyRates as any);
 router.get('/challenge-taxonomy', authenticateJWT as any, getChallengeTaxonomy as any);
 router.get('/my-caravan/banners', authenticateJWT as any, getMyCaravanBanners as any);
+// فروشگاه بازارچه: what is on sale, buy for zarik, my packs for the chat picker
+router.get('/shop', authenticateJWT as any, getShop as any);
+router.get('/shop/mine', authenticateJWT as any, getMyShop as any);
+router.post('/shop/items/:id/buy', authenticateJWT as any, buyShopItem as any);
 router.patch('/challenges/:id', authenticateJWT as any, authorizeRoles('mentor', 'admin') as any, updateChallenge as any);
 router.post('/challenges/:id/submit-quiz', authenticateJWT as any, submitQuiz as any);
 

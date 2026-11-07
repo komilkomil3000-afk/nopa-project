@@ -5,6 +5,8 @@ import { CapitalAsset, conversionRule, getEconomyPolicy } from '../services/econ
 import { caravanStandings } from '../services/ranking';
 import { AuthRequest } from '../middleware/auth';
 import { refreshUserRooms } from '../modules/chat/realtime';
+import { setCaravanMentor } from '../services/caravanMentor';
+import { moveToCaravan } from '../services/caravanMembership';
 import { caravanGroupTitle, customCaravanGroupTitle, setCaravanGroupTitle } from '../modules/chat/service';
 import { isMentorRole } from '../utils/roles';
 
@@ -53,22 +55,15 @@ export async function bulkTransferMembers(req: AuthRequest, res: Response) {
       return res.status(400).json({ error: 'لیست کاربران و شناسه کاروان مقصد الزامی است' });
     }
     
-    if (targetCaravanId !== null) {
-      const targetCaravan = await prisma.caravan.findUnique({ where: { id: targetCaravanId } });
-      if (!targetCaravan) return res.status(404).json({ error: 'کاروان مقصد یافت نشد' });
-    }
-    
-    await prisma.user.updateMany({
-      where: { id: { in: userIds } },
-      data: { caravanId: targetCaravanId }
+    // Assets and progress stay with each person; groups, challenges and chats follow the new caravan
+    const result = await moveToCaravan(userIds, targetCaravanId || null);
+    await logAdminAction(req.user!.id, 'Admin', 'BULK_TRANSFER', 'Caravan', targetCaravanId || 'UNASSIGNED', `Transferred ${result.moved.length} users`, req.ip || '');
+    res.json({
+      message: `${result.moved.length} نفر منتقل شدند.` + (result.skippedMentors.length ? ` ${result.skippedMentors.length} راهبر منتقل نشد (راهبر را از «تغییر راهبر» کاروان تعیین کنید).` : ''),
+      ...result
     });
-    await refreshUserRooms(userIds);
-    
-    // Update member counts (approximate, or recalculate)
-    await logAdminAction(req.user!.id, 'Admin', 'BULK_TRANSFER', 'Caravan', targetCaravanId || 'UNASSIGNED', `Transferred ${userIds.length} users`, req.ip || '');
-    res.json({ message: 'اعضا با موفقیت منتقل شدند.' });
   } catch (error: any) {
-    res.status(500).json({ error: error.message });
+    res.status(error.statusCode || 500).json({ error: error.message });
   }
 }
 
@@ -307,13 +302,14 @@ export async function createCaravan(req: AuthRequest, res: Response) {
       data: {
         name,
         capacityLimit: finalLimit,
-        mentorId,
         description,
         coverImageUrl,
         targetStationId,
         socialGroupLink: socialGroupLink?.trim() || undefined,
       }
     });
+
+    if (mentorId) await setCaravanMentor(caravan.id, mentorId);
 
     if (studentIds && Array.isArray(studentIds) && studentIds.length > 0) {
       await prisma.user.updateMany({
@@ -485,37 +481,21 @@ export async function addMemberToCaravan(req: AuthRequest, res: Response) {
       });
     }
 
-    await prisma.user.update({
-      where: { id: studentId },
-      data: { caravanId: id }
-    });
-    await refreshUserRooms([studentId]);
-
-    const memberCount = await prisma.user.count({ where: { caravanId: id } });
-    await prisma.caravan.update({
-      where: { id },
-      data: { memberCount }
-    });
+    const result = await moveToCaravan([studentId], id);
+    if (result.skippedMentors.length) return res.status(400).json({ error: 'راهبر عضو کاروان نمی‌شود؛ او را از «تغییر راهبر» کاروان تعیین کنید' });
 
     res.json({ success: true, message: 'عضو با موفقیت به کاروان اضافه شد' });
   } catch (error: any) {
-    res.status(500).json({ error: error.message });
+    res.status(error.statusCode || 500).json({ error: error.message });
   }
 }
 
 export async function removeMemberFromCaravan(req: AuthRequest, res: Response) {
   try {
     const { id, studentId } = req.params;
-    await prisma.user.update({
-      where: { id: studentId },
-      data: { caravanId: null }
-    });
-    await refreshUserRooms([studentId]);
+    const student = await prisma.user.findUnique({ where: { id: studentId }, select: { caravanId: true } });
+    if (student?.caravanId === id) await moveToCaravan([studentId], null);
     const newCount = await prisma.user.count({ where: { caravanId: id } });
-    await prisma.caravan.update({
-      where: { id },
-      data: { memberCount: newCount }
-    }).catch(() => {});
 
     res.json({ success: true, message: 'فرد با موفقیت از کاروان حذف گردید', memberCount: newCount });
   } catch (error: any) {
@@ -526,23 +506,23 @@ export async function removeMemberFromCaravan(req: AuthRequest, res: Response) {
 export async function transferMember(req: AuthRequest, res: Response) {
   try {
     const { studentId, targetCaravanId } = req.body;
-    const targetCaravan = await prisma.caravan.findUnique({ where: { id: targetCaravanId }, include: { members: true } });
+    if (!studentId || !targetCaravanId) return res.status(400).json({ error: 'فرد و کاروان مقصد را مشخص کنید' });
+    const targetCaravan = await prisma.caravan.findFirst({ where: { id: targetCaravanId, isDeleted: false } });
     if (!targetCaravan) return res.status(404).json({ error: 'کاروان مقصد یافت نشد' });
 
-    if (targetCaravan.members.length >= targetCaravan.capacityLimit) {
+    const students = await prisma.user.count({ where: { caravanId: targetCaravanId, role: 'student', isDeleted: false, id: { not: studentId } } });
+    if (targetCaravan.capacityLimit > 0 && students >= targetCaravan.capacityLimit) {
       return res.status(400).json({ error: `ظرفیت این کاروان تکمیل شده است (حداکثر ${targetCaravan.capacityLimit} نفر)` });
     }
 
-    await prisma.user.update({
-      where: { id: studentId },
-      data: { caravanId: targetCaravanId }
-    });
-    await refreshUserRooms([studentId]);
+    // Assets and progress stay with the person; groups, challenges and chats follow the new caravan
+    const result = await moveToCaravan([studentId], targetCaravanId);
+    if (result.skippedMentors.length) return res.status(400).json({ error: 'راهبر منتقل نمی‌شود؛ او را از «تغییر راهبر» کاروان مقصد تعیین کنید' });
+    await logAdminAction(req.user!.id, 'Admin', 'TRANSFER_MEMBER', 'User', studentId, `انتقال به کاروان ${targetCaravan.name}`, req.ip || '');
 
-
-    res.json({ success: true });
+    res.json({ success: true, message: `به کاروان «${targetCaravan.name}» منتقل شد`, ...result });
   } catch (error: any) {
-    res.status(500).json({ error: error.message });
+    res.status(error.statusCode || 500).json({ error: error.message });
   }
 }
 
@@ -628,6 +608,10 @@ export async function updateCaravan(req: AuthRequest, res: Response) {
       dataToUpdate.coverImageUrl = url;
     }
 
+    // A new mentor goes through setCaravanMentor: the old one leaves the caravan's groups at once
+    const newMentorId = dataToUpdate.mentorId;
+    delete dataToUpdate.mentorId;
+    if (newMentorId !== undefined) await setCaravanMentor(id, newMentorId);
     const updated = await prisma.caravan.update({
       where: { id },
       data: dataToUpdate,
@@ -657,31 +641,19 @@ export async function bulkAddMembersToCaravan(req: AuthRequest, res: Response) {
       return res.status(404).json({ error: 'کاروان مورد نظر یافت نشد' });
     }
 
-    // Only assign students who do not already belong to any caravan
-    const updateResult = await prisma.user.updateMany({
-      where: {
-        id: { in: userIds },
-        role: 'student',
-        caravanId: null
-      },
-      data: { caravanId }
-    });
-    await refreshUserRooms(userIds);
-
+    // Students only; one already in another caravan is moved here (assets and progress stay with them)
+    const students = await prisma.user.findMany({ where: { id: { in: userIds.map(String) }, role: 'student', isDeleted: false }, select: { id: true } });
+    const result = await moveToCaravan(students.map(s => s.id), caravanId);
     const memberCount = await prisma.user.count({ where: { caravanId } });
-    await prisma.caravan.update({
-      where: { id: caravanId },
-      data: { memberCount }
-    });
 
     res.json({
       success: true,
-      message: `${updateResult.count} دانش‌آموز با موفقیت به کاروان اضافه شدند`,
-      addedCount: updateResult.count,
+      message: `${result.moved.length} دانش‌آموز با موفقیت به کاروان اضافه شدند`,
+      addedCount: result.moved.length,
       memberCount
     });
   } catch (error: any) {
-    res.status(500).json({ error: error.message });
+    res.status(error.statusCode || 500).json({ error: error.message });
   }
 }
 
@@ -693,10 +665,9 @@ export async function deleteCaravan(req: AuthRequest, res: Response) {
 
     // Release all members
     const released = await prisma.user.findMany({ where: { caravanId: id }, select: { id: true } });
-    await prisma.user.updateMany({
-      where: { caravanId: id },
-      data: { caravanId: null }
-    });
+    await moveToCaravan(released.map(u => u.id), null, { notify: false });
+    // a mentor left with a caravanId of it is released too
+    await prisma.user.updateMany({ where: { caravanId: id }, data: { caravanId: null } });
     await refreshUserRooms(released.map(u => u.id));
 
     // Soft delete caravan

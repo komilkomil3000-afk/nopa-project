@@ -66,7 +66,8 @@ export async function getMentorChallenges(req: AuthRequest, res: Response) {
     const challenges = await prisma.challenge.findMany({
       where: {
         OR: [
-          { createdByMentorId: req.user!.id },
+          // a caravan's challenges belong to whoever leads the caravan now
+          { createdByMentorId: req.user!.id, caravanId: null },
           ...(caravanIds.length > 0 ? [{ caravanId: { in: caravanIds } }] : [])
         ]
       },
@@ -242,7 +243,7 @@ export async function getMyActivityStats(req: AuthRequest, res: Response) {
     const challengeOr: any[] = [];
     if (caravan) {
       challengeOr.push({ caravanId: caravan.id });
-      if (caravan.mentorId) challengeOr.push({ createdByMentorId: caravan.mentorId });
+      if (caravan.mentorId) challengeOr.push({ createdByMentorId: caravan.mentorId, caravanId: null });
     }
     if (adminIds.length > 0) challengeOr.push({ AND: [{ caravanId: null }, { createdByMentorId: { in: adminIds } }] });
     const challenges = challengeOr.length > 0

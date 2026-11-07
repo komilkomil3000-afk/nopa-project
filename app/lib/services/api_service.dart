@@ -2057,6 +2057,40 @@ class HttpApiService {
     return null;
   }
 
+  /// فروشگاه بازارچه: {zarik, items: [{id, kind, title, description, coverUrl, priceZarik, assets, owned, ...}]}.
+  Future<Map<String, dynamic>?> getShop() async {
+    try {
+      final response = await _get(Uri.parse('$baseUrl/shop'), headers: _getHeaders());
+      if (response.statusCode == 200) return (await parseJsonAsync(response.body)) as Map<String, dynamic>?;
+    } catch (e) {
+      debugPrint('getShop error: $e');
+    }
+    return null;
+  }
+
+  /// My bought sticker / GIF packs (for the chat picker) and abilities: {packs: [...], abilities: {gifSend}}.
+  Future<Map<String, dynamic>?> getMyShop() async {
+    try {
+      final response = await _get(Uri.parse('$baseUrl/shop/mine'), headers: _getHeaders());
+      if (response.statusCode == 200) return (await parseJsonAsync(response.body)) as Map<String, dynamic>?;
+    } catch (e) {
+      debugPrint('getMyShop error: $e');
+    }
+    return null;
+  }
+
+  /// Buys a shop item for zarik. Returns null on success, otherwise the server's message.
+  Future<String?> buyShopItem(String itemId) async {
+    try {
+      final response = await _post(Uri.parse('$baseUrl/shop/items/$itemId/buy'), headers: _getHeaders());
+      if (response.statusCode == 200 || response.statusCode == 201) return null;
+      return _conversionError(response.body);
+    } catch (e) {
+      debugPrint('buyShopItem error: $e');
+      return 'خطا در ارتباط با سرور. لطفاً دوباره تلاش کنید.';
+    }
+  }
+
   /// Tells the server the real length (seconds) of a clip once the player has loaded it.
   Future<void> reportClipDuration(String clipId, int seconds) async {
     try {

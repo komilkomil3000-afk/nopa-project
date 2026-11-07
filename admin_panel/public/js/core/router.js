@@ -61,6 +61,11 @@
       title: 'سرمایه‌ها', desc: 'نام دارایی‌ها، نرخ‌ها، جوایز و قوانین مالی اپ',
       load: () => call('loadAssetsTab'),
     },
+    'shop-tab': {
+      hashes: ['shop', 'market-shop'], group: 'stations', sub: 'economy', label: 'فروشگاه بازارچه', icon: 'fa-solid fa-store', section: null,
+      title: 'فروشگاه بازارچه', desc: 'پک استیکر، پک گیف و قابلیت‌هایی که کاربران در بازارچه‌ی اپ با زریک می‌خرند',
+      load: () => call('loadShopTab'),
+    },
     'mentors-profile-tab': {
       hashes: ['mentors', 'mentors-profile', 'mentors-league'], group: 'people', sub: 'mentors', label: 'پروفایل و شناسنامه', icon: 'fa-solid fa-id-card', section: 'mentors',
       title: 'پروفایل و شناسنامه راهبران', desc: 'مرکز ارزیابی راهبران و مربیان',

@@ -466,10 +466,13 @@ class ChatRepository extends ChangeNotifier {
     ChatMessage? replyTo,
     List<String> mentions = const [],
     List<ChatAttachment> attachments = const [],
+    /// A sticker / GIF from a pack bought in the market: {id, url, kind}. Sent alone.
+    Map<String, dynamic>? sticker,
   }) async {
     final clientId = _newClientId();
     final payload = <String, dynamic>{
       'body': body,
+      if (sticker != null) 'stickerId': sticker['id'],
       'sender': sender,
       'clientMessageId': clientId,
       'threadRootId': ?threadRootId,
@@ -481,7 +484,8 @@ class ChatRepository extends ChangeNotifier {
       'id': 'pending-$clientId',
       'spaceId': spaceId,
       'seq': 0,
-      'kind': attachments.isEmpty ? 'text' : 'file',
+      'kind': sticker != null ? 'sticker' : (attachments.isEmpty ? 'text' : 'file'),
+      if (sticker != null) 'meta': {'sticker': sticker},
       'body': body,
       'threadRootId': threadRootId,
       'clientMessageId': clientId,

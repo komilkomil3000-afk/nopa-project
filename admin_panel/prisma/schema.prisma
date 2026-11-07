@@ -76,6 +76,7 @@ model User {
   quizReviews                  QuizSubmission[] @relation("MentorQuizReviews")
   formSubmissions              FormSubmission[]
   userBanners                  UserBanner[]
+  shopPurchases                ShopPurchase[]
 
   ratingsGiven                 MentorRating[] @relation("RatingStudent")
   ratingsReceived              MentorRating[] @relation("RatingMentor")
@@ -141,6 +142,56 @@ model Caravan {
   assetConversions AssetConversionRequest[]
   challenges      Challenge[]
   banners         CaravanBanner[]
+}
+
+// ==================== SHOP (فروشگاه بازارچه) ====================
+// Things sold for zarik in the app's market: sticker packs, GIF packs and features (e.g. sending GIFs in chat).
+model ShopItem {
+  id          String   @id @default(uuid())
+  kind        String   // "sticker_pack" | "gif_pack" | "feature"
+  featureKey  String?  // kind "feature": what it unlocks ("gif_send")
+  title       String
+  description String?
+  coverUrl    String?
+  priceZarik  Int      @default(0)
+  isActive    Boolean  @default(false) // on sale in the app
+  sortOrder   Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  assets      ShopItemAsset[]
+  purchases   ShopPurchase[]
+
+  @@index([isActive, sortOrder])
+}
+
+// One sticker or GIF of a pack
+model ShopItemAsset {
+  id        String   @id @default(uuid())
+  itemId    String
+  url       String
+  kind      String   @default("sticker") // "sticker" | "gif"
+  sortOrder Int      @default(0)
+  createdAt DateTime @default(now())
+
+  item      ShopItem @relation(fields: [itemId], references: [id], onDelete: Cascade)
+
+  @@index([itemId])
+}
+
+// Bought once, owned for good. The zarik paid is in the ledger (AssetTransaction sourceType "shop_purchase").
+model ShopPurchase {
+  id        String   @id @default(uuid())
+  userId    String
+  itemId    String
+  price     Int
+  createdAt DateTime @default(now())
+
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  item      ShopItem @relation(fields: [itemId], references: [id], onDelete: Restrict)
+
+  @@unique([userId, itemId])
+  @@index([userId])
 }
 
 model SystemSetting {

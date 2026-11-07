@@ -24,6 +24,7 @@ import 'package:nopa_app/widgets/caravan_standing_summary.dart';
 import 'package:nopa_app/widgets/info_reveal.dart';
 import 'package:nopa_app/utils/constants.dart';
 import 'package:nopa_app/utils/mentor_contact.dart';
+import 'package:nopa_app/widgets/market_shop_section.dart';
 
 /// Who the market is shown to. The two share the rate sheet and the leaderboard:
 /// - student: own capital, the exchange panel and "contact mentor";
@@ -94,6 +95,7 @@ class _MarketScreenState extends State<MarketScreen> {
 
   // «برترین‌ها» in the drawer opens this tab scrolled to the rankings (see [MarketScreen.showLeaderboard])
   final GlobalKey _leaderboardKey = GlobalKey();
+  final GlobalKey<MarketShopSectionState> _shopKey = GlobalKey<MarketShopSectionState>();
   int _handledLeaderboardRequest = 0;
 
   List<String> _memberIds = [];
@@ -263,6 +265,7 @@ class _MarketScreenState extends State<MarketScreen> {
     await Future.wait([
       _loadLeaderboards(),
       _isMentor ? _loadMarketData() : repository.refreshUser(),
+      _shopKey.currentState?.reload() ?? Future.value(),
     ]);
     if (mounted) _recalculateExchange();
   }
@@ -681,6 +684,10 @@ class _MarketScreenState extends State<MarketScreen> {
                 _buildMentorMarketSection()
               else
                 _buildExchangePanel(),
+              const SizedBox(height: 26),
+
+              // فروشگاه: sticker / GIF packs and chat features sold for zarik (panel → فروشگاه بازارچه)
+              MarketShopSection(key: _shopKey),
               const SizedBox(height: 26),
 
               // 5. Section 4: برترین ها (لیگ / لیدربورد)

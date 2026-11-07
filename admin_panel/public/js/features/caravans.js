@@ -466,6 +466,54 @@ window.removeMemberFromCaravan = async function(caravanId, studentId, memberName
   });
 };
 
+// ---- Move one member to another caravan: nothing is deleted; assets and progress stay with the person ----
+let crvMoveState = null;
+
+window.openMoveMemberModal = function(caravanId, studentId, memberName) {
+  const modal = document.getElementById('move-member-modal');
+  const select = document.getElementById('move-member-target');
+  if (!modal || !select) return;
+  crvMoveState = { caravanId: String(caravanId || ''), studentId: String(studentId), name: memberName || '' };
+  const list = (window.caravansData || []).filter(c => String(c.id) !== crvMoveState.caravanId && !c.isDeleted);
+  select.innerHTML = '<option value="">-- انتخاب کاروان --</option>' +
+    list.map(c => `<option value="${esc(String(c.id))}">${esc(c.name || c.title || 'کاروان')}${c.mentor?.name || c.mentorName ? ' · ' + esc(c.mentor?.name || c.mentorName) : ''}</option>`).join('');
+  const sub = document.getElementById('move-member-sub');
+  if (sub) sub.textContent = `${memberName ? '«' + memberName + '» · ' : ''}سرمایه‌ها و پیشرفت فرد بدون تغییر می‌ماند`;
+  modal.style.display = 'flex';
+  setTimeout(() => select.focus(), 50);
+};
+
+window.closeMoveMemberModal = function() {
+  const modal = document.getElementById('move-member-modal');
+  if (modal) modal.style.display = 'none';
+};
+
+window.confirmMoveMember = async function() {
+  if (!crvMoveState) return;
+  const target = document.getElementById('move-member-target')?.value;
+  if (!target) return showToast('کاروان مقصد را انتخاب کنید.', 'error');
+  try {
+    const res = await request('/api/v1/admin/caravans/transfer', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ studentId: crvMoveState.studentId, targetCaravanId: target }),
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) return showToast(data.error || 'خطا در انتقال', 'error');
+    const from = crvMoveState.caravanId;
+    showToast(`${crvMoveState.name ? '«' + crvMoveState.name + '» ' : ''}${data.message || 'منتقل شد'}.`, 'success');
+    closeMoveMemberModal();
+    crvMoveState = null;
+    if (typeof window.loadCaravansTab === 'function') await window.loadCaravansTab();
+    const picker = document.getElementById('target-caravan-picker');
+    if (picker && from) picker.value = from;
+    if (typeof window.loadSelectedCaravanDetails === 'function') window.loadSelectedCaravanDetails();
+  } catch (err) {
+    console.error('confirmMoveMember error:', err);
+    showToast('خطا در انتقال', 'error');
+  }
+};
+
 window.viewStudentDetails = async function(studentId) {
   const modal = document.getElementById('caravan-student-detail-modal');
   if (!modal) return;
@@ -892,6 +940,7 @@ function crvMemberRow(m, caravanId) {
         ${btn('fa-solid fa-id-card', 'جزئیات', 'viewStudentDetails', crvArgs(m.id))}
         ${btn('fa-solid fa-pen', 'ویرایش', 'openUserModal', crvArgs(m.id, name, m.role || 'student', caravanId))}
         ${btn('fa-solid fa-user-lock', 'تعلیق', 'setAccountStatus', crvArgs(m.id, 'SUSPENDED'))}
+        ${btn('fa-solid fa-right-left', 'انتقال به کاروان دیگر', 'openMoveMemberModal', crvArgs(caravanId, m.id, name))}
         ${btn('fa-solid fa-user-minus', 'حذف از کاروان', 'removeMemberFromCaravan', crvArgs(caravanId, m.id, name), 'lsv-round-danger')}
       </span>
     </div>`;

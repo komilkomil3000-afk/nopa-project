@@ -34,7 +34,7 @@ export function resolveActorCaravan(actor: ChatActor, requested?: unknown, opts:
   const wanted = requested ? String(requested) : null;
   if (wanted) {
     if (isAdmin(actor) || actor.mentoredCaravanIds.includes(wanted) || (opts.members && actor.caravanId === wanted)) return wanted;
-    throw new ChatError(403, 'این کار مخصوص راهبر همین کاروان است');
+    throw new ChatError(403, 'شما راهبر این کاروان نیستید');
   }
   if (actor.mentoredCaravanIds.length === 1) return actor.mentoredCaravanIds[0];
   if (actor.mentoredCaravanIds.length > 1) throw new ChatError(400, 'شما راهبر چند کاروان هستید؛ کاروان را مشخص کنید');

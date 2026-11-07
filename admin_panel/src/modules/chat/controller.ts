@@ -7,8 +7,9 @@ import { AuthRequest } from '../../middleware/auth';
 import { ALLOWED_UPLOADS } from '../../controllers/mediaController';
 import { getAppImages } from '../../controllers/appImagesController';
 import { getChatSettings } from '../../services/chatSettings';
-import { canModerate, canPostTopLevel, canReply, canReplyInArena, canStartDirect, canTag, ChatActor, loadActor } from './access';
+import { canModerate, canPostTopLevel, canReply, canReplyInArena, canStartDirect, canTag, ChatActor, directBlockReason, directPeer, loadActor } from './access';
 import { blockedWord, runCommand } from './bots';
+import { canSendGif, ownedShopAsset } from '../../controllers/shopController';
 import { handler, requireMessage, requireSpace } from './http';
 import { notifyAbsent, publishMessage, publishUpdate } from './publish';
 import { emitToSpace, emitToUsers, isOnline, refreshUserRooms } from './realtime';
@@ -57,13 +58,21 @@ export const listSpaces = handler(async (req, res, actor) => {
     }),
     prisma.chatMember.findMany({
       where: { spaceId: { in: spaces.filter(s => s.type === 'direct').map(s => s.id) }, userId: { not: actor.id } },
-      select: { spaceId: true, lastReadSeq: true, user: { select: { id: true, name: true, avatarUrl: true, role: true, gender: true } } },
+      select: { spaceId: true, lastReadSeq: true, user: { select: { id: true, name: true, avatarUrl: true, role: true, gender: true, caravanId: true } } },
     }),
   ]);
   const defaults = (await getAppImages()).chat;
+  // Private conversations that stay readable but closed (a mentor and someone outside the caravans he leads)
+  const blocked = new Map<string, string>();
+  for (const m of directMembers) {
+    const reason = await directBlockReason(actor, m.user);
+    if (reason) blocked.set(m.spaceId, reason);
+  }
 
   res.json(spaces.map(s => {
-    const peer = directMembers.find(m => m.spaceId === s.id);
+    const directRow = directMembers.find(m => m.spaceId === s.id);
+    const peer = directRow ? { ...directRow, user: { ...directRow.user, caravanId: undefined } } : undefined;
+    const blockedReason = blocked.get(s.id) || null;
     const last = lastMessages.find(m => m.spaceId === s.id);
     const me = members.get(s.id);
     return {
@@ -82,14 +91,16 @@ export const listSpaces = handler(async (req, res, actor) => {
       mutedUntil: me?.mutedUntil && me.mutedUntil > new Date() ? me.mutedUntil : null,
       // Seconds left, so the countdown does not depend on the phone's clock
       mutedSeconds: me?.mutedUntil && me.mutedUntil > new Date() ? Math.ceil((me.mutedUntil.getTime() - Date.now()) / 1000) : 0,
-      canPost: canPostTopLevel(actor, s),
-      canReply: canReply(actor, s),
+      canPost: !blockedReason && canPostTopLevel(actor, s),
+      canReply: !blockedReason && canReply(actor, s),
+      // shown instead of the composer when set (e.g. «شما راهبر این کاروان نیستید»)
+      blockedReason,
       canModerate: canModerate(actor, s),
       canTag: canTag(actor, s),
       lastMessage: last && {
         senderId: last.senderId,
         senderName: last.sender?.name || '',
-        preview: last.deletedAt ? '' : (last.body.slice(0, 80) || (last.kind === 'file' ? 'فایل' : '')),
+        preview: last.deletedAt ? '' : (last.body.slice(0, 80) || (last.kind === 'file' ? 'فایل' : last.kind === 'sticker' ? 'استیکر' : '')),
         createdAt: last.createdAt,
       },
     };
@@ -133,7 +144,10 @@ export const listContacts = handler(async (_req, res, actor) => {
 
 export const openDirect = handler(async (req, res, actor) => {
   const otherId = String(req.body?.userId || '');
-  if (!(await canStartDirect(actor, otherId))) throw new ChatError(403, 'امکان شروع این گفتگو وجود ندارد');
+  if (!(await canStartDirect(actor, otherId))) {
+    const other = await prisma.user.findUnique({ where: { id: otherId }, select: { id: true, role: true, caravanId: true } });
+    throw new ChatError(403, (await directBlockReason(actor, other)) || 'امکان شروع این گفتگو وجود ندارد');
+  }
 
   const key = directKey(actor.id, otherId);
   const space = await prisma.chatSpace.upsert({
@@ -196,12 +210,24 @@ export const sendMessage = handler(async (req, res, actor) => {
   const people = asked.length ? new Set((await peopleOf(space)).map(p => p.id)) : new Set<string>();
   const mentions = asked.filter(id => people.has(id));
 
-  if (!body && attachmentIds.length === 0) throw new ChatError(400, 'پیام خالی است');
+  // A sticker or GIF from a pack bought in the market: sent alone, with no text or file
+  const stickerId = req.body?.stickerId ? String(req.body.stickerId) : null;
+  let sticker: { id: string; url: string; kind: string; itemId: string; itemTitle: string } | null = null;
+  if (stickerId) {
+    const asset = await ownedShopAsset(actor.id, stickerId);
+    if (!asset) throw new ChatError(403, 'این استیکر را از بازارچه نخریده‌اید');
+    sticker = { id: asset.id, url: asset.url, kind: asset.kind, itemId: asset.itemId, itemTitle: asset.item.title };
+  }
+  if (!body && attachmentIds.length === 0 && !sticker) throw new ChatError(400, 'پیام خالی است');
   if (body.length > MAX_BODY) throw new ChatError(400, `پیام نباید بیشتر از ${MAX_BODY} نویسه باشد`);
   if (member?.mutedUntil && member.mutedUntil > new Date()) throw new ChatError(403, 'شما در این گفتگو بی‌صدا هستید و فعلاً نمی‌توانید پیام بفرستید');
   const command = await runCommand(actor, space, body, threadRootId);
   if (command !== null) return res.json({ command: true, result: command, clientMessageId: req.body?.clientMessageId });
 
+  if (space.type === 'direct') {
+    const reason = await directBlockReason(actor, await directPeer(actor, space.id));
+    if (reason) throw new ChatError(403, reason);
+  }
   if (threadRootId ? !canReply(actor, space) : !canPostTopLevel(actor, space)) throw new ChatError(403, 'امکان ارسال پیام در این گفتگو وجود ندارد');
   // A mentor's file in an open cross-caravan thread of the arena is the caravan's work: its caravan is fixed at send time
   let submission: { caravanId: string; challengeId: string } | null = null;
@@ -234,13 +260,14 @@ export const sendMessage = handler(async (req, res, actor) => {
   const { message, created } = await publishMessage({
     spaceId: space.id,
     senderId: actor.id,
-    body,
+    ...(sticker ? { kind: 'sticker' } : {}),
+    body: sticker ? '' : body,
     clientMessageId: req.body?.clientMessageId ? String(req.body.clientMessageId).slice(0, 64) : undefined,
     replyToId: req.body?.replyToId ? String(req.body.replyToId) : undefined,
     threadRootId,
-    attachmentIds,
+    attachmentIds: sticker ? [] : attachmentIds,
     mentions,
-    meta: submission ? { submission: true, ...submission } : undefined,
+    meta: sticker ? { sticker } : submission ? { submission: true, ...submission } : undefined,
     stayOutside: answeringSupport || undefined,
   });
   if (created) {
@@ -251,7 +278,7 @@ export const sendMessage = handler(async (req, res, actor) => {
       await prisma.supportCase.updateMany({ where: { spaceId: space.id, status: 'open' }, data: { status: 'reviewing', assigneeId: actor.id } });
     }
     // Bold/italic markers stay in the chat, not in the notification
-    await notifyAbsent(space, actor.id, actor.name, message.body.replace(/\*\*(.+?)\*\*|__(.+?)__/gs, (_m: string, b?: string, i?: string) => b ?? i ?? ''), mentions);
+    await notifyAbsent(space, actor.id, actor.name, sticker ? (sticker.kind === 'gif' ? 'گیف' : 'استیکر') : message.body.replace(/\*\*(.+?)\*\*|__(.+?)__/gs, (_m: string, b?: string, i?: string) => b ?? i ?? ''), mentions);
   }
   res.status(created ? 201 : 200).json(message);
 });
@@ -423,6 +450,10 @@ export const uploadFile = handler(async (req, res, actor) => {
   if (!file) throw new ChatError(400, 'فایلی ارسال نشده است');
   try {
     const { space } = await requireSpace(actor, String(req.body?.spaceId || ''));
+    // Sending a GIF can be a feature sold in the market (free until the admin puts it on sale)
+    if (file.mimetype === 'image/gif' && !(await canSendGif(actor))) {
+      throw new ChatError(403, 'ارسال گیف نیاز به خرید «ارسال گیف در چت» از بازارچه دارد');
+    }
     fs.chmod(file.path, 0o600, () => undefined);
     const day =new Date(Date.now() - 24 * 3600 * 1000);
     const used = await prisma.chatAttachment.aggregate({ where: { uploaderId: actor.id, createdAt: { gte: day } }, _sum: { size: true } });

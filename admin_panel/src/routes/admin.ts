@@ -206,6 +206,7 @@ router.get('/users/:id/presence', getUserPresence as any);
 import { getAdminNews, createNews, updateNews, deleteNews } from '../controllers/newsController';
 import { getAdminBanners, createBanner, updateBanner, deleteBanner } from '../controllers/bannerController';
 import { upload, uploadMedia, listStoredFiles, deleteStoredFiles } from '../controllers/mediaController';
+import { adminListShopItems, adminCreateShopItem, adminUpdateShopItem, adminDeleteShopItem } from '../controllers/shopController';
 import { clearAppImage, listAppImages, setAppImage } from '../controllers/appImagesController';
 
 // 5. Educational Content, Banners, News & Announcements
@@ -226,6 +227,11 @@ router.delete('/banners/:id', deleteBanner as any);
 // «تصاویر اپلیکیشن»: asset images and the default chat pictures (SystemSetting APP_IMAGES)
 router.get('/app-images', listAppImages as any);
 router.post('/app-images/:group/:key', upload.single('image') as any, setAppImage as any);
+// «فروشگاه بازارچه»: sticker / GIF packs and features sold for zarik (super admin only: not mapped to a section)
+router.get('/shop/items', adminListShopItems as any);
+router.post('/shop/items', adminCreateShopItem as any);
+router.put('/shop/items/:id', adminUpdateShopItem as any);
+router.delete('/shop/items/:id', adminDeleteShopItem as any);
 router.delete('/app-images/:group/:key', clearAppImage as any);
 router.post('/notifications/broadcast', broadcastNotification as any);
 router.get('/notifications/templates', getTemplates as any);

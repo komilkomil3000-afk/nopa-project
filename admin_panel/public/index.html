@@ -772,6 +772,79 @@
         </div>
       </section>
 
+      <!-- SHOP (فروشگاه بازارچه): sticker / GIF packs and features sold for zarik in the app's market.
+           Drawn by js/features/shop.js; styles in css/stations.css (.lst-*, .crv-*, .shp-*). API: /admin/shop/items. -->
+      <section id="shop-tab" class="tab-panel" data-style="display: none;">
+        <div id="shp-overview-view">
+          <div class="lms-head-actions u-flex u-justify-end u-items-center u-mb-20">
+            <div class="u-flex u-gap-10">
+              <button type="button" class="btn-primary u-bgc-primary" data-click="shpOpenEditor"><i class="fa-solid fa-plus"></i> محصول جدید</button>
+            </div>
+          </div>
+
+          <div class="lst-bento">
+            <div class="lst-tile lst-tile-stations glass">
+              <div class="lst-tile-head">
+                <h4 class="lst-tile-title"><i class="fa-solid fa-store"></i> محصولات بازارچه <span class="lst-tile-sub" id="shp-count-badge">برای ویرایش روی هر محصول بزنید</span></h4>
+                <div class="crv-filters">
+                  <div class="search-box">
+                    <i class="fa-solid fa-search"></i>
+                    <input aria-label="جستجوی محصولات" type="text" id="shp-search" class="input-ctrl" placeholder="نام یا توضیحات..." data-input="shpFilter">
+                  </div>
+                  <select aria-label="نوع محصول" id="shp-kind-filter" class="select-ctrl" data-change="shpFilter">
+                    <option value="all">همه انواع</option>
+                    <option value="sticker_pack">پک استیکر</option>
+                    <option value="gif_pack">پک گیف</option>
+                    <option value="feature">قابلیت</option>
+                  </select>
+                  <select aria-label="وضعیت فروش" id="shp-status-filter" class="select-ctrl" data-change="shpFilter">
+                    <option value="all">همه وضعیت‌ها</option>
+                    <option value="active">در حال فروش</option>
+                    <option value="inactive">خارج از فروش</option>
+                  </select>
+                </div>
+              </div>
+              <div id="shp-bento-list" class="crv-card-grid" aria-busy="true"></div>
+            </div>
+
+            <div class="lst-tile glass">
+              <h4 class="lst-tile-title"><i class="fa-solid fa-chart-simple"></i> آمار کلی</h4>
+              <div class="lst-mini-stats">
+                <div class="lst-mini-stat"><span class="stat-label">محصولات</span><span class="stat-value u-c-primary-text" id="shp-stat-total">-</span></div>
+                <div class="lst-mini-stat"><span class="stat-label">در حال فروش</span><span class="stat-value u-c-success-text" id="shp-stat-active">-</span></div>
+                <div class="lst-mini-stat"><span class="stat-label">خریدها</span><span class="stat-value u-c-info-text" id="shp-stat-buyers">-</span></div>
+                <div class="lst-mini-stat"><span class="stat-label">زریک دریافتی</span><span class="stat-value u-c-accent-text" id="shp-stat-revenue">-</span></div>
+              </div>
+            </div>
+
+            <div class="lst-tile glass">
+              <h4 class="lst-tile-title"><i class="fa-solid fa-ranking-star"></i> پرفروش‌ترین‌ها</h4>
+              <div id="shp-bento-top"></div>
+            </div>
+
+            <div class="lst-tile glass">
+              <h4 class="lst-tile-title"><i class="fa-solid fa-bolt"></i> دسترسی سریع</h4>
+              <div class="lst-quick">
+                <button type="button" class="lst-quick-btn" data-click="shpOpenEditor" data-click-args="[null,&quot;sticker_pack&quot;]"><i class="fa-solid fa-note-sticky"></i> پک استیکر</button>
+                <button type="button" class="lst-quick-btn" data-click="shpOpenEditor" data-click-args="[null,&quot;gif_pack&quot;]"><i class="fa-solid fa-film"></i> پک گیف</button>
+                <button type="button" class="lst-quick-btn" data-click="shpOpenEditor" data-click-args="[null,&quot;feature&quot;]"><i class="fa-solid fa-wand-magic-sparkles"></i> فروش قابلیت</button>
+                <button type="button" class="lst-quick-btn" data-click="loadShopTab"><i class="fa-solid fa-sync"></i> بروزرسانی</button>
+              </div>
+            </div>
+
+            <div class="lst-tile lst-tile-wide glass">
+              <h4 class="lst-tile-title"><i class="fa-solid fa-circle-info"></i> نحوه کار <span class="lst-tile-sub">آنچه کاربران در اپ می‌بینند</span></h4>
+              <ul class="lst-list">
+                <li class="lst-list-item"><i class="fa-solid fa-store u-c-primary-text"></i><span class="lst-grow">محصولِ «در حال فروش» در بخش «فروشگاه» بازارچه‌ی اپ دیده می‌شود و با زریک خریده می‌شود. تا محصولی برای فروش نباشد، اپ «فعلاً محصولی برای فروش نیامده است» نشان می‌دهد.</span></li>
+                <li class="lst-list-item"><i class="fa-solid fa-note-sticky u-c-accent-text"></i><span class="lst-grow">استیکرها و گیف‌های بسته‌ی خریداری‌شده در چت‌ها از دکمه‌ی استیکر کنار کادر پیام فرستاده می‌شوند.</span></li>
+                <li class="lst-list-item"><i class="fa-solid fa-film u-c-info-text"></i><span class="lst-grow">تا وقتی قابلیت «ارسال گیف در چت» در حال فروش نباشد، همه می‌توانند فایل گیف بفرستند؛ وقتی برای فروش گذاشته شود فقط خریداران آن (و مدیران و پشتیبانی) می‌توانند.</span></li>
+                <li class="lst-list-item"><i class="fa-solid fa-shield-halved u-c-success-text"></i><span class="lst-grow">خرید دائمی است. خارج کردن محصول از فروش آن را از فروشگاه برمی‌دارد ولی خریداران همچنان از آن استفاده می‌کنند. محصولی که خریدار دارد حذف نمی‌شود.</span></li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </section>
+
       <!-- INSTRUCTORS (بانک اساتید): a bento overview of the bank and one instructor's page (all instructors as circles in
            the notch, the instructor's card linked to the class sessions that name them and to the resume card).
            Drawn by instructors.js; styles in css/stations.css (.lst-*, .lsv-*, .ins-*). -->
@@ -4314,6 +4387,107 @@
     </div>
   </div>
 
+  <!-- Shop item editor (فروشگاه بازارچه; js/features/shop.js → shpOpenEditor) -->
+  <div id="shp-editor-modal" class="modal-overlay lse-overlay u-z-z-mobile-nav" data-style="display:none">
+    <div class="lse lse-editor shp-editor">
+      <header class="lse-head lse-head-plain">
+        <div class="lse-id">
+          <span class="lse-id-icon is-accent"><i class="fa-solid fa-store"></i></span>
+          <div class="lse-id-text"><h3 id="shp-editor-title">محصول جدید</h3><span id="shp-editor-sub">برای فروش در بازارچه‌ی اپ با زریک</span></div>
+        </div>
+        <button type="button" class="lsv-round" data-click="shpCloseEditor" title="بستن" aria-label="بستن"><i class="fa-solid fa-xmark"></i></button>
+      </header>
+      <div class="lse-body">
+        <section class="lse-card">
+          <h4 class="lse-card-title"><i class="fa-solid fa-tag"></i> مشخصات</h4>
+          <div class="lse-grid lse-grid-2">
+            <label class="lse-field">
+              <span>نوع محصول</span>
+              <select id="shp-kind" class="select-ctrl" data-change="shpKindChanged">
+                <option value="sticker_pack">پک استیکر</option>
+                <option value="gif_pack">پک گیف</option>
+                <option value="feature">قابلیت (مثل ارسال گیف در چت)</option>
+              </select>
+            </label>
+            <label class="lse-field" id="shp-feature-field">
+              <span>قابلیتی که فروخته می‌شود</span>
+              <select id="shp-feature" class="select-ctrl"></select>
+            </label>
+            <label class="lse-field">
+              <span>نام محصول <b class="lse-req">*</b></span>
+              <input type="text" id="shp-name" class="input-ctrl" maxlength="80" placeholder="مثلاً پک استیکر کاروانی">
+            </label>
+            <label class="lse-field">
+              <span>قیمت (زریک) <b class="lse-req">*</b></span>
+              <input type="number" id="shp-price" class="input-ctrl" min="0" step="1" value="0" dir="ltr">
+            </label>
+            <label class="lse-field">
+              <span>ترتیب نمایش <small>عدد کوچک‌تر جلوتر</small></span>
+              <input type="number" id="shp-order" class="input-ctrl" step="1" value="0" dir="ltr">
+            </label>
+            <label class="chs-check"><span><strong>در حال فروش</strong><small>در بازارچه‌ی اپ نمایش داده شود</small></span><input type="checkbox" class="chs-switch" id="shp-active"></label>
+          </div>
+          <label class="lse-field">
+            <span>توضیحات <small>زیر نام محصول در اپ</small></span>
+            <textarea id="shp-desc" class="input-ctrl" rows="2" maxlength="500"></textarea>
+          </label>
+          <div class="lse-field">
+            <span>تصویر جلد <small>اگر خالی بماند، اولین استیکر بسته جلد می‌شود</small></span>
+            <div class="shp-cover-row">
+              <span class="shp-thumb" id="shp-cover-preview"></span>
+              <input type="text" id="shp-cover" class="input-ctrl" placeholder="/uploads/... یا https://..." dir="ltr" data-input="shpCoverChanged">
+              <label class="lse-btn shp-upload-btn"><i class="fa-solid fa-upload"></i> بارگذاری<input type="file" accept="image/*" hidden data-change="shpUploadCover" data-change-args="[&quot;$this&quot;]"></label>
+            </div>
+          </div>
+        </section>
+
+        <section class="lse-card" id="shp-assets-card">
+          <h4 class="lse-card-title"><i class="fa-solid fa-images"></i> <span id="shp-assets-title">استیکرهای بسته</span> <span class="lsv-col-count" id="shp-assets-count">۰</span></h4>
+          <p class="lse-hint">تصاویر (png، webp یا gif) را یک‌جا انتخاب کنید تا بارگذاری شوند. برای حذف روی ضربدر هر مورد بزنید.</p>
+          <div class="shp-assets" id="shp-assets"></div>
+          <label class="lse-btn lse-btn-dashed shp-upload-many"><i class="fa-solid fa-plus"></i> افزودن تصاویر<input type="file" accept="image/png,image/webp,image/gif,image/jpeg" multiple hidden data-change="shpUploadAssets" data-change-args="[&quot;$this&quot;]"></label>
+        </section>
+      </div>
+      <footer class="lse-foot">
+        <span class="lse-foot-note" id="shp-editor-note"><i class="fa-solid fa-circle-info"></i> خرید دائمی است و با زریک پرداخت می‌شود</span>
+        <div class="lse-foot-actions">
+          <button type="button" class="lse-btn lse-btn-danger" id="shp-delete-btn" data-click="shpDeleteItem">حذف</button>
+          <button type="button" class="lse-btn" data-click="shpCloseEditor">انصراف</button>
+          <button type="button" class="lsv-pill" id="shp-save-btn" data-click="shpSaveItem"><i class="fa-solid fa-check"></i> ذخیره</button>
+        </div>
+      </footer>
+    </div>
+  </div>
+
+  <!-- Move one member to another caravan (js/features/caravans.js → openMoveMemberModal); assets and progress stay -->
+  <div id="move-member-modal" class="modal-overlay lse-overlay u-z-z-mobile-nav" data-style="display:none">
+    <div class="lse lse-sm">
+      <header class="lse-head lse-head-plain">
+        <div class="lse-id">
+          <span class="lse-id-icon is-accent"><i class="fa-solid fa-right-left"></i></span>
+          <div class="lse-id-text"><h3>انتقال به کاروان دیگر</h3><span id="move-member-sub">سرمایه‌ها و پیشرفت فرد بدون تغییر می‌ماند</span></div>
+        </div>
+        <button type="button" class="lsv-round" data-click="closeMoveMemberModal" title="بستن" aria-label="بستن"><i class="fa-solid fa-xmark"></i></button>
+      </header>
+      <div class="lse-body">
+        <label class="lse-field">
+          <span>کاروان مقصد</span>
+          <select id="move-member-target" class="select-ctrl" data-modal-nodirty>
+            <option value="">-- انتخاب کاروان --</option>
+          </select>
+        </label>
+        <p class="lse-hint">فرد به گروه و گروه چالش‌های کاروان مقصد اضافه می‌شود و دیگر گروه‌ها و چالش‌های کاروان فعلی را نمی‌بیند. گفتگوهای قبلی‌اش با راهبر فعلی خواندنی می‌ماند اما بسته می‌شود («شما دیگر عضو این کاروان نیستید»).</p>
+      </div>
+      <footer class="lse-foot">
+        <span class="lse-foot-note"><i class="fa-solid fa-shield-halved"></i> هیچ داده‌ای حذف نمی‌شود</span>
+        <div class="lse-foot-actions">
+          <button type="button" class="lse-btn" data-click="closeMoveMemberModal">انصراف</button>
+          <button type="button" class="lsv-pill" data-click="confirmMoveMember"><i class="fa-solid fa-check"></i> انتقال</button>
+        </div>
+      </footer>
+    </div>
+  </div>
+
   <!-- Rename Caravan Modal (تغییر نام کاروان) -->
   <div id="rename-caravan-modal" class="modal-overlay lse-overlay u-z-z-mobile-nav" data-style="display:none">
     <div class="lse lse-sm">
@@ -5092,6 +5266,7 @@
     <script src="js/features/lms-builder.js"></script>
     <script src="support.js"></script>
     <script src="instructors.js"></script>
+    <script src="js/features/shop.js"></script>
     <script src="js/features/lms/directory.js"></script>
     <script src="js/features/lms/content-manager.js"></script>
     <script src="js/features/lms/station-editor.js"></script>

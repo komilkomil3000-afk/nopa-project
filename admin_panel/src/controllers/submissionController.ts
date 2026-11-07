@@ -66,8 +66,9 @@ export async function submitTask(req: AuthRequest, res: Response) {
     }
 
     // Validate caravan isolation: student can only submit to their own caravan's challenge unless it's a re-submission
-    if (challenge.caravanId && student?.caravanId && challenge.caravanId !== student.caravanId && !existingSubmission) {
-      return res.status(403).json({ error: 'شما فقط مجاز به ارسال پاسخ برای چالش‌های کاروان خود هستید' });
+    // (a member moved to another caravan cannot answer or re-answer the old caravan's challenges; his past answers stay)
+    if (challenge.caravanId && challenge.caravanId !== (student?.caravanId ?? null)) {
+      return res.status(403).json({ error: existingSubmission ? 'شما دیگر عضو این کاروان نیستید' : 'شما فقط مجاز به ارسال پاسخ برای چالش‌های کاروان خود هستید' });
     }
 
     let submission;
@@ -203,7 +204,8 @@ export async function getPendingSubmissions(req: AuthRequest, res: Response) {
       const caravanIds = mentorCaravans.map(c => c.id);
 
       const mentorConditions = [
-        { challenge: { createdByMentorId: req.user.id } },
+        // members of the caravans he leads now; his own challenges only when not bound to a caravan
+        { challenge: { createdByMentorId: req.user.id, caravanId: null } },
         ...(caravanIds.length > 0 ? [{ student: { caravanId: { in: caravanIds } } }] : [])
       ];
 
@@ -326,11 +328,11 @@ export async function reviewSubmission(req: AuthRequest, res: Response) {
         select: { id: true }
       });
       const caravanIds = mentorCaravans.map(c => c.id);
-      const isOwner = submission.challenge.createdByMentorId === req.user.id || 
+      const isOwner = (submission.challenge.createdByMentorId === req.user.id && !submission.challenge.caravanId) ||
                       (submission.student?.caravanId && caravanIds.includes(submission.student.caravanId)) ||
                       (submission.challenge.caravanId && caravanIds.includes(submission.challenge.caravanId));
       if (!isOwner) {
-        return res.status(403).json({ error: 'شما فقط مجاز به بررسی تکالیف اعضای کاروان خود هستید' });
+        return res.status(403).json({ error: 'شما راهبر این کاروان نیستید' });
       }
     }
 
@@ -468,10 +470,10 @@ export async function getSubmissionHistory(req: AuthRequest, res: Response) {
     } else if (req.user.role === 'mentor') {
       const caravans = await prisma.caravan.findMany({ where: { mentorId: req.user.id }, select: { id: true } });
       const caravanIds = caravans.map(c => c.id);
-      const isOwner = submission.challenge.createdByMentorId === req.user.id ||
+      const isOwner = (submission.challenge.createdByMentorId === req.user.id && !submission.challenge.caravanId) ||
         (submission.student?.caravanId && caravanIds.includes(submission.student.caravanId));
       if (!isOwner) {
-        return res.status(403).json({ error: 'شما فقط به سابقه‌ی اعضای کاروان خود دسترسی دارید' });
+        return res.status(403).json({ error: 'شما راهبر این کاروان نیستید' });
       }
     }
 

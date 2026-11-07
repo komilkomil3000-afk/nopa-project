@@ -20,6 +20,7 @@ import 'package:nopa_app/screens/chat/chat_voice_composer.dart';
 import 'package:nopa_app/screens/chat/chat_widgets.dart';
 import 'package:nopa_app/screens/shell/app_shell.dart';
 import 'package:nopa_app/screens/chat/chat_theme.dart';
+import 'package:nopa_app/screens/chat/chat_sticker_sheet.dart';
 import 'package:nopa_app/services/app_state_repository.dart';
 import 'package:nopa_app/services/chat_repository.dart';
 import 'package:nopa_app/services/local_cache.dart';
@@ -288,6 +289,14 @@ class _ChatConversationScreenState extends State<ChatConversationScreen> {
     _mentions.clear();
     setState(() => _replyTo = null);
     await _chat.send(spaceId: widget.spaceId, sender: _me(), body: text, threadRootId: _threadId, replyTo: replyTo, mentions: mentions);
+  }
+
+  /// Sends a sticker / GIF from a pack bought in the market (the server checks the purchase).
+  Future<void> _pickSticker() async {
+    if (_emojiOpen) setState(() => _emojiOpen = false);
+    final sticker = await showChatStickerSheet(context);
+    if (sticker == null || !mounted) return;
+    await _chat.send(spaceId: widget.spaceId, sender: _me(), threadRootId: _threadId, sticker: sticker);
   }
 
   /// A photo goes at a sensible size. If that fails the original is sent.
@@ -1538,7 +1547,11 @@ class _ChatConversationScreenState extends State<ChatConversationScreen> {
   /// Where one cannot write: the same floating bar, in the colour of the app's general feedback.
   Widget _readOnlyBar(bool closed) {
     final space = _chat.spaceById(widget.spaceId);
-    final text = closed
+    // The server's reason first (e.g. «شما راهبر این کاروان نیستید» after the caravan got another mentor)
+    final blocked = space?.blockedReason;
+    final text = blocked != null && blocked.isNotEmpty
+        ? '$blocked.'
+        : closed
         ? 'این چالش بسته شده است.'
         : (space?.canReply == false
             ? 'این میدان مخصوص راهبران است؛ گفتگوی شما در گروه چالش‌های کاروان انجام می‌شود.'
@@ -1559,7 +1572,7 @@ class _ChatConversationScreenState extends State<ChatConversationScreen> {
           boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.3), blurRadius: 12, offset: const Offset(0, 4))],
         ),
         child: Row(children: [
-          Icon(closed ? Icons.lock_rounded : Icons.info_outline_rounded, size: 18, color: ChatTheme.feedbackText.withValues(alpha: 0.8)),
+          Icon(closed || (blocked?.isNotEmpty ?? false) ? Icons.lock_rounded : Icons.info_outline_rounded, size: 18, color: ChatTheme.feedbackText.withValues(alpha: 0.8)),
           const SizedBox(width: 10),
           Expanded(child: Text(text, style: AppTypography.bodyMedium.copyWith(color: ChatTheme.feedbackText))),
         ]),
@@ -1785,6 +1798,12 @@ class _ChatConversationScreenState extends State<ChatConversationScreen> {
                     ),
                   ),
                   Container(width: 1, height: 24, margin: const EdgeInsets.only(bottom: 12), color: ChatTheme.ink.withValues(alpha: 0.15)),
+                  // Stickers / GIFs of the packs bought in the market's shop
+                  IconButton(
+                    tooltip: 'استیکر',
+                    onPressed: _pickSticker,
+                    icon: Icon(Icons.sticky_note_2_rounded, color: inkSoft, size: 23),
+                  ),
                   IconButton(
                     tooltip: _emojiOpen ? 'صفحه‌کلید' : 'ایموجی',
                     onPressed: _toggleEmoji,

@@ -96,12 +96,14 @@ export async function createChallenge(req: AuthRequest, res: Response) {
     let recipientIds: string[] = [];
 
     if (kind === 'mentor') {
-      // Mentors can only create challenges for their own caravan
+      // Mentors can only create challenges for a caravan they lead now (Caravan.mentorId)
+      const wanted = req.body.caravanId && !['all', 'inter_group'].includes(String(req.body.caravanId)) ? String(req.body.caravanId) : null;
       const mentorCaravan = await prisma.caravan.findFirst({
-        where: { mentorId: req.user.id }
+        where: { mentorId: req.user.id, isDeleted: false, ...(wanted ? { id: wanted } : {}) },
+        orderBy: { name: 'asc' }
       });
       if (!mentorCaravan) {
-        return res.status(400).json({ error: 'شما به عنوان راهبر به کاروانی متصل نیستید' });
+        return res.status(wanted ? 403 : 400).json({ error: wanted ? 'شما راهبر این کاروان نیستید' : 'شما به عنوان راهبر به کاروانی متصل نیستید' });
       }
       assignedCaravanId = mentorCaravan.id;
       creatorId = req.user.id;
@@ -253,10 +255,8 @@ export async function updateChallenge(req: AuthRequest, res: Response) {
     }
 
     if (kind === 'mentor') {
-      const mentorCaravan = await prisma.caravan.findFirst({ where: { mentorId: req.user.id } });
-      const isOwner = existing.createdByMentorId === req.user.id || (mentorCaravan && existing.caravanId === mentorCaravan.id);
-      if (!isOwner) {
-        return res.status(403).json({ error: 'شما فقط مجاز به مدیریت چالش‌های کاروان خود هستید' });
+      if (!(await mentorRunsChallenge(req.user.id, existing))) {
+        return res.status(403).json({ error: 'شما راهبر این کاروان نیستید' });
       }
       // A mentor may only change a challenge nobody has taken part in yet
       const answered = await prisma.submission.count({ where: { challengeId: id } });
@@ -322,6 +322,16 @@ export async function updateChallenge(req: AuthRequest, res: Response) {
   }
 }
 
+/**
+ * A mentor runs a caravan's challenge only while he leads that caravan: after another mentor takes it over, the
+ * challenges move with the caravan. A challenge without a caravan stays its creator's.
+ */
+async function mentorRunsChallenge(mentorId: string, challenge: { caravanId: string | null; createdByMentorId: string }) {
+  if (!challenge.caravanId) return challenge.createdByMentorId === mentorId;
+  const led = await prisma.caravan.findFirst({ where: { id: challenge.caravanId, mentorId }, select: { id: true } });
+  return !!led;
+}
+
 export async function deleteChallenge(req: AuthRequest, res: Response) {
   try {
     const kind = staffKind(req.user?.role);
@@ -336,10 +346,8 @@ export async function deleteChallenge(req: AuthRequest, res: Response) {
     }
 
     if (kind === 'mentor') {
-      const mentorCaravan = await prisma.caravan.findFirst({ where: { mentorId: req.user.id } });
-      const isOwner = existing.createdByMentorId === req.user.id || (mentorCaravan && existing.caravanId === mentorCaravan.id);
-      if (!isOwner) {
-        return res.status(403).json({ error: 'شما فقط مجاز به حذف چالش‌های کاروان خود هستید' });
+      if (!(await mentorRunsChallenge(req.user.id, existing))) {
+        return res.status(403).json({ error: 'شما راهبر این کاروان نیستید' });
       }
     }
 
@@ -449,7 +457,8 @@ export async function getChallenges(req: AuthRequest, res: Response) {
           ];
 
           if (studentCaravan?.mentorId) {
-            orConditions.push({ createdByMentorId: studentCaravan.mentorId });
+            // his mentor's challenges without a caravan; another caravan's challenges are never shown
+            orConditions.push({ AND: [{ createdByMentorId: studentCaravan.mentorId }, { caravanId: null }] });
           }
 
           if (adminIds.length > 0) {
@@ -489,7 +498,8 @@ export async function getChallenges(req: AuthRequest, res: Response) {
 
         whereClause = {
           OR: [
-            { createdByMentorId: user.id },
+            // his own challenges without a caravan; a caravan's challenges go with the caravan to its new mentor
+            { AND: [{ createdByMentorId: user.id }, { caravanId: null }] },
             { category: 'inter_group' },
             ...(mentorCaravanIds.length > 0 ? [{ caravanId: { in: mentorCaravanIds } }] : []),
             ...(adminIds.length > 0 ? [{ AND: [{ caravanId: null }, { createdByMentorId: { in: adminIds } }] }] : [])

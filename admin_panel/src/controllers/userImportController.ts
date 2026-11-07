@@ -13,6 +13,9 @@ import * as XLSX from 'xlsx';
 import prisma from '../config/db';
 import { AuthRequest } from '../middleware/auth';
 import { normalizePhone } from '../middleware/smsProtection';
+import { isMentorRole } from '../utils/roles';
+import { applyMentorCaravanChoice } from '../services/caravanMentor';
+import { moveToCaravan } from '../services/caravanMembership';
 import { ASSIGNABLE_ROLES, ROLE_ADMIN, ROLE_STUDENT, SUPER_ADMIN_ONLY_ROLES } from '../utils/roles';
 import { avatarFor, normalizeGender } from '../utils/avatar';
 import { logAdminAction } from './adminController';
@@ -149,7 +152,6 @@ export async function importUsers(req: AuthRequest, res: Response) {
               name,
               ...extra,
               ...(gender ? { gender } : {}),
-              ...(caravanId !== undefined ? { caravanId } : {}),
               ...(str(r.levelFrame) ? { levelFrame: intOr(r.levelFrame, 1) } : {}),
               ...(str(r.mentorLevel) ? { mentorLevel: intOr(r.mentorLevel, 1) } : {}),
               ...(ownPassword.length >= 4 ? { passwordHash: await bcrypt.hash(ownPassword, 10) } : {}),
@@ -157,6 +159,13 @@ export async function importUsers(req: AuthRequest, res: Response) {
             },
           });
           if (changeRole) await prisma.userSession.deleteMany({ where: { userId: existing.id } });
+          // A caravan change moves the person (assets and progress stay; groups and chats follow), or for a mentor
+          // makes him the caravan's mentor
+          if (caravanId !== undefined) {
+            const roleNow = changeRole ? role : existing.role;
+            if (isMentorRole(roleNow)) await applyMentorCaravanChoice(existing.id, roleNow, null, caravanId || null);
+            else if ((caravanId || null) !== (existing.caravanId ?? null)) await moveToCaravan([existing.id], caravanId || null, { notify: false });
+          }
           if (existing.caravanId) touchedCaravans.add(existing.caravanId);
           if (caravanId) touchedCaravans.add(caravanId);
           results.push({ index, status: 'updated', message: 'مشخصات به‌روز شد', userId: existing.id });
@@ -170,7 +179,7 @@ export async function importUsers(req: AuthRequest, res: Response) {
             phoneNumber: phone,
             passwordHash: ownPassword.length >= 4 ? await bcrypt.hash(ownPassword, 10) : defaultHash,
             role,
-            caravanId: caravanId || null,
+            caravanId: isMentorRole(role) ? null : (caravanId || null),
             levelFrame: intOr(r.levelFrame, 1),
             mentorLevel: intOr(r.mentorLevel, 1),
             ...extra,
@@ -182,6 +191,7 @@ export async function importUsers(req: AuthRequest, res: Response) {
             userCode: nextUserCode++,
           },
         });
+        if (isMentorRole(role) && caravanId) await applyMentorCaravanChoice(user.id, role, null, caravanId);
         if (caravanId) touchedCaravans.add(caravanId);
         results.push({ index, status: 'created', message: 'افزوده شد', userId: user.id });
       } catch (e: any) {

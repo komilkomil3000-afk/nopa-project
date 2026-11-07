@@ -3077,3 +3077,23 @@ button.nbr-rank-row:hover { background: rgb(var(--primary-rgb) / 0.08); }
 .aim-tools { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
 .aim-upload { cursor: pointer; font-size: var(--text-xs); }
 .aim-add { cursor: pointer; min-height: 150px; }
+
+/* ---------- Shop (فروشگاه بازارچه; js/features/shop.js): item covers, the pack's sticker grid in the editor ---------- */
+.shp-cover { display: grid; place-items: center; overflow: hidden; background: rgb(var(--primary-rgb) / 0.12); color: var(--primary-text); }
+.shp-cover img { width: 100%; height: 100%; object-fit: contain; }
+.shp-editor { max-width: 760px; }
+.shp-cover-row { display: flex; gap: 10px; align-items: center; }
+.shp-cover-row .input-ctrl { flex: 1; min-width: 0; }
+.shp-thumb { width: 48px; height: 48px; flex: none; border-radius: 12px; display: grid; place-items: center; overflow: hidden;
+  background: rgb(var(--primary-rgb) / 0.1); color: var(--text-muted); border: 1px solid rgb(var(--fg-rgb) / 0.1); }
+.shp-thumb img { width: 100%; height: 100%; object-fit: contain; }
+.shp-upload-btn { cursor: pointer; white-space: nowrap; }
+.shp-assets { display: grid; grid-template-columns: repeat(auto-fill, minmax(84px, 1fr)); gap: 10px; margin-bottom: 12px; }
+.shp-asset { position: relative; aspect-ratio: 1; border-radius: 14px; overflow: hidden; background: rgb(var(--fg-rgb) / 0.04);
+  border: 1px solid rgb(var(--fg-rgb) / 0.1); display: grid; place-items: center; }
+.shp-asset img { width: 86%; height: 86%; object-fit: contain; }
+.shp-asset .lsv-round { position: absolute; top: 4px; inset-inline-start: 4px; }
+.shp-upload-many { cursor: pointer; display: flex; justify-content: center; }
+.lse-btn.lse-btn-danger { color: var(--danger-text, #e5484d); border-color: rgb(229 72 77 / 0.4); }
+.lse-btn.lse-btn-danger:disabled { opacity: 0.45; cursor: not-allowed; }
+@media (max-width: 600px) { .shp-cover-row { flex-wrap: wrap; } }

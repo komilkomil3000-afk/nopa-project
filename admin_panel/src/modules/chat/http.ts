@@ -1,6 +1,7 @@
 import { Response } from 'express';
 import { AuthRequest } from '../../middleware/auth';
-import { ChatActor, loadActor } from './access';
+import { ChatActor, loadActor, NOT_YOUR_CARAVAN, NOT_YOUR_MENTOR } from './access';
+import { isMentorRole } from '../../utils/roles';
 import { ChatError, findVisibleSpace } from './service';
 import { isSealedFor } from './arenaPrivacy';
 import prisma from '../../config/db';
@@ -24,7 +25,16 @@ export function handler(fn: Handler) {
 
 export async function requireSpace(actor: ChatActor, spaceId: string) {
   const found = await findVisibleSpace(actor, spaceId);
-  if (!found) throw new ChatError(404, 'گفتگو یافت نشد');
+  if (!found) {
+    // A group of a caravan one is not in (any more) says why instead of «not found»: a mentor who no longer leads it,
+    // or a member moved to another caravan
+    const space = await prisma.chatSpace.findUnique({ where: { id: spaceId }, select: { type: true, caravanId: true } });
+    if (space?.caravanId && ['caravan', 'challenges', 'media'].includes(space.type)) {
+      if (isMentorRole(actor.role)) throw new ChatError(403, NOT_YOUR_CARAVAN);
+      if (['student', 'dual'].includes(String(actor.role).toLowerCase())) throw new ChatError(403, NOT_YOUR_MENTOR);
+    }
+    throw new ChatError(404, 'گفتگو یافت نشد');
+  }
   return found;
 }
 

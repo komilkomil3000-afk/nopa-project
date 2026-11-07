@@ -201,7 +201,8 @@ class _ChatMessageBubbleState extends State<ChatMessageBubble> {
         if (widget.showSender) _sender(),
         if (m.replyToId != null) _quote(),
         if (_isSubmission) _submissionBadge(),
-        if (_challenge) ..._challengeContent() else ...[
+        if (m.kind == 'sticker') _sticker()
+        else if (_challenge) ..._challengeContent() else ...[
           // Keyed, so a voice keeps playing when the name or reply above it comes and goes
           for (final attachment in m.attachments) ChatAttachmentView(key: ValueKey('att-${attachment.id}'), attachment: attachment, onGold: !_mineLook, own: widget.mine),
           if (m.body.isNotEmpty) _bodyText(),
@@ -270,6 +271,23 @@ class _ChatMessageBubbleState extends State<ChatMessageBubble> {
   }
 
   /// Text with bold, italic, mentions and tappable links.
+  /// A sticker or GIF from a pack bought in the market (meta.sticker: {url, kind, itemTitle}).
+  Widget _sticker() {
+    final s = m.meta?['sticker'];
+    final url = ApiConstants.resolveImageUrl(s is Map ? s['url']?.toString() : null);
+    if (url.isEmpty) return Text('استیکر', style: ChatTheme.caption.copyWith(color: _mutedColor));
+    return SizedBox(
+      width: 140,
+      height: 140,
+      child: CachedNetworkImage(
+        imageUrl: url,
+        fit: BoxFit.contain,
+        placeholder: (_, _) => const SizedBox.shrink(),
+        errorWidget: (_, _, _) => Icon(Icons.broken_image_outlined, color: _mutedColor),
+      ),
+    );
+  }
+
   Widget _bodyText() {
     final style = ChatTheme.body.copyWith(color: _textColor);
     return Text.rich(
