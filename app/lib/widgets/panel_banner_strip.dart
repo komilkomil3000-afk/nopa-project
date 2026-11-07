@@ -13,12 +13,16 @@ class PanelBannerStrip extends StatefulWidget {
   final double viewportFraction;
   final double radius;
 
+  /// Show nothing (instead of the built-in picture) while the panel has no active banner for [position].
+  final bool hideWhenEmpty;
+
   const PanelBannerStrip({
     super.key,
     required this.position,
     this.height = 82,
     this.viewportFraction = 0.92,
     this.radius = 18,
+    this.hideWhenEmpty = false,
   });
 
   @override
@@ -84,6 +88,7 @@ class _PanelBannerStripState extends State<PanelBannerStrip> {
 
   @override
   Widget build(BuildContext context) {
+    if (widget.hideWhenEmpty && _banners.isEmpty) return const SizedBox.shrink();
     final count = _banners.isNotEmpty ? _banners.length : 3;
     return Column(
       mainAxisSize: MainAxisSize.min,

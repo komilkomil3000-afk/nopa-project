@@ -1572,6 +1572,26 @@ class HttpApiService {
     }
   }
 
+  /// The mentor adds an existing student to their caravan by phone number. Returns null on success, else the reason.
+  Future<String?> addMemberToCaravanByPhone(String caravanId, String phoneNumber) async {
+    try {
+      final response = await _post(
+        Uri.parse('$baseUrl/caravans/$caravanId/members-by-phone'),
+        headers: _getHeaders(),
+        body: jsonEncode({'phoneNumber': phoneNumber}),
+      );
+      if (response.statusCode == 200) return null;
+      try {
+        final data = jsonDecode(response.body);
+        if (data is Map && data['error'] != null) return data['error'].toString();
+      } catch (_) {}
+      return 'افزودن عضو انجام نشد';
+    } catch (e) {
+      debugPrint('HTTP addMemberToCaravanByPhone error: $e');
+      return 'ارتباط با سرور برقرار نشد';
+    }
+  }
+
   Future<bool> addMemberToCaravan(String caravanId, String studentId) async {
     try {
       final response = await _post(

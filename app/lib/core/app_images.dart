@@ -37,7 +37,10 @@ class AssetIcon extends StatelessWidget {
   final double size;
   final Color color;
 
-  const AssetIcon(this.assetKey, {super.key, this.size = 22, this.color = const Color(0xFFDFB690)});
+  /// A panel picture is cropped to a rounded square (fills it, never stretched) instead of being fitted inside.
+  final bool square;
+
+  const AssetIcon(this.assetKey, {super.key, this.size = 22, this.color = const Color(0xFFDFB690), this.square = false});
 
   static const Map<String, Color> _bannerTints = {
     'derafsh_gold': Color(0xFFFFD580),
@@ -71,14 +74,20 @@ class AssetIcon extends StatelessWidget {
       placeholderBuilder: (_) => SizedBox(width: size, height: size),
     );
     if (url == null) return fallback;
-    return CachedNetworkImage(
+    final image = CachedNetworkImage(
       imageUrl: url,
       width: size,
       height: size,
-      fit: BoxFit.contain,
+      fit: square ? BoxFit.cover : BoxFit.contain,
       memCacheWidth: (size * 3).round(),
       placeholder: (_, _) => fallback,
       errorWidget: (_, _, _) => fallback,
+    );
+    if (!square) return image;
+    return SizedBox(
+      width: size,
+      height: size,
+      child: ClipRRect(borderRadius: BorderRadius.circular(size * 0.2), child: image),
     );
   }
 }

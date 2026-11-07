@@ -9,6 +9,7 @@ import { setCaravanMentor } from '../services/caravanMentor';
 import { moveToCaravan } from '../services/caravanMembership';
 import { caravanGroupTitle, customCaravanGroupTitle, setCaravanGroupTitle } from '../modules/chat/service';
 import { isMentorRole } from '../utils/roles';
+import { normalizePhone } from '../middleware/smsProtection';
 
 // Explicit field list for a caravan's mentor: never return the full User row
 // (it contains passwordHash, nationalId, lockout state, ...).
@@ -472,6 +473,9 @@ export async function addMemberToCaravan(req: AuthRequest, res: Response) {
     const { id, studentId } = req.params;
     const caravan = await prisma.caravan.findUnique({ where: { id }, include: { members: true } });
     if (!caravan) return res.status(404).json({ error: 'کاروان یافت نشد' });
+    if (isMentorRole(req.user?.role) && caravan.mentorId !== req.user!.id) {
+      return res.status(403).json({ error: 'فقط در کاروان خودتان می‌توانید عضو اضافه کنید' });
+    }
 
     const capacityLimit = caravan.capacityLimit && caravan.capacityLimit > 0 ? caravan.capacityLimit : 50;
     if (caravan.members.length >= capacityLimit) {
@@ -490,9 +494,38 @@ export async function addMemberToCaravan(req: AuthRequest, res: Response) {
   }
 }
 
+/** POST /caravans/:id/members-by-phone { phoneNumber } — the mentor adds an existing student by phone number. */
+export async function addMemberByPhone(req: AuthRequest, res: Response) {
+  try {
+    const { id } = req.params;
+    const phone = normalizePhone(req.body?.phoneNumber);
+    if (!phone) return res.status(400).json({ error: 'شماره همراه را وارد کنید' });
+    const caravan = await prisma.caravan.findFirst({ where: { id, isDeleted: false }, select: { id: true, mentorId: true } });
+    if (!caravan) return res.status(404).json({ error: 'کاروان یافت نشد' });
+    if (isMentorRole(req.user?.role) && caravan.mentorId !== req.user!.id) {
+      return res.status(403).json({ error: 'فقط در کاروان خودتان می‌توانید عضو اضافه کنید' });
+    }
+    const student = await prisma.user.findFirst({ where: { phoneNumber: phone, isDeleted: false }, select: { id: true, name: true, role: true, caravanId: true } });
+    if (!student) return res.status(404).json({ error: 'کاربری با این شماره پیدا نشد؛ باید ابتدا در نوپا ثبت‌نام کرده باشد' });
+    if (isMentorRole(student.role)) return res.status(400).json({ error: 'راهبر عضو کاروان نمی‌شود' });
+    if (student.caravanId === id) return res.status(409).json({ error: 'این فرد از قبل عضو کاروان شماست' });
+    if (student.caravanId && isMentorRole(req.user?.role)) {
+      return res.status(409).json({ error: 'این فرد عضو کاروان دیگری است؛ برای انتقال با مدیریت تماس بگیرید' });
+    }
+    await moveToCaravan([student.id], id);
+    return res.json({ success: true, message: `«${student.name || phone}» به کاروان اضافه شد` });
+  } catch (error: any) {
+    return res.status(error.statusCode || 500).json({ error: error.message });
+  }
+}
+
 export async function removeMemberFromCaravan(req: AuthRequest, res: Response) {
   try {
     const { id, studentId } = req.params;
+    if (isMentorRole(req.user?.role)) {
+      const own = await prisma.caravan.findUnique({ where: { id }, select: { mentorId: true } });
+      if (!own || own.mentorId !== req.user!.id) return res.status(403).json({ error: 'فقط از کاروان خودتان می‌توانید عضو حذف کنید' });
+    }
     const student = await prisma.user.findUnique({ where: { id: studentId }, select: { caravanId: true } });
     if (student?.caravanId === id) await moveToCaravan([studentId], null);
     const newCount = await prisma.user.count({ where: { caravanId: id } });

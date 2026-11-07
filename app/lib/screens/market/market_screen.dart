@@ -21,6 +21,7 @@ import 'package:nopa_app/services/api_service.dart';
 import 'package:nopa_app/widgets/nopa_dialog_container.dart';
 import 'package:nopa_app/widgets/caravan_banners_dialog.dart';
 import 'package:nopa_app/widgets/info_reveal.dart';
+import 'package:nopa_app/widgets/panel_banner_strip.dart';
 import 'package:nopa_app/utils/constants.dart';
 import 'package:nopa_app/utils/mentor_contact.dart';
 import 'package:nopa_app/widgets/market_shop_section.dart';
@@ -667,7 +668,11 @@ class _MarketScreenState extends State<MarketScreen> {
                     ),
                   ),
                 ),
-              const SizedBox(height: 18),
+              const SizedBox(height: 14),
+
+              // banners the admin set for the top of the market page (panel → «بنرهای اپ», position bazaar_top)
+              const PanelBannerStrip(position: 'bazaar_top', hideWhenEmpty: true),
+              const SizedBox(height: 10),
 
               // 2. Section 1: نرخنامه (Rate Sheet Cards)
               _buildRateSheetSection(),
@@ -793,7 +798,7 @@ class _MarketScreenState extends State<MarketScreen> {
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     // the asset's picture set in the panel («تصاویر اپلیکیشن»), otherwise its built-in icon
-                    AssetIcon(AssetIcon.keyOfLabel(item['assetKey'] as String), size: 34),
+                    AssetIcon(AssetIcon.keyOfLabel(item['assetKey'] as String), size: 46, square: true),
                     const SizedBox(height: 8),
                     Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 4),

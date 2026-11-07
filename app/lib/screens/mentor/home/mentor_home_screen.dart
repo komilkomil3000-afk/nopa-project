@@ -8,7 +8,6 @@ import 'package:nopa_app/core/station_numbering.dart';
 import 'package:nopa_app/core/asset_names.dart';
 import 'package:nopa_app/core/app_images.dart';
 import 'package:nopa_app/widgets/caravan_banners_dialog.dart';
-import 'package:nopa_app/widgets/caravan_standing_summary.dart';
 import 'dart:async';
 import 'package:flutter/material.dart' hide Text;
 import 'package:nopa_app/widgets/fa_text.dart';
@@ -478,14 +477,6 @@ class _MentorHomeScreenState extends State<MentorHomeScreen> {
             ),
           ),
         ),
-        // the caravan's value and place, as «برترین کاروان‌ها» counts them
-        if (caravan != null) ...[
-          const SizedBox(height: 10),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 20.0),
-            child: CaravanStandingSummary(caravan: caravan),
-          ),
-        ],
       ],
     );
   }

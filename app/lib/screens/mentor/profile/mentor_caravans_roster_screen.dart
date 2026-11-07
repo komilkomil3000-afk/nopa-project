@@ -165,35 +165,33 @@ class _MentorMembersScreenState extends State<MentorCaravansRosterScreen> {
     }
   }
 
-  void _showAddMemberDialog() {
-    final nameController = TextEditingController();
+  void _showAddMemberDialog(CaravanModel caravan) {
     final phoneController = TextEditingController();
-    final noteController = TextEditingController();
 
     showNopaModal<void>(
       context,
       builder: (ctx) => NopaModalShell(
         maxWidth: 420,
         headerIcon: Icons.person_add_alt_1_rounded,
-        title: 'درخواست اضافه کردن کاربر',
+        title: 'افزودن عضو به ${caravan.name}',
         actions: [
           NopaModalAction(
-            label: 'ارسال درخواست',
+            label: 'افزودن',
             onPressed: () async {
-                            if (nameController.text.trim().isEmpty || phoneController.text.trim().isEmpty) {
-                              AppToast.error(context, 'لطفاً نام و شماره همراه را وارد کنید');
+                            final phone = phoneController.text.trim();
+                            if (phone.isEmpty) {
+                              AppToast.error(context, 'لطفاً شماره همراه را وارد کنید');
                               return;
                             }
                             Navigator.pop(ctx);
-                            try {
-                              await HttpApiService().createTicket(
-                                category: 'general',
-                                subject: 'درخواست اضافه کردن کاربر: ${nameController.text.trim()} (${phoneController.text.trim()}) - ${noteController.text.trim()}',
-                              );
-                            } catch (_) {}
-                            if (mounted) {
-                              AppToast.info(context, 'درخواست اضافه کردن کاربر با موفقیت برای مدیریت ارسال شد');
+                            final error = await HttpApiService().addMemberToCaravanByPhone(caravan.id, phone);
+                            if (!mounted) return;
+                            if (error != null) {
+                              AppToast.error(context, error);
+                              return;
                             }
+                            AppToast.info(context, 'عضو به کاروان اضافه شد');
+                            _loadCaravansAndMembers(quiet: true);
                           },
           ),
           NopaModalAction(
@@ -207,18 +205,6 @@ class _MentorMembersScreenState extends State<MentorCaravansRosterScreen> {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
                   TextField(
-                    controller: nameController,
-                    style: AppTypography.bodyLarge,
-                    decoration: InputDecoration(
-                      labelText: 'نام و نام خانوادگی دانش‌آموز',
-                      labelStyle: AppTypography.bodyMediumMuted,
-                      filled: true,
-                      fillColor: const Color(0xFF1E1D36),
-                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  TextField(
                     controller: phoneController,
                     keyboardType: TextInputType.phone,
                     style: AppTypography.bodyLarge,
@@ -230,18 +216,10 @@ class _MentorMembersScreenState extends State<MentorCaravansRosterScreen> {
                       border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
                     ),
                   ),
-                  const SizedBox(height: 12),
-                  TextField(
-                    controller: noteController,
-                    maxLines: 2,
-                    style: AppTypography.bodyLarge,
-                    decoration: InputDecoration(
-                      labelText: 'توضیحات یا علت درخواست (اختیاری)',
-                      labelStyle: AppTypography.bodyMediumMuted,
-                      filled: true,
-                      fillColor: const Color(0xFF1E1D36),
-                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
-                    ),
+                  const SizedBox(height: 8),
+                  Text(
+                    'فرد باید قبلاً در نوپا ثبت‌نام کرده و عضو کاروان دیگری نباشد.',
+                    style: AppTypography.caption.copyWith(color: const Color(0xFF9E9AC0)),
                   ),
           ],
         ),
@@ -255,7 +233,7 @@ class _MentorMembersScreenState extends State<MentorCaravansRosterScreen> {
       builder: (ctx) => NopaModalShell(
         maxWidth: 420,
         headerIcon: Icons.person_remove_alt_1_rounded,
-        title: 'درخواست حذف کاربر',
+        title: 'حذف عضو از کاروان',
         actions: [
           NopaModalAction(
             label: 'تایید حذف',
@@ -268,11 +246,13 @@ class _MentorMembersScreenState extends State<MentorCaravansRosterScreen> {
                           setState(() => caravan.members.removeWhere((m) => m.id == member.id));
                           AppToast.undoable(
                             context,
-                            'درخواست حذف «${member.name}» ثبت شد.',
+                            '«${member.name}» از کاروان حذف شد.',
                             commit: () async {
-                              try {
-                                await HttpApiService().removeMemberFromCaravan(caravan.id, member.id);
-                              } catch (_) {}
+                              final ok = await HttpApiService().removeMemberFromCaravan(caravan.id, member.id);
+                              if (!ok && mounted) {
+                                _loadCaravansAndMembers(quiet: true);
+                                return 'حذف انجام نشد';
+                              }
                               return null;
                             },
                             onUndo: () {
@@ -289,7 +269,7 @@ class _MentorMembersScreenState extends State<MentorCaravansRosterScreen> {
           ),
         ],
         child: Text(
-          'آیا از ارسال درخواست حذف «${member.name}» از ${caravan.name} اطمینان دارید؟',
+          'آیا از حذف «${member.name}» از ${caravan.name} اطمینان دارید؟',
           textAlign: TextAlign.center,
           style: AppTypography.bodyLarge.copyWith(color: Color(0xFFD6D3E6)),
         ),
@@ -415,7 +395,7 @@ class _MentorMembersScreenState extends State<MentorCaravansRosterScreen> {
                 Align(
                   alignment: Alignment.centerRight,
                   child: OutlinedButton(
-                    onPressed: _showAddMemberDialog,
+                    onPressed: () => _showAddMemberDialog(selectedCaravan),
                     style: OutlinedButton.styleFrom(
                       side: const BorderSide(color: Color(0xFF8B88E8), width: 1.1),
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
@@ -424,7 +404,7 @@ class _MentorMembersScreenState extends State<MentorCaravansRosterScreen> {
                       tapTargetSize: MaterialTapTargetSize.padded,
                     ),
                     child: Text(
-                      'درخواست اضافه کردن کاربر',
+                      'افزودن عضو به کاروان',
                       style: AppTypography.caption.copyWith(color: Color(0xFFE2E0F2)),
                     ),
                   ),
@@ -756,7 +736,7 @@ class _MentorMembersScreenState extends State<MentorCaravansRosterScreen> {
                         tapTargetSize: MaterialTapTargetSize.padded,
                       ),
                       child: Text(
-                        'درخواست حذف',
+                        'حذف',
                         style: AppTypography.caption.copyWith(color: Color(0xFFE2E0F2)),
                       ),
                     ),

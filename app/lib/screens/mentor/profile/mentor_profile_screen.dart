@@ -17,7 +17,6 @@ import 'package:nopa_app/services/app_state_repository.dart';
 import 'package:nopa_app/widgets/contact_us_dialog.dart';
 import 'package:nopa_app/widgets/logout_dialog.dart';
 import 'package:nopa_app/widgets/safe_avatar.dart';
-import 'package:nopa_app/widgets/caravan_standing_summary.dart';
 import 'package:nopa_app/screens/student/profile/student_certificates_screen.dart';
 import 'package:nopa_app/screens/mentor/profile/mentor_edit_profile_screen.dart';
 import 'package:nopa_app/screens/mentor/profile/mentor_caravans_roster_screen.dart';
@@ -538,10 +537,6 @@ class _ReportCardAndAchievementsScreenState extends State<_ReportCardAndAchievem
                               _buildAssetBox(AssetNames.labelFor('قالیچه'), (caravan?.totalFarsh ?? user.farsh).toPersian(), const Color(0xFF9292E2)),
                             ],
                           ),
-                          if (caravan != null) ...[
-                            const SizedBox(height: 12),
-                            CaravanStandingSummary(caravan: caravan),
-                          ],
                         ],
                       );
                     }),
