@@ -34,6 +34,10 @@ export async function peopleWithMutes(space: SpaceRow, withMutes: boolean) {
   return people.map(p => ({ ...p, mutedUntil: mutes.get(p.id) ?? null }));
 }
 
+function people0<T extends { id: string }>(mentor: T | null, members: T[], out: Set<string>): T[] {
+  return [...(mentor ? [mentor] : []), ...members].filter(p => !out.has(p.id));
+}
+
 export async function peopleOf(space: SpaceRow) {
   let people: { id: string; name: string; avatarUrl: string | null; role: string; gender: string | null }[];
   if (space.caravanId) {
@@ -42,8 +46,13 @@ export async function peopleOf(space: SpaceRow) {
     const members = await prisma.user.findMany({ where: { caravanId: space.caravanId, role: 'student', isDeleted: false }, select: PERSON_SELECT, orderBy: { name: 'asc' } });
     const mentor = caravan?.mentor && !caravan.mentor.isDeleted ? { id: caravan.mentor.id, name: caravan.mentor.name, avatarUrl: caravan.mentor.avatarUrl, role: caravan.mentor.role, gender: caravan.mentor.gender } : null;
     people = [...(mentor ? [mentor] : []), ...members];
+    // hand-made changes of the panel: people put in from outside the caravan, people kept out of it
+    const manual = await prisma.chatMember.findMany({ where: { spaceId: space.id, manual: { in: ['added', 'removed'] } }, select: { manual: true, user: { select: { ...PERSON_SELECT, isDeleted: true } } } });
+    const out = new Set(manual.filter(m => m.manual === 'removed').map(m => m.user.id));
+    const extra = manual.filter(m => m.manual === 'added' && !m.user.isDeleted).map(m => ({ id: m.user.id, name: m.user.name, avatarUrl: m.user.avatarUrl, role: m.user.role, gender: m.user.gender }));
+    people = [...people0(mentor, members, out), ...extra.filter(e => !members.some(x => x.id === e.id) && e.id !== mentor?.id)];
   } else {
-    const members = await prisma.chatMember.findMany({ where: { spaceId: space.id, user: { isDeleted: false } }, select: { user: { select: PERSON_SELECT } } });
+    const members = await prisma.chatMember.findMany({ where: { spaceId: space.id, user: { isDeleted: false }, NOT: { manual: 'removed' } }, select: { user: { select: PERSON_SELECT } } });
     people = members.map(m => m.user);
   }
   return people.map(p => ({ ...p, online: isOnline(p.id) }));

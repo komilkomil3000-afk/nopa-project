@@ -20,7 +20,6 @@ import 'package:nopa_app/services/app_state_repository.dart';
 import 'package:nopa_app/services/api_service.dart';
 import 'package:nopa_app/widgets/nopa_dialog_container.dart';
 import 'package:nopa_app/widgets/caravan_banners_dialog.dart';
-import 'package:nopa_app/widgets/caravan_standing_summary.dart';
 import 'package:nopa_app/widgets/info_reveal.dart';
 import 'package:nopa_app/utils/constants.dart';
 import 'package:nopa_app/utils/mentor_contact.dart';
@@ -87,6 +86,9 @@ class _MarketScreenState extends State<MarketScreen> {
 
   // Selected tab for "برترین ها (لیگ)" (0: برترین شرکت کننده ها, 1: برترین کاروان ها)
   int _selectedLeaderboardTab = 0;
+
+  // The podium's capital lines are long: hidden until «دیدن بیشتر» is tapped
+  bool _podiumDetails = false;
 
   // Leaderboard data (from /leagues/*)
   List<Map<String, dynamic>> _topMembers = [];
@@ -1100,14 +1102,21 @@ class _MarketScreenState extends State<MarketScreen> {
                   '${AssetNames.labelFor('درفش')} کاروان: ${totalBeyragh.toString().toPersian()}',
                   style: AppTypography.caption.copyWith(color: const Color(0xFFFFAB91)),
                 ),
+                // The caravan's place and value per member, in this same box instead of a second one under it
+                if (caravan != null && caravan.id == _loadedCaravanId) ...[
+                  Text(
+                    'سرانه‌ی هر نفر: ${_formatScore(caravan.averageWealth).toPersianDigits()}',
+                    style: AppTypography.caption.copyWith(color: const Color(0xFFC5BEEB)),
+                  ),
+                  Text(
+                    'رتبه‌ی کاروان: ${caravan.rank == null ? '-' : '${caravan.rank}${caravan.rankOf > 0 ? ' از ${caravan.rankOf}' : ''}'.toPersianDigits()}',
+                    style: AppTypography.caption.copyWith(color: const Color(0xFFC5BEEB)),
+                  ),
+                ],
               ],
             ),
           ),
         ),
-        if (caravan != null && caravan.id == _loadedCaravanId) ...[
-          const SizedBox(height: 8),
-          CaravanStandingSummary(caravan: caravan),
-        ],
       ],
     );
   }
@@ -2382,7 +2391,26 @@ class _MarketScreenState extends State<MarketScreen> {
           ),
         ),
 
-        const SizedBox(height: 16),
+        // One switch for the three: their capital (each asset, the value, the per-member figure) opens under the names
+        Center(
+          child: InkWell(
+            borderRadius: BorderRadius.circular(8),
+            onTap: () => setState(() => _podiumDetails = !_podiumDetails),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              child: Directionality(
+                textDirection: TextDirection.rtl,
+                child: Row(mainAxisSize: MainAxisSize.min, children: [
+                  Text(_podiumDetails ? 'بستن' : 'دیدن بیشتر', style: AppTypography.caption.copyWith(color: const Color(0xFFFFD580), fontWeight: FontWeight.w700)),
+                  const SizedBox(width: 4),
+                  Icon(_podiumDetails ? Icons.keyboard_arrow_up_rounded : Icons.keyboard_arrow_down_rounded, size: 18, color: const Color(0xFFFFD580)),
+                ]),
+              ),
+            ),
+          ),
+        ),
+
+        const SizedBox(height: 8),
 
         // The viewer's own row (or their caravan's): the same figures the ranking used, wherever they stand
         if (myIndex >= 3) ...[
@@ -2535,7 +2563,7 @@ class _MarketScreenState extends State<MarketScreen> {
         const SizedBox(height: 4),
 
         // Each asset on its own line, then the total value in zarik
-        if (item['assets'] is Map) ...[
+        if (_podiumDetails && item['assets'] is Map) ...[
           const SizedBox(height: 4),
           for (final e in (item['assets'] as Map<String, int>).entries) _podiumAssetLine(e.key, e.value),
           const SizedBox(height: 6),

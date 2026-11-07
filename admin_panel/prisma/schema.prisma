@@ -948,6 +948,7 @@ model ChatMember {
   lastReadSeq Int       @default(0)
   muted       Boolean   @default(false)    // notifications off, chosen by the user
   mutedUntil  DateTime?                    // cannot post until then, set by a moderator
+  manual      String?                      // hand-made by the panel: "added" | "removed"; null = the automatic rules
   createdAt   DateTime  @default(now())
 
   space ChatSpace @relation(fields: [spaceId], references: [id], onDelete: Cascade)

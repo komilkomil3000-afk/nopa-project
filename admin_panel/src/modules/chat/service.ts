@@ -128,7 +128,7 @@ export async function visibleSpaces(actor: ChatActor) {
     },
     include: { caravan: { select: { name: true, coverImageUrl: true } } },
   });
-  return { spaces: candidates.filter(s => canSee(actor, s, members.has(s.id))), members };
+  return { spaces: candidates.filter(s => canSee(actor, s, members.has(s.id), members.get(s.id)?.manual ?? null)), members };
 }
 
 export async function visibleSpaceIds(actor: ChatActor): Promise<string[]> {
@@ -140,7 +140,7 @@ export async function findVisibleSpace(actor: ChatActor, spaceId: string) {
   const space = await prisma.chatSpace.findUnique({ where: { id: spaceId } });
   if (!space) return null;
   const member = await prisma.chatMember.findUnique({ where: { spaceId_userId: { spaceId, userId: actor.id } } });
-  return canSee(actor, space, !!member) ? { space, member } : null;
+  return canSee(actor, space, !!member, member?.manual ?? null) ? { space, member } : null;
 }
 
 export function directKey(a: string, b: string): string {

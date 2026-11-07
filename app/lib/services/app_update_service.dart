@@ -148,6 +148,11 @@ class AppUpdateDownload {
       await sink.close();
       sink = null;
       if (total > 0 && received != total) throw Exception('incomplete');
+      // An APK is a zip ("PK"); a host's web page instead of the file would only fail at the installer
+      final raf = await part.open();
+      final head = await raf.read(2);
+      await raf.close();
+      if (head.length < 2 || head[0] != 0x50 || head[1] != 0x4B) throw Exception('not an apk');
       return part.renameSync(p.join(dir.path, _name));
     } catch (e) {
       try { await sink?.close(); } catch (_) {}
@@ -172,6 +177,41 @@ class AppInstaller {
 
   static bool get supported => Platform.isAndroid;
 
+  /// Why the last installation did not finish (Android reports it after the confirmation screen); null otherwise.
+  /// A successful install never gets here: Android replaces the app and closes it, and the user just opens it again.
+  static final ValueNotifier<String?> failure = ValueNotifier(null);
+  static bool _listening = false;
+
+  static void _listen() {
+    if (_listening) return;
+    _listening = true;
+    _channel.setMethodCallHandler((call) async {
+      if (call.method != 'status') return;
+      final args = Map<String, dynamic>.from(call.arguments as Map);
+      final status = (args['status'] as num?)?.toInt() ?? 1;
+      if (status == 0) return;
+      failure.value = reason(status, (args['message'] ?? '').toString());
+    });
+  }
+
+  /// The installer's status code in plain words.
+  static String reason(int status, String message) {
+    switch (status) {
+      case 3:
+        return 'نصب لغو شد. هر وقت خواستید دوباره «نصب» را بزنید.';
+      case 5:
+        return 'نسخه‌ی نصب‌شده با این نسخه امضای یکسان ندارد و اندروید اجازه‌ی به‌روزرسانی روی آن را نمی‌دهد. ابتدا نپا را حذف و نسخه‌ی جدید را نصب کنید.';
+      case 6:
+        return 'حافظه‌ی گوشی برای نصب کافی نیست.';
+      case 7:
+        return 'این نسخه با گوشی شما سازگار نیست.';
+      case 4:
+        return 'فایل دانلودشده سالم نیست. دانلود را دوباره انجام دهید.';
+      default:
+        return 'نصب انجام نشد${message.isEmpty ? '' : ' ($message)'}.';
+    }
+  }
+
   /// Whether this app may open the installer (Android 8+ asks once: "install unknown apps").
   static Future<bool> canInstall() async {
     try {
@@ -190,6 +230,8 @@ class AppInstaller {
 
   /// Opens Android's installer for [file]; false when it could not be opened.
   static Future<bool> install(File file) async {
+    _listen();
+    failure.value = null;
     try {
       return await _channel.invokeMethod<bool>('install', {'path': file.path}) ?? false;
     } catch (_) {

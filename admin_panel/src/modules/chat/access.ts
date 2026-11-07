@@ -9,6 +9,8 @@ export interface ChatActor {
   role: string;
   caravanId: string | null;
   mentoredCaravanIds: string[];
+  /** Spaces where the panel made this user a moderator by hand (ChatMember.role = "moderator"). */
+  moderatorSpaceIds: string[];
   permissions: ChatPermissions;
 }
 
@@ -33,7 +35,8 @@ export async function loadActor(userId: string): Promise<ChatActor | null> {
   // A mentor belongs to the caravans he leads (Caravan.mentorId), never through a leftover User.caravanId:
   // after another mentor takes his caravan he must leave its groups, challenges and arena work at once
   const caravanId = isMentorRole(user.role) ? null : user.caravanId;
-  return { ...user, caravanId, mentoredCaravanIds: mentored.map(c => c.id), permissions };
+  const moderating = await prisma.chatMember.findMany({ where: { userId: user.id, role: 'moderator' }, select: { spaceId: true } });
+  return { ...user, caravanId, mentoredCaravanIds: mentored.map(c => c.id), moderatorSpaceIds: moderating.map(m => m.spaceId), permissions };
 }
 
 const isAdmin = (a: ChatActor) => String(a.role).toLowerCase() === 'admin' || isSubAdminRole(a.role);
@@ -56,7 +59,10 @@ export function canDeleteGroup(a: ChatActor): boolean {
  * Who sees a space. Caravan spaces follow the caravan itself, so a transfer between caravans needs no
  * sync: access moves with User.caravanId. Direct and support spaces are for their members alone.
  */
-export function canSee(a: ChatActor, s: SpaceRef, isMember: boolean): boolean {
+export function canSee(a: ChatActor, s: SpaceRef, isMember: boolean, manual: string | null = null): boolean {
+  // Hand-made membership (panel): taken out of a space stays out of it, put into one gets in, whatever the automatic rules say
+  if (manual === 'removed' && !isAdmin(a)) return false;
+  if (manual === 'added' && ['announcements', 'arena', 'mentors', 'caravan', 'challenges', 'media'].includes(s.type)) return true;
   switch (s.type as SpaceType) {
     case 'announcements':
     case 'arena':
@@ -85,7 +91,7 @@ export function canPostTopLevel(a: ChatActor, s: SpaceRef): boolean {
   switch (s.type as SpaceType) {
     case 'announcements':
     case 'public':
-      return isAdmin(a) || (isManager(a) && a.permissions.publishChannels);
+      return isAdmin(a) || (isManager(a) && a.permissions.publishChannels) || a.moderatorSpaceIds.includes(s.id);
     case 'arena':
       // The arena's feed is the admin's; mentors write only inside an open cross-caravan challenge (see canReplyInArena)
       return isAdmin(a);
@@ -115,7 +121,7 @@ export function canReplyInArena(a: ChatActor, topic: { status: string; challenge
 export function canModerate(a: ChatActor, s: SpaceRef): boolean {
   if (s.type === 'direct' || s.type === 'support') return false;
   if (s.type === 'arena') return isAdmin(a);
-  return isAdmin(a) || leadsCaravan(a, s) || (isManager(a) && a.permissions.moderate);
+  return isAdmin(a) || leadsCaravan(a, s) || (isManager(a) && a.permissions.moderate) || a.moderatorSpaceIds.includes(s.id);
 }
 
 /** Tags and marks. A personal challenge lives in a private conversation, which its mentor still runs. */

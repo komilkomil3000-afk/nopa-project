@@ -73,6 +73,7 @@ window.loadChatOps = async function() {
   }
 
   window.loadChatGroups();
+  drawMemberSpaces();
 };
 
 window.resolveChatReport = async function(id, deleteMessage) {
@@ -388,6 +389,101 @@ window.deleteChatGroup = async function(id, title) {
     commit: () => NopaApi.json(`/api/v1/admin/chat-manage/groups/${id}`, { method: 'DELETE' }),
     done: () => window.loadChatGroups(),
   });
+};
+
+
+// ---- «اعضا و نقش‌ها»: add / remove people and make moderators in any group or channel ----
+const MEMBER_TYPE_LABEL = { announcements: 'کانال اطلاعیه', arena: 'میدان', mentors: 'اتاق راهبران', caravan: 'گروه کاروان', challenges: 'گروه چالش‌ها', media: 'گروه رسانه‌ای' };
+let chsMembersSpaceId = null;
+let chsMembersTimer = null;
+
+function drawMemberSpaces() {
+  const box = opsEl('chat-members-spaces');
+  if (!box) return;
+  const spaces = (window.chatSpacesCache || []).filter(s => MEMBER_TYPE_LABEL[s.type]);
+  box.innerHTML = spaces.length ? `<ul class="lst-list">${spaces.map(s => tileRow(
+    `<strong>${esc(s.title)}</strong>${s.caravanName ? ` · ${esc(s.caravanName)}` : ''}`,
+    esc(MEMBER_TYPE_LABEL[s.type]),
+    tileBtn('chsOpenMembers', [String(s.id)], 'fa-user-gear', 'اعضا و نقش‌ها'),
+  )).join('')}</ul>` : tileEmpty('گروه یا کانالی نیست.');
+}
+
+async function loadSpaceMembers() {
+  const data = await NopaApi.json(`/api/v1/admin/chat-manage/spaces/${chsMembersSpaceId}/members`);
+  window.chatMembersData = data;
+  opsEl('chs-members-title').textContent = data.space.title;
+  opsEl('chs-members-sub').textContent = `${MEMBER_TYPE_LABEL[data.space.type] || ''}${data.space.caravanName ? ` · ${data.space.caravanName}` : ''}`;
+  opsEl('chs-members-count').textContent = data.everyone ? 'فقط استثناها و ناظم‌ها' : `${faNum(data.members.length)} نفر`;
+  const roleLabel = r => ({ student: 'همسفر', mentor: 'راهبر', admin: 'مدیر', sub_admin: 'مدیر', channel_manager: 'مدیر کانال', support: 'پشتیبان' }[r] || r || '');
+  const hint = data.everyone ? '<li class="lst-list-item"><span class="lst-grow lse-hint">همه‌ی افراد این بخش عضو هستند؛ اینجا فقط افزوده‌شده‌ها و ناظم‌ها دیده می‌شوند. برای بیرون گذاشتن کسی، نامش را از فهرست افزودن پیدا کنید و «حذف» بزنید.</span></li>' : '';
+  opsEl('chs-members-list').innerHTML = (data.members.length || hint) ? `<ul class="lst-list">${hint}${data.members.map(m => {
+    const mod = m.spaceRole === 'moderator';
+    return tileRow(
+      `<strong>${esc(m.name)}</strong>${mod ? ' <span class="lst-chip">ناظم</span>' : ''}`,
+      `${esc(roleLabel(m.role))}${m.source === 'added' && data.space.type !== 'media' ? ' · افزوده‌شده' : ''}`,
+      tileBtn('chsMemberRole', [String(m.id), mod ? 'member' : 'moderator'], mod ? 'fa-user-shield' : 'fa-user-plus', mod ? 'برداشتن نقش ناظم' : 'ناظم کردن')
+        + tileBtn('chsMemberRemove', [String(m.id), String(m.name)], 'fa-user-minus', 'حذف از گروه', true),
+    );
+  }).join('')}</ul>` : tileEmpty('عضوی نیست.');
+  opsEl('chs-members-removed-card').hidden = !data.removed.length;
+  opsEl('chs-members-removed').innerHTML = data.removed.length ? `<ul class="lst-list">${data.removed.map(m => tileRow(
+    `<strong>${esc(m.name)}</strong>`, esc(roleLabel(m.role)),
+    tileBtn('chsMemberRestore', [String(m.id)], 'fa-rotate-left', 'بازگرداندن'),
+  )).join('')}</ul>` : '';
+}
+
+async function loadMemberCandidates() {
+  const q = opsEl('chs-members-search').value.trim();
+  const select = opsEl('chs-members-add');
+  try {
+    const people = await NopaApi.json(`/api/v1/admin/chat-manage/spaces/${chsMembersSpaceId}/candidates?q=${encodeURIComponent(q)}`);
+    select.innerHTML = people.map(p => `<option value="${esc(p.id)}">${esc(p.name)}${p.phoneNumber ? ` · ${esc(p.phoneNumber)}` : ''}</option>`).join('') || '<option value="">کسی پیدا نشد</option>';
+  } catch (e) {
+    select.innerHTML = '<option value="">فهرست افراد در دسترس نیست</option>';
+  }
+}
+
+window.chsOpenMembers = async function(id) {
+  chsMembersSpaceId = id;
+  opsEl('chs-members-search').value = '';
+  NopaModal.open('chs-members-modal');
+  try {
+    await loadSpaceMembers();
+    await loadMemberCandidates();
+  } catch (e) {
+    showToast(e.message || 'اعضا در دسترس نیستند.', 'error');
+  }
+};
+
+window.chsMembersSearch = function() {
+  clearTimeout(chsMembersTimer);
+  chsMembersTimer = setTimeout(loadMemberCandidates, 300);
+};
+
+async function memberCall(path, method, body, okText) {
+  try {
+    await NopaApi.json(`/api/v1/admin/chat-manage/spaces/${chsMembersSpaceId}/members${path}`, { method, body: body ? JSON.stringify(body) : undefined });
+    if (okText) showToast(okText, 'success');
+    await loadSpaceMembers();
+    await loadMemberCandidates();
+  } catch (e) {
+    showToast(e.message || 'خطا در ثبت', 'error');
+  }
+}
+
+window.chsMembersAdd = function() {
+  const userId = opsEl('chs-members-add').value;
+  if (userId) memberCall('', 'POST', { userId }, 'عضو اضافه شد.');
+};
+window.chsMemberRole = function(userId, role) {
+  memberCall(`/${userId}`, 'PATCH', { role }, role === 'moderator' ? 'ناظم شد؛ در همین گروه می‌تواند سنجاق و حذف پیام کند.' : 'نقش ناظم برداشته شد.');
+};
+window.chsMemberRemove = async function(userId, name) {
+  if (!(await NopaConfirm(`«${name}» از این گروه حذف شود؟ تا زمانی که بازگردانده نشود، دوباره به آن راه نمی‌یابد.`))) return;
+  memberCall(`/${userId}`, 'DELETE', null, 'عضو حذف شد.');
+};
+window.chsMemberRestore = function(userId) {
+  memberCall(`/${userId}/restore`, 'POST', null, 'بازگردانده شد.');
 };
 
 window.muteChatMember = async function(spaceId, userId, minutes) {

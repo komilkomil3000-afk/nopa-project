@@ -2611,6 +2611,13 @@
 
             <div class="lst-tile lst-tile-wide glass">
               <div class="lst-tile-head">
+                <h4 class="lst-tile-title"><i class="fa-solid fa-user-gear"></i> اعضا و نقش‌ها در گروه‌ها و کانال‌ها</h4>
+              </div>
+              <div id="chat-members-spaces" class="chs-scroll"></div>
+            </div>
+
+            <div class="lst-tile lst-tile-wide glass">
+              <div class="lst-tile-head">
                 <h4 class="lst-tile-title"><i class="fa-solid fa-chart-column"></i> مشارکت کاروان‌ها <span class="lst-tile-sub">اعضای فعال، پیام‌ها و میانگین کلاف</span></h4>
               </div>
               <div id="chat-analytics" class="chs-scroll"></div>
@@ -2741,6 +2748,38 @@
                   <button type="button" class="lse-btn" data-click="chsAddMember"><i class="fa-solid fa-user-plus"></i> افزودن</button>
                 </div>
                 <div id="chat-group-members" class="chs-scroll"></div>
+              </section>
+            </div>
+          </div>
+        </div>
+
+        <div class="modal-overlay lse-overlay u-z-z-modal" id="chs-members-modal" data-style="display: none">
+          <div class="lse lse-sm">
+            <header class="lse-head lse-head-plain">
+              <div class="lse-id">
+                <span class="lse-id-icon is-accent"><i class="fa-solid fa-user-gear"></i></span>
+                <div class="lse-id-text"><h3 id="chs-members-title">اعضا و نقش‌ها</h3><span id="chs-members-sub"></span></div>
+              </div>
+              <button type="button" class="lsv-round" data-click="chsCloseModal" data-click-args="[&quot;chs-members-modal&quot;]" title="بستن" aria-label="بستن"><i class="fa-solid fa-xmark"></i></button>
+            </header>
+            <div class="lse-body">
+              <section class="lse-card">
+                <h4 class="lse-card-title"><i class="fa-solid fa-user-plus"></i> افزودن عضو</h4>
+                <div class="lse-inline">
+                  <input type="search" id="chs-members-search" class="input-ctrl" placeholder="نام یا شماره‌ی موبایل..." data-input="chsMembersSearch">
+                </div>
+                <div class="lse-inline">
+                  <select id="chs-members-add" class="select-ctrl" aria-label="افزودن عضو"></select>
+                  <button type="button" class="lse-btn" data-click="chsMembersAdd"><i class="fa-solid fa-user-plus"></i> افزودن</button>
+                </div>
+              </section>
+              <section class="lse-card">
+                <h4 class="lse-card-title"><i class="fa-solid fa-users"></i> اعضا <small class="lse-hint" id="chs-members-count"></small></h4>
+                <div id="chs-members-list" class="chs-scroll"></div>
+              </section>
+              <section class="lse-card" id="chs-members-removed-card" hidden>
+                <h4 class="lse-card-title"><i class="fa-solid fa-user-slash"></i> خارج‌شده‌ها</h4>
+                <div id="chs-members-removed" class="chs-scroll"></div>
               </section>
             </div>
           </div>

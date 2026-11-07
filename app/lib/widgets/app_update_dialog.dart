@@ -48,6 +48,7 @@ class _AppUpdateDialogState extends State<AppUpdateDialog> with WidgetsBindingOb
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
+    AppInstaller.failure.addListener(_onInstallFailure);
     // downloaded before (the dialog was closed with «بعداً»): straight to «نصب»
     if (_inApp) {
       _download.existing().then((f) {
@@ -56,8 +57,20 @@ class _AppUpdateDialogState extends State<AppUpdateDialog> with WidgetsBindingOb
     }
   }
 
+  void _onInstallFailure() {
+    final why = AppInstaller.failure.value;
+    if (why == null || !mounted) return;
+    AppToast.error(context, why);
+    // a broken file is deleted so «تلاش دوباره» downloads it afresh
+    if (why.contains('سالم نیست')) {
+      try { _file?.deleteSync(); } catch (_) {}
+      setState(() { _file = null; _stage = _Stage.ready; });
+    }
+  }
+
   @override
   void dispose() {
+    AppInstaller.failure.removeListener(_onInstallFailure);
     WidgetsBinding.instance.removeObserver(this);
     if (_stage == _Stage.downloading) _download.cancel();
     _download.progress.dispose();
@@ -105,7 +118,12 @@ class _AppUpdateDialogState extends State<AppUpdateDialog> with WidgetsBindingOb
         return;
       }
       final ok = await AppInstaller.install(file);
-      if (!ok && mounted) AppToast.error(context, 'باز کردن نصب‌کننده ممکن نشد. فایل را با مرورگر دانلود کنید.');
+      if (!mounted) return;
+      if (!ok) {
+        AppToast.error(context, 'باز کردن نصب‌کننده ممکن نشد. فایل را با مرورگر دانلود کنید.');
+      } else {
+        AppToast.info(context, 'نصب را در پنجره‌ی اندروید تأیید کنید. پس از نصب، برنامه بسته می‌شود؛ فقط کافی است دوباره بازش کنید.');
+      }
     } finally {
       if (mounted) setState(() => _installing = false);
     }

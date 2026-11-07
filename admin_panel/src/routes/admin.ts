@@ -49,6 +49,7 @@ import { chatAnalytics, exportSpace, listReports, resolveReport } from '../modul
 import { caseMessages, claimCase, listCases, replyCase, resolveCase } from '../modules/chat/support';
 import { adminBoard, answerQuestion, getTiers, saveTiers, startJudging } from '../modules/chat/intergroup';
 import { chatUpload, muteMember, uploadFile } from '../modules/chat/controller';
+import { addSpaceMember, listSpaceMembers, removeSpaceMember, restoreSpaceMember, setSpaceMemberRole, spaceMemberCandidates } from '../modules/chat/members';
 import { addGroupMembers, createGroup, deleteGroup, groupCandidates, listGroups, removeGroupMember, renameGroup } from '../modules/chat/groups';
 import { exportData } from '../controllers/exportController';
 import { revokeAllSessions, addBlacklist, removeBlacklist, getBlacklist } from '../controllers/securityController';
@@ -387,6 +388,13 @@ router.patch('/chat-manage/groups/:id', renameGroup as any);
 router.delete('/chat-manage/groups/:id', deleteGroup as any);
 router.post('/chat-manage/groups/:id/members', addGroupMembers as any);
 router.delete('/chat-manage/groups/:id/members/:userId', removeGroupMember as any);
+// «اعضا و نقش‌ها»: hand-made members and moderators of any group or channel
+router.get('/chat-manage/spaces/:id/members', listSpaceMembers as any);
+router.get('/chat-manage/spaces/:id/candidates', spaceMemberCandidates as any);
+router.post('/chat-manage/spaces/:id/members', addSpaceMember as any);
+router.delete('/chat-manage/spaces/:id/members/:userId', removeSpaceMember as any);
+router.post('/chat-manage/spaces/:id/members/:userId/restore', restoreSpaceMember as any);
+router.patch('/chat-manage/spaces/:id/members/:userId', setSpaceMemberRole as any);
 router.post('/intergroup/questions/:id/answer', answerQuestion as any);
 
 // Drafts of unfinished challenge / station forms (per admin)
