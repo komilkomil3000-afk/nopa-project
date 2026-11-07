@@ -613,6 +613,12 @@ a.header-dropdown-item { text-decoration: none; }
   background: var(--accent); color: #1A1328; font-size: var(--text-2xs); font-weight: 800; line-height: 18px; text-align: center;
 }
 #chat-switch-block { border-top: 1px solid var(--border); margin-top: 6px; padding-top: 2px; }
+/* both ways into the chat tab, side by side under the list */
+.chat-switch-foot { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; border-top: 1px solid var(--border); margin-top: 6px; padding-top: 6px; }
+.chat-switch-foot .header-dropdown-item { justify-content: center; }
+/* between the communication icons (bell, chat) and the tools (stats, settings, theme) */
+.header-sep { width: 1px; height: 22px; background: var(--border); margin: 0 2px; flex-shrink: 0; }
+.header-sep:has(+ .header-tool[hidden] + .header-tool[hidden]) { display: none; }
 .chat-switch-dot[hidden] { display: none; }
 
 .nav-toggle { display: none; }

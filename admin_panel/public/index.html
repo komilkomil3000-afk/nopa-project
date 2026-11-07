@@ -232,15 +232,6 @@
             <ul class="nav-search-results" id="nav-search-results" role="listbox" hidden></ul>
           </div>
 
-          <!-- Stats and settings: icons only, built from the tab registry by js/layout/topnav.js (renderTools) -->
-          <div class="header-menu header-tool" id="tool-stats-menu" hidden>
-            <button type="button" class="btn-icon header-btn" aria-label="آمار" title="آمار"><i class="fa-solid fa-chart-column"></i></button>
-          </div>
-          <div class="header-menu header-tool" id="tool-settings-menu" hidden>
-            <button type="button" class="btn-icon header-btn" aria-haspopup="true" aria-expanded="false" aria-label="تنظیمات" title="تنظیمات"><i class="fa-solid fa-gear"></i></button>
-            <div class="header-dropdown tool-dropdown" hidden></div>
-          </div>
-
           <div class="header-menu" id="attention-menu">
             <button type="button" class="btn-icon header-btn" id="btn-attention" aria-haspopup="true" aria-expanded="false" aria-label="اعلان‌ها و موارد نیازمند رسیدگی">
               <i class="fa-solid fa-bell"></i><span class="header-badge" id="attention-badge" hidden>0</span>
@@ -268,7 +259,7 @@
               <i class="fa-solid fa-comments"></i><span class="header-badge" id="chat-badge" hidden>0</span><span class="chat-switch-dot" id="chat-switch-dot" data-mode="unknown" hidden></span>
             </button>
             <div class="header-dropdown inbox-dropdown chat-switch-dropdown" id="chat-switch-dropdown" hidden>
-              <div class="header-dropdown-title inbox-head">آخرین پیام‌ها <button type="button" class="inbox-read-all" id="btn-chat-open-all">همه گفتگوها</button></div>
+              <div class="header-dropdown-title inbox-head">آخرین پیام‌ها</div>
               <ul class="attention-list inbox-list" id="chat-recent-list"><li class="attention-empty">در حال بارگذاری...</li></ul>
               <div id="chat-switch-block" hidden>
                 <div class="header-dropdown-title">وضعیت چت در اپ</div>
@@ -279,8 +270,22 @@
                 </div>
                 <div class="chat-switch-note" id="chat-switch-note">در حال بارگذاری...</div>
               </div>
-              <button type="button" class="header-dropdown-item" id="btn-chat-switch-manage"><i class="fa-solid fa-sliders"></i> مدیریت چت، کاروان‌های آزمایشی و دسترسی‌ها</button>
+              <div class="chat-switch-foot">
+                <button type="button" class="header-dropdown-item" id="btn-chat-open-all"><i class="fa-solid fa-comments"></i> همه گفتگوها</button>
+                <button type="button" class="header-dropdown-item" id="btn-chat-switch-manage"><i class="fa-solid fa-sliders"></i> مدیریت چت</button>
+              </div>
             </div>
+          </div>
+
+          <span class="header-sep" aria-hidden="true"></span>
+
+          <!-- Stats and settings: icons only, built from the tab registry by js/layout/topnav.js (renderTools) -->
+          <div class="header-menu header-tool" id="tool-stats-menu" hidden>
+            <button type="button" class="btn-icon header-btn" aria-label="آمار" title="آمار"><i class="fa-solid fa-chart-column"></i></button>
+          </div>
+          <div class="header-menu header-tool" id="tool-settings-menu" hidden>
+            <button type="button" class="btn-icon header-btn" aria-haspopup="true" aria-expanded="false" aria-label="تنظیمات" title="تنظیمات"><i class="fa-solid fa-gear"></i></button>
+            <div class="header-dropdown tool-dropdown" hidden></div>
           </div>
 
           <button type="button" class="btn-icon theme-toggle" data-theme-toggle aria-label="تغییر تم"><i class="fa-solid fa-sun"></i></button>
@@ -3481,6 +3486,11 @@
               <h4 class="lst-tile-title"><i class="fa-solid fa-comments"></i> عکس پروفایل پیش‌فرض کانال‌ها و گروه‌ها <span class="lst-tile-sub">برای کانال یا گروهی که عکس خودش را ندارد؛ عکسی که راهبر برای کاروانش گذاشته مقدم است</span></h4>
             </div>
             <div id="aim-chat" class="crv-card-grid aim-grid"></div>
+
+            <div class="lst-tile-head aim-sub-head">
+              <h4 class="lst-tile-title"><i class="fa-solid fa-user-astronaut"></i> تصاویر پروفایل <span class="lst-tile-sub">تصاویری که کاربران در اپ از بینشان انتخاب می‌کنند؛ تصویر اول هر گروه پیش‌فرض است و تصویری که کاربر انتخاب کرده با تغییر فهرست عوض نمی‌شود، مگر خودتان بخواهید</span></h4>
+            </div>
+            <div id="aim-avatars"></div>
           </div>
 
           <div class="lst-tile glass">
@@ -3498,6 +3508,7 @@
               <li class="lst-list-item"><i class="fa-solid fa-upload u-c-primary-text"></i><span class="lst-grow">قالب‌های مجاز: JPG، PNG، WEBP و GIF تا ۵ مگابایت.</span></li>
               <li class="lst-list-item"><i class="fa-solid fa-rotate u-c-info-text"></i><span class="lst-grow">اپ تصاویر را هنگام باز شدن می‌خواند؛ تغییر پس از اجرای دوباره‌ی اپ دیده می‌شود.</span></li>
               <li class="lst-list-item"><i class="fa-solid fa-trash u-c-danger-text"></i><span class="lst-grow">با حذف تصویر، اپ به نماد پیش‌فرض خودش برمی‌گردد.</span></li>
+              <li class="lst-list-item"><i class="fa-solid fa-user-astronaut u-c-accent-text"></i><span class="lst-grow">در تصاویر پروفایل، هنگام جایگزینی یا حذف تصویری که کاربرانی انتخابش کرده‌اند، می‌پرسد که عکس آن‌ها هم عوض شود یا همان بماند (و دیگر برای بقیه قابل انتخاب نباشد).</span></li>
             </ul>
           </div>
 

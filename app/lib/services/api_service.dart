@@ -851,18 +851,18 @@ class HttpApiService {
     }
   }
 
-  /// Saves the chosen gender / bundled avatar. Returns the server's {gender, avatarUrl} or null on failure.
-  Future<Map<String, dynamic>?> updateMyAvatar({required String avatarKey}) async {
+  /// Saves the chosen profile picture (a stored value from AvatarCatalog.optionsFor: `asset:boy_1` or `/uploads/...`).
+  /// Returns the server's {gender, avatarUrl}, {error} when the server refused it, or null on a network failure.
+  Future<Map<String, dynamic>?> updateMyAvatar({required String avatarUrl}) async {
     try {
       final response = await _patch(
         Uri.parse('$baseUrl/users/me/avatar'),
         headers: _getHeaders(),
-        body: jsonEncode({'avatarKey': avatarKey}),
+        body: jsonEncode({'avatarUrl': avatarUrl}),
       );
-      if (response.statusCode == 200) {
-        final data = await parseJsonAsync(response.body);
-        if (data is Map<String, dynamic>) return data;
-      }
+      final data = await parseJsonAsync(response.body);
+      if (response.statusCode == 200 && data is Map<String, dynamic>) return data;
+      if (data is Map && data['error'] != null) return {'error': data['error'].toString()};
     } catch (e) {
       debugPrint('updateMyAvatar error: $e');
     }

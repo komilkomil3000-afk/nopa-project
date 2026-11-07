@@ -300,7 +300,10 @@
       const data = await res.json();
       st.tickets = Array.isArray(data) ? data : [];
       renderList();
-      if (st.activeId && current()) renderConv({ bottom: false });
+      const wanted = pendingOpen;
+      pendingOpen = null;
+      if (wanted && st.tickets.some(t => String(t.id) === String(wanted))) openTicket(wanted);
+      else if (st.activeId && current()) renderConv({ bottom: false });
       else { st.activeId = null; renderConv(); setState('list'); }
     } catch (e) {
       console.error('Error loading tickets', e);
@@ -311,6 +314,13 @@
   }
 
   window.loadTickets = loadTickets;
+
+  // Opens one ticket (the header bell's support messages): the tab loads, then the ticket opens
+  let pendingOpen = null;
+  window.openTicketById = function (id) {
+    pendingOpen = String(id);
+    NopaRouter.switchTab('mentors-tickets-tab', true);
+  };
 })();
 
 // 3. Mentors League Tab

@@ -75,7 +75,7 @@ export async function createOrUpdateMentor(req: AuthRequest, res: Response) {
       {
         const prev = await prisma.user.findUnique({ where: { id }, select: { gender: true, avatarUrl: true, role: true } });
         const roleNow = data.role || prev?.role;
-        const av = avatarFor(roleNow, genderIn !== undefined ? genderIn : (prev?.gender as any), prev?.avatarUrl);
+        const av = await avatarFor(roleNow, genderIn !== undefined ? genderIn : (prev?.gender as any), prev?.avatarUrl);
         if (av !== undefined) data.avatarUrl = av;
       }
       if (accountStatus !== undefined) data.accountStatus = accountStatus;
@@ -115,7 +115,7 @@ export async function createOrUpdateMentor(req: AuthRequest, res: Response) {
           dateOfBirth: dateOfBirth || null,
           city: city || null,
           gender: normalizeGender(req.body.gender) ?? null,
-          avatarUrl: avatarFor(isSuperMentor ? 'SUPER_MENTOR' : 'mentor', normalizeGender(req.body.gender) ?? null, null) ?? null,
+          avatarUrl: (await avatarFor(isSuperMentor ? 'SUPER_MENTOR' : 'mentor', normalizeGender(req.body.gender) ?? null, null)) ?? null,
           accountStatus: accountStatus || 'ACTIVE',
           socialMessengerHandle: socialMessengerHandle || null,
           socialPlatform: socialPlatform || null

@@ -25,6 +25,8 @@
       { id: 'economy', label: 'اقتصاد و لیگ', icon: 'fa-solid fa-coins' },
     ] },
     { id: 'outreach', label: 'اطلاع‌رسانی', icon: 'fa-solid fa-bullhorn' },
+    // everything people send to support, in one menu (the bell's support messages open here)
+    { id: 'support', label: 'پشتیبانی', icon: 'fa-solid fa-headset' },
     { id: 'stats', label: 'آمار', icon: 'fa-solid fa-chart-column', placement: 'tools' },
     { id: 'settings', label: 'تنظیمات', icon: 'fa-solid fa-gear', placement: 'tools' },
   ];
@@ -72,8 +74,8 @@
       load: () => call('loadMentorsData'),
     },
     'mentors-tickets-tab': {
-      hashes: ['mentors-tickets'], group: 'people', sub: 'mentors', label: 'میزکار و تیکت‌ها', icon: 'fa-solid fa-inbox', section: 'support',
-      title: 'میزکار و تیکت‌ها', desc: 'مدیریت تیکت‌ها و درخواست‌های مربیان',
+      hashes: ['mentors-tickets', 'tickets'], group: 'support', label: 'تیکت‌ها و پیام‌های پشتیبانی', icon: 'fa-solid fa-inbox', section: 'support',
+      title: 'تیکت‌ها و پیام‌های پشتیبانی', desc: 'تیکت‌ها و پیام‌هایی که همسفران و راهبران از اپ به پشتیبانی فرستاده‌اند',
       load: () => call('loadTickets'),
     },
     'mentors-docs-tab': {
@@ -128,8 +130,8 @@
       load: () => call('loadMediaAssets'),
     },
     'support-cases-tab': {
-      hashes: ['support-cases'], group: 'outreach', label: 'پرونده‌های پشتیبانی', icon: 'fa-solid fa-life-ring', section: 'support',
-      title: 'پرونده‌های پشتیبانی', desc: 'صف گفتگوهای پشتیبانی کاربران',
+      hashes: ['support-cases'], group: 'support', label: 'پرونده‌های پشتیبانی (چت)', icon: 'fa-solid fa-life-ring', section: 'support',
+      title: 'پرونده‌های پشتیبانی', desc: 'صف گفتگوهای پشتیبانی کاربران در چت «پشتیبانی نپا»',
       load: () => call('loadSupportCases'),
     },
     'chat-tab': {

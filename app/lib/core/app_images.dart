@@ -1,6 +1,7 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:nopa_app/core/avatar_catalog.dart';
 import 'package:nopa_app/core/constants/api_constants.dart';
 
 /// Pictures the admin sets in the panel («تصاویر اپلیکیشن»), read once at start with the asset names.
@@ -8,8 +9,9 @@ import 'package:nopa_app/core/constants/api_constants.dart';
 class AppImages {
   static final Map<String, String> _assets = {};
 
-  /// Applies GET /app-images ({assets: {key: url}, chat: {...}}).
+  /// Applies GET /app-images ({assets: {key: url}, chat: {...}, avatars: {group: [value]}}).
   static void apply(Map<String, dynamic> data) {
+    AvatarCatalog.apply(data['avatars']);
     final assets = data['assets'];
     _assets.clear();
     if (assets is Map) {

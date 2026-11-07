@@ -208,6 +208,7 @@ import { getAdminBanners, createBanner, updateBanner, deleteBanner } from '../co
 import { upload, uploadMedia, listStoredFiles, deleteStoredFiles } from '../controllers/mediaController';
 import { adminListShopItems, adminCreateShopItem, adminUpdateShopItem, adminDeleteShopItem } from '../controllers/shopController';
 import { clearAppImage, listAppImages, setAppImage } from '../controllers/appImagesController';
+import { addAvatar, listAvatarCatalog, makeAvatarFirst, removeAvatar, replaceAvatar, restoreAvatar } from '../controllers/avatarCatalogController';
 
 // 5. Educational Content, Banners, News & Announcements
 router.post('/media/upload', upload.single('file') as any, uploadMedia as any);
@@ -225,6 +226,13 @@ router.post('/banners', upload.single('image') as any, createBanner as any);
 router.put('/banners/:id', upload.single('image') as any, updateBanner as any);
 router.delete('/banners/:id', deleteBanner as any);
 // «تصاویر اپلیکیشن»: asset images and the default chat pictures (SystemSetting APP_IMAGES)
+// «تصاویر پروفایل»: the profile pictures the app offers (SystemSetting AVATAR_CATALOG)
+router.get('/app-avatars', listAvatarCatalog as any);
+router.post('/app-avatars/group/:group', upload.single('image') as any, addAvatar as any);
+router.post('/app-avatars/item/:id', upload.single('image') as any, replaceAvatar as any);
+router.delete('/app-avatars/item/:id', removeAvatar as any);
+router.post('/app-avatars/item/:id/restore', restoreAvatar as any);
+router.post('/app-avatars/item/:id/first', makeAvatarFirst as any);
 router.get('/app-images', listAppImages as any);
 router.post('/app-images/:group/:key', upload.single('image') as any, setAppImage as any);
 // «فروشگاه بازارچه»: sticker / GIF packs and features sold for zarik (super admin only: not mapped to a section)

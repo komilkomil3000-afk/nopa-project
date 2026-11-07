@@ -2,6 +2,7 @@
 // Used by the header bell (js/layout/topnav.js) and the dashboard. Loaded before the feature modules (js/app, js/features).
 //   NopaAttention.fetch(isSectionAllowed) -> Promise<[{ key, label, icon, tab, count, recent }]>
 //   recent: newest waiting messages of a support source, [{ id, who, text, at }] (the bell lists them)
+//   open:   name of the global that opens one of them by id (openSupportCaseById / openTicketById)
 // Only sections the user may open are requested (sub admins would get 403 otherwise).
 (function () {
   const list = d => (Array.isArray(d) ? d : (d && (d.data || d.items || d.documents || d.submissions || d.tickets)) || []);
@@ -23,12 +24,14 @@
       label: 'تیکت‌ها و پیام‌های پشتیبانی باز', icon: 'fa-solid fa-inbox',
       url: '/api/v1/admin/tickets?status=OPEN', count: d => list(d).filter(isOpen).length,
       recent: d => list(d).filter(isOpen).map(t => ({ id: t.id, who: t.student && t.student.name, text: t.subject, at: t.createdAt })),
+      open: 'openTicketById',
     },
     {
       key: 'cases', section: 'support', tab: 'support-cases-tab',
       label: 'پرونده‌های پشتیبانی باز', icon: 'fa-solid fa-life-ring',
       url: '/api/v1/admin/support-cases?status=open', count: d => list(d).filter(isOpen).length,
       recent: d => list(d).filter(isOpen).map(c => ({ id: c.id, who: c.user && c.user.name, text: c.subject, at: c.createdAt })),
+      open: 'openSupportCaseById',
     },
   ];
 

@@ -16,21 +16,18 @@ const SEC_LIMITS = [
   ['restrictZarik', 'محدودیت تراکنش زریک', 'امکان واریز و کسر زریک گرفته می‌شود'],
   ['lockUserDeletions', 'قفل حذف کاربران', 'حذف کاربر برای این نقش ممکن نیست'],
 ];
-const SEC_CAPS = [
-  ['manageContent', 'مدیریت محتوا'],
-  ['manageStudents', 'مدیریت نوجوانان'],
-  ['manageMentors', 'مدیریت راهبران'],
-  ['manageCaravans', 'مدیریت کاروان‌ها'],
-  ['manageSystem', 'مدیریت سیستم'],
-  ['canManageUsers', 'مدیریت کاربران'],
-  ['canSendMessage', 'پیام و چت'],
-  ['canJoinClasses', 'شرکت در کلاس'],
-  ['canScoreAndEvaluate', 'ارزیابی تکالیف'],
-  ['canConvertAssets', 'تبدیل سرمایه'],
-  ['canCreateChallenges', 'ایجاد چالش'],
-  ['canViewGlobalAnalytics', 'آمار کلی'],
-];
-const SEC_ROLE_ORDER = ['admin', 'sub_admin', 'channel_manager', 'support', 'super_mentor', 'mentor', 'student'];
+// What each role can do. Only the sub admin's part is editable (its panel sections, «تنظیم بخش‌ها» on its page);
+// the rest is fixed in the server (middleware/adminAccess.ts). The old RolePermission switches (manageContent,
+// canCreateChallenges...) were never checked anywhere, so they are no longer shown.
+const SEC_FIXED_ABILITIES = {
+  channel_manager: [['مدیریت چت، کانال‌ها و گروه‌ها', 'edit'], ['جزئیات در «تنظیمات چت»', 'view']],
+  support: [['پاسخ به پرونده‌های پشتیبانی در چت', 'edit'], ['کمک به کاروان‌ها (یکی‌یکی)', 'edit']],
+  mentor: [['کاروان‌های خودش: تکلیف، چالش، پیام و بررسی آثار', 'edit'], ['مشاهده‌ی کاربران، کلاس‌ها و آمار', 'view']],
+  student: [['فقط اپلیکیشن (بدون پنل)', 'view']],
+};
+// The roles a user can have (utils/roles.ts); legacy rows (content_manager, caravan_supervisor, Sub-Admin...) are folded in
+const SEC_ROLE_ORDER = ['admin', 'sub_admin', 'channel_manager', 'support', 'mentor', 'student'];
+const SEC_ROLE_ALIAS = { super_mentor: 'mentor', supermentor: 'mentor', content_manager: 'sub_admin', subadmin: 'sub_admin' };
 
 function secKey(name) { return String(name || '').toLowerCase().replace(/[\s-]/g, '_'); }
 function secIsSuper(r) { return secKey(r.roleName) === 'admin'; }
@@ -59,9 +56,19 @@ function secFlag(r, field) {
   if (secIsSuper(r)) return !SEC_LIMITS.some(l => l[0] === field);
   return r[field] === true;
 }
+// [[title, 'view' | 'edit'], ...] of a role
+function secAbilities(r) {
+  const k = secKey(r.roleName);
+  if (k === 'admin') return Object.values(PANEL_SECTION_LABELS).map(t => [t, 'edit']);
+  if (k === 'sub_admin') {
+    const grants = secGrantsOf(r);
+    return Object.keys(PANEL_SECTION_LABELS).filter(key => grants[key]).map(key => [PANEL_SECTION_LABELS[key], grants[key]]);
+  }
+  return SEC_FIXED_ABILITIES[k] || [];
+}
 function secCounts(r) {
   return {
-    caps: SEC_CAPS.filter(c => secFlag(r, c[0])).length,
+    caps: secAbilities(r).length,
     limits: SEC_LIMITS.filter(l => secFlag(r, l[0])).length,
   };
 }
@@ -88,11 +95,13 @@ async function loadRolePermissions() {
     window.secRelease = rel && rel.ok ? await rel.json().catch(() => null) : (window.secRelease || null);
     if (!res.ok) throw new Error('خطا در دریافت نقش‌ها');
     const roles = await res.json();
-    const list = Array.isArray(roles) ? roles : [];
-    // The sub admin's section grants are edited on its page, so it is always listed
-    if (!list.some(r => secKey(r.roleName) === 'sub_admin')) list.push({ roleName: 'sub_admin' });
-    const rank = r => { const i = SEC_ROLE_ORDER.indexOf(secKey(r.roleName)); return i < 0 ? 99 : i; };
-    window.secRoles = list.sort((a, b) => rank(a) - rank(b) || String(a.roleName).localeCompare(String(b.roleName)));
+    // One card per real role: the row named exactly like the role wins; legacy spellings and old roles nobody can have
+    // any more are not listed (they only made a second «ادمین» card). Every real role is listed even without a row.
+    const rows = Array.isArray(roles) ? roles : [];
+    window.secRoles = SEC_ROLE_ORDER.map(name =>
+      rows.find(r => r.roleName === name)
+      || rows.find(r => (SEC_ROLE_ALIAS[secKey(r.roleName)] || secKey(r.roleName)) === name && secKey(r.roleName) === name)
+      || { roleName: name });
     window.secBlacklist = bl && bl.ok ? await bl.json().catch(() => []) : (window.secBlacklist || []);
     window.secSetLoading(false);
     window.filterSecRoles();
@@ -117,7 +126,8 @@ window.filterSecRoles = function() {
 
 function secCard(r) {
   const { caps, limits } = secCounts(r);
-  const pct = Math.round((caps / SEC_CAPS.length) * 100);
+  const total = Object.keys(PANEL_SECTION_LABELS).length;
+  const pct = Math.round((Math.min(caps, total) / total) * 100);
   const label = secRoleLabel(r.roleName);
   return `
     <button type="button" class="crv-card" data-anim-key="sr:${esc(r.roleName)}" data-click="openSecRoleView" data-click-args="${crvArgs(r.roleName)}" title="دسترسی‌های ${esc(label)}">
@@ -126,8 +136,8 @@ function secCard(r) {
         <span class="crv-card-name"><strong>${esc(label)}</strong>${secChip(r)}</span>
       </span>
       <span class="crv-card-mentor"><i class="fa-solid fa-tag"></i><span dir="ltr">${esc(r.roleName)}</span></span>
-      <span class="crv-card-cap"><span>توانایی‌ها</span><strong>${crvFa(caps)} / ${crvFa(SEC_CAPS.length)}</strong></span>
-      <span class="lst-bar"><span class="${pct >= 80 ? 'lst-bar-scheduled' : 'lst-bar-active'}" data-style="width:${pct}%"></span></span>
+      <span class="crv-card-cap"><span>${secKey(r.roleName) === 'sub_admin' ? 'بخش‌های مجاز' : 'توانایی‌ها'}</span><strong>${secKey(r.roleName) === 'sub_admin' || secIsSuper(r) ? `${crvFa(caps)} / ${crvFa(total)}` : crvFa(caps)}</strong></span>
+      ${secIsSuper(r) || secKey(r.roleName) === 'sub_admin' ? `<span class="lst-bar"><span class="${pct >= 80 ? 'lst-bar-scheduled' : 'lst-bar-active'}" data-style="width:${pct}%"></span></span>` : ''}
       <span class="crv-card-foot">
         <span class="crv-card-nums">
           <span class="u-c-accent-text"><i class="fa-solid fa-lock"></i> ${crvFa(limits)}</span>
@@ -280,7 +290,7 @@ function secPaintInfo(r) {
   set('sec-sub', el => { el.textContent = secIsSuper(r) ? 'دسترسی سوپر ادمین ثابت است' : 'هر تغییر همان لحظه ذخیره می‌شود'; });
   set('sec-circles', el => { el.innerHTML = secCircles(r.roleName); });
   set('sec-limits-count', el => { el.textContent = crvFa(limits); });
-  set('sec-caps-count', el => { el.textContent = `${crvFa(caps)} / ${crvFa(SEC_CAPS.length)}`; });
+  set('sec-caps-count', el => { el.textContent = crvFa(caps); });
   set('sec-info-card', el => {
     el.innerHTML = `
       <span class="crv-mentor-photo sec-photo"><i class="fa-solid ${secRoleIcon(r.roleName)}"></i></span>
@@ -293,7 +303,9 @@ function secPaintInfo(r) {
       </div>
       <p class="crv-mentor-bio">${secIsSuper(r)
         ? 'سوپر ادمین همیشه به همه بخش‌ها و عملیات دسترسی دارد و دسترسی‌هایش قابل تغییر نیست.'
-        : 'توانایی‌ها کارهایی است که این نقش مجاز به انجامش است؛ محدودیت‌ها بخشی از داده‌ها را برای آن پنهان یا قفل می‌کنند.'}</p>`;
+        : secKey(r.roleName) === 'sub_admin'
+          ? 'ادمین فقط بخش‌هایی از پنل را می‌بیند که در «دسترسی به بخش‌های پنل» (پایین همین صفحه) باز کرده‌اید؛ مثلاً برای ساخت چالش، «چالش‌ها و تکالیف» را روی «مشاهده و ویرایش» بگذارید.'
+          : 'توانایی‌های این نقش ثابت است؛ محدودیت‌ها بخشی از داده‌ها را برای آن پنهان یا قفل می‌کنند.'}</p>`;
   });
 }
 
@@ -301,7 +313,16 @@ function secPaint(r) {
   secPaintInfo(r);
   const set = (id, fn) => { const el = document.getElementById(id); if (el) fn(el); };
   set('sec-limits', el => { el.innerHTML = SEC_LIMITS.map(l => secSwitch(r, l[0], l[1], l[2])).join(''); });
-  set('sec-caps', el => { el.innerHTML = SEC_CAPS.map(c => secSwitch(r, c[0], c[1])).join(''); });
+  set('sec-caps', el => {
+    const list = secAbilities(r);
+    const isSub = secKey(r.roleName) === 'sub_admin';
+    el.innerHTML = (list.length ? list.map(([title, level]) => `
+      <div class="chs-check sec-ability" data-anim-key="ab:${esc(title)}">
+        <span><strong>${esc(title)}</strong></span>
+        <span class="lst-chip ${level === 'edit' ? 'lst-chip-active' : 'lst-chip-scheduled'}">${level === 'edit' ? 'مشاهده و ویرایش' : 'فقط مشاهده'}</span>
+      </div>`).join('') : '<div class="lsv-col-empty">هنوز بخشی برای این نقش باز نشده است.</div>')
+      + (isSub && isSuperAdminUser() ? `<button type="button" class="lsv-pill sec-ability-edit" data-click="secScrollToGrants"><i class="fa-solid fa-sliders"></i> تنظیم بخش‌ها</button>` : '');
+  });
 
   // The sub admin's section grants, under the board
   const card = document.getElementById('sub-admin-access-card');
@@ -635,7 +656,7 @@ window.secRevokeSessions = async function(e) {
 };
 
 // =========================================================================
-// FOUR USER LEVELS: super admin (admin), admin (sub_admin), mentor, student
+// USER LEVELS: super admin (admin), admin (sub_admin), channel manager, support, mentor, student
 // =========================================================================
 function roleLabel(role) {
   const r = String(role || '').toLowerCase().replace(/[\s-]/g, '_');
@@ -643,8 +664,8 @@ function roleLabel(role) {
   if (r === 'sub_admin') return 'ادمین (مدیر محتوایی)';
   if (r === 'channel_manager') return 'مسئول کانال و گروه‌ها';
   if (r === 'support') return 'پشتیبانی';
-  if (r === 'mentor' || r === 'super_mentor' || r === 'supermentor') return 'مربی';
-  return 'دانش‌آموز';
+  if (r === 'mentor' || r === 'super_mentor' || r === 'supermentor') return 'راهبر';
+  return 'نوجوان';
 }
 window.roleLabel = roleLabel;
 
@@ -751,7 +772,7 @@ function renderSubAdminAccess(roles) {
   document.getElementById('sub-admin-can-login').checked = row.canLoginPanel === true;
   box.innerHTML = Object.keys(PANEL_SECTION_LABELS).map(key => `
     <div class="sec-grant${grants[key] ? ' is-' + esc(grants[key]) : ''}" data-anim-key="gr:${key}">
-      <span class="sec-grant-name">${PANEL_SECTION_LABELS[key]}</span>
+      <span class="sec-grant-name">${PANEL_SECTION_LABELS[key]}${key === 'challenges' ? '<small>با «مشاهده و ویرایش» ادمین می‌تواند چالش (فراگروهی) بسازد و آثار را بررسی کند</small>' : ''}</span>
       <select class="select-ctrl sub-admin-section" data-section="${key}" data-change="secGrantChanged" data-change-args='["$this"]' aria-label="دسترسی ${PANEL_SECTION_LABELS[key]}">
         <option value="" ${!grants[key] ? 'selected' : ''}>بدون دسترسی</option>
         <option value="view" ${grants[key] === 'view' ? 'selected' : ''}>فقط مشاهده</option>
@@ -759,6 +780,10 @@ function renderSubAdminAccess(roles) {
       </select>
     </div>`).join('');
 }
+
+window.secScrollToGrants = function() {
+  document.getElementById('sub-admin-access-card')?.scrollIntoView({ block: 'start', behavior: NopaMotion.scrollBehavior() });
+};
 
 // Tints the row by its level before saving
 window.secGrantChanged = function(sel) {

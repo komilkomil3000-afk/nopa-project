@@ -15,9 +15,13 @@ import { ASSIGNABLE_ROLES, ROLE_ADMIN, ROLE_STUDENT, SUPER_ADMIN_ONLY_ROLES, par
 import { avatarFor, normalizeGender } from '../utils/avatar';
 import { presenceOf, usageSummary } from '../services/presence';
 import { setCachedSiteAvatar } from '../services/siteAvatars';
+<<<<<<< HEAD
 import { isOnline } from '../modules/chat/realtime';
 import { applyMentorCaravanChoice, displayedCaravanId, setMentorCaravans } from '../services/caravanMentor';
 import { moveToCaravan } from '../services/caravanMembership';
+=======
+import { isOnline, refreshUserRooms } from '../modules/chat/realtime';
+>>>>>>> 85095ff4d1a52e070559c23f16c3277069f9f966
 
 
 // Memory Cache for Zarik Analytics (invalidated upon adjustments)
@@ -575,7 +579,7 @@ export async function createUser(req: AuthRequest, res: Response) {
         nationalId: nationalId || null,
         dateOfBirth: dateOfBirth || null,
         gender,
-        avatarUrl: avatarFor(role, gender, null) ?? null,
+        avatarUrl: (await avatarFor(role, gender, null)) ?? null,
         identityVerified: true,
         isDualRole: role === 'dual' ? true : false,
         userCode: nextUserCode
@@ -618,9 +622,14 @@ export async function updateUser(req: AuthRequest, res: Response) {
       roleToSet = requestedRole;
     }
 
+    // A member who becomes a mentor leaves their own caravan: a mentor leads caravans (Caravan.mentorId) and
+    // must not stay listed, counted and chatting as a member of the old one. Dual-role users keep it.
+    const leavesCaravan = !!(roleToSet && isMentorRole(roleToSet) && prevUser && !isMentorRole(prevUser.role) && !prevUser.isDualRole);
+    const caravanIdIn = leavesCaravan ? null : req.body.caravanId;
+
     // Gender is set here (admin panel); the matching profile picture follows from role + gender.
     const finalGender = genderInput !== undefined ? genderInput : prevUser?.gender as any;
-    const newAvatar = avatarFor(roleToSet || prevUser?.role, finalGender, prevUser?.avatarUrl);
+    const newAvatar = await avatarFor(roleToSet || prevUser?.role, finalGender, prevUser?.avatarUrl);
 
     // For a mentor the caravan picked here is the caravan he leads (Caravan.mentorId), not a membership
     const finalRole = roleToSet || prevUser?.role || '';
@@ -635,7 +644,11 @@ export async function updateUser(req: AuthRequest, res: Response) {
         ...(newAvatar !== undefined ? { avatarUrl: newAvatar } : {}),
         ...(roleToSet ? { role: roleToSet, tokenVersion: { increment: 1 } } : {}),
         phoneNumber: phoneNumber || undefined,
+<<<<<<< HEAD
         // the caravan is changed below by moveToCaravan / applyMentorCaravanChoice (groups and chats follow it)
+=======
+        caravanId: caravanIdIn !== undefined ? (caravanIdIn || null) : undefined,
+>>>>>>> 85095ff4d1a52e070559c23f16c3277069f9f966
         levelFrame: levelFrame ? parseInt(levelFrame) : undefined,
         mentorLevel: mentorLevel ? parseInt(mentorLevel) : undefined,
         nationalId: nationalId !== undefined ? (nationalId || null) : undefined,
@@ -654,6 +667,7 @@ export async function updateUser(req: AuthRequest, res: Response) {
       );
     }
 
+<<<<<<< HEAD
     if (mentorCaravanPick) {
       // The caravan's old mentor leaves it and this mentor takes it over (groups, challenges, arena, panel)
       await applyMentorCaravanChoice(id, finalRole, prevShownCaravanId, caravanId || null);
@@ -666,6 +680,19 @@ export async function updateUser(req: AuthRequest, res: Response) {
       if (caravanId !== undefined && (caravanId || null) !== (prevUser?.caravanId ?? null)) {
         await moveToCaravan([id], caravanId || null);
       }
+=======
+    // chat rooms follow User.caravanId and the role: move the live sockets now
+    if (roleToSet || (prevUser && prevUser.caravanId !== user.caravanId)) await refreshUserRooms([id]).catch(() => {});
+
+    // Update caravan member counts if caravan changed
+    if (prevUser && prevUser.caravanId && prevUser.caravanId !== user.caravanId) {
+      const prevCount = await prisma.user.count({ where: { caravanId: prevUser.caravanId } });
+      await prisma.caravan.update({ where: { id: prevUser.caravanId }, data: { memberCount: prevCount } }).catch(() => {});
+    }
+    if (user.caravanId) {
+      const newCount = await prisma.user.count({ where: { caravanId: user.caravanId } });
+      await prisma.caravan.update({ where: { id: user.caravanId }, data: { memberCount: newCount } }).catch(() => {});
+>>>>>>> 85095ff4d1a52e070559c23f16c3277069f9f966
     }
 
     await logAdminAction(
@@ -1687,7 +1714,7 @@ export async function updateMentor(req: AuthRequest, res: Response) {
       mentorLevel: parseInt(mentorLevel) || 1
     };
 
-    const mentorAvatar = avatarFor(mentor.role, mentorGender !== undefined ? mentorGender : (mentor.gender as any), mentor.avatarUrl);
+    const mentorAvatar = await avatarFor(mentor.role, mentorGender !== undefined ? mentorGender : (mentor.gender as any), mentor.avatarUrl);
     if (mentorAvatar !== undefined) data.avatarUrl = mentorAvatar;
 
     await prisma.user.update({ where: { id }, data });

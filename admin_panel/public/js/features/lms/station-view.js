@@ -440,7 +440,7 @@ window.renderLmsStationView = function() {
         <span class="lsv-circle-name"><span>${esc(sName)}</span></span>
       </button>`;
   }).join('');
-  return `<button type="button" class="lsv-circle lsv-circle-add" data-anim-key="c-add" data-click="openCreateStationModal" title="افزودن منزلگاه جدید" aria-label="افزودن منزلگاه جدید">
+  const circles = `<button type="button" class="lsv-circle lsv-circle-add" data-anim-key="c-add" data-click="openCreateStationModal" title="افزودن منزلگاه جدید" aria-label="افزودن منزلگاه جدید">
         <span class="lsv-circle-main">
           <span class="lsv-circle-img"><i class="fa-solid fa-plus"></i></span>
           <span class="lsv-circle-badge lsv-state-add"><i class="fa-solid fa-plus"></i></span>
@@ -509,7 +509,7 @@ window.renderLmsStationView = function() {
           <h4>بخش‌ها و پارت‌های منزلگاه</h4>
           <span>${sum.categories} دسته · ${sum.sessions} جلسه · ${sum.parts} پارت</span>
         </div>
-        <div class="lsv-notch-wrap"><nav class="lsv-notch" aria-label="منزلگاه‌ها">${stationCircles}</nav></div>
+        <div class="lsv-notch-wrap"><nav class="lsv-notch" aria-label="منزلگاه‌ها">${circles}</nav></div>
         <div class="lsv-round-group">
           ${lmsRoundBtn('fa-solid fa-pen', 'ویرایش مشخصات', 'editStationModal', sid)}
           ${lmsRoundBtn('fa-solid fa-key', 'دسترسی و بازگشایی', 'openStationAccessModal', sid)}

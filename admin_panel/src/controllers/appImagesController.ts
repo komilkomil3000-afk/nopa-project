@@ -3,6 +3,7 @@ import path from 'path';
 import { Request, Response } from 'express';
 import prisma from '../config/db';
 import { uploadsDir } from './mediaController';
+import { activeAvatarOptions } from '../services/avatarCatalog';
 
 /**
  * Pictures the app shows that the admin sets in the panel («تصاویر اپلیکیشن»): the image of each asset and the
@@ -64,9 +65,9 @@ function slotOf(req: Request): { group: 'assets' | 'chat'; key: string } | null 
   return { group, key: req.params.key };
 }
 
-/** App + panel: every picture that is set. */
+/** App + panel: every picture that is set, plus the profile pictures the app offers per group (`avatars`). */
 export async function listAppImages(_req: Request, res: Response) {
-  res.json(await getAppImages());
+  res.json({ ...(await getAppImages()), avatars: await activeAvatarOptions() });
 }
 
 /** Panel: sets (multipart `image`) the picture of one slot. */
