@@ -42,6 +42,11 @@ window.fetchLiveLmsStations = async function() {
   const firstLoad = !window.lmsStationsMasterList.length;
   if (firstLoad && typeof window.lmsSetStationsLoading === 'function') window.lmsSetStationsLoading(true);
 
+  // Whether every part with a video needs a quiz (switch in the settings tab); stays on if it cannot be read
+  request('/api/v1/admin/lms/settings').then(r => (r.ok ? r.json() : null)).then(s => {
+    if (s && typeof s.quizRequired === 'boolean') window.lmsQuizRequired = s.quizRequired;
+  }).catch(() => {});
+
   try {
     let res = await request('/api/v1/lms/stations');
     if (!res.ok) {

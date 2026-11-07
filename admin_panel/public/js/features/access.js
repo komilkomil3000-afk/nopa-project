@@ -181,6 +181,7 @@ function secDrawBento() {
   }
 
   secDrawRelease();
+  secDrawLmsRules();
 
   const blBox = document.getElementById('sec-bento-blacklist');
   if (blBox) {
@@ -357,6 +358,39 @@ window.secTogglePerm = async function(roleName, field, value, input) {
     showToast(e.message || 'خطا در بروزرسانی نقش', 'error');
   } finally {
     if (input) input.disabled = false;
+  }
+};
+
+// ==================== STATION RULES (quiz required for every part) ====================
+async function secDrawLmsRules() {
+  const tile = document.getElementById('sec-lms-tile');
+  if (tile) tile.style.display = isSuperAdminUser() ? '' : 'none';
+  const box = document.getElementById('sec-quiz-required');
+  if (!box || !isSuperAdminUser()) return;
+  try {
+    const r = await request('/api/v1/admin/lms/settings');
+    if (r && r.ok) {
+      const s = await r.json();
+      box.checked = s.quizRequired !== false;
+      window.lmsQuizRequired = box.checked;
+    }
+  } catch (_) { /* the switch keeps its last state */ }
+}
+
+window.secSaveQuizRequired = async function(checked) {
+  const box = document.getElementById('sec-quiz-required');
+  try {
+    const res = await request('/api/v1/admin/settings/LMS_QUIZ_REQUIRED', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ value: checked ? 'true' : 'false' }),
+    });
+    if (!res.ok) throw new Error('save failed');
+    window.lmsQuizRequired = !!checked;
+    showToast(checked ? 'ساخت آزمونک برای هر پارت اجباری شد.' : 'ساخت آزمونک برای پارت‌ها اختیاری شد.', 'success');
+  } catch (err) {
+    if (box) box.checked = !checked;
+    showToast('خطا در ذخیره تنظیم', 'error');
   }
 };
 

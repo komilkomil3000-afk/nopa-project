@@ -40,7 +40,7 @@ import {
   setUserPanelAccess,
 } from '../controllers/adminController';
 import { sendMessage, getAdminMessages, replyToMessage } from '../controllers/messageController';
-import { getStations, getClasses, getSessions, getClips, getQuizzes, createStation, updateStation, deleteStation, reorderStations, createClass, updateClass, deleteCategory as deleteClass, createSession, updateSession, deleteSession, createPart, updatePart, deleteClip, deleteClip as deletePart, reorderClips, createQuestion, updateQuestion, deleteQuiz, deleteQuiz as deleteQuestion, createOrUpdateStation, createOrUpdateCategory, createOrUpdateSession, createOrUpdateClip, createClipForSession, updateClipById, createOrUpdateQuiz, setBatchCategoryZarik, setBatchCategoryInstructor, batchSaveStationContent, updateStationAccess } from '../controllers/lmsController';
+import { getStations, getClasses, getSessions, getClips, getQuizzes, createStation, updateStation, deleteStation, reorderStations, createClass, updateClass, deleteCategory as deleteClass, createSession, updateSession, deleteSession, createPart, updatePart, deleteClip, deleteClip as deletePart, reorderClips, createQuestion, updateQuestion, deleteQuiz, deleteQuiz as deleteQuestion, createOrUpdateStation, createOrUpdateCategory, createOrUpdateSession, createOrUpdateClip, createClipForSession, updateClipById, createOrUpdateQuiz, setBatchCategoryZarik, setBatchCategoryInstructor, batchSaveStationContent, updateStationAccess, duplicateStation, getLmsSettings } from '../controllers/lmsController';
 import { getForms, createOrUpdateForm, deleteForm, createOrUpdateField, deleteField, submitForm, getFormSubmissions } from '../controllers/formController';
 import { getChatAdminSettings, updateChatAdminSettings } from '../modules/chat/settingsController';
 import { deleteManagedMessage, listManagedMessages, listManagedSpaces } from '../modules/chat/manageController';
@@ -266,6 +266,8 @@ router.post('/lms/stations/:id/batch-content', batchSaveStationContent as any);
 router.put('/lms/stations/:id/batch-content', batchSaveStationContent as any);
 router.put('/lms/stations/:id', updateStation as any);
 router.put('/lms/stations/:id/access', updateStationAccess as any);
+router.post('/lms/stations/:id/duplicate', duplicateStation as any);
+router.get('/lms/settings', getLmsSettings as any);
 router.patch('/lms/stations/:id/access', updateStationAccess as any);
 router.delete('/lms/stations/:id', deleteStation as any);
 

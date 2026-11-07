@@ -199,8 +199,27 @@ async function renumberStationsAround(tx: any, stationId: string, number: number
 }
 
 /** A part that has a video must have a real quiz (no made-up one is ever shown to students). Throws a 400-style error naming the parts. */
+const QUIZ_REQUIRED_KEY = 'LMS_QUIZ_REQUIRED';
+
+/** Whether every part with a video must have a quiz. Switch in the panel's settings (roles tab); on unless set to 'false'. */
+export async function isQuizRequired(): Promise<boolean> {
+  const row = await prisma.systemSetting.findUnique({ where: { key: QUIZ_REQUIRED_KEY } });
+  return String(row?.value ?? 'true').trim().toLowerCase() !== 'false';
+}
+
+// GET /lms/settings -> the LMS switches the station editor needs (readable by every panel admin)
+export const getLmsSettings = async (_req: Request, res: Response) => {
+  try {
+    res.json({ quizRequired: await isQuizRequired() });
+  } catch (error) {
+    console.error('getLmsSettings error:', error);
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
+};
+
 async function assertClipsHaveQuiz(tx: any, clipIds: string[]) {
   if (clipIds.length === 0) return;
+  if (!(await isQuizRequired())) return;
   const clips = await tx.videoClip.findMany({
     where: { id: { in: clipIds } },
     select: { id: true, title: true, clipOrder: true, videoUrl: true, sessionId: true, session: { select: { title: true } } },
@@ -1371,6 +1390,105 @@ export const deleteStation = async (req: Request, res: Response) => {
   } catch (error) {
     console.error('deleteStation error:', error);
     res.status(500).json({ error: 'Internal Server Error' });
+  }
+};
+
+/**
+ * POST /lms/stations/:id/duplicate -> a full copy of a station: its details, categories, sessions (with handouts),
+ * parts and every quiz (questions and rewards). Student data (watch records, submissions, bookmarks) and the
+ * station's challenges are not copied. The copy starts locked so students never see it half-checked.
+ */
+export const duplicateStation = async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    const src = await prisma.station.findUnique({
+      where: { id },
+      include: {
+        categories: {
+          orderBy: { orderIndex: 'asc' },
+          include: {
+            sessions: {
+              where: { isDeleted: false },
+              orderBy: { orderIndex: 'asc' },
+              include: { videoClips: { orderBy: { clipOrder: 'asc' } }, quizzes: { orderBy: { orderIndex: 'asc' } } }
+            }
+          }
+        }
+      }
+    });
+    if (!src) return res.status(404).json({ error: 'منزلگاه پیدا نشد' });
+
+    const copyId = await prisma.$transaction(async (tx) => {
+      const last = await tx.station.findFirst({ orderBy: { orderIndex: 'desc' }, select: { orderIndex: true } });
+      const station = await tx.station.create({
+        data: {
+          title: `${src.title} (کپی)`,
+          subtitle: src.subtitle,
+          description: src.description,
+          stayDuration: src.stayDuration,
+          animationCount: src.animationCount,
+          animationTitle: src.animationTitle,
+          animationUrl: src.animationUrl,
+          animationsJson: src.animationsJson,
+          iconUrl: src.iconUrl,
+          orderIndex: (last?.orderIndex ?? 0) + 1,
+          releaseDate: src.releaseDate,
+          releaseTime: src.releaseTime,
+          isLocked: true,
+          status: 'locked',
+          scheduledUnlockTime: null,
+          requirePreviousComplete: src.requirePreviousComplete,
+          targetCaravansJson: src.targetCaravansJson,
+          scoringCriteriaJson: src.scoringCriteriaJson
+        }
+      });
+      for (const cat of src.categories) {
+        const newCat = await tx.classCategory.create({
+          data: {
+            stationId: station.id, title: cat.title, orderIndex: cat.orderIndex, description: cat.description,
+            instructor: cat.instructor, handoutUrl: cat.handoutUrl, handoutTitle: cat.handoutTitle
+          }
+        });
+        for (const sess of cat.sessions) {
+          const newSess = await tx.classSession.create({
+            data: {
+              categoryId: newCat.id, title: sess.title, description: sess.description, videoUrl: sess.videoUrl,
+              instructor: sess.instructor, sessionDate: sess.sessionDate, sessionTime: sess.sessionTime,
+              handoutUrl: sess.handoutUrl, handoutTitle: sess.handoutTitle, minWatchThreshold: sess.minWatchThreshold,
+              minPassScore: sess.minPassScore, maxZarikReward: sess.maxZarikReward, maxPointsReward: sess.maxPointsReward,
+              orderIndex: sess.orderIndex
+            }
+          });
+          const clipIdMap = new Map<string, string>();
+          for (const clip of sess.videoClips) {
+            const newClip = await tx.videoClip.create({
+              data: {
+                sessionId: newSess.id, title: clip.title, videoUrl: clip.videoUrl, coverImageUrl: clip.coverImageUrl,
+                clipOrder: clip.clipOrder, duration: clip.duration, unlockDate: clip.unlockDate, unlockTime: clip.unlockTime,
+                scheduledUnlockTime: clip.scheduledUnlockTime, isLocked: clip.isLocked
+              }
+            });
+            clipIdMap.set(clip.id, newClip.id);
+          }
+          for (const q of sess.quizzes) {
+            await tx.quiz.create({
+              data: {
+                sessionId: newSess.id, clipId: q.clipId ? (clipIdMap.get(q.clipId) ?? null) : null, title: q.title,
+                orderIndex: q.orderIndex, type: q.type, questionsJson: q.questionsJson,
+                rewardZarik: q.rewardZarik, rewardNakh: q.rewardNakh, rewardFarsh: q.rewardFarsh
+              }
+            });
+          }
+        }
+      }
+      return station.id;
+    }, { timeout: 60_000, maxWait: 10_000 });
+
+    clearStationsCache();
+    res.json({ message: 'کپی منزلگاه ساخته شد', id: copyId });
+  } catch (error) {
+    console.error('duplicateStation error:', error);
+    res.status(500).json({ error: 'خطا در کپی منزلگاه' });
   }
 };
 

@@ -21,6 +21,22 @@ window.deleteStationRecord = async function(id) {
   });
 };
 
+// A full copy of a station (sessions, parts and quizzes; no student data). The copy starts locked.
+window.duplicateStationRecord = async function(id) {
+  const st = (window.lmsStationsMasterList || []).find(s => String(s.id) === String(id));
+  if (!(await NopaConfirm(`از منزلگاه «${(st && st.title) || ''}» یک کپی کامل (دسته‌ها، جلسات، پارت‌ها و آزمونک‌ها) ساخته شود؟ کپی قفل ساخته می‌شود.`))) return;
+  try {
+    const res = await request(`/api/v1/admin/lms/stations/${id}/duplicate`, { method: 'POST' });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) return showToast(data.error || 'خطا در کپی منزلگاه', 'error');
+    showToast('کپی منزلگاه ساخته شد و قفل است؛ پس از بررسی، قفلش را باز کنید.', 'success');
+    await window.fetchLiveLmsStations();
+  } catch (err) {
+    console.error('duplicateStationRecord error:', err);
+    showToast('خطا در کپی منزلگاه', 'error');
+  }
+};
+
 window.exportLmsToExcel = function() {
 
   const list = window.lmsStationsMasterList || [];

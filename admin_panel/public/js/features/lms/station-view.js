@@ -515,6 +515,7 @@ window.renderLmsStationView = function() {
           ${lmsRoundBtn('fa-solid fa-key', 'دسترسی و بازگشایی', 'openStationAccessModal', sid)}
           ${lmsRoundBtn('fa-solid fa-film', 'مدیریت محتوا', 'openStationContentManagerModal', sid)}
           ${lmsRoundBtn('fa-solid fa-file-excel', 'خروجی اکسل', 'exportLmsToExcel')}
+          ${lmsRoundBtn('fa-solid fa-clone', 'کپی کامل منزلگاه', 'duplicateStationRecord', sid)}
           ${lmsRoundBtn('fa-solid fa-trash', 'حذف منزلگاه', 'lmsDeleteActiveStation', sid, 'lsv-round-danger')}
         </div>
       </header>
