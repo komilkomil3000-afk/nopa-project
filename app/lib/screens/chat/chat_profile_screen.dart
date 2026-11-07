@@ -1131,7 +1131,13 @@ class _SharedMediaState extends State<_SharedMedia> {
 
   /// Square frames, three to a row; empty frames stand in while there is nothing to show.
   Widget _grid(List<Map<String, dynamic>> items) {
-    final count = items.isEmpty ? 9 : items.length;
+    if (items.isEmpty) {
+      return Padding(
+        padding: const EdgeInsets.all(30),
+        child: Text(_kind == 'image' ? 'هنوز عکسی به اشتراک گذاشته نشده است.' : 'هنوز پیام صوتی‌ای به اشتراک گذاشته نشده است.', textAlign: TextAlign.center, style: ChatTheme.caption.copyWith(fontSize: 13)),
+      );
+    }
+    final count = items.length;
     return GridView.builder(
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
@@ -1144,7 +1150,6 @@ class _SharedMediaState extends State<_SharedMedia> {
           border: Border.all(color: ChatTheme.stroke.withValues(alpha: 0.7)),
           gradient: LinearGradient(begin: Alignment.topCenter, end: Alignment.bottomCenter, colors: [ChatTheme.surfaceTop.withValues(alpha: 0.6), ChatTheme.surfaceBottom.withValues(alpha: 0.6)]),
         );
-        if (items.isEmpty) return Container(decoration: frame);
         final item = items[i];
         if (_kind == 'image') {
           final url = ApiConstants.resolveImageUrl(item['url'] ?? '');

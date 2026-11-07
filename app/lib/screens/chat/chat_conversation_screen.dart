@@ -5,6 +5,7 @@ import 'package:nopa_app/widgets/bottom_nav_bar.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/foundation.dart' show compute;
 import 'package:flutter/material.dart' hide Text;
+import 'package:flutter/rendering.dart' show ScrollDirection, RenderBox;
 import 'package:flutter/services.dart';
 import 'package:nopa_app/core/theme/app_colors.dart';
 import 'package:nopa_app/core/theme/app_theme.dart';
@@ -46,7 +47,7 @@ class ChatConversationScreen extends StatefulWidget {
   State<ChatConversationScreen> createState() => _ChatConversationScreenState();
 }
 
-class _ChatConversationScreenState extends State<ChatConversationScreen> {
+class _ChatConversationScreenState extends State<ChatConversationScreen> with WidgetsBindingObserver {
   final ChatRepository _chat = ChatRepository.instance;
   final ScrollController _scroll = ScrollController();
   final FocusNode _focus = FocusNode();
@@ -107,6 +108,7 @@ class _ChatConversationScreenState extends State<ChatConversationScreen> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     AppRepository().chatScreenOpened();
     if (widget.threadRoot != null) _loadFoldedOrigins();
     _chat.watch(widget.spaceId, threadRootId: _threadId);
@@ -141,6 +143,8 @@ class _ChatConversationScreenState extends State<ChatConversationScreen> {
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    _holdToken++;
     AppRepository().chatScreenClosed();
     dismissChatMessageMenu();
     _chat.unwatch(widget.spaceId, threadRootId: _threadId);
@@ -724,6 +728,12 @@ class _ChatConversationScreenState extends State<ChatConversationScreen> {
     if (picked != null) await _showList(picked['title'] ?? '', () => _chat.stationMessages(widget.spaceId, picked['id']));
   }
 
+  /// A message's day and time for a result list: the date (Jalali, as elsewhere in the app) and the clock.
+  String _foundDate(DateTime at) {
+    final date = chatDateText(at.toUtc().toIso8601String());
+    return date.isNotEmpty ? date : chatTimeLabel(at);
+  }
+
   Future<void> _showList(String title, Future<List<ChatMessage>> Function() load) async {
     final messages = await load();
     if (!mounted) return;
@@ -745,14 +755,25 @@ class _ChatConversationScreenState extends State<ChatConversationScreen> {
                     Text(title, style: ChatTheme.title),
                     const SizedBox(height: 10),
                     for (final m in messages)
-                      Padding(
-                        padding: const EdgeInsets.only(bottom: 10),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(m.senderName, style: ChatTheme.caption.copyWith(color: ChatTheme.accent)),
-                            Text(m.body.isEmpty ? 'فایل' : m.body, style: ChatTheme.body),
-                          ],
+                      InkWell(
+                        borderRadius: BorderRadius.circular(10),
+                        // A tap closes the list and goes to the message in the conversation
+                        onTap: () {
+                          Navigator.pop(ctx);
+                          _openFound(m);
+                        },
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 4),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(children: [
+                                Expanded(child: Text(m.senderName, style: ChatTheme.caption.copyWith(color: ChatTheme.accent))),
+                                Text(_foundDate(m.createdAt), style: ChatTheme.caption.copyWith(fontSize: 11)),
+                              ]),
+                              Text(m.body.isEmpty ? 'فایل' : ChatFormat.plain(m.body), style: ChatTheme.body, maxLines: 4, overflow: TextOverflow.ellipsis),
+                            ],
+                          ),
                         ),
                       ),
                   ],
@@ -1325,7 +1346,30 @@ class _ChatConversationScreenState extends State<ChatConversationScreen> {
       await _scroll.animateTo(position.maxScrollExtent, duration: Duration(milliseconds: ms), curve: Curves.easeOutCubic);
       if (!mounted || !_scroll.hasClients) return;
     }
+    await _holdBottom();
     _updateAtBottom();
+  }
+
+  int _holdToken = 0;
+
+  /// For a moment keeps the end in view while it still moves: a new row grows in over a fraction of a second,
+  /// the keyboard slides up, the composer grows. Without this the last message ends up under the composer.
+  Future<void> _holdBottom([Duration span = const Duration(milliseconds: 450)]) async {
+    final token = ++_holdToken;
+    final until = DateTime.now().add(span);
+    while (mounted && token == _holdToken && DateTime.now().isBefore(until)) {
+      await WidgetsBinding.instance.endOfFrame;
+      if (!mounted || token != _holdToken || !_scroll.hasClients) return;
+      final position = _scroll.position;
+      if (position.userScrollDirection != ScrollDirection.idle) return; // the reader took over
+      if (position.pixels < position.maxScrollExtent - 0.5) position.jumpTo(position.maxScrollExtent);
+    }
+  }
+
+  @override
+  void didChangeMetrics() {
+    // The keyboard opening or closing changes the list's height: stay at the end if that is where the reader is
+    if (_atBottom && mounted) _holdBottom();
   }
 
   // ---- going to the message a reply answers, and back, step by step ----
@@ -1352,8 +1396,26 @@ class _ChatConversationScreenState extends State<ChatConversationScreen> {
   }
 
   /// A tap on a reply's quote: to the message it answers (loading older history if it is not here yet).
-  Future<void> _openReplied(ChatMessage reply) async {
-    final targetId = reply.replyToId;
+  Future<void> _openReplied(ChatMessage reply) => _jumpToMessage(reply.replyToId, from: _itemKey(reply));
+
+  /// A search result (or pinned / tagged message): to its place in the conversation.
+  Future<void> _openFound(ChatMessage found) async {
+    if (_threadId == null && found.threadRootId != null) {
+      // A reply under a message lives in that message's own conversation
+      final root = _shownById(found.threadRootId!);
+      if (root != null) {
+        _openThread(root);
+      } else {
+        AppToast.info(context, 'این پیام در گفتگوی زیر یک پیام است.');
+      }
+      return;
+    }
+    await _jumpToMessage(found.id);
+  }
+
+  /// Brings a message to the middle of the screen and lights it, loading older history when it is not here yet.
+  /// With [from], the «down» button comes back to that row first.
+  Future<void> _jumpToMessage(String? targetId, {String? from}) async {
     if (targetId == null || _jumping) return;
     _jumping = true;
     try {
@@ -1373,8 +1435,7 @@ class _ChatConversationScreenState extends State<ChatConversationScreen> {
         AppToast.info(context, 'پیام اصلی دیگر در این گفتگو نیست.');
         return;
       }
-      final from = _itemKey(reply);
-      if (_returnTo.isEmpty || _returnTo.last != from) _returnTo.add(from);
+      if (from != null && (_returnTo.isEmpty || _returnTo.last != from)) _returnTo.add(from);
       await _goToRow(_itemKey(target));
     } finally {
       _jumping = false;
@@ -1409,6 +1470,20 @@ class _ChatConversationScreenState extends State<ChatConversationScreen> {
     return null;
   }
 
+  /// Scrolls so the row sits at about 40% of the visible list. Worked out from where the row really is on
+  /// screen: the list meets its two halves at the bottom edge, which Scrollable.ensureVisible does not account for.
+  Future<void> _centerRow(BuildContext rowContext) async {
+    final row = rowContext.findRenderObject();
+    final viewport = Scrollable.maybeOf(rowContext)?.context.findRenderObject();
+    if (row is! RenderBox || viewport is! RenderBox || !row.attached || !viewport.attached || !_scroll.hasClients) return;
+    final rowTop = viewport.globalToLocal(row.localToGlobal(Offset.zero)).dy;
+    final wanted = ((viewport.size.height - row.size.height) * 0.4).clamp(0.0, double.infinity);
+    final position = _scroll.position;
+    final target = (position.pixels + rowTop - wanted).clamp(position.minScrollExtent, position.maxScrollExtent).toDouble();
+    if ((target - position.pixels).abs() < 1) return;
+    await _scroll.animateTo(target, duration: const Duration(milliseconds: 350), curve: Curves.easeOutCubic);
+  }
+
   /// Brings a row to the middle of the screen and lights it. The list is built lazily, so a row far away is
   /// approached a screen at a time until it is laid out.
   Future<void> _goToRow(String key) async {
@@ -1418,7 +1493,7 @@ class _ChatConversationScreenState extends State<ChatConversationScreen> {
       if (!mounted || !_scroll.hasClients) return;
       final rowContext = _rowKeys[key]?.currentContext;
       if (rowContext != null && rowContext.mounted) {
-        await Scrollable.ensureVisible(rowContext, alignment: 0.4, duration: const Duration(milliseconds: 350), curve: Curves.easeOutCubic);
+        await _centerRow(rowContext);
         if (!mounted) return;
         final tick = _flashTick + 1;
         setState(() {
