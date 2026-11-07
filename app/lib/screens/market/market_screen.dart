@@ -1777,7 +1777,7 @@ class _MarketScreenState extends State<MarketScreen> {
               mainAxisSize: MainAxisSize.min,
               children: [
                 // Right: the asset's icon, as on the home screens (bottom bar style, or the picture set in the panel)
-                AssetIcon(assetKey, size: 24, color: isGold ? const Color(0xFF653A18) : const Color(0xFFDFB690)),
+                AssetIcon(assetKey, size: 24, builtIn: true, color: isGold ? const Color(0xFF653A18) : const Color(0xFFDFB690)),
                 const SizedBox(width: 8),
                 // Middle: Label
                 Text(

@@ -40,7 +40,10 @@ class AssetIcon extends StatelessWidget {
   /// A panel picture is cropped to a rounded square (fills it, never stretched) instead of being fitted inside.
   final bool square;
 
-  const AssetIcon(this.assetKey, {super.key, this.size = 22, this.color = const Color(0xFFDFB690), this.square = false});
+  /// Always the built-in icon, ignoring any picture set in the panel.
+  final bool builtIn;
+
+  const AssetIcon(this.assetKey, {super.key, this.size = 22, this.color = const Color(0xFFDFB690), this.square = false, this.builtIn = false});
 
   static const Map<String, Color> _bannerTints = {
     'derafsh_gold': Color(0xFFFFD580),
@@ -63,7 +66,7 @@ class AssetIcon extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final url = AppImages.asset(assetKey);
+    final url = builtIn ? null : AppImages.asset(assetKey);
     final svg = 'assets/svg_icons/asset_${assetKey.startsWith('derafsh') ? 'derafsh' : assetKey}.svg';
     final tint = _bannerTints[assetKey] ?? color;
     final fallback = SvgPicture.asset(

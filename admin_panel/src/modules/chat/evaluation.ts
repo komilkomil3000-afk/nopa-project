@@ -193,6 +193,7 @@ export const getEvaluation = handler(async (req, res, actor) => {
   const users = await prisma.user.findMany({ where: { id: { in: rows.map(r => r.userId) } }, select: { id: true, name: true, avatarUrl: true, gender: true } });
   const history = await prisma.challengeEvaluation.groupBy({ by: ['userId'], where: { userId: { in: rows.map(r => r.userId) }, paidAt: { not: null }, topicId: { not: topic.id } }, _avg: { score: true }, _count: { _all: true } });
   const range = await rangeOf(topic.challenge);
+  const answers = await prisma.submission.findMany({ where: { challengeId: topic.challengeId, studentId: { in: rows.map(r => r.userId) } }, select: { studentId: true, answerText: true, fileUrl: true, submittedAt: true } });
 
   res.json({
     topic: { id: topic.id, status: topic.status, title: topic.challenge.title, min: range.min, max: range.max, statuses: PARTICIPATION_KEYS.map(k => ({ key: k, ...PARTICIPATION[k] })), messageCount: messages.length, asset: assetOf(topic.challenge), assetLabel: assetLabel(topic.challenge), legacy: !['zarik', 'nakh'].includes(topic.challenge.rewardAssetType) },
@@ -205,6 +206,7 @@ export const getEvaluation = handler(async (req, res, actor) => {
       return {
         ...r,
         user: users.find(u => u.id === r.userId),
+        answer: (() => { const a = answers.find(x => x.studentId === r.userId); return a ? { text: a.answerText ?? '', fileUrl: a.fileUrl ?? null, submittedAt: a.submittedAt } : null; })(),
         suggested,
         suggestedStatus,
         status,
@@ -362,6 +364,14 @@ export const resolveObjection = handler(async (req, res, actor) => {
   await prisma.challengeEvaluation.update({ where: { id: row.id }, data: { objectionStatus: accept ? 'accepted' : 'rejected', objectionResponse: response } });
   await prisma.notification.create({ data: { userId, title: 'پاسخ اعتراض', message: `${topic.challenge.title}: ${response}`, type: 'alert' } });
   res.json({ success: true });
+});
+
+/** GET /topics/:id/my-answer: what the caller sent for this challenge (typed answer, picked options, file). */
+export const myAnswer = handler(async (req, res, actor) => {
+  const { topic } = await requireTopic(actor, req.params.id);
+  const sub = await prisma.submission.findUnique({ where: { challengeId_studentId: { challengeId: topic.challengeId, studentId: actor.id } } });
+  if (!sub) return res.json({ answered: false });
+  res.json({ answered: true, answerText: sub.answerText ?? '', fileUrl: sub.fileUrl ?? null, status: sub.status, submittedAt: sub.submittedAt });
 });
 
 export const myReport = handler(async (req, res, actor) => {

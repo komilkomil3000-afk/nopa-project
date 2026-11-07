@@ -75,6 +75,7 @@ class _ChatTopicInfoScreenState extends State<ChatTopicInfoScreen> {
   final ChatRepository _chat = ChatRepository.instance;
   Map<String, dynamic>? _evaluation;
   Map<String, dynamic>? _report;
+  Map<String, dynamic>? _myAnswer;
   Map<String, dynamic>? _insight;
   final Map<String, String> _statuses = {};
   final Map<String, TextEditingController> _reasons = {};
@@ -123,7 +124,13 @@ class _ChatTopicInfoScreenState extends State<ChatTopicInfoScreen> {
       });
     } else {
       final report = await _chat.api('GET', '/chat/topics/$_topicId/my-report');
-      if (mounted && report.ok) setState(() => _report = Map<String, dynamic>.from(report.data as Map));
+      final mine = await _chat.api('GET', '/chat/topics/$_topicId/my-answer');
+      if (mounted) {
+        setState(() {
+          if (report.ok) _report = Map<String, dynamic>.from(report.data as Map);
+          if (mine.ok && mine.data is Map) _myAnswer = Map<String, dynamic>.from(mine.data as Map);
+        });
+      }
     }
     if (mounted) setState(() => _loading = false);
   }
@@ -200,13 +207,52 @@ class _ChatTopicInfoScreenState extends State<ChatTopicInfoScreen> {
                       onOpenMember: (id) => Navigator.of(context).push(MaterialPageRoute(builder: (_) => ChatMemberProfileScreen(spaceId: widget.spaceId, userId: id))),
                     ),
                   if (!_quiz && _interGroup) InterGroupSection(challengeId: _challengeId, mentor: widget.moderator, spaceId: widget.spaceId),
-                  if (!_quiz && !_interGroup && !widget.moderator) _studentReport(),
+                  if (!_quiz && !_interGroup && !widget.moderator) ...[
+                    if (_myAnswer?['answered'] == true) _answerCard('پاسخ شما', _myAnswer!['answerText'], _myAnswer!['fileUrl'], _myAnswer!['submittedAt']),
+                    _studentReport(),
+                  ],
                   if (!_quiz && !_interGroup && widget.moderator) ..._mentorPanel(),
                   // A mentor reads the analysis above the people (inside the panel); others see it here
                   if (!_quiz && _insight != null && !(widget.moderator && !_interGroup)) _insightCard(),
                 ],
               ),
               ),
+      ),
+    );
+  }
+
+  /// What a member sent for the challenge (typed answer or the options picked, and the file), shown as it was sent.
+  Widget _answerCard(String title, dynamic text, dynamic fileUrl, dynamic at) {
+    var body = (text ?? '').toString();
+    final marker = body.lastIndexOf('\nفایل: ');
+    if (marker >= 0) body = body.substring(0, marker);
+    body = body.trim();
+    final file = (fileUrl ?? '').toString();
+    return Container(
+      width: double.infinity,
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.all(12),
+      decoration: ChatTheme.card(),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(title, style: ChatTheme.title),
+          if (at != null) Text('ثبت: ${chatDateText(at)}', style: ChatTheme.caption),
+          const SizedBox(height: 6),
+          if (body.isNotEmpty) SelectableText(body, style: ChatTheme.body) else if (file.isEmpty) Text('پاسخ متنی ثبت نشده است', style: ChatTheme.caption),
+          if (file.isNotEmpty)
+            Padding(
+              padding: const EdgeInsets.only(top: 6),
+              child: GestureDetector(
+                onTap: () => launchUrl(Uri.parse(ApiConstants.resolveImageUrl(file)), mode: LaunchMode.externalApplication),
+                child: Row(mainAxisSize: MainAxisSize.min, children: [
+                  const Icon(Icons.attach_file_rounded, size: 16, color: ChatTheme.accent),
+                  const SizedBox(width: 4),
+                  Text('فایل پیوست', style: ChatTheme.caption.copyWith(color: ChatTheme.accent)),
+                ]),
+              ),
+            ),
+        ],
       ),
     );
   }
@@ -463,6 +509,10 @@ class _ChatTopicInfoScreenState extends State<ChatTopicInfoScreen> {
             ),
           ),
 
+          if (row['answer'] is Map) ...[
+            const SizedBox(height: 10),
+            _answerCard('پاسخ ثبت‌شده', (row['answer'] as Map)['text'], (row['answer'] as Map)['fileUrl'], (row['answer'] as Map)['submittedAt']),
+          ],
           // What the system read from the conversation: a guide, the mentor decides
           sectionLabel('تحلیل سیستم (فقط راهنماست؛ تصمیم با شماست)'),
           Wrap(crossAxisAlignment: WrapCrossAlignment.center, children: [
