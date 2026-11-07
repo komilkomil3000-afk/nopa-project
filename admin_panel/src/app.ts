@@ -11,6 +11,7 @@ import { scrubResponses } from './middleware/responseScrubber';
 import { cspDirectives } from './config/csp';
 import apiRouter from './routes/api';
 import { getPublicAppVersion } from './controllers/appReleaseController';
+import { serveLandingHome, serveLandingPreview, serveLandingSlug } from './controllers/landingController';
 
 // Load Environment Config
 dotenv.config();
@@ -43,6 +44,8 @@ const corsOrigins = (process.env.CORS_ORIGINS || '').split(',').map(o => o.trim(
 app.use(cors({ origin: corsOrigins.length ? corsOrigins : '*' }));
 // The bulk user import sends a whole spreadsheet (controllers/userImportController.ts); everything else keeps the 100kb default
 app.use('/api/v1/admin/users/import', express.json({ limit: '8mb' }));
+// A landing page's HTML (file upload or pasted code) may be up to 2 MB (controllers/landingController.ts)
+app.use('/api/v1/admin/landing', express.json({ limit: '3mb' }));
 app.use(express.json());
 
 // Any write outside chat may change LMS content: drop the short-lived station tree cache.
@@ -77,6 +80,8 @@ app.use(
     setHeaders: (res, filePath) => {
       const ext = path.extname(filePath).toLowerCase();
       res.setHeader('X-Content-Type-Options', 'nosniff');
+      // landing pages with custom code run in a sandbox (opaque origin) and must still show uploaded pictures
+      res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
       if (ext !== '.pdf') {
         res.setHeader('Content-Security-Policy', "default-src 'none'; sandbox");
       }
@@ -86,6 +91,18 @@ app.use(
     },
   })
 );
+
+// Landing pages made in the panel (settings → صفحه لندینگ). "/" shows the published home page; without one, "/" keeps
+// serving the static index below. The panel itself always stays at /admin/.
+app.get('/', serveLandingHome);
+app.get('/p/:slug', serveLandingSlug);
+app.get('/landing-preview/:id', serveLandingPreview);
+// The site font, also for sandboxed landing pages (an opaque origin needs CORS and a cross-origin CORP for fonts)
+app.use('/fonts', (_req, res, next) => {
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
+  next();
+});
 
 // Serve static admin files
 app.use('/admin', express.static(path.join(__dirname, '../public')));

@@ -144,6 +144,11 @@
       title: 'امنیت و دسترسی', desc: 'ماتریس اختصاصی نقش‌های امنیتی نپا',
       load: () => call('loadRolePermissions'),
     },
+    'landing-tab': {
+      hashes: ['landing', 'site'], group: 'settings', label: 'صفحه لندینگ', icon: 'fa-solid fa-globe', section: null,
+      title: 'صفحه لندینگ', desc: 'صفحه‌ی اصلی سایت و صفحه‌های معرفی: بارگذاری HTML، فرم‌ساز، کپی کد یا قالب آماده',
+      load: () => call('loadLandingTab'),
+    },
     'audit-tab': {
       hashes: ['audit'], group: 'settings', label: 'امنیت و گزارشات سیستم', icon: 'fa-solid fa-clock-rotate-left', section: null,
       title: 'لاگ‌های سیستمی', desc: 'گزارش حسابرسی عملیات مدیران و رکوردهای امنیتی',

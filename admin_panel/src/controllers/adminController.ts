@@ -15,13 +15,9 @@ import { ASSIGNABLE_ROLES, ROLE_ADMIN, ROLE_STUDENT, SUPER_ADMIN_ONLY_ROLES, par
 import { avatarFor, normalizeGender } from '../utils/avatar';
 import { presenceOf, usageSummary } from '../services/presence';
 import { setCachedSiteAvatar } from '../services/siteAvatars';
-<<<<<<< HEAD
-import { isOnline } from '../modules/chat/realtime';
+import { isOnline, refreshUserRooms } from '../modules/chat/realtime';
 import { applyMentorCaravanChoice, displayedCaravanId, setMentorCaravans } from '../services/caravanMentor';
 import { moveToCaravan } from '../services/caravanMembership';
-=======
-import { isOnline, refreshUserRooms } from '../modules/chat/realtime';
->>>>>>> 85095ff4d1a52e070559c23f16c3277069f9f966
 
 
 // Memory Cache for Zarik Analytics (invalidated upon adjustments)
@@ -644,11 +640,7 @@ export async function updateUser(req: AuthRequest, res: Response) {
         ...(newAvatar !== undefined ? { avatarUrl: newAvatar } : {}),
         ...(roleToSet ? { role: roleToSet, tokenVersion: { increment: 1 } } : {}),
         phoneNumber: phoneNumber || undefined,
-<<<<<<< HEAD
         // the caravan is changed below by moveToCaravan / applyMentorCaravanChoice (groups and chats follow it)
-=======
-        caravanId: caravanIdIn !== undefined ? (caravanIdIn || null) : undefined,
->>>>>>> 85095ff4d1a52e070559c23f16c3277069f9f966
         levelFrame: levelFrame ? parseInt(levelFrame) : undefined,
         mentorLevel: mentorLevel ? parseInt(mentorLevel) : undefined,
         nationalId: nationalId !== undefined ? (nationalId || null) : undefined,
@@ -667,33 +659,22 @@ export async function updateUser(req: AuthRequest, res: Response) {
       );
     }
 
-<<<<<<< HEAD
-    if (mentorCaravanPick) {
-      // The caravan's old mentor leaves it and this mentor takes it over (groups, challenges, arena, panel)
-      await applyMentorCaravanChoice(id, finalRole, prevShownCaravanId, caravanId || null);
+    if (mentorCaravanPick || leavesCaravan) {
+      // The caravan's old mentor leaves it and this mentor takes it over (groups, challenges, arena, panel).
+      // A member who just became a mentor also leaves the caravan he was a member of (and its chats).
+      await applyMentorCaravanChoice(id, finalRole, prevShownCaravanId, mentorCaravanPick ? (caravanId || null) : null);
     } else {
       if (roleToSet && prevUser && isMentorRole(prevUser.role) && !isMentorRole(roleToSet)) {
         // No longer a mentor: the caravans he led are left without a mentor
         await setMentorCaravans(id, []);
       }
       // A member moved to another caravan (or out of one): assets and progress stay, groups and chats follow
-      if (caravanId !== undefined && (caravanId || null) !== (prevUser?.caravanId ?? null)) {
-        await moveToCaravan([id], caravanId || null);
+      if (caravanIdIn !== undefined && (caravanIdIn || null) !== (prevUser?.caravanId ?? null)) {
+        await moveToCaravan([id], caravanIdIn || null);
       }
-=======
-    // chat rooms follow User.caravanId and the role: move the live sockets now
-    if (roleToSet || (prevUser && prevUser.caravanId !== user.caravanId)) await refreshUserRooms([id]).catch(() => {});
-
-    // Update caravan member counts if caravan changed
-    if (prevUser && prevUser.caravanId && prevUser.caravanId !== user.caravanId) {
-      const prevCount = await prisma.user.count({ where: { caravanId: prevUser.caravanId } });
-      await prisma.caravan.update({ where: { id: prevUser.caravanId }, data: { memberCount: prevCount } }).catch(() => {});
     }
-    if (user.caravanId) {
-      const newCount = await prisma.user.count({ where: { caravanId: user.caravanId } });
-      await prisma.caravan.update({ where: { id: user.caravanId }, data: { memberCount: newCount } }).catch(() => {});
->>>>>>> 85095ff4d1a52e070559c23f16c3277069f9f966
-    }
+    // chat rooms follow the role too: move the live sockets now (moveToCaravan already did it for a caravan change)
+    if (roleToSet) await refreshUserRooms([id]).catch(() => {});
 
     await logAdminAction(
       req.user?.id || 'system',

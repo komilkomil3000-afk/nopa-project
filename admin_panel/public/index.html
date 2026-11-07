@@ -777,6 +777,72 @@
         </div>
       </section>
 
+      <!-- LANDING (صفحه لندینگ, settings): public site pages. Drawn by js/features/landing.js; styles in css/stations.css
+           (.lst-*, .crv-*, .lnd-*). API: /admin/landing. The page marked home is served at "/", others at /p/<slug>. -->
+      <section id="landing-tab" class="tab-panel" data-style="display: none;">
+        <div id="lnd-overview-view">
+          <div class="lms-head-actions u-flex u-justify-end u-items-center u-mb-20">
+            <div class="u-flex u-gap-10">
+              <button type="button" class="btn-primary u-bgc-primary" data-click="lndOpenCreate"><i class="fa-solid fa-plus"></i> صفحه جدید</button>
+            </div>
+          </div>
+          <div class="lst-bento">
+            <div class="lst-tile lst-tile-stations glass">
+              <div class="lst-tile-head">
+                <h4 class="lst-tile-title"><i class="fa-solid fa-globe"></i> صفحه‌های سایت <span class="lst-tile-sub" id="lnd-count-badge">برای ویرایش روی هر صفحه بزنید</span></h4>
+                <div class="crv-filters">
+                  <div class="search-box">
+                    <i class="fa-solid fa-search"></i>
+                    <input aria-label="جستجوی صفحات" type="text" id="lnd-search" class="input-ctrl" placeholder="عنوان یا نشانی..." data-input="lndFilter">
+                  </div>
+                  <select aria-label="وضعیت انتشار" id="lnd-status-filter" class="select-ctrl" data-change="lndFilter">
+                    <option value="all">همه صفحات</option>
+                    <option value="published">منتشرشده</option>
+                    <option value="draft">پیش‌نویس</option>
+                  </select>
+                </div>
+              </div>
+              <div id="lnd-bento-list" class="crv-card-grid" aria-busy="true"></div>
+            </div>
+
+            <div class="lst-tile glass">
+              <h4 class="lst-tile-title"><i class="fa-solid fa-house"></i> صفحه اصلی سایت <span class="lst-tile-sub">آنچه با باز کردن نشانی سایت دیده می‌شود</span></h4>
+              <div id="lnd-bento-home"></div>
+            </div>
+
+            <div class="lst-tile glass">
+              <h4 class="lst-tile-title"><i class="fa-solid fa-chart-simple"></i> آمار کلی</h4>
+              <div class="lst-mini-stats">
+                <div class="lst-mini-stat"><span class="stat-label">صفحات</span><span class="stat-value u-c-primary-text" id="lnd-stat-total">-</span></div>
+                <div class="lst-mini-stat"><span class="stat-label">منتشرشده</span><span class="stat-value u-c-success-text" id="lnd-stat-published">-</span></div>
+                <div class="lst-mini-stat"><span class="stat-label">فرم‌ساز</span><span class="stat-value u-c-info-text" id="lnd-stat-builder">-</span></div>
+                <div class="lst-mini-stat"><span class="stat-label">کد HTML</span><span class="stat-value u-c-accent-text" id="lnd-stat-html">-</span></div>
+              </div>
+            </div>
+
+            <div class="lst-tile glass">
+              <h4 class="lst-tile-title"><i class="fa-solid fa-bolt"></i> ساخت صفحه</h4>
+              <div class="lst-quick">
+                <button type="button" class="lst-quick-btn" data-click="lndOpenCreate" data-click-args="[&quot;template&quot;]"><i class="fa-solid fa-swatchbook"></i> از روی قالب آماده</button>
+                <button type="button" class="lst-quick-btn" data-click="lndOpenCreate" data-click-args="[&quot;builder&quot;]"><i class="fa-solid fa-layer-group"></i> فرم‌ساز گرافیکی</button>
+                <button type="button" class="lst-quick-btn" data-click="lndOpenCreate" data-click-args="[&quot;upload&quot;]"><i class="fa-solid fa-file-code"></i> بارگذاری فایل HTML</button>
+                <button type="button" class="lst-quick-btn" data-click="lndOpenCreate" data-click-args="[&quot;paste&quot;]"><i class="fa-solid fa-paste"></i> کپی و پیست کد</button>
+              </div>
+            </div>
+
+            <div class="lst-tile lst-tile-wide glass">
+              <h4 class="lst-tile-title"><i class="fa-solid fa-circle-info"></i> نحوه کار</h4>
+              <ul class="lst-list">
+                <li class="lst-list-item"><i class="fa-solid fa-house u-c-primary-text"></i><span class="lst-grow">صفحه‌ای که «صفحه اصلی» شود در نشانی اصلی سایت (/) نمایش داده می‌شود؛ صفحه‌های منتشرشده‌ی دیگر در /p/نشانی‌صفحه. پنل مدیریت همیشه در /admin/ است.</span></li>
+                <li class="lst-list-item"><i class="fa-solid fa-eye u-c-info-text"></i><span class="lst-grow">صفحه‌ی تازه پیش‌نویس است و فقط با «پیش‌نمایش» (لینک ۱۵ دقیقه‌ای) دیده می‌شود تا منتشرش کنید.</span></li>
+                <li class="lst-list-item"><i class="fa-solid fa-clock-rotate-left u-c-accent-text"></i><span class="lst-grow">پیش از هر ذخیره، محتوای قبلی به‌عنوان نسخه نگه داشته می‌شود (۳۰ نسخه‌ی آخر) و از تب «نسخه‌ها» قابل بازگردانی است.</span></li>
+                <li class="lst-list-item"><i class="fa-solid fa-shield-halved u-c-success-text"></i><span class="lst-grow">کد HTML و اسکریپت‌های صفحه در محیطی جدا (sandbox) اجرا می‌شوند و به نشست پنل و اطلاعات کاربران دسترسی ندارند؛ برای همین کوکی و localStorage در آن صفحه‌ها کار نمی‌کند.</span></li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </section>
+
       <!-- SHOP (فروشگاه بازارچه): sticker / GIF packs and features sold for zarik in the app's market.
            Drawn by js/features/shop.js; styles in css/stations.css (.lst-*, .crv-*, .shp-*). API: /admin/shop/items. -->
       <section id="shop-tab" class="tab-panel" data-style="display: none;">
@@ -4398,6 +4464,137 @@
     </div>
   </div>
 
+  <!-- New landing page (js/features/landing.js → lndOpenCreate): the way it is made, then the editor opens -->
+  <div id="lnd-create-modal" class="modal-overlay lse-overlay u-z-z-mobile-nav" data-style="display:none">
+    <div class="lse lse-sm">
+      <header class="lse-head lse-head-plain">
+        <div class="lse-id">
+          <span class="lse-id-icon is-accent"><i class="fa-solid fa-plus"></i></span>
+          <div class="lse-id-text"><h3>صفحه جدید</h3><span>به‌صورت پیش‌نویس ساخته می‌شود</span></div>
+        </div>
+        <button type="button" class="lsv-round" data-click="lndCloseCreate" title="بستن" aria-label="بستن"><i class="fa-solid fa-xmark"></i></button>
+      </header>
+      <div class="lse-body">
+        <div class="lse-grid lse-grid-2">
+          <label class="lse-field"><span>عنوان صفحه <b class="lse-req">*</b></span><input type="text" id="lnd-new-title" class="input-ctrl" maxlength="120" placeholder="مثلاً صفحه اصلی نپا"></label>
+          <label class="lse-field"><span>نشانی <small>حروف انگلیسی کوچک، عدد و -</small></span><input type="text" id="lnd-new-slug" class="input-ctrl" maxlength="60" dir="ltr" placeholder="home"></label>
+        </div>
+        <div class="lnd-ways" id="lnd-ways"></div>
+        <label class="lse-field" id="lnd-new-template-field"><span>قالب</span><select id="lnd-new-template" class="select-ctrl"></select></label>
+        <div class="lse-field" id="lnd-new-file-field">
+          <span>فایل HTML</span>
+          <label class="lse-btn lse-btn-dashed lnd-file-pick"><i class="fa-solid fa-file-arrow-up"></i> <span id="lnd-new-file-name">انتخاب فایل .html</span><input type="file" accept=".html,.htm,text/html" hidden data-change="lndPickNewFile" data-change-args="[&quot;$this&quot;]"></label>
+        </div>
+        <label class="lse-field" id="lnd-new-code-field"><span>کد HTML</span><textarea id="lnd-new-code" class="input-ctrl lnd-code" rows="8" dir="ltr" spellcheck="false" placeholder="<!doctype html>..."></textarea></label>
+      </div>
+      <footer class="lse-foot">
+        <span class="lse-foot-note"><i class="fa-solid fa-circle-info"></i> بعد از ساخت، ویرایشگر باز می‌شود</span>
+        <div class="lse-foot-actions">
+          <button type="button" class="lse-btn" data-click="lndCloseCreate">انصراف</button>
+          <button type="button" class="lsv-pill" id="lnd-create-btn" data-click="lndCreate"><i class="fa-solid fa-check"></i> ساخت صفحه</button>
+        </div>
+      </footer>
+    </div>
+  </div>
+
+  <!-- Landing page editor (js/features/landing.js → lndOpenEditor): details, content (code or builder), versions -->
+  <div id="lnd-editor-modal" class="modal-overlay lse-overlay u-z-z-mobile-nav" data-style="display:none">
+    <div class="lse lse-editor lnd-editor">
+      <header class="lse-head">
+        <div class="lse-id">
+          <span class="lse-id-icon is-accent"><i class="fa-solid fa-globe"></i></span>
+          <div class="lse-id-text"><h3 id="lnd-ed-title">ویرایش صفحه</h3><span id="lnd-ed-sub"></span></div>
+        </div>
+        <nav class="lse-tabs" aria-label="بخش‌های ویرایشگر صفحه">
+          <button type="button" class="lse-tab is-active" data-lnd-tab="info" data-click="lndTab" data-click-args="[&quot;info&quot;]">مشخصات</button>
+          <button type="button" class="lse-tab" data-lnd-tab="content" data-click="lndTab" data-click-args="[&quot;content&quot;]">محتوا</button>
+          <button type="button" class="lse-tab" data-lnd-tab="versions" data-click="lndTab" data-click-args="[&quot;versions&quot;]">نسخه‌ها</button>
+        </nav>
+        <button type="button" class="lsv-round" data-click="lndCloseEditor" title="بستن" aria-label="بستن"><i class="fa-solid fa-xmark"></i></button>
+      </header>
+      <div class="lse-body">
+        <div data-lnd-pane="info">
+          <section class="lse-card">
+            <h4 class="lse-card-title"><i class="fa-solid fa-id-card"></i> مشخصات و انتشار</h4>
+            <div class="lse-grid lse-grid-2">
+              <label class="lse-field"><span>عنوان صفحه <b class="lse-req">*</b></span><input type="text" id="lnd-title" class="input-ctrl" maxlength="120"></label>
+              <label class="lse-field"><span>نشانی <small id="lnd-url-hint"></small></span><input type="text" id="lnd-slug" class="input-ctrl" maxlength="60" dir="ltr"></label>
+              <label class="chs-check"><span><strong>منتشر شود</strong><small>برای همه در /p/نشانی قابل دیدن است</small></span><input type="checkbox" class="chs-switch" id="lnd-published"></label>
+              <label class="chs-check"><span><strong>صفحه اصلی سایت</strong><small>در نشانی اصلی سایت (/) نمایش داده شود</small></span><input type="checkbox" class="chs-switch" id="lnd-home"></label>
+            </div>
+          </section>
+          <section class="lse-card">
+            <h4 class="lse-card-title"><i class="fa-solid fa-magnifying-glass"></i> سئو و اشتراک‌گذاری</h4>
+            <div class="lse-grid lse-grid-2">
+              <label class="lse-field"><span>عنوان در گوگل و تب مرورگر</span><input type="text" id="lnd-meta-title" class="input-ctrl" maxlength="300"></label>
+              <label class="lse-field"><span>تصویر اشتراک‌گذاری <small>نشانی تصویر</small></span><input type="text" id="lnd-og-image" class="input-ctrl" dir="ltr" placeholder="/uploads/..."></label>
+            </div>
+            <label class="lse-field"><span>توضیح کوتاه <small>زیر عنوان در نتایج جستجو</small></span><textarea id="lnd-meta-desc" class="input-ctrl" rows="2" maxlength="300"></textarea></label>
+          </section>
+          <section class="lse-card">
+            <h4 class="lse-card-title"><i class="fa-solid fa-screwdriver-wrench"></i> نوع ساخت صفحه</h4>
+            <div class="lse-grid lse-grid-2">
+              <label class="lse-field">
+                <span>این صفحه با چه ساخته می‌شود؟</span>
+                <select id="lnd-mode" class="select-ctrl" data-change="lndModeChanged">
+                  <option value="builder">فرم‌ساز گرافیکی (بخش‌به‌بخش)</option>
+                  <option value="html">کد HTML (بارگذاری فایل یا کپی کد)</option>
+                </select>
+              </label>
+              <p class="lse-hint">تغییر نوع، محتوای نوع دیگر را پاک نمی‌کند؛ هر دو نگه داشته می‌شوند و فقط نوع انتخاب‌شده نمایش داده می‌شود.</p>
+            </div>
+          </section>
+        </div>
+
+        <div data-lnd-pane="content" data-style="display:none">
+          <div id="lnd-html-pane">
+            <section class="lse-card">
+              <h4 class="lse-card-title"><i class="fa-solid fa-code"></i> کد صفحه <span class="lsv-col-count" id="lnd-html-size">۰</span></h4>
+              <div class="lnd-code-tools">
+                <label class="lse-btn"><i class="fa-solid fa-file-arrow-up"></i> بارگذاری فایل HTML<input type="file" accept=".html,.htm,text/html" hidden data-change="lndUploadHtml" data-change-args="[&quot;$this&quot;]"></label>
+                <button type="button" class="lse-btn" data-click="lndDownloadHtml"><i class="fa-solid fa-download"></i> دریافت فایل</button>
+                <button type="button" class="lse-btn" data-click="lndBuilderToHtml" title="کد صفحه‌ی فرم‌ساز را برای ویرایش دستی بیاورید"><i class="fa-solid fa-wand-magic-sparkles"></i> تبدیل فرم‌ساز به کد</button>
+              </div>
+              <textarea id="lnd-html" class="input-ctrl lnd-code" rows="22" dir="ltr" spellcheck="false" data-input="lndHtmlInput"></textarea>
+              <p class="lse-hint">تصاویر را از «رسانه» بارگذاری کنید و نشانی‌شان را در کد بگذارید. حداکثر حجم ۲ مگابایت.</p>
+            </section>
+          </div>
+          <div id="lnd-builder-pane">
+            <section class="lse-card">
+              <h4 class="lse-card-title"><i class="fa-solid fa-palette"></i> رنگ‌ها و ظاهر</h4>
+              <div class="lnd-theme" id="lnd-theme"></div>
+            </section>
+            <section class="lse-card">
+              <h4 class="lse-card-title"><i class="fa-solid fa-layer-group"></i> بخش‌های صفحه <span class="lsv-col-count" id="lnd-sections-count">۰</span></h4>
+              <div id="lnd-sections"></div>
+              <div class="lnd-add-row">
+                <select id="lnd-add-type" class="select-ctrl" aria-label="نوع بخش تازه"></select>
+                <button type="button" class="lse-btn lse-btn-dashed" data-click="lndAddSection"><i class="fa-solid fa-plus"></i> افزودن بخش</button>
+              </div>
+            </section>
+          </div>
+        </div>
+
+        <div data-lnd-pane="versions" data-style="display:none">
+          <section class="lse-card">
+            <h4 class="lse-card-title"><i class="fa-solid fa-clock-rotate-left"></i> نسخه‌های قبلی</h4>
+            <p class="lse-hint">هر بار که محتوای صفحه ذخیره می‌شود، محتوای قبلی اینجا می‌ماند. با بازگردانی، محتوای فعلی هم به‌عنوان نسخه نگه داشته می‌شود.</p>
+            <div id="lnd-versions"></div>
+          </section>
+        </div>
+      </div>
+      <footer class="lse-foot">
+        <span class="lse-foot-note" id="lnd-ed-note"><i class="fa-solid fa-circle-info"></i> پیش‌نمایش، آخرین نسخه‌ی ذخیره‌شده را نشان می‌دهد</span>
+        <div class="lse-foot-actions">
+          <button type="button" class="lse-btn lse-btn-danger" data-click="lndDelete">حذف</button>
+          <button type="button" class="lse-btn" data-click="lndDuplicate"><i class="fa-solid fa-clone"></i> کپی</button>
+          <button type="button" class="lse-btn" data-click="lndPreview"><i class="fa-solid fa-eye"></i> پیش‌نمایش</button>
+          <button type="button" class="lsv-pill" id="lnd-save-btn" data-click="lndSave"><i class="fa-solid fa-check"></i> ذخیره</button>
+        </div>
+      </footer>
+    </div>
+  </div>
+
   <!-- Shop item editor (فروشگاه بازارچه; js/features/shop.js → shpOpenEditor) -->
   <div id="shp-editor-modal" class="modal-overlay lse-overlay u-z-z-mobile-nav" data-style="display:none">
     <div class="lse lse-editor shp-editor">
@@ -5278,6 +5475,7 @@
     <script src="support.js"></script>
     <script src="instructors.js"></script>
     <script src="js/features/shop.js"></script>
+    <script src="js/features/landing.js"></script>
     <script src="js/features/lms/directory.js"></script>
     <script src="js/features/lms/content-manager.js"></script>
     <script src="js/features/lms/station-editor.js"></script>

@@ -79,6 +79,12 @@ function fallbackUrl(r: AppRelease): string {
   return r.downloadUrl || r.downloads['arm64-v8a'] || r.downloads['armeabi-v7a'] || r.downloads['x86_64'] || '';
 }
 
+/** The newest version and its single download link (the landing page's «دانلود اپ» section uses it). */
+export async function latestDownload(): Promise<{ version: string; url: string }> {
+  const r = await readRelease();
+  return { version: r.version, url: fallbackUrl(r) };
+}
+
 /** Public GET /api/v1/app/version — what the app compares its own version against. */
 export async function getPublicAppVersion(_req: Request, res: Response) {
   let r: AppRelease;

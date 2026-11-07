@@ -194,6 +194,45 @@ model ShopPurchase {
   @@index([userId])
 }
 
+// ==================== LANDING PAGES (صفحه لندینگ) ====================
+// Public site pages edited in the panel (settings → صفحه لندینگ). The one with isHome is served at "/",
+// every published page at "/p/<slug>". mode "html": the page is `html` as written (file upload or pasted code);
+// mode "builder": the page is rendered from `builder` (sections and theme made with the panel's form).
+model LandingPage {
+  id              String   @id @default(uuid())
+  title           String
+  slug            String   @unique
+  mode            String   @default("builder") // "builder" | "html"
+  html            String?
+  builder         Json?
+  metaTitle       String?
+  metaDescription String?
+  ogImage         String?
+  isPublished     Boolean  @default(false)
+  isHome          Boolean  @default(false)
+  updatedBy       String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  versions        LandingPageVersion[]
+}
+
+// The page as it was before each save (the newest 30 are kept), so any version can be restored.
+model LandingPageVersion {
+  id        String   @id @default(uuid())
+  pageId    String
+  mode      String
+  html      String?
+  builder   Json?
+  note      String?
+  createdBy String?
+  createdAt DateTime @default(now())
+
+  page      LandingPage @relation(fields: [pageId], references: [id], onDelete: Cascade)
+
+  @@index([pageId, createdAt])
+}
+
 model SystemSetting {
   key       String   @id
   value     String

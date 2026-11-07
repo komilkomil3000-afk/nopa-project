@@ -207,6 +207,7 @@ import { getAdminNews, createNews, updateNews, deleteNews } from '../controllers
 import { getAdminBanners, createBanner, updateBanner, deleteBanner } from '../controllers/bannerController';
 import { upload, uploadMedia, listStoredFiles, deleteStoredFiles } from '../controllers/mediaController';
 import { adminListShopItems, adminCreateShopItem, adminUpdateShopItem, adminDeleteShopItem } from '../controllers/shopController';
+import { adminListLanding, adminGetLanding, adminCreateLanding, adminUpdateLanding, adminDeleteLanding, adminSetLandingHome, adminDuplicateLanding, adminRestoreLandingVersion, adminLandingPreviewLink, adminRenderLanding } from '../controllers/landingController';
 import { clearAppImage, listAppImages, setAppImage } from '../controllers/appImagesController';
 import { addAvatar, listAvatarCatalog, makeAvatarFirst, removeAvatar, replaceAvatar, restoreAvatar } from '../controllers/avatarCatalogController';
 
@@ -240,6 +241,17 @@ router.get('/shop/items', adminListShopItems as any);
 router.post('/shop/items', adminCreateShopItem as any);
 router.put('/shop/items/:id', adminUpdateShopItem as any);
 router.delete('/shop/items/:id', adminDeleteShopItem as any);
+// «صفحه لندینگ» (settings): public site pages; super admin only (not mapped to a section)
+router.get('/landing', adminListLanding as any);
+router.post('/landing', adminCreateLanding as any);
+router.post('/landing/render', adminRenderLanding as any);
+router.get('/landing/:id', adminGetLanding as any);
+router.put('/landing/:id', adminUpdateLanding as any);
+router.delete('/landing/:id', adminDeleteLanding as any);
+router.post('/landing/:id/home', adminSetLandingHome as any);
+router.post('/landing/:id/duplicate', adminDuplicateLanding as any);
+router.post('/landing/:id/versions/:versionId/restore', adminRestoreLandingVersion as any);
+router.get('/landing/:id/preview-link', adminLandingPreviewLink as any);
 router.delete('/app-images/:group/:key', clearAppImage as any);
 router.post('/notifications/broadcast', broadcastNotification as any);
 router.get('/notifications/templates', getTemplates as any);
