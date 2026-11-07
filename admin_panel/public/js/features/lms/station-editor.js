@@ -982,7 +982,7 @@
         <div class="lse-grid lse-grid-2">
           <label class="lse-field">
             <span><i class="fa-solid fa-calendar-day"></i> تاریخ کلاس</span>
-            <input type="text" class="input-ctrl" data-f="sess.${id}.sessionDate" value="${esc(val(`sess.${sess.id}.sessionDate`))}" placeholder="مثال: ۱۴۰۵/۰۷/۰۲">
+            <input type="text" class="input-ctrl" data-jdp="jalali" data-f="sess.${id}.sessionDate" value="${esc(val(`sess.${sess.id}.sessionDate`))}" placeholder="انتخاب تاریخ کلاس">
           </label>
           <label class="lse-field">
             <span><i class="fa-regular fa-clock"></i> ساعت کلاس</span>

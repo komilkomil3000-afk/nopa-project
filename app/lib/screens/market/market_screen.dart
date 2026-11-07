@@ -2149,7 +2149,7 @@ class _MarketScreenState extends State<MarketScreen> {
                 final painter = TextPainter(
                   text: TextSpan(text: text, style: style),
                   textDirection: TextDirection.rtl,
-                  maxLines: 6,
+                  maxLines: 1,
                 )..layout(maxWidth: constraints.maxWidth);
                 final long = painter.didExceedMaxLines;
                 return Column(
@@ -2158,7 +2158,7 @@ class _MarketScreenState extends State<MarketScreen> {
                     Text(
                       text,
                       textAlign: TextAlign.justify,
-                      maxLines: long && !_isDescriptionExpanded ? 6 : null,
+                      maxLines: long && !_isDescriptionExpanded ? 1 : null,
                       overflow: long && !_isDescriptionExpanded ? TextOverflow.ellipsis : null,
                       style: style,
                     ),
